@@ -1,6 +1,9 @@
 import type { Chore } from '../hooks/useChores'
 import type { Activity } from '../hooks/useActivities'
 import type { MedicalRecord } from '../hooks/useMedicalRecords'
+import type { MealVote, MealVoteCandidate, VoteValue } from '../hooks/useMealVoteRounds'
+import type { Meal } from '../hooks/useMeals'
+import type { MealPlanEntry } from '../hooks/useMealPlanEntries'
 
 // Small factories for the pure-logic tests — only the fields a given test
 // cares about need to be overridden, everything else gets a harmless
@@ -50,6 +53,70 @@ export function makeActivity(overrides: Partial<Activity> = {}): Activity {
     reminder_days_before: null,
     created_at: '2026-06-01T10:00:00Z',
     updated_at: '2026-06-01T10:00:00Z',
+    ...overrides,
+  }
+}
+
+export function makeMeal(overrides: Partial<Meal> = {}): Meal {
+  return {
+    id: 'meal-1',
+    family_id: 'family-1',
+    name: 'Meal',
+    description: null,
+    category: 'dinner',
+    tags: [],
+    prep_minutes: null,
+    notes: null,
+    source_url: null,
+    status: 'active',
+    created_by: 'user-1',
+    created_at: '2026-06-01T10:00:00Z',
+    updated_at: '2026-06-01T10:00:00Z',
+    ...overrides,
+  }
+}
+
+export function makeMealVote(overrides: Partial<MealVote> = {}): MealVote {
+  return {
+    id: 'vote-1',
+    candidate_id: 'candidate-1',
+    member_id: 'member-1',
+    value: 1 as VoteValue,
+    created_by: 'user-1',
+    created_at: '2026-07-01T10:00:00Z',
+    updated_at: '2026-07-01T10:00:00Z',
+    ...overrides,
+  }
+}
+
+export function makeMealVoteCandidate(overrides: Partial<MealVoteCandidate> = {}): MealVoteCandidate {
+  return {
+    id: 'candidate-1',
+    round_id: 'round-1',
+    meal_id: 'meal-1',
+    meal_title: 'Candidate meal',
+    created_at: '2026-07-01T09:00:00Z',
+    votes: [],
+    ...overrides,
+  }
+}
+
+export function makeMealPlanEntry(overrides: Partial<MealPlanEntry> = {}): MealPlanEntry {
+  return {
+    id: 'plan-1',
+    family_id: 'family-1',
+    entry_date: '2026-07-13',
+    meal_slot: 'dinner',
+    meal_id: null,
+    title: 'Custom meal',
+    responsible_member_id: null,
+    notes: null,
+    status: 'proposed',
+    origin: 'manual',
+    source_entry_id: null,
+    created_by: 'user-1',
+    created_at: '2026-07-01T10:00:00Z',
+    updated_at: '2026-07-01T10:00:00Z',
     ...overrides,
   }
 }
