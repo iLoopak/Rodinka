@@ -28,8 +28,7 @@ import {
   type MedicalRecordType,
   type MedicalStatus,
 } from '../hooks/useMedicalRecords'
-import { getChoreState } from '../utils/choreState'
-import { compareChoresByDueDate, isDueTodayOrEarlier } from '../utils/dueDate'
+import { compareChoresByDueDate } from '../utils/dueDate'
 import { useMealsData, type MealInput, type PlanEntryInput, type VoteRoundInput } from './useMealsData'
 import type { Meal } from '../hooks/useMeals'
 import type { MealVoteRound, VoteValue } from '../hooks/useMealVoteRounds'
@@ -153,7 +152,6 @@ interface FamilyDataContextValue {
   chores: Chore[]
   completions: ChoreCompletion[]
   pendingCompletions: ChoreCompletion[]
-  todaysChores: Chore[]
   activities: Activity[]
   medicalRecords: MedicalRecord[]
   meals: Meal[]
@@ -318,19 +316,6 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
   const pendingCompletions = useMemo(
     () => completions.filter((c) => c.status === 'pending_approval'),
     [completions]
-  )
-
-  const actionableChores = useMemo(
-    () => chores.filter((chore) => getChoreState(chore, latestCompletionFor(chore.id)) === 'actionable'),
-    [chores, latestCompletionFor]
-  )
-
-  // What Today should show: actionable chores due today or already overdue.
-  // Future-dated actionable chores stay out of Today and remain visible in
-  // the main Chores screen instead (order is inherited from `chores`).
-  const todaysChores = useMemo(
-    () => actionableChores.filter((chore) => isDueTodayOrEarlier(chore.due_date)),
-    [actionableChores]
   )
 
   const loading =
@@ -517,7 +502,6 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     chores,
     completions,
     pendingCompletions,
-    todaysChores,
     activities,
     medicalRecords,
     meals,

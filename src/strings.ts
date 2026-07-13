@@ -104,6 +104,34 @@ export const strings = {
       noMealsToday: 'Dnes nic není naplánováno.',
       planTodayAction: 'Naplánovat dnešek',
       seeMealPlanAction: 'Zobrazit jídelníček',
+      attentionTitle: 'Vyžaduje pozornost',
+      otherAttentionTitle: 'Další k vyřízení',
+      programTitle: 'Dnešní program',
+      programEmpty: 'Dnes nemáte nic naplánováno',
+      programEmptyBody: 'Přidejte úkol, aktivitu, zdravotní návštěvu nebo jídlo.',
+      itemsSummary: (count: number) =>
+        count === 0
+          ? 'Dnes vás nečeká žádná naplánovaná položka.'
+          : count === 1
+            ? 'Dnes vás čeká 1 věc.'
+            : count < 5
+              ? `Dnes vás čekají ${count} věci.`
+              : `Dnes vás čeká ${count} věcí.`,
+      optionalSetupTitle: 'Chcete přidat dítě?',
+      optionalSetupBody: 'Rodinku můžete používat i bez dětí. Dítě lze kdykoli přidat jako dalšího člena rodiny.',
+      choreAssignee: (name: string) => `Má udělat ${name}`,
+      activityPeople: (person: string, responsible: string) => `${person} · doprovází ${responsible}`,
+      medicalPeople: (person: string, responsible: string) => `${person} · řeší ${responsible}`,
+      responsiblePeople: (person: string, responsible: string) => `${person} · řeší ${responsible}`,
+      mealResponsible: (name: string) => `Připraví ${name}`,
+      mealUnassigned: 'Příprava zatím není přiřazená',
+      personUnassigned: 'Osoba zatím není přiřazená',
+      attentionChoreReason: (date: string) => `Úkol je po termínu · ${date}`,
+      attentionPaymentReason: (date: string) => `Platba je po termínu · ${date}`,
+      attentionMedicalReason: (date: string) => `Zdravotní termín je po termínu · ${date}`,
+      attentionVoteReason: 'Otevřené hlasování čeká na odpověď',
+      attentionVoteAction: 'Vyberte své preference',
+      resolveAction: 'Vyřešit',
     },
     planner: {
       title: 'Plánovat',
@@ -132,6 +160,21 @@ export const strings = {
       mealsNone: 'Žádné naplánované jídlo',
       mealsVoting: (count: number) => `Otevřená hlasování: ${count}`,
       openArea: (area: string) => `Otevřít ${area}`,
+    },
+    create: {
+      title: 'Co chcete naplánovat?',
+      intro: 'Vyberte typ rodinné položky.',
+      addAction: 'Přidat',
+      addThisDayAction: 'Přidat na tento den',
+      backToTypes: 'Změnit typ',
+      choreTitle: 'Úkol',
+      choreDescription: 'Domácí úkol, termín a případná odměna.',
+      activityTitle: 'Aktivita',
+      activityDescription: 'Kroužek, jednorázová nebo opakovaná aktivita.',
+      medicalTitle: 'Zdraví',
+      medicalDescription: 'Návštěva lékaře, kontrola nebo očkování.',
+      mealTitle: 'Jídlo',
+      mealDescription: 'Položka společného jídelního plánu.',
     },
     loading: {
       session: 'Načítám...',
@@ -728,6 +771,32 @@ export const strings = {
       noMealsToday: 'Nothing planned for today.',
       planTodayAction: 'Plan today',
       seeMealPlanAction: 'View meal plan',
+      attentionTitle: 'Needs attention',
+      otherAttentionTitle: 'More to resolve',
+      programTitle: "Today's schedule",
+      programEmpty: 'Nothing is planned for today',
+      programEmptyBody: 'Add a chore, activity, health visit, or meal.',
+      itemsSummary: (count: number) =>
+        count === 0
+          ? 'You have no planned items today.'
+          : count === 1
+            ? 'You have 1 thing today.'
+            : `You have ${count} things today.`,
+      optionalSetupTitle: 'Would you like to add a child?',
+      optionalSetupBody: 'You can use Rodinka without children. Add a child as another family member at any time.',
+      choreAssignee: (name: string) => `Assigned to ${name}`,
+      activityPeople: (person: string, responsible: string) => `${person} · accompanied by ${responsible}`,
+      medicalPeople: (person: string, responsible: string) => `${person} · handled by ${responsible}`,
+      responsiblePeople: (person: string, responsible: string) => `${person} · handled by ${responsible}`,
+      mealResponsible: (name: string) => `Prepared by ${name}`,
+      mealUnassigned: 'Preparation is not assigned yet',
+      personUnassigned: 'No person assigned yet',
+      attentionChoreReason: (date: string) => `Chore is overdue · ${date}`,
+      attentionPaymentReason: (date: string) => `Payment is overdue · ${date}`,
+      attentionMedicalReason: (date: string) => `Health date is overdue · ${date}`,
+      attentionVoteReason: 'An open vote is waiting for a response',
+      attentionVoteAction: 'Choose your preferences',
+      resolveAction: 'Resolve',
     },
     planner: {
       title: 'Plan',
@@ -756,6 +825,21 @@ export const strings = {
       mealsNone: 'No meal planned',
       mealsVoting: (count: number) => `Open votes: ${count}`,
       openArea: (area: string) => `Open ${area}`,
+    },
+    create: {
+      title: 'What would you like to plan?',
+      intro: 'Choose a family item type.',
+      addAction: 'Add',
+      addThisDayAction: 'Add to this day',
+      backToTypes: 'Change type',
+      choreTitle: 'Chore',
+      choreDescription: 'A household chore, due date, and optional reward.',
+      activityTitle: 'Activity',
+      activityDescription: 'A club, one-off, or recurring activity.',
+      medicalTitle: 'Health',
+      medicalDescription: 'A doctor visit, checkup, or vaccination.',
+      mealTitle: 'Meal',
+      mealDescription: 'An item in the shared meal plan.',
     },
     loading: {
       session: 'Loading...',

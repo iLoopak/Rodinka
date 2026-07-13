@@ -70,7 +70,9 @@ export function Link({ to, hash, children, onClick, ...rest }: LinkProps) {
         onClick?.(e)
         if (e.defaultPrevented) return
         e.preventDefault()
-        if (hash) window.history.replaceState(null, '', href)
+        if (hash && (window.location.pathname !== to || window.location.hash !== hash)) {
+          window.history.pushState(null, '', href)
+        }
         navigate(to)
       }}
       {...rest}

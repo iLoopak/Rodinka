@@ -2,7 +2,7 @@ import { t } from '../strings'
 import type { Chore } from '../hooks/useChores'
 import type { Activity } from '../hooks/useActivities'
 import type { MedicalRecord } from '../hooks/useMedicalRecords'
-import type { MealPlanEntry } from '../hooks/useMealPlanEntries'
+import type { MealPlanEntry, MealSlot } from '../hooks/useMealPlanEntries'
 import type { CalendarItemType } from './itemTypeStyle'
 import { classifyDueDate, compareISODates, todayISODate, type DueUrgency } from './dueDate'
 import { expandActivitiesOccurrences } from './recurrence'
@@ -23,6 +23,8 @@ export interface CalendarEntry {
   /** What kind of source record this was derived from, for navigation. */
   sourceType: 'chore' | 'activity' | 'activity_payment' | 'medical' | 'medical_due' | 'meal'
   sourceId: string
+  /** Meal-plan ordering metadata; present only for projected meals. */
+  mealSlot?: MealSlot
 }
 
 function withinRange(date: string, rangeStart: string, rangeEnd: string): boolean {
@@ -167,6 +169,7 @@ export function buildCalendarEntries({
       recurring: false,
       sourceType: 'meal',
       sourceId: entry.id,
+      mealSlot: entry.meal_slot,
     })
   }
 

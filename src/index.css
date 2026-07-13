@@ -283,6 +283,7 @@ main {
 
 .screen-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -299,6 +300,21 @@ main {
   padding: 8px 16px;
   font-size: 0.9rem;
   white-space: nowrap;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-icon-button {
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px;
+  font-size: 1.35rem;
+  line-height: 1;
 }
 
 .home-title {
@@ -398,6 +414,159 @@ main {
   font-weight: 500;
   margin: 0;
 }
+
+/* ------------------------------------------------------------------ */
+/* Today agenda                                                         */
+/* ------------------------------------------------------------------ */
+
+.today-date {
+  margin: 6px 0 0;
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.today-summary {
+  margin: 2px 0 0;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+}
+
+.today-attention-section > h2,
+.today-program-section > h2 {
+  margin-bottom: 12px;
+}
+
+.today-attention-group + .today-attention-group {
+  margin-top: 16px;
+}
+
+.today-section-subheading {
+  margin-bottom: 8px;
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.today-agenda-list,
+.today-attention-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.today-agenda-item {
+  display: grid;
+  grid-template-columns: minmax(48px, auto) auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 68px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-row);
+  background: var(--canvas);
+}
+
+.today-agenda-when {
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.today-agenda-icon,
+.today-attention-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.today-agenda-copy,
+.today-attention-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.today-agenda-title,
+.today-attention-title {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.today-agenda-type {
+  color: var(--ink-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.today-agenda-people,
+.today-attention-people,
+.today-attention-reason {
+  overflow-wrap: anywhere;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.today-agenda-chevron {
+  color: var(--ink-muted);
+  font-size: 1.3rem;
+}
+
+.today-attention-list > li {
+  min-width: 0;
+}
+
+.today-attention-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 68px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-row);
+  background: var(--canvas);
+  color: inherit;
+  text-decoration: none;
+}
+
+.today-attention-link:hover {
+  border-color: var(--coral-light);
+}
+
+.today-attention-copy {
+  flex: 1;
+}
+
+.today-attention-action {
+  flex: 0 0 auto;
+  color: var(--brick);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.today-setup-card p {
+  color: var(--ink-muted);
+}
+
+.detail-view .row-meta svg {
+  display: inline-block;
+  vertical-align: -3px;
+  margin-right: 4px;
+}
+
 
 /* ------------------------------------------------------------------ */
 /* Badges                                                               */
@@ -803,6 +972,94 @@ details.manage .add-child-form + .add-chore-form {
   font-size: 0.85rem;
 }
 
+.modal-back-action {
+  min-height: 44px;
+  margin: -6px 0 14px;
+  padding: 8px 2px;
+  background: transparent;
+  color: var(--brick);
+  font-size: 0.85rem;
+}
+
+.modal-back-action:hover:not(:disabled) {
+  background: transparent;
+  color: var(--brick-dark);
+}
+
+.modal-primary-action {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.create-type-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.create-type-intro {
+  margin-bottom: 2px;
+  color: var(--ink-muted);
+}
+
+.create-type-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+}
+
+.create-type-option:hover:not(:disabled) {
+  border-color: var(--coral-light);
+  background: var(--canvas);
+}
+
+.create-type-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--canvas);
+}
+
+.create-type-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.create-type-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.create-type-title {
+  font-weight: 700;
+}
+
+.create-type-description {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.create-type-chevron {
+  flex: 0 0 auto;
+  color: var(--ink-muted);
+  font-size: 1.4rem;
+}
+
 /* ------------------------------------------------------------------ */
 /* Empty / error states                                                 */
 /* ------------------------------------------------------------------ */
@@ -926,6 +1183,8 @@ details.manage .add-child-form + .add-chore-form {
   font-weight: 700;
   line-height: 1.3;
   text-decoration: none;
+  text-align: left;
+  width: 100%;
 }
 
 .planner-quick-action:hover {

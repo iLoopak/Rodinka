@@ -21,17 +21,18 @@ interface Props {
   members: FamilyMember[]
   currentMemberId: string
   initial?: MedicalRecord
+  initialRecordDate?: string
   onSubmit: (input: MedicalRecordInput) => Promise<void>
 }
 
-export function AddMedicalRecordForm({ members, currentMemberId, initial, onSubmit }: Props) {
+export function AddMedicalRecordForm({ members, currentMemberId, initial, initialRecordDate, onSubmit }: Props) {
   const [patientId, setPatientId] = useState(initial?.patient_id ?? members[0]?.id ?? currentMemberId)
   const [responsibleMemberId, setResponsibleMemberId] = useState(initial?.responsible_member_id ?? '')
   const [recordType, setRecordType] = useState<MedicalRecordType>(initial?.record_type ?? 'checkup')
   const [title, setTitle] = useState(initial?.title ?? '')
   const [provider, setProvider] = useState(initial?.provider ?? '')
   const [location, setLocation] = useState(initial?.location ?? '')
-  const [recordDate, setRecordDate] = useState(initial?.record_date ?? todayISODate())
+  const [recordDate, setRecordDate] = useState(initial?.record_date ?? initialRecordDate ?? todayISODate())
   const [startTime, setStartTime] = useState(initial?.start_time ?? '')
   const [endTime, setEndTime] = useState(initial?.end_time ?? '')
   const [status, setStatus] = useState<MedicalStatus>(initial?.status ?? 'planned')
