@@ -1,50 +1,64 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { t } from '../strings'
+import { todayISODate } from '../utils/dueDate'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
 
 interface Props {
-  kids: FamilyMember[]
+  members: FamilyMember[]
+  currentMemberId: string
   onSubmit: (input: {
     title: string
     description: string
     assignedTo: string
+    dueDate: string
     rewardAmount: number
     recurring: boolean
   }) => Promise<void>
 }
 
-export function AddChoreForm({ kids, onSubmit }: Props) {
+export function AddChoreForm({ members, currentMemberId, onSubmit }: Props) {
+  const kids = useMemo(() => members.filter((m) => m.role === 'child'), [members])
+  const defaultAssignee = kids[0]?.id ?? currentMemberId
+
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [assignedTo, setAssignedTo] = useState(kids[0]?.id ?? '')
+  const [assignedTo, setAssignedTo] = useState(defaultAssignee)
+  const [dueDate, setDueDate] = useState(todayISODate())
   const [rewardAmount, setRewardAmount] = useState('')
   const [recurring, setRecurring] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  if (kids.length === 0) {
-    return (
-      <div className="add-chore-form">
-        <h3>{t.chores.addTitle}</h3>
-        <p>{t.chores.noMembers}</p>
-      </div>
-    )
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true)
     setError(null)
+
+    // Explicit validation rather than a silent fallback: an empty or
+    // stale (no-longer-existing) assignee id must block submission, not
+    // quietly default to whichever member happens to be first.
+    if (!assignedTo || !members.some((m) => m.id === assignedTo)) {
+      setError(t.chores.errors.assigneeRequired)
+      return
+    }
+    if (!dueDate) {
+      setError(t.chores.errors.dueDateRequired)
+      return
+    }
+
+    setLoading(true)
     try {
       await onSubmit({
         title,
         description,
-        assignedTo: assignedTo || kids[0].id,
+        assignedTo,
+        dueDate,
         rewardAmount: Number(rewardAmount) || 0,
         recurring,
       })
       setTitle('')
       setDescription('')
+      setAssignedTo(defaultAssignee)
+      setDueDate(todayISODate())
       setRewardAmount('')
       setRecurring(false)
     } catch (err) {
@@ -77,13 +91,22 @@ export function AddChoreForm({ kids, onSubmit }: Props) {
         </label>
         <label>
           {t.chores.assignedToLabel}
-          <select value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
-            {kids.map((kid) => (
-              <option key={kid.id} value={kid.id}>
-                {kid.display_name}
+          <select required value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.display_name}
               </option>
             ))}
           </select>
+        </label>
+        <label>
+          {t.chores.dueDateLabel}
+          <input
+            required
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+          />
         </label>
         <label>
           {t.chores.rewardAmountLabel}

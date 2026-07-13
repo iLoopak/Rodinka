@@ -14,7 +14,7 @@ export function TodayDashboard() {
     currentMember,
     kids,
     chores,
-    actionableChores,
+    todaysChores,
     pendingCompletions,
     balances,
     memberName,
@@ -101,11 +101,11 @@ export function TodayDashboard() {
 
       <section className="section">
         <h2>{t.today.choresTitle}</h2>
-        {actionableChores.length === 0 ? (
+        {todaysChores.length === 0 ? (
           <p className="empty-state">{t.today.choresEmpty}</p>
         ) : (
           <ChoreList
-            chores={actionableChores}
+            chores={todaysChores}
             memberName={memberName}
             latestCompletionFor={latestCompletionFor}
             onMarkDone={markDone}

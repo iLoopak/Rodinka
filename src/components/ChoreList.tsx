@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { t } from '../strings'
 import type { Chore } from '../hooks/useChores'
 import type { ChoreCompletion } from '../hooks/useChoreCompletions'
+import { classifyDueDate, formatDueDateLabel } from '../utils/dueDate'
 
 interface Props {
   chores: Chore[]
@@ -38,6 +39,8 @@ export function ChoreList({ chores, memberName, latestCompletionFor, onMarkDone 
           const latest = latestCompletionFor(chore.id)
           const isPending = latest?.status === 'pending_approval'
           const isDone = !chore.recurring && latest?.status === 'approved'
+          const dueUrgency = classifyDueDate(chore.due_date)
+          const dueLabel = formatDueDateLabel(chore.due_date)
 
           return (
             <li key={chore.id}>
@@ -45,6 +48,11 @@ export function ChoreList({ chores, memberName, latestCompletionFor, onMarkDone 
               <span className="row-meta">{memberName(chore.assigned_to)}</span>
               {chore.description && <p className="row-description">{chore.description}</p>}
               <span className="row-spacer" />
+              {dueUrgency === 'overdue' ? (
+                <span className="badge badge-overdue">{dueLabel}</span>
+              ) : (
+                <span className="row-meta">{dueLabel}</span>
+              )}
               <span className="row-amount">{t.chores.formatAmount(chore.reward_amount)}</span>
               {isPending && <span className="badge badge-pending">{t.chores.pendingBadge}</span>}
               {isDone && <span className="badge badge-done">{t.chores.doneBadge}</span>}
