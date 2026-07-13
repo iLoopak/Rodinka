@@ -7,6 +7,7 @@ export type Lang = 'cs' | 'en'
 export const strings = {
   cs: {
     appName: 'Rodinka',
+    claim: 'Ať doma všechno klape.',
     login: {
       title: 'Rodinka',
       subtitle: 'Zadejte svůj e-mail pro přihlášení — bez hesla.',
@@ -38,15 +39,20 @@ export const strings = {
     },
     dashboard: {
       signOut: 'Odhlásit se',
-      welcome: (name: string, role: string) => `Vítejte, ${name} (${role}).`,
-      placeholder: 'Zde budou brzy moduly rodinného dashboardu.',
+    },
+    home: {
+      title: 'Dnes u nás',
+      welcome: (name: string) => `Vítejte, ${name}.`,
+      needsAttention: 'Je potřeba zařídit',
+      thisWeek: 'Tento týden',
+      howWeAreDoing: 'Jak jsme na tom',
+      manage: 'Spravovat',
     },
     loading: {
       session: 'Načítám...',
       family: 'Načítám vaši rodinu...',
     },
     chores: {
-      sectionTitle: 'Úkoly',
       addChildTitle: 'Přidat dítě',
       childNameLabel: 'Jméno dítěte',
       childNamePlaceholder: 'např. Anička',
@@ -68,14 +74,11 @@ export const strings = {
       markingDone: 'Ukládám...',
       pendingBadge: 'Čeká na schválení',
       doneBadge: 'Hotovo',
-      approvalsTitle: 'Ke schválení',
-      noApprovals: 'Nic nečeká na schválení.',
       approve: 'Schválit',
       reject: 'Zamítnout',
       approving: 'Schvaluji...',
       rejecting: 'Zamítám...',
       completedBy: (name: string) => `Splnil(a): ${name}`,
-      balancesTitle: 'Kapesné',
       balanceLabel: (name: string, amount: string) => `${name}: ${amount}`,
       payoutButton: 'Vyplatit',
       payoutTitle: 'Zaznamenat výplatu',
@@ -89,6 +92,7 @@ export const strings = {
   },
   en: {
     appName: 'Rodinka',
+    claim: 'Keep the household running smoothly.',
     login: {
       title: 'Rodinka',
       subtitle: 'Enter your email to sign in — no password needed.',
@@ -120,15 +124,20 @@ export const strings = {
     },
     dashboard: {
       signOut: 'Sign out',
-      welcome: (name: string, role: string) => `Welcome, ${name} (${role}).`,
-      placeholder: 'Family dashboard modules go here next.',
+    },
+    home: {
+      title: 'Today at our place',
+      welcome: (name: string) => `Welcome, ${name}.`,
+      needsAttention: 'Needs attention',
+      thisWeek: 'This week',
+      howWeAreDoing: "How we're doing",
+      manage: 'Manage',
     },
     loading: {
       session: 'Loading...',
       family: 'Loading your family...',
     },
     chores: {
-      sectionTitle: 'Chores',
       addChildTitle: 'Add a child',
       childNameLabel: "Child's name",
       childNamePlaceholder: 'e.g. Alex',
@@ -150,14 +159,11 @@ export const strings = {
       markingDone: 'Saving...',
       pendingBadge: 'Pending approval',
       doneBadge: 'Done',
-      approvalsTitle: 'Pending approvals',
-      noApprovals: 'Nothing waiting for approval.',
       approve: 'Approve',
       reject: 'Reject',
       approving: 'Approving...',
       rejecting: 'Rejecting...',
       completedBy: (name: string) => `Completed by: ${name}`,
-      balancesTitle: 'Allowance',
       balanceLabel: (name: string, amount: string) => `${name}: ${amount}`,
       payoutButton: 'Pay out',
       payoutTitle: 'Record a payout',

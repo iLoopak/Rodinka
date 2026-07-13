@@ -27,13 +27,13 @@ export function ChoreList({ chores, memberName, latestCompletionFor, onMarkDone 
   }
 
   if (chores.length === 0) {
-    return <p>{t.chores.noChores}</p>
+    return <p className="empty-state">{t.chores.noChores}</p>
   }
 
   return (
-    <div className="chore-list">
+    <div>
       {error && <p className="error">{error}</p>}
-      <ul>
+      <ul className="section-list">
         {chores.map((chore) => {
           const latest = latestCompletionFor(chore.id)
           const isPending = latest?.status === 'pending_approval'
@@ -41,11 +41,13 @@ export function ChoreList({ chores, memberName, latestCompletionFor, onMarkDone 
 
           return (
             <li key={chore.id}>
-              <strong>{chore.title}</strong> — {memberName(chore.assigned_to)}
-              {chore.description && <p>{chore.description}</p>}
-              <span> {t.chores.formatAmount(chore.reward_amount)}</span>
-              {isPending && <span className="badge">{t.chores.pendingBadge}</span>}
-              {isDone && <span className="badge">{t.chores.doneBadge}</span>}
+              <span className="row-title">{chore.title}</span>
+              <span className="row-meta">{memberName(chore.assigned_to)}</span>
+              {chore.description && <p className="row-description">{chore.description}</p>}
+              <span className="row-spacer" />
+              <span className="row-amount">{t.chores.formatAmount(chore.reward_amount)}</span>
+              {isPending && <span className="badge badge-pending">{t.chores.pendingBadge}</span>}
+              {isDone && <span className="badge badge-done">{t.chores.doneBadge}</span>}
               {!isPending && !isDone && (
                 <button onClick={() => handleMarkDone(chore)} disabled={markingId === chore.id}>
                   {markingId === chore.id ? t.chores.markingDone : t.chores.markDone}

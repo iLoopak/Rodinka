@@ -1,0 +1,485 @@
+:root {
+  --ink: #26323a;
+  --ink-muted: #5c6b73;
+  --canvas: #fff8f2;
+  --paper: #ffffff;
+  --border: #e8ded4;
+  --brick: #b94742;
+  --brick-dark: #97302b;
+  --coral: #e96c62;
+  --coral-light: #f2a99f;
+
+  --accent-sky: #6f9ed6;
+  --accent-sage: #76a98b;
+  --accent-honey: #e8b84b;
+  --accent-lavender: #9683c4;
+  --accent-berry: #c45d70;
+
+  --radius-card: 18px;
+  --radius-row: 14px;
+  --radius-button: 15px;
+  --radius-input: 12px;
+  --shadow-card: 0 1px 2px rgba(38, 50, 58, 0.05);
+  --shadow-float: 0 12px 32px rgba(38, 50, 58, 0.08);
+  --font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  font-weight: 500;
+  background: var(--canvas);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 700;
+  margin: 0 0 4px;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: 1.5rem;
+}
+h2 {
+  font-size: 1.25rem;
+}
+h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+p {
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ */
+/* Buttons                                                             */
+/* ------------------------------------------------------------------ */
+
+button {
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #fff;
+  background: var(--brick);
+  border: none;
+  border-radius: var(--radius-button);
+  min-height: 48px;
+  padding: 12px 22px;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    opacity 160ms ease,
+    background 160ms ease;
+}
+
+button:hover:not(:disabled) {
+  background: var(--brick-dark);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.btn-secondary {
+  background: var(--paper);
+  color: var(--ink);
+  border: 1.5px solid var(--border);
+}
+
+button.btn-secondary:hover:not(:disabled) {
+  background: var(--canvas);
+}
+
+button.link {
+  background: transparent;
+  color: var(--brick);
+  min-height: auto;
+  padding: 6px 2px;
+}
+
+button.link:hover:not(:disabled) {
+  background: transparent;
+  text-decoration: underline;
+}
+
+/* ------------------------------------------------------------------ */
+/* Forms                                                                */
+/* ------------------------------------------------------------------ */
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  margin-bottom: 14px;
+}
+
+label.checkbox-label {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-input);
+  padding: 11px 14px;
+  width: 100%;
+}
+
+input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brick);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--brick);
+}
+
+/* ------------------------------------------------------------------ */
+/* Layout                                                               */
+/* ------------------------------------------------------------------ */
+
+.app-shell {
+  max-width: 640px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 8px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wordmark {
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+main {
+  padding: 8px 20px 48px;
+  flex: 1;
+}
+
+.home-header {
+  margin-bottom: 20px;
+}
+
+.home-title {
+  font-size: 1.5rem;
+}
+
+.home-subtitle {
+  color: var(--ink-muted);
+  font-weight: 500;
+  margin: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Cards & sections                                                     */
+/* ------------------------------------------------------------------ */
+
+.card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.section {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-left: 4px solid transparent;
+  border-radius: var(--radius-card);
+  padding: 18px;
+  margin-bottom: 16px;
+  animation: rise 220ms ease both;
+}
+
+.section.accent-coral {
+  border-left-color: var(--coral);
+}
+.section.accent-sage {
+  border-left-color: var(--accent-sage);
+}
+.section.accent-lavender {
+  border-left-color: var(--accent-lavender);
+}
+
+.section-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.section-list li {
+  background: var(--canvas);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-row);
+  padding: 12px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  animation: rise 200ms ease both;
+}
+
+.section-list .row-title {
+  font-weight: 600;
+}
+
+.section-list .row-meta {
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+}
+
+.section-list .row-amount {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.section-list .row-spacer {
+  flex: 1;
+}
+
+.section-list .row-description {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+}
+
+.section-list li form {
+  width: 100%;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+
+.section-list li form h4 {
+  margin-bottom: 10px;
+}
+
+.section-list li form button {
+  margin-right: 8px;
+}
+
+.empty-state {
+  color: var(--ink-muted);
+  font-weight: 500;
+  margin: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Badges                                                               */
+/* ------------------------------------------------------------------ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.badge-pending {
+  background: rgba(232, 184, 75, 0.2);
+  color: #8a6516;
+}
+
+.badge-done {
+  background: rgba(118, 169, 139, 0.2);
+  color: #3f6b53;
+}
+
+/* ------------------------------------------------------------------ */
+/* Manage disclosure                                                    */
+/* ------------------------------------------------------------------ */
+
+details.manage {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+
+details.manage summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1.05rem;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+details.manage summary::-webkit-details-marker {
+  display: none;
+}
+
+details.manage summary::before {
+  content: '+';
+  color: var(--brick);
+  font-weight: 700;
+  width: 18px;
+  text-align: center;
+}
+
+details.manage[open] summary::before {
+  content: '\2013';
+}
+
+details.manage[open] summary {
+  margin-bottom: 14px;
+}
+
+details.manage .add-child-form + .add-chore-form {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+/* ------------------------------------------------------------------ */
+/* Auth / onboarding                                                    */
+/* ------------------------------------------------------------------ */
+
+.auth-screen {
+  max-width: 380px;
+  margin: 8vh auto 0;
+  padding: 32px 26px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  box-shadow: var(--shadow-float);
+  text-align: center;
+  animation: rise 260ms ease both;
+}
+
+.auth-screen .brand-lockup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.auth-screen .claim {
+  color: var(--ink-muted);
+  font-weight: 500;
+  font-size: 0.9rem;
+  margin: -2px 0 18px;
+}
+
+.auth-screen form {
+  text-align: left;
+  margin-top: 18px;
+}
+
+.auth-screen > button {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Misc                                                                 */
+/* ------------------------------------------------------------------ */
+
+.error {
+  color: var(--accent-berry);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.loading {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+  }
+}
