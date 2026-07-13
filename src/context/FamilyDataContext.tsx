@@ -30,6 +30,10 @@ import {
 } from '../hooks/useMedicalRecords'
 import { getChoreState } from '../utils/choreState'
 import { compareChoresByDueDate, isDueTodayOrEarlier } from '../utils/dueDate'
+import { useMealsData, type MealInput, type PlanEntryInput, type VoteRoundInput } from './useMealsData'
+import type { Meal } from '../hooks/useMeals'
+import type { MealVoteRound, VoteValue } from '../hooks/useMealVoteRounds'
+import type { MealPlanEntry } from '../hooks/useMealPlanEntries'
 
 export interface ActivityInput {
   title: string
@@ -152,6 +156,9 @@ interface FamilyDataContextValue {
   todaysChores: Chore[]
   activities: Activity[]
   medicalRecords: MedicalRecord[]
+  meals: Meal[]
+  voteRounds: MealVoteRound[]
+  planEntries: MealPlanEntry[]
   balances: Map<string, number>
   memberName: (id: string) => string
   latestCompletionFor: (choreId: string) => ChoreCompletion | null
@@ -175,6 +182,17 @@ interface FamilyDataContextValue {
   updateActivity: (id: string, input: ActivityInput) => Promise<void>
   addMedicalRecord: (input: MedicalRecordInput) => Promise<void>
   updateMedicalRecord: (id: string, input: MedicalRecordInput) => Promise<void>
+  addMeal: (input: MealInput) => Promise<void>
+  updateMeal: (id: string, input: MealInput) => Promise<void>
+  createVoteRound: (input: VoteRoundInput, openImmediately: boolean) => Promise<string>
+  addCandidatesToRound: (roundId: string, mealIds: string[]) => Promise<void>
+  openRound: (roundId: string) => Promise<void>
+  closeRound: (roundId: string) => Promise<void>
+  castVote: (candidateId: string, memberId: string, value: VoteValue) => Promise<void>
+  addPlanEntry: (input: PlanEntryInput) => Promise<void>
+  updatePlanEntry: (id: string, input: PlanEntryInput) => Promise<void>
+  deletePlanEntry: (id: string) => Promise<void>
+  copyWeek: (fromWeekStart: string, toWeekStart: string) => Promise<void>
   refreshAll: () => Promise<void>
 }
 
@@ -233,6 +251,25 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     error: medicalError,
     refresh: refreshMedicalRecords,
   } = useMedicalRecords(familyId)
+  const {
+    meals,
+    voteRounds,
+    planEntries,
+    loading: mealsDataLoading,
+    error: mealsDataError,
+    refreshMealsData,
+    addMeal,
+    updateMeal,
+    createVoteRound,
+    addCandidatesToRound,
+    openRound,
+    closeRound,
+    castVote,
+    addPlanEntry,
+    updatePlanEntry,
+    deletePlanEntry,
+    copyWeek,
+  } = useMealsData(familyId, userId)
 
   const [familyName, setFamilyName] = useState<string | null>(null)
   const [familyNameError, setFamilyNameError] = useState<string | null>(null)
@@ -297,7 +334,13 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
   )
 
   const loading =
-    membersLoading || choresLoading || completionsLoading || ledgerLoading || activitiesLoading || medicalLoading
+    membersLoading ||
+    choresLoading ||
+    completionsLoading ||
+    ledgerLoading ||
+    activitiesLoading ||
+    medicalLoading ||
+    mealsDataLoading
   const error =
     membersError ||
     choresError ||
@@ -305,7 +348,8 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     ledgerError ||
     familyNameError ||
     activitiesError ||
-    medicalError
+    medicalError ||
+    mealsDataError
 
   const refreshAll = useCallback(async () => {
     await Promise.all([
@@ -316,6 +360,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
       refreshFamilyName(),
       refreshActivities(),
       refreshMedicalRecords(),
+      refreshMealsData(),
     ])
   }, [
     refreshMembers,
@@ -325,6 +370,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     refreshFamilyName,
     refreshActivities,
     refreshMedicalRecords,
+    refreshMealsData,
   ])
 
   const addChild = useCallback(
@@ -474,6 +520,9 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     todaysChores,
     activities,
     medicalRecords,
+    meals,
+    voteRounds,
+    planEntries,
     balances,
     memberName,
     latestCompletionFor,
@@ -490,6 +539,17 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     updateActivity,
     addMedicalRecord,
     updateMedicalRecord,
+    addMeal,
+    updateMeal,
+    createVoteRound,
+    addCandidatesToRound,
+    openRound,
+    closeRound,
+    castVote,
+    addPlanEntry,
+    updatePlanEntry,
+    deletePlanEntry,
+    copyWeek,
     refreshAll,
   }
 
