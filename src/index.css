@@ -259,27 +259,10 @@ main {
 .section {
   background: var(--paper);
   border: 1px solid var(--border);
-  border-left: 4px solid transparent;
   border-radius: var(--radius-card);
   padding: 18px;
   margin-bottom: 16px;
   animation: rise 220ms ease both;
-}
-
-.section.accent-coral {
-  border-left-color: var(--coral);
-}
-.section.accent-sage {
-  border-left-color: var(--accent-sage);
-}
-.section.accent-lavender {
-  border-left-color: var(--accent-lavender);
-}
-.section.accent-sky {
-  border-left-color: var(--accent-sky);
-}
-.section.accent-honey {
-  border-left-color: var(--accent-honey);
 }
 
 .section-list {
