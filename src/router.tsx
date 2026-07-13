@@ -12,7 +12,7 @@ import {
 // No dependency needed: pushState/popstate covers back/forward, no-reload
 // navigation, and reading window.location on mount covers direct refresh.
 
-export const ROUTES = ['/', '/chores', '/family', '/more'] as const
+export const ROUTES = ['/', '/calendar', '/chores', '/activities', '/health', '/family', '/more'] as const
 export type Route = (typeof ROUTES)[number]
 
 function normalize(pathname: string): Route {

@@ -6,6 +6,9 @@ import { ChoreList } from './ChoreList'
 import { PendingApprovals } from './PendingApprovals'
 import { EmptyState } from './ui/EmptyState'
 import { ErrorState } from './ui/ErrorState'
+import { formatDueDateLabel, todayISODate } from '../utils/dueDate'
+import { nextOccurrenceDate } from '../utils/recurrence'
+import { isMedicalRecordOverdue } from '../utils/medicalDueState'
 
 const PENDING_PREVIEW_COUNT = 3
 
@@ -15,6 +18,8 @@ export function TodayDashboard() {
     kids,
     chores,
     todaysChores,
+    activities,
+    medicalRecords,
     pendingCompletions,
     balances,
     memberName,
@@ -36,7 +41,7 @@ export function TodayDashboard() {
     return <ErrorState message={error} onRetry={refreshAll} />
   }
 
-  function goTo(path: '/chores' | '/family', hash?: string) {
+  function goTo(path: '/chores' | '/family' | '/calendar', hash?: string) {
     return (e: MouseEvent) => {
       e.preventDefault()
       if (hash) window.history.replaceState(null, '', `${path}${hash}`)
@@ -76,6 +81,25 @@ export function TodayDashboard() {
 
   const pendingPreview = pendingCompletions.slice(0, PENDING_PREVIEW_COUNT)
   const pendingRemaining = pendingCompletions.length - pendingPreview.length
+
+  const today = todayISODate()
+
+  let nextActivity: { title: string; date: string } | null = null
+  for (const activity of activities) {
+    if (activity.status !== 'active') continue
+    const date = nextOccurrenceDate(activity, today)
+    if (date && (!nextActivity || date < nextActivity.date)) {
+      nextActivity = { title: activity.title, date }
+    }
+  }
+
+  const nextMedical = medicalRecords
+    .filter((r) => r.status === 'planned' && r.record_date >= today)
+    .sort((a, b) => (a.record_date < b.record_date ? -1 : 1))[0]
+
+  const overdueCount =
+    activities.filter((a) => a.status !== 'finished' && a.next_payment_due_date && a.next_payment_due_date < today)
+      .length + medicalRecords.filter((r) => isMedicalRecordOverdue(r, today)).length
 
   return (
     <>
@@ -126,6 +150,36 @@ export function TodayDashboard() {
         </ul>
         <a className="link section-footer-link" href="/chores" onClick={goTo('/chores', '#allowance')}>
           {t.today.allowanceSeeAll}
+        </a>
+      </section>
+
+      <section className="section">
+        <h2>{t.calendar.title}</h2>
+        <ul className="section-list plain-list">
+          <li>
+            <span className="row-meta">{t.today.nextActivityTitle}</span>
+            <span className="row-spacer" />
+            <span className="row-title">
+              {nextActivity ? `${nextActivity.title} · ${formatDueDateLabel(nextActivity.date, today)}` : t.today.nextActivityEmpty}
+            </span>
+          </li>
+          <li>
+            <span className="row-meta">{t.today.nextMedicalTitle}</span>
+            <span className="row-spacer" />
+            <span className="row-title">
+              {nextMedical ? `${nextMedical.title} · ${formatDueDateLabel(nextMedical.record_date, today)}` : t.today.nextMedicalEmpty}
+            </span>
+          </li>
+          {overdueCount > 0 && (
+            <li>
+              <span className="row-meta">{t.today.overduePaymentsTitle}</span>
+              <span className="row-spacer" />
+              <span className="badge badge-overdue">{overdueCount}</span>
+            </li>
+          )}
+        </ul>
+        <a className="link section-footer-link" href="/calendar" onClick={goTo('/calendar')}>
+          {t.today.seeCalendar}
         </a>
       </section>
     </>
