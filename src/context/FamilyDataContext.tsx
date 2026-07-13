@@ -14,8 +14,124 @@ import { useFamilyMembers, type FamilyMember } from '../hooks/useFamilyMembers'
 import { useChores, type Chore } from '../hooks/useChores'
 import { useChoreCompletions, type ChoreCompletion } from '../hooks/useChoreCompletions'
 import { useAllowanceLedger } from '../hooks/useAllowanceLedger'
+import {
+  useActivities,
+  type Activity,
+  type ActivityCategory,
+  type ActivityPaymentFrequency,
+  type ActivityRecurrenceType,
+  type ActivityStatus,
+} from '../hooks/useActivities'
+import {
+  useMedicalRecords,
+  type MedicalRecord,
+  type MedicalRecordType,
+  type MedicalStatus,
+} from '../hooks/useMedicalRecords'
 import { getChoreState } from '../utils/choreState'
 import { compareChoresByDueDate, isDueTodayOrEarlier } from '../utils/dueDate'
+
+export interface ActivityInput {
+  title: string
+  category: ActivityCategory
+  childId: string
+  responsibleMemberId: string | null
+  secondaryResponsibleMemberId: string | null
+  location: string
+  coachName: string
+  coachPhone: string
+  coachEmail: string
+  notes: string
+  skillLevel: string
+  startDate: string
+  endDate: string | null
+  recurrenceType: ActivityRecurrenceType
+  recurrenceWeekdays: number[] | null
+  startTime: string | null
+  endTime: string | null
+  paymentAmount: number | null
+  paymentFrequency: ActivityPaymentFrequency | null
+  nextPaymentDueDate: string | null
+  status: ActivityStatus
+  reminderEnabled: boolean
+  reminderDaysBefore: number | null
+}
+
+function activityInputToRow(input: ActivityInput) {
+  return {
+    title: input.title,
+    category: input.category,
+    child_id: input.childId,
+    responsible_member_id: input.responsibleMemberId,
+    secondary_responsible_member_id: input.secondaryResponsibleMemberId,
+    location: input.location || null,
+    coach_name: input.coachName || null,
+    coach_phone: input.coachPhone || null,
+    coach_email: input.coachEmail || null,
+    notes: input.notes || null,
+    skill_level: input.skillLevel || null,
+    start_date: input.startDate,
+    end_date: input.endDate,
+    recurrence_type: input.recurrenceType,
+    recurrence_weekdays: input.recurrenceWeekdays,
+    start_time: input.startTime,
+    end_time: input.endTime,
+    payment_amount: input.paymentAmount,
+    payment_frequency: input.paymentFrequency,
+    next_payment_due_date: input.nextPaymentDueDate,
+    status: input.status,
+    reminder_enabled: input.reminderEnabled,
+    reminder_days_before: input.reminderDaysBefore,
+  }
+}
+
+export interface MedicalRecordInput {
+  patientId: string
+  responsibleMemberId: string | null
+  recordType: MedicalRecordType
+  title: string
+  provider: string
+  location: string
+  recordDate: string
+  startTime: string | null
+  endTime: string | null
+  status: MedicalStatus
+  notes: string
+  nextDueDate: string | null
+  recurrenceIntervalMonths: number | null
+  reminderEnabled: boolean
+  reminderDaysBefore: number | null
+  vaccineName: string
+  vaccineDoseNumber: number | null
+  vaccineBatchNumber: string
+  vaccineCompletedDate: string | null
+  vaccineNextDoseDate: string | null
+}
+
+function medicalInputToRow(input: MedicalRecordInput) {
+  return {
+    patient_id: input.patientId,
+    responsible_member_id: input.responsibleMemberId,
+    record_type: input.recordType,
+    title: input.title,
+    provider: input.provider || null,
+    location: input.location || null,
+    record_date: input.recordDate,
+    start_time: input.startTime,
+    end_time: input.endTime,
+    status: input.status,
+    notes: input.notes || null,
+    next_due_date: input.nextDueDate,
+    recurrence_interval_months: input.recurrenceIntervalMonths,
+    reminder_enabled: input.reminderEnabled,
+    reminder_days_before: input.reminderDaysBefore,
+    vaccine_name: input.vaccineName || null,
+    vaccine_dose_number: input.vaccineDoseNumber,
+    vaccine_batch_number: input.vaccineBatchNumber || null,
+    vaccine_completed_date: input.vaccineCompletedDate,
+    vaccine_next_dose_date: input.vaccineNextDoseDate,
+  }
+}
 
 // Single shared data layer for Today/Chores/Family so they don't each
 // independently re-fetch members/chores/completions/ledger, and so a
@@ -34,6 +150,8 @@ interface FamilyDataContextValue {
   completions: ChoreCompletion[]
   pendingCompletions: ChoreCompletion[]
   todaysChores: Chore[]
+  activities: Activity[]
+  medicalRecords: MedicalRecord[]
   balances: Map<string, number>
   memberName: (id: string) => string
   latestCompletionFor: (choreId: string) => ChoreCompletion | null
@@ -53,6 +171,10 @@ interface FamilyDataContextValue {
   reject: (completionId: string) => Promise<void>
   payout: (memberId: string, amount: number, reason: string) => Promise<void>
   createInvite: () => Promise<{ code: string; expiresAt: string | null }>
+  addActivity: (input: ActivityInput) => Promise<void>
+  updateActivity: (id: string, input: ActivityInput) => Promise<void>
+  addMedicalRecord: (input: MedicalRecordInput) => Promise<void>
+  updateMedicalRecord: (id: string, input: MedicalRecordInput) => Promise<void>
   refreshAll: () => Promise<void>
 }
 
@@ -99,6 +221,18 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     error: ledgerError,
     refresh: refreshLedger,
   } = useAllowanceLedger(familyId)
+  const {
+    activities,
+    loading: activitiesLoading,
+    error: activitiesError,
+    refresh: refreshActivities,
+  } = useActivities(familyId)
+  const {
+    medicalRecords,
+    loading: medicalLoading,
+    error: medicalError,
+    refresh: refreshMedicalRecords,
+  } = useMedicalRecords(familyId)
 
   const [familyName, setFamilyName] = useState<string | null>(null)
   const [familyNameError, setFamilyNameError] = useState<string | null>(null)
@@ -162,8 +296,16 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     [actionableChores]
   )
 
-  const loading = membersLoading || choresLoading || completionsLoading || ledgerLoading
-  const error = membersError || choresError || completionsError || ledgerError || familyNameError
+  const loading =
+    membersLoading || choresLoading || completionsLoading || ledgerLoading || activitiesLoading || medicalLoading
+  const error =
+    membersError ||
+    choresError ||
+    completionsError ||
+    ledgerError ||
+    familyNameError ||
+    activitiesError ||
+    medicalError
 
   const refreshAll = useCallback(async () => {
     await Promise.all([
@@ -172,8 +314,18 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
       refreshCompletions(),
       refreshLedger(),
       refreshFamilyName(),
+      refreshActivities(),
+      refreshMedicalRecords(),
     ])
-  }, [refreshMembers, refreshChores, refreshCompletions, refreshLedger, refreshFamilyName])
+  }, [
+    refreshMembers,
+    refreshChores,
+    refreshCompletions,
+    refreshLedger,
+    refreshFamilyName,
+    refreshActivities,
+    refreshMedicalRecords,
+  ])
 
   const addChild = useCallback(
     async (displayName: string) => {
@@ -261,6 +413,52 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     return { code: code as string, expiresAt: invite?.expires_at ?? null }
   }, [familyId])
 
+  const addActivity = useCallback(
+    async (input: ActivityInput) => {
+      const { error } = await supabase
+        .from('activities')
+        .insert({ family_id: familyId, created_by: userId, ...activityInputToRow(input) })
+      if (error) throw friendly(error)
+      await refreshActivities()
+    },
+    [familyId, userId, refreshActivities]
+  )
+
+  const updateActivity = useCallback(
+    async (id: string, input: ActivityInput) => {
+      const { error } = await supabase
+        .from('activities')
+        .update({ ...activityInputToRow(input), updated_at: new Date().toISOString() })
+        .eq('id', id)
+      if (error) throw friendly(error)
+      await refreshActivities()
+    },
+    [refreshActivities]
+  )
+
+  const addMedicalRecord = useCallback(
+    async (input: MedicalRecordInput) => {
+      const { error } = await supabase
+        .from('medical_records')
+        .insert({ family_id: familyId, created_by: userId, ...medicalInputToRow(input) })
+      if (error) throw friendly(error)
+      await refreshMedicalRecords()
+    },
+    [familyId, userId, refreshMedicalRecords]
+  )
+
+  const updateMedicalRecord = useCallback(
+    async (id: string, input: MedicalRecordInput) => {
+      const { error } = await supabase
+        .from('medical_records')
+        .update({ ...medicalInputToRow(input), updated_at: new Date().toISOString() })
+        .eq('id', id)
+      if (error) throw friendly(error)
+      await refreshMedicalRecords()
+    },
+    [refreshMedicalRecords]
+  )
+
   const value: FamilyDataContextValue = {
     familyId,
     userId,
@@ -274,6 +472,8 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     completions,
     pendingCompletions,
     todaysChores,
+    activities,
+    medicalRecords,
     balances,
     memberName,
     latestCompletionFor,
@@ -286,6 +486,10 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     reject,
     payout,
     createInvite,
+    addActivity,
+    updateActivity,
+    addMedicalRecord,
+    updateMedicalRecord,
     refreshAll,
   }
 
