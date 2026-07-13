@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildCalendarEntries, groupEntriesForAgenda } from './calendarEntries'
-import { makeActivity, makeChore, makeMedicalRecord } from './testFixtures'
+import { makeActivity, makeChore, makeMealPlanEntry, makeMedicalRecord } from './testFixtures'
 
 const RANGE_START = '2026-07-01'
 const RANGE_END = '2026-07-31'
@@ -119,6 +119,51 @@ describe('buildCalendarEntries — medical records', () => {
     })
     expect(entries.every((e) => e.type === 'vaccination')).toBe(true)
     expect(entries.find((e) => e.sourceType === 'medical_due')?.date).toBe('2026-07-28')
+  })
+})
+
+describe('buildCalendarEntries — meal plan entries', () => {
+  it('projects confirmed and completed entries as the "meal" type', () => {
+    const entries = buildCalendarEntries({
+      chores: [],
+      activities: [],
+      medicalRecords: [],
+      mealPlanEntries: [
+        makeMealPlanEntry({ id: 'a', status: 'confirmed', entry_date: '2026-07-15', title: 'Pizza' }),
+        makeMealPlanEntry({ id: 'b', status: 'completed', entry_date: '2026-07-16', title: 'Soup' }),
+      ],
+      rangeStart: RANGE_START,
+      rangeEnd: RANGE_END,
+    })
+    expect(entries).toHaveLength(2)
+    expect(entries.every((e) => e.type === 'meal' && e.sourceType === 'meal')).toBe(true)
+    expect(entries.map((e) => e.title)).toEqual(['Pizza', 'Soup'])
+  })
+
+  it('excludes proposed and skipped entries to avoid cluttering the calendar', () => {
+    const entries = buildCalendarEntries({
+      chores: [],
+      activities: [],
+      medicalRecords: [],
+      mealPlanEntries: [
+        makeMealPlanEntry({ status: 'proposed', entry_date: '2026-07-15' }),
+        makeMealPlanEntry({ status: 'skipped', entry_date: '2026-07-16' }),
+      ],
+      rangeStart: RANGE_START,
+      rangeEnd: RANGE_END,
+    })
+    expect(entries).toEqual([])
+  })
+
+  it('defaults to no meal entries when mealPlanEntries is omitted (backward compatible)', () => {
+    const entries = buildCalendarEntries({
+      chores: [makeChore({ due_date: '2026-07-15' })],
+      activities: [],
+      medicalRecords: [],
+      rangeStart: RANGE_START,
+      rangeEnd: RANGE_END,
+    })
+    expect(entries.every((e) => e.type !== 'meal')).toBe(true)
   })
 })
 

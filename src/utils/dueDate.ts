@@ -57,7 +57,7 @@ export function isDueTodayOrEarlier(dueDate: string, today: string = todayISODat
   return compareISODates(dueDate, today) <= 0
 }
 
-function formatShortDate(iso: string): string {
+export function formatShortDate(iso: string): string {
   return toUTCDate(iso).toLocaleDateString(currentLang === 'cs' ? 'cs-CZ' : 'en-US', {
     day: 'numeric',
     month: 'short',

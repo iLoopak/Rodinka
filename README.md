@@ -13,13 +13,14 @@ non-technical parents, starting Czech-first (CZ + EN).
   depend on email deliverability. Magic link is no longer part of the UI.
 - **Target platforms:** PWA first; Capacitor wrap for Android/iOS stores later
 
-## Status: Phase 2 (Activities/Clubs + Medical tracker + Calendar) — in progress
+## Status: Phase 3 (Meal Planning + Family Voting) — in progress
 
 Phase 0 built the shared "Family" data model and auth. Phase 1 added
-Chores + Allowance. Phase 2 adds Activities/Clubs, a Medical tracker, and a
-unified in-app Calendar that projects chores/activities/medical records
-into one view — no external calendar sync. See `supabase/` for the DB
-schema and `src/` for the app code.
+Chores + Allowance. Phase 2 added Activities/Clubs, a Medical tracker, and
+a unified in-app Calendar. Phase 3 adds a shared meal idea library,
+lightweight family voting on what to eat, and a weekly meal planner with
+optional responsibility assignment — see `supabase/` for the DB schema and
+`src/` for the app code.
 
 ### Data model
 
@@ -55,11 +56,37 @@ schema and `src/` for the app code.
   Deliberately lightweight — reminders and visit history, not a clinical
   record system.
 
+- **meals** — a shared, reusable family meal idea library (e.g. "Spaghetti
+  bolognese", "Leftovers"). Just `name`, `category`, a `tags text[]` (small
+  suggested vocabulary plus free-form custom tags — no join table, same
+  precedent as `activities.recurrence_weekdays`), optional `prep_minutes`/
+  `notes`/`source_url`, and a soft `status` (`active`/`archived`).
+- **meal_vote_rounds** — a family vote on what to eat (`draft` → `open` →
+  `closed`). At most one `open` round per family at a time (enforced by a
+  partial unique index); closed rounds are kept for history.
+- **meal_vote_candidates** — which meals are up for a vote in a round.
+  `meal_title` is snapshotted when the candidate is added, so a later
+  rename/archive of the source meal never changes how a historical round
+  reads.
+- **meal_votes** — one row per (candidate, member); `value` is -1/0/1
+  (dislike/neutral/like). A parent can vote on behalf of any member of
+  their family, including children (who have no login) — `created_by` is
+  who recorded the vote, `member_id` is who it's for.
+- **meal_plan_entries** — one row per date + meal slot. Either a `meal_id`
+  linked to the library (title snapshotted at add time) or a one-off
+  custom `title` — never neither, enforced by a check constraint.
+  `responsible_member_id` is optional. `origin` distinguishes manually
+  added / added from a vote result / copied from another week.
+
 There is no separate "calendar" table — `src/utils/calendarEntries.ts`
-derives calendar entries from chores/activities/medical_records on demand
-for a given date range (recurring activity occurrences are expanded by
-`src/utils/recurrence.ts`, also on demand, within a bounded range). Nothing
-about the calendar is persisted independently.
+derives calendar entries from chores/activities/medical_records/meal plan
+entries on demand for a given date range (recurring activity occurrences
+are expanded by `src/utils/recurrence.ts`, also on demand, within a
+bounded range). Nothing about the calendar is persisted independently.
+Only `confirmed`/`completed` meal plan entries are projected onto the
+calendar (as a dedicated, filterable "meal" type) — `proposed`/`skipped`
+entries stay out to avoid flooding it with every rough idea; see the
+Phase 3 PR description for the full reasoning.
 
 Row Level Security enforces that a logged-in user can only ever see data
 belonging to families they're a member of. See `supabase/001_schema.sql` for
@@ -70,10 +97,14 @@ the Phase 0 tables/policies, `supabase/002_functions.sql` for the
 functions (approving a completion and crediting the ledger happens
 atomically inside `approve_chore_completion`), `supabase/004_chore_due_date.sql`
 for the `chores.due_date` column plus a tightened insert policy that
-verifies a chore's `assigned_to` belongs to the same family, and
+verifies a chore's `assigned_to` belongs to the same family,
 `supabase/005_activities_medical.sql` for the `activities` and
 `medical_records` tables (same same-family-reference check applied to their
-child/patient/responsible-adult columns from the start).
+child/patient/responsible-adult columns from the start), and
+`supabase/006_meal_planning.sql` for the meal library/voting/plan tables
+plus the `open_vote_round` / `close_vote_round` RPC functions (opening a
+round atomically checks it's still a draft, that no other round is
+already open, and that it has at least one candidate).
 
 ### App flow (implemented so far)
 
@@ -83,14 +114,19 @@ child/patient/responsible-adult columns from the start).
    via invite code)
 3. Logged in, has a family → `AppShell` with bottom navigation across
    `TodayDashboard`, `CalendarScreen`, `ChoresScreen`, `FamilyScreen`, and
-   `MoreScreen`. `ActivitiesScreen` and `HealthScreen` are reachable from
-   More and from Today's summary links (kept out of the bottom nav to avoid
-   overcrowding it — see the PR description for the reasoning).
+   `MoreScreen`. `ActivitiesScreen`, `HealthScreen`, and `MealPlanScreen`
+   are reachable from More and from Today's summary links (kept out of the
+   bottom nav to avoid overcrowding it — see the Phase 2/3 PR descriptions
+   for the reasoning). `MealPlanScreen` itself has three internal tabs —
+   Plán / Hlasování / Jídla — rather than being three separate destinations.
 
 See `src/App.tsx` for how these states are wired together via the
 `useSession` and `useFamily` hooks, and `src/context/FamilyDataContext.tsx`
-for the shared chores/allowance/activities/medical/family data layer used
-once a family exists.
+for the shared chores/allowance/activities/medical/meals/family data layer
+used once a family exists. Meal-specific state and mutations live in
+`src/context/useMealsData.ts`, a composing hook that `FamilyDataContext`
+calls and spreads into its own value — kept separate purely to stop that
+file from growing into a monolith, not a second data boundary.
 
 ### Localization
 
@@ -106,8 +142,9 @@ per-user, or browser-locale detection) is a Phase 1+ task, not Phase 0.
 2. ~~Phase 1: Chores + Allowance (assign chores, mark done, parent approves,
    allowance ledger)~~
 3. ~~Phase 2: Activities/Clubs + Medical tracker + unified in-app
-   Calendar~~ ← current
-4. Phase 3: Meal planning/voting
+   Calendar~~
+4. ~~Phase 3: Meal Planning + Family Voting (meal idea library, lightweight
+   voting rounds, weekly meal planner)~~ ← current
 5. Phase 4: Calendar sync (Google Calendar API first; Apple/iCloud via
    CalDAV later, lower priority — more effort, less API support)
 6. Phase 5: Capacitor wrap for Android/iOS app stores
@@ -123,13 +160,14 @@ npm run dev
 ```
 
 In Supabase, run `supabase/001_schema.sql`, `supabase/002_functions.sql`,
-`supabase/003_chores.sql`, `supabase/004_chore_due_date.sql`, then
-`supabase/005_activities_medical.sql` in the SQL Editor (in that order —
-later files depend on earlier tables/functions existing).
+`supabase/003_chores.sql`, `supabase/004_chore_due_date.sql`,
+`supabase/005_activities_medical.sql`, then `supabase/006_meal_planning.sql`
+in the SQL Editor (in that order — later files depend on earlier
+tables/functions existing).
 
-Run `npm test` for the unit tests (pure date/recurrence/calendar-projection
-logic — see `src/utils/*.test.ts`). There's no component/UI test setup yet;
-that's a known gap, not a Phase 2 goal.
+Run `npm test` for the unit tests (pure date/recurrence/calendar-projection/
+vote-ranking/weekly-planning logic — see `src/utils/*.test.ts`). There's no
+component/UI test setup yet; that's a known gap, not a goal of any phase so far.
 
 Auth (email/password + Google) needs a few settings changed in the Supabase
 dashboard and a Google Cloud OAuth client — see `supabase-auth-setup.md` for

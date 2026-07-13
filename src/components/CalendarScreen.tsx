@@ -16,7 +16,7 @@ import { recordToInput } from './MedicalDetailModal'
 
 type ViewMode = 'month' | 'agenda'
 
-const ITEM_TYPES: CalendarItemType[] = ['chore', 'activity', 'payment', 'medical', 'vaccination']
+const ITEM_TYPES: CalendarItemType[] = ['chore', 'activity', 'payment', 'medical', 'vaccination', 'meal']
 const AGENDA_PAST_DAYS = 180
 const AGENDA_FUTURE_DAYS = 60
 
@@ -32,6 +32,7 @@ export function CalendarScreen() {
     chores,
     activities,
     medicalRecords,
+    planEntries,
     members,
     memberName,
     latestCompletionFor,
@@ -65,6 +66,7 @@ export function CalendarScreen() {
     chores: visibleChores,
     activities,
     medicalRecords: visibleMedical,
+    mealPlanEntries: planEntries,
     rangeStart: range.start,
     rangeEnd: range.end,
   })
@@ -233,7 +235,13 @@ function CalendarEntryDetail({ entry, memberName, onClose, onNavigate }: DetailP
   const canMarkMedicalDone = medicalRecord && medicalRecord.status === 'planned'
 
   const sourceRoute: Route =
-    entry.sourceType === 'chore' ? '/chores' : entry.sourceType === 'activity' || entry.sourceType === 'activity_payment' ? '/activities' : '/health'
+    entry.sourceType === 'chore'
+      ? '/chores'
+      : entry.sourceType === 'activity' || entry.sourceType === 'activity_payment'
+        ? '/activities'
+        : entry.sourceType === 'meal'
+          ? '/meals'
+          : '/health'
 
   async function handleMarkChoreDone() {
     if (!chore) return
