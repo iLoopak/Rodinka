@@ -13,6 +13,7 @@ import { CalendarEntryRow } from './calendar/CalendarEntryRow'
 import { Modal } from './ui/Modal'
 import { ErrorState } from './ui/ErrorState'
 import { recordToInput } from './MedicalDetailModal'
+import { UniversalCreateModal } from './planner/UniversalCreateModal'
 
 type ViewMode = 'month' | 'agenda'
 
@@ -27,6 +28,7 @@ export function CalendarScreen() {
   const [filterType, setFilterType] = useState<CalendarItemType | ''>('')
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
   const [selectedEntry, setSelectedEntry] = useState<CalendarEntry | null>(null)
+  const [createConfig, setCreateConfig] = useState<{ initialDate?: string } | null>(null)
 
   const {
     chores,
@@ -90,9 +92,19 @@ export function CalendarScreen() {
     <>
       <div className="screen-header">
         <h1 className="home-title">{t.calendar.title}</h1>
-        <button type="button" className="header-action-button" onClick={() => setMonthAnchor(today)}>
-          {t.calendar.today}
-        </button>
+        <div className="header-actions">
+          <button
+            type="button"
+            className="header-icon-button"
+            onClick={() => setCreateConfig({})}
+            aria-label={t.create.addAction}
+          >
+            +
+          </button>
+          <button type="button" className="header-action-button" onClick={() => setMonthAnchor(today)}>
+            {t.calendar.today}
+          </button>
+        </div>
       </div>
 
       <div className="tabs" role="tablist">
@@ -197,6 +209,16 @@ export function CalendarScreen() {
               ))}
             </ul>
           )}
+          <button
+            type="button"
+            className="btn-secondary modal-primary-action"
+            onClick={() => {
+              setCreateConfig({ initialDate: selectedDay })
+              setSelectedDay(null)
+            }}
+          >
+            <span aria-hidden="true">+</span> {t.create.addThisDayAction}
+          </button>
         </Modal>
       )}
 
@@ -206,6 +228,13 @@ export function CalendarScreen() {
           memberName={memberName}
           onClose={() => setSelectedEntry(null)}
           onNavigate={navigate}
+        />
+      )}
+
+      {createConfig && (
+        <UniversalCreateModal
+          initialDate={createConfig.initialDate}
+          onClose={() => setCreateConfig(null)}
         />
       )}
     </>

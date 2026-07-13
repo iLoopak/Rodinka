@@ -6,6 +6,7 @@ import type { FamilyMember } from '../hooks/useFamilyMembers'
 interface Props {
   members: FamilyMember[]
   currentMemberId: string
+  initialDueDate?: string
   onSubmit: (input: {
     title: string
     description: string
@@ -16,14 +17,14 @@ interface Props {
   }) => Promise<void>
 }
 
-export function AddChoreForm({ members, currentMemberId, onSubmit }: Props) {
+export function AddChoreForm({ members, currentMemberId, initialDueDate, onSubmit }: Props) {
   const kids = useMemo(() => members.filter((m) => m.role === 'child'), [members])
   const defaultAssignee = kids[0]?.id ?? currentMemberId
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [assignedTo, setAssignedTo] = useState(defaultAssignee)
-  const [dueDate, setDueDate] = useState(todayISODate())
+  const [dueDate, setDueDate] = useState(initialDueDate ?? todayISODate())
   const [rewardAmount, setRewardAmount] = useState('')
   const [recurring, setRecurring] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -58,7 +59,7 @@ export function AddChoreForm({ members, currentMemberId, onSubmit }: Props) {
       setTitle('')
       setDescription('')
       setAssignedTo(defaultAssignee)
-      setDueDate(todayISODate())
+      setDueDate(initialDueDate ?? todayISODate())
       setRewardAmount('')
       setRecurring(false)
     } catch (err) {

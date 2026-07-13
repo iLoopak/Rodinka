@@ -1,4 +1,4 @@
-import type { MouseEvent } from 'react'
+import { useState, type MouseEvent } from 'react'
 import { t } from '../strings'
 import { useFamilyData } from '../context/FamilyDataContext'
 import { useRouter } from '../router'
@@ -12,10 +12,12 @@ import { isMedicalRecordOverdue } from '../utils/medicalDueState'
 import { displayTitle, sortEntriesForDay } from '../utils/mealPlanGrouping'
 import { mealSlotLabel } from '../utils/mealLabels'
 import { MemberAvatar } from './ui/MemberAvatar'
+import { UniversalCreateModal } from './planner/UniversalCreateModal'
 
 const PENDING_PREVIEW_COUNT = 3
 
 export function TodayDashboard() {
+  const [showCreate, setShowCreate] = useState(false)
   const {
     currentMember,
     kids,
@@ -56,7 +58,7 @@ export function TodayDashboard() {
   if (kids.length === 0) {
     return (
       <>
-        <Header name={currentMember.display_name} />
+        <Header name={currentMember.display_name} onAdd={() => setShowCreate(true)} />
         <section className="section">
           <EmptyState
             title={t.today.setupAddChildTitle}
@@ -64,6 +66,9 @@ export function TodayDashboard() {
             action={{ label: t.today.setupAddChildAction, onClick: () => navigate('/family') }}
           />
         </section>
+        {showCreate && (
+          <UniversalCreateModal initialDate={todayISODate()} onClose={() => setShowCreate(false)} />
+        )}
       </>
     )
   }
@@ -71,7 +76,7 @@ export function TodayDashboard() {
   if (chores.length === 0) {
     return (
       <>
-        <Header name={currentMember.display_name} />
+        <Header name={currentMember.display_name} onAdd={() => setShowCreate(true)} />
         <section className="section">
           <EmptyState
             title={t.today.setupAddChoreTitle}
@@ -79,6 +84,9 @@ export function TodayDashboard() {
             action={{ label: t.today.setupAddChoreAction, onClick: () => navigate('/chores') }}
           />
         </section>
+        {showCreate && (
+          <UniversalCreateModal initialDate={todayISODate()} onClose={() => setShowCreate(false)} />
+        )}
       </>
     )
   }
@@ -109,7 +117,7 @@ export function TodayDashboard() {
 
   return (
     <>
-      <Header name={currentMember.display_name} />
+      <Header name={currentMember.display_name} onAdd={() => setShowCreate(true)} />
 
       {pendingCompletions.length > 0 && (
         <section className="section">
@@ -216,15 +224,24 @@ export function TodayDashboard() {
           {t.today.seeCalendar}
         </a>
       </section>
+
+      {showCreate && (
+        <UniversalCreateModal initialDate={today} onClose={() => setShowCreate(false)} />
+      )}
     </>
   )
 }
 
-function Header({ name }: { name: string }) {
+function Header({ name, onAdd }: { name: string; onAdd: () => void }) {
   return (
-    <div className="home-header">
-      <h1 className="home-title">{t.home.title}</h1>
-      <p className="home-subtitle">{t.home.welcome(name)}</p>
+    <div className="screen-header">
+      <div>
+        <h1 className="home-title">{t.home.title}</h1>
+        <p className="home-subtitle">{t.home.welcome(name)}</p>
+      </div>
+      <button type="button" className="header-action-button" onClick={onAdd}>
+        <span aria-hidden="true">+</span> {t.create.addAction}
+      </button>
     </div>
   )
 }
