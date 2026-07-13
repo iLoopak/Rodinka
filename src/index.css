@@ -462,12 +462,81 @@ details.manage .add-child-form + .add-chore-form {
   margin-top: 10px;
 }
 
+.auth-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--canvas);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-button);
+  padding: 4px;
+  margin: 18px 0 4px;
+}
+
+.auth-tab {
+  flex: 1;
+  background: transparent;
+  color: var(--ink-muted);
+  min-height: 40px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  border-radius: calc(var(--radius-button) - 4px);
+}
+
+.auth-tab:hover:not(:disabled) {
+  background: transparent;
+  color: var(--ink);
+}
+
+.auth-tab.active {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-card);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 14px;
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.google-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1.5px solid var(--border);
+}
+
+.google-button:hover:not(:disabled) {
+  background: var(--canvas);
+}
+
 /* ------------------------------------------------------------------ */
 /* Misc                                                                 */
 /* ------------------------------------------------------------------ */
 
 .error {
   color: var(--accent-berry);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.success {
+  color: var(--accent-sage);
   font-weight: 600;
   font-size: 0.85rem;
 }

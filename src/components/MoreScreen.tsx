@@ -1,9 +1,13 @@
+import { useState } from 'react'
 import { t } from '../strings'
 import { useFamilyData } from '../context/FamilyDataContext'
 import { supabase } from '../supabaseClient'
+import { Modal } from './ui/Modal'
+import { SetPasswordForm } from './SetPasswordForm'
 
 export function MoreScreen() {
   const { currentMember, userEmail, familyName } = useFamilyData()
+  const [showSetPassword, setShowSetPassword] = useState(false)
 
   return (
     <>
@@ -32,7 +36,16 @@ export function MoreScreen() {
             <span className="row-title">{t.more.languageValue}</span>
           </li>
         </ul>
+        <button className="btn-secondary" onClick={() => setShowSetPassword(true)}>
+          {t.more.setPasswordAction}
+        </button>
       </section>
+
+      {showSetPassword && (
+        <Modal title={t.more.setPasswordTitle} onClose={() => setShowSetPassword(false)}>
+          <SetPasswordForm onDone={() => setShowSetPassword(false)} />
+        </Modal>
+      )}
 
       <section className="section accent-lavender">
         <ul className="section-list plain-list">

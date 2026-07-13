@@ -8,7 +8,9 @@ non-technical parents, starting Czech-first (CZ + EN).
 
 - **Frontend:** React + TypeScript + Vite
 - **Backend:** Supabase (Postgres + Auth + Row Level Security)
-- **Auth:** Magic link (passwordless email)
+- **Auth:** Email + password, and Google OAuth, via Supabase Auth. Email
+  confirmation is disabled (see `supabase-auth-setup.md`) so sign-up doesn't
+  depend on email deliverability. Magic link is no longer part of the UI.
 - **Target platforms:** PWA first; Capacitor wrap for Android/iOS stores later
 
 ## Status: Phase 1 (Chores + Allowance) — in progress
@@ -44,15 +46,16 @@ atomically inside `approve_chore_completion`).
 
 ### App flow (implemented so far)
 
-1. Not logged in → `LoginScreen` (magic link via email)
+1. Not logged in → `AuthScreen` (email + password sign in/sign up, or
+   "Pokračovat přes Google")
 2. Logged in, no family yet → `OnboardingScreen` (create a family, or join
    via invite code)
-3. Logged in, has a family → dashboard with `ChoresDashboard`: add a child,
-   add a chore and assign it, mark chores done, approve/reject pending
-   completions, see each child's allowance balance, and record payouts
+3. Logged in, has a family → `AppShell` with bottom navigation across
+   `TodayDashboard`, `ChoresScreen`, `FamilyScreen`, and `MoreScreen`
 
 See `src/App.tsx` for how these states are wired together via the
-`useSession` and `useFamily` hooks.
+`useSession` and `useFamily` hooks, and `src/context/FamilyDataContext.tsx`
+for the shared chores/allowance/family data layer used once a family exists.
 
 ### Localization
 
@@ -88,8 +91,10 @@ In Supabase, run `supabase/001_schema.sql`, `supabase/002_functions.sql`,
 then `supabase/003_chores.sql` in the SQL Editor (in that order — later
 files depend on earlier tables/functions existing).
 
-Also add `http://localhost:5173` to **Authentication → URL Configuration →
-Redirect URLs** in the Supabase dashboard so magic links work locally.
+Auth (email/password + Google) needs a few settings changed in the Supabase
+dashboard and a Google Cloud OAuth client — see `supabase-auth-setup.md` for
+the exact steps, including which redirect URLs to allow for local dev,
+Vercel previews, and production.
 
 ## Open decisions (not yet finalized)
 
