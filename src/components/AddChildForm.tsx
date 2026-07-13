@@ -1,13 +1,11 @@
 import { useState } from 'react'
-import { supabase } from '../supabaseClient'
 import { t } from '../strings'
 
 interface Props {
-  familyId: string
-  onAdded: () => void
+  onSubmit: (displayName: string) => Promise<void>
 }
 
-export function AddChildForm({ familyId, onAdded }: Props) {
+export function AddChildForm({ onSubmit }: Props) {
   const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -16,17 +14,13 @@ export function AddChildForm({ familyId, onAdded }: Props) {
     e.preventDefault()
     setLoading(true)
     setError(null)
-
-    const { error } = await supabase
-      .from('members')
-      .insert({ family_id: familyId, display_name: displayName, role: 'child' })
-
-    setLoading(false)
-    if (error) {
-      setError(error.message)
-    } else {
+    try {
+      await onSubmit(displayName)
       setDisplayName('')
-      onAdded()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setLoading(false)
     }
   }
 
