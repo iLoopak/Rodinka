@@ -1,0 +1,138 @@
+import { useState } from 'react'
+import { t } from '../strings'
+import { formatFullDate } from '../utils/dueDate'
+import { medicalRecordTypeLabel, medicalStatusLabel } from '../utils/medicalLabels'
+import type { MedicalRecord } from '../hooks/useMedicalRecords'
+import type { FamilyMember } from '../hooks/useFamilyMembers'
+import type { MedicalRecordInput } from '../context/FamilyDataContext'
+import { Modal } from './ui/Modal'
+import { MemberAvatar } from './ui/MemberAvatar'
+import { AddMedicalRecordForm } from './AddMedicalRecordForm'
+
+interface Props {
+  record: MedicalRecord
+  members: FamilyMember[]
+  currentMemberId: string
+  memberName: (id: string) => string
+  onUpdate: (id: string, input: MedicalRecordInput) => Promise<void>
+  onClose: () => void
+}
+
+export function recordToInput(record: MedicalRecord): MedicalRecordInput {
+  return {
+    patientId: record.patient_id,
+    responsibleMemberId: record.responsible_member_id,
+    recordType: record.record_type,
+    title: record.title,
+    provider: record.provider ?? '',
+    location: record.location ?? '',
+    recordDate: record.record_date,
+    startTime: record.start_time,
+    endTime: record.end_time,
+    status: record.status,
+    notes: record.notes ?? '',
+    nextDueDate: record.next_due_date,
+    recurrenceIntervalMonths: record.recurrence_interval_months,
+    reminderEnabled: record.reminder_enabled,
+    reminderDaysBefore: record.reminder_days_before,
+    vaccineName: record.vaccine_name ?? '',
+    vaccineDoseNumber: record.vaccine_dose_number,
+    vaccineBatchNumber: record.vaccine_batch_number ?? '',
+    vaccineCompletedDate: record.vaccine_completed_date,
+    vaccineNextDoseDate: record.vaccine_next_dose_date,
+  }
+}
+
+export function MedicalDetailModal({ record, members, currentMemberId, memberName, onUpdate, onClose }: Props) {
+  const [editing, setEditing] = useState(false)
+  const [markingComplete, setMarkingComplete] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  if (editing) {
+    return (
+      <Modal title={t.medical.editTitle} onClose={onClose}>
+        <AddMedicalRecordForm
+          members={members}
+          currentMemberId={currentMemberId}
+          initial={record}
+          onSubmit={async (input) => {
+            await onUpdate(record.id, input)
+            onClose()
+          }}
+        />
+      </Modal>
+    )
+  }
+
+  async function handleMarkCompleted() {
+    setMarkingComplete(true)
+    setError(null)
+    try {
+      await onUpdate(record.id, { ...recordToInput(record), status: 'completed' })
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setMarkingComplete(false)
+    }
+  }
+
+  const providerLine = [record.provider, record.location].filter(Boolean).join(' · ')
+  const vaccineLine = [
+    record.vaccine_name,
+    record.vaccine_dose_number ? `#${record.vaccine_dose_number}` : null,
+    record.vaccine_next_dose_date ? formatFullDate(record.vaccine_next_dose_date) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
+  return (
+    <Modal title={record.title} onClose={onClose}>
+      <div className="detail-view">
+        <p className="row-meta">
+          {medicalRecordTypeLabel(record.record_type)} · {medicalStatusLabel(record.status)}
+        </p>
+
+        <div className="detail-people">
+          <div className="detail-person">
+            <MemberAvatar member={{ id: record.patient_id, display_name: memberName(record.patient_id) }} />
+            <span>{memberName(record.patient_id)}</span>
+          </div>
+          {record.responsible_member_id && (
+            <div className="detail-person">
+              <MemberAvatar
+                member={{ id: record.responsible_member_id, display_name: memberName(record.responsible_member_id) }}
+              />
+              <span>{memberName(record.responsible_member_id)}</span>
+            </div>
+          )}
+        </div>
+
+        <p className="row-meta">
+          {formatFullDate(record.record_date)}
+          {record.start_time ? ` · ${record.start_time}` : ''}
+        </p>
+        {providerLine && <p className="row-meta">{providerLine}</p>}
+        {record.next_due_date && (
+          <p className="row-meta">
+            {t.medical.nextDueDateLabel}: {formatFullDate(record.next_due_date)}
+          </p>
+        )}
+        {record.record_type === 'vaccination' && vaccineLine && <p className="row-meta">{vaccineLine}</p>}
+        {record.notes && <p className="row-description">{record.notes}</p>}
+      </div>
+
+      <div className="family-actions">
+        {record.status === 'planned' && (
+          <button onClick={handleMarkCompleted} disabled={markingComplete}>
+            {markingComplete ? t.medical.submitting : t.medical.markCompleted}
+          </button>
+        )}
+        <button className="btn-secondary" onClick={() => setEditing(true)}>
+          {t.medical.edit}
+        </button>
+      </div>
+      {error && <p className="error">{error}</p>}
+    </Modal>
+  )
+}

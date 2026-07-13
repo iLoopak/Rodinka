@@ -381,6 +381,26 @@ main {
   color: var(--brick-dark);
 }
 
+.badge-today {
+  background: rgba(185, 71, 66, 0.14);
+  color: var(--brick);
+}
+
+/* ------------------------------------------------------------------ */
+/* Member avatars                                                       */
+/* ------------------------------------------------------------------ */
+
+.member-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 700;
+  line-height: 1;
+}
+
 /* ------------------------------------------------------------------ */
 /* Manage disclosure                                                    */
 /* ------------------------------------------------------------------ */
@@ -814,4 +834,252 @@ details.manage .add-child-form + .add-chore-form {
   width: 100%;
   margin-top: 4px;
   margin-bottom: 16px;
+}
+
+.row-link {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.row-link:hover {
+  color: var(--brick);
+}
+
+/* ------------------------------------------------------------------ */
+/* Filters                                                              */
+/* ------------------------------------------------------------------ */
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.filter-row select {
+  flex: 1 1 160px;
+  min-height: 44px;
+  width: auto;
+}
+
+/* ------------------------------------------------------------------ */
+/* Clickable rows (activities, medical, calendar entries)              */
+/* ------------------------------------------------------------------ */
+
+.clickable-row {
+  cursor: pointer;
+}
+
+.clickable-row:focus-visible {
+  outline: 2px solid var(--brick);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Sectioned forms (activities, medical records)                       */
+/* ------------------------------------------------------------------ */
+
+.sectioned-form .form-section {
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px dashed var(--border);
+}
+
+.sectioned-form .form-section:first-child {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: none;
+}
+
+.sectioned-form .form-section h4 {
+  margin-bottom: 12px;
+}
+
+.weekday-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -6px 0 14px;
+}
+
+.weekday-toggle {
+  flex: 1 1 auto;
+  min-width: 44px;
+  min-height: 40px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1.5px solid var(--border);
+}
+
+.weekday-toggle:hover:not(:disabled) {
+  background: var(--canvas);
+}
+
+.weekday-toggle.active {
+  background: var(--brick);
+  color: #fff;
+  border-color: var(--brick);
+}
+
+/* ------------------------------------------------------------------ */
+/* Detail views (activity / medical / calendar entry)                  */
+/* ------------------------------------------------------------------ */
+
+.detail-view {
+  margin-bottom: 16px;
+}
+
+.detail-people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 4px 0 10px;
+}
+
+.detail-person {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Calendar: month view                                                 */
+/* ------------------------------------------------------------------ */
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.month-nav-label {
+  min-width: 10ch;
+  text-align: center;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.month-nav button.btn-secondary {
+  min-width: 44px;
+  min-height: 40px;
+  padding: 6px 14px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.month-grid {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.month-grid-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.month-grid-weekday {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+  padding: 6px 0;
+}
+
+.month-grid-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-height: 52px;
+  padding: 6px 2px;
+  background: transparent;
+  color: var(--ink);
+  border: none;
+  border-radius: var(--radius-row);
+}
+
+.month-grid-day:hover:not(:disabled) {
+  background: var(--canvas);
+}
+
+.month-grid-day.outside {
+  color: var(--ink-muted);
+  opacity: 0.45;
+}
+
+.month-grid-day.today .month-grid-day-number {
+  background: var(--brick);
+  color: #fff;
+}
+
+.month-grid-day-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.month-grid-day-dots {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 8px;
+}
+
+.month-grid-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+}
+
+.month-grid-more {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+/* ------------------------------------------------------------------ */
+/* Calendar: agenda view                                                */
+/* ------------------------------------------------------------------ */
+
+.agenda-group {
+  margin-bottom: 18px;
+}
+
+.agenda-group-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+  margin-bottom: 8px;
+}
+
+.calendar-entry-row .calendar-entry-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.calendar-entry-row .calendar-entry-icon svg {
+  display: block;
 }

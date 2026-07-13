@@ -6,6 +6,9 @@ import { TodayDashboard } from './TodayDashboard'
 import { ChoresScreen } from './ChoresScreen'
 import { FamilyScreen } from './FamilyScreen'
 import { MoreScreen } from './MoreScreen'
+import { CalendarScreen } from './CalendarScreen'
+import { ActivitiesScreen } from './ActivitiesScreen'
+import { HealthScreen } from './HealthScreen'
 
 export function AppShell() {
   const { path } = useRouter()
@@ -20,7 +23,10 @@ export function AppShell() {
       </header>
       <main className="app-main">
         {path === '/' && <TodayDashboard />}
+        {path === '/calendar' && <CalendarScreen />}
         {path === '/chores' && <ChoresScreen />}
+        {path === '/activities' && <ActivitiesScreen />}
+        {path === '/health' && <HealthScreen />}
         {path === '/family' && <FamilyScreen />}
         {path === '/more' && <MoreScreen />}
       </main>

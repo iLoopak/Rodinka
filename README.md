@@ -13,11 +13,13 @@ non-technical parents, starting Czech-first (CZ + EN).
   depend on email deliverability. Magic link is no longer part of the UI.
 - **Target platforms:** PWA first; Capacitor wrap for Android/iOS stores later
 
-## Status: Phase 1 (Chores + Allowance) — in progress
+## Status: Phase 2 (Activities/Clubs + Medical tracker + Calendar) — in progress
 
-Phase 0 built the shared "Family" data model and auth. Phase 1 adds the
-first real feature module on top of it. See `supabase/` for the DB schema
-and `src/` for the app code.
+Phase 0 built the shared "Family" data model and auth. Phase 1 added
+Chores + Allowance. Phase 2 adds Activities/Clubs, a Medical tracker, and a
+unified in-app Calendar that projects chores/activities/medical records
+into one view — no external calendar sync. See `supabase/` for the DB
+schema and `src/` for the app code.
 
 ### Data model
 
@@ -36,6 +38,28 @@ and `src/` for the app code.
 - **allowance_ledger** — a running record of amounts owed/paid per child;
   positive entries are credits (from approved chores), negative entries are
   payouts.
+- **activities** — a recurring or one-off club/lesson/camp. Belongs to a
+  `child_id` (the participant) and optionally a `responsible_member_id` /
+  `secondary_responsible_member_id` (accompanying adults — a distinct role
+  from the participant). Carries schedule (`start_date`/`end_date`,
+  `recurrence_type` + `recurrence_weekdays`, `start_time`/`end_time`),
+  contact/location, payment (`payment_amount`/`payment_frequency`/
+  `next_payment_due_date`), `status` (`active`/`paused`/`finished`), and a
+  simple reminder flag.
+- **medical_records** — a visit, checkup, or vaccination for any family
+  member (`patient_id`, optional `responsible_member_id`). Carries
+  `record_type`, `status` (`planned`/`completed`/`cancelled`),
+  `next_due_date` / `recurrence_interval_months` for follow-ups, and
+  vaccination-specific fields (`vaccine_name`, `vaccine_dose_number`,
+  `vaccine_next_dose_date`, ...) used only when `record_type = 'vaccination'`.
+  Deliberately lightweight — reminders and visit history, not a clinical
+  record system.
+
+There is no separate "calendar" table — `src/utils/calendarEntries.ts`
+derives calendar entries from chores/activities/medical_records on demand
+for a given date range (recurring activity occurrences are expanded by
+`src/utils/recurrence.ts`, also on demand, within a bounded range). Nothing
+about the calendar is persisted independently.
 
 Row Level Security enforces that a logged-in user can only ever see data
 belonging to families they're a member of. See `supabase/001_schema.sql` for
@@ -44,9 +68,12 @@ the Phase 0 tables/policies, `supabase/002_functions.sql` for the
 `supabase/003_chores.sql` for the Phase 1 tables/policies plus the
 `approve_chore_completion` / `reject_chore_completion` / `record_payout` RPC
 functions (approving a completion and crediting the ledger happens
-atomically inside `approve_chore_completion`), and `supabase/004_chore_due_date.sql`
+atomically inside `approve_chore_completion`), `supabase/004_chore_due_date.sql`
 for the `chores.due_date` column plus a tightened insert policy that
-verifies a chore's `assigned_to` belongs to the same family.
+verifies a chore's `assigned_to` belongs to the same family, and
+`supabase/005_activities_medical.sql` for the `activities` and
+`medical_records` tables (same same-family-reference check applied to their
+child/patient/responsible-adult columns from the start).
 
 ### App flow (implemented so far)
 
@@ -55,11 +82,15 @@ verifies a chore's `assigned_to` belongs to the same family.
 2. Logged in, no family yet → `OnboardingScreen` (create a family, or join
    via invite code)
 3. Logged in, has a family → `AppShell` with bottom navigation across
-   `TodayDashboard`, `ChoresScreen`, `FamilyScreen`, and `MoreScreen`
+   `TodayDashboard`, `CalendarScreen`, `ChoresScreen`, `FamilyScreen`, and
+   `MoreScreen`. `ActivitiesScreen` and `HealthScreen` are reachable from
+   More and from Today's summary links (kept out of the bottom nav to avoid
+   overcrowding it — see the PR description for the reasoning).
 
 See `src/App.tsx` for how these states are wired together via the
 `useSession` and `useFamily` hooks, and `src/context/FamilyDataContext.tsx`
-for the shared chores/allowance/family data layer used once a family exists.
+for the shared chores/allowance/activities/medical/family data layer used
+once a family exists.
 
 ### Localization
 
@@ -73,9 +104,9 @@ per-user, or browser-locale detection) is a Phase 1+ task, not Phase 0.
 
 1. ~~Phase 0: Foundation (family/member model, auth, invites)~~
 2. ~~Phase 1: Chores + Allowance (assign chores, mark done, parent approves,
-   allowance ledger)~~ ← current
-3. Phase 2: Activities/Clubs + Medical tracker (structured records with
-   due-date reminders)
+   allowance ledger)~~
+3. ~~Phase 2: Activities/Clubs + Medical tracker + unified in-app
+   Calendar~~ ← current
 4. Phase 3: Meal planning/voting
 5. Phase 4: Calendar sync (Google Calendar API first; Apple/iCloud via
    CalDAV later, lower priority — more effort, less API support)
@@ -92,9 +123,13 @@ npm run dev
 ```
 
 In Supabase, run `supabase/001_schema.sql`, `supabase/002_functions.sql`,
-`supabase/003_chores.sql`, then `supabase/004_chore_due_date.sql` in the SQL
-Editor (in that order — later files depend on earlier tables/functions
-existing).
+`supabase/003_chores.sql`, `supabase/004_chore_due_date.sql`, then
+`supabase/005_activities_medical.sql` in the SQL Editor (in that order —
+later files depend on earlier tables/functions existing).
+
+Run `npm test` for the unit tests (pure date/recurrence/calendar-projection
+logic — see `src/utils/*.test.ts`). There's no component/UI test setup yet;
+that's a known gap, not a Phase 2 goal.
 
 Auth (email/password + Google) needs a few settings changed in the Supabase
 dashboard and a Google Cloud OAuth client — see `supabase-auth-setup.md` for
