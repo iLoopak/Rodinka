@@ -1,0 +1,48 @@
+import { useEffect, useState, useCallback } from 'react'
+import { supabase } from '../supabaseClient'
+
+export interface ChoreCompletion {
+  id: string
+  chore_id: string
+  completed_by: string
+  completed_at: string
+  status: 'pending_approval' | 'approved' | 'rejected'
+  approved_by: string | null
+  approved_at: string | null
+}
+
+export function useChoreCompletions(familyId: string | undefined) {
+  const [completions, setCompletions] = useState<ChoreCompletion[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const refresh = useCallback(async () => {
+    if (!familyId) {
+      setCompletions([])
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    // Filter via the embedded `chores` relation since completions don't
+    // carry family_id directly (see RLS policy in 003_chores.sql).
+    const { data, error } = await supabase
+      .from('chore_completions')
+      .select('id, chore_id, completed_by, completed_at, status, approved_by, approved_at, chores!inner(family_id)')
+      .eq('chores.family_id', familyId)
+      .order('completed_at', { ascending: false })
+
+    if (error) {
+      console.error('Failed to load chore completions:', error.message)
+      setCompletions([])
+    } else {
+      setCompletions(data)
+    }
+    setLoading(false)
+  }, [familyId])
+
+  useEffect(() => {
+    refresh()
+  }, [refresh])
+
+  return { completions, loading, refresh }
+}
