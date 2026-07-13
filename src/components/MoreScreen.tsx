@@ -87,6 +87,13 @@ export function MoreScreen() {
               <span aria-hidden="true">›</span>
             </Link>
           </li>
+          <li>
+            <Link to="/meals" className="row-link">
+              <span className="row-title">{t.nav.meals}</span>
+              <span className="row-spacer" />
+              <span aria-hidden="true">›</span>
+            </Link>
+          </li>
         </ul>
       </section>
 

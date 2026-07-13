@@ -947,14 +947,16 @@ details.manage .add-child-form + .add-chore-form {
   margin-bottom: 12px;
 }
 
-.weekday-picker {
+.weekday-picker,
+.tag-picker {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin: -6px 0 14px;
 }
 
-.weekday-toggle {
+.weekday-toggle,
+.tag-toggle {
   flex: 1 1 auto;
   min-width: 44px;
   min-height: 40px;
@@ -965,14 +967,38 @@ details.manage .add-child-form + .add-chore-form {
   border: 1.5px solid var(--border);
 }
 
-.weekday-toggle:hover:not(:disabled) {
+.weekday-toggle:hover:not(:disabled),
+.tag-toggle:hover:not(:disabled) {
   background: var(--canvas);
 }
 
-.weekday-toggle.active {
+.weekday-toggle.active,
+.tag-toggle.active {
   background: var(--brick);
   color: #fff;
   border-color: var(--brick);
+}
+
+.inline-add-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.inline-add-row input {
+  flex: 1;
+}
+
+.inline-add-row button {
+  flex: 0 0 auto;
+}
+
+.tab-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1129,4 +1155,159 @@ details.manage .add-child-form + .add-chore-form {
 
 .calendar-entry-row .calendar-entry-icon svg {
   display: block;
+}
+
+/* ------------------------------------------------------------------ */
+/* Weekly meal planner                                                  */
+/* ------------------------------------------------------------------ */
+
+.week-planner {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 720px) {
+  .week-planner {
+    grid-template-columns: 1fr;
+  }
+}
+
+.day-plan-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 12px;
+  min-width: 0;
+}
+
+.day-plan-card.today {
+  border-color: var(--brick);
+}
+
+.day-plan-header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.day-plan-weekday {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.day-plan-date {
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+}
+
+.day-plan-card .section-list li {
+  flex-wrap: wrap;
+}
+
+.empty-slot-row {
+  opacity: 0.7;
+}
+
+.empty-slot-label {
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+
+/* ------------------------------------------------------------------ */
+/* Meal voting                                                          */
+/* ------------------------------------------------------------------ */
+
+.vote-round-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.vote-round-header h3 {
+  margin: 0;
+}
+
+.vote-candidate-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vote-candidate-card {
+  background: var(--canvas);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-row);
+  padding: 12px 14px;
+}
+
+.vote-candidate-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 10px;
+}
+
+.vote-member-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 8px 0;
+  border-top: 1px dashed var(--border);
+}
+
+.vote-member-row:first-of-type {
+  border-top: none;
+}
+
+.vote-buttons {
+  display: flex;
+  gap: 6px;
+  flex: 1 1 100%;
+}
+
+@media (min-width: 480px) {
+  .vote-buttons {
+    flex: 0 0 auto;
+  }
+}
+
+.vote-button {
+  flex: 1;
+  min-height: 40px;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1.5px solid var(--border);
+}
+
+.vote-button:hover:not(:disabled) {
+  background: var(--canvas);
+}
+
+.vote-button.vote-like.active {
+  background: var(--accent-sage);
+  color: #fff;
+  border-color: var(--accent-sage);
+}
+
+.vote-button.vote-neutral.active {
+  background: var(--ink-muted);
+  color: #fff;
+  border-color: var(--ink-muted);
+}
+
+.vote-button.vote-dislike.active {
+  background: var(--accent-berry);
+  color: #fff;
+  border-color: var(--accent-berry);
 }

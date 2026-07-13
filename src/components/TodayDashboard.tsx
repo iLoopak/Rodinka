@@ -9,6 +9,9 @@ import { ErrorState } from './ui/ErrorState'
 import { formatDueDateLabel, todayISODate } from '../utils/dueDate'
 import { nextOccurrenceDate } from '../utils/recurrence'
 import { isMedicalRecordOverdue } from '../utils/medicalDueState'
+import { displayTitle, sortEntriesForDay } from '../utils/mealPlanGrouping'
+import { mealSlotLabel } from '../utils/mealLabels'
+import { MemberAvatar } from './ui/MemberAvatar'
 
 const PENDING_PREVIEW_COUNT = 3
 
@@ -20,6 +23,7 @@ export function TodayDashboard() {
     todaysChores,
     activities,
     medicalRecords,
+    planEntries,
     pendingCompletions,
     balances,
     memberName,
@@ -41,7 +45,7 @@ export function TodayDashboard() {
     return <ErrorState message={error} onRetry={refreshAll} />
   }
 
-  function goTo(path: '/chores' | '/family' | '/calendar', hash?: string) {
+  function goTo(path: '/chores' | '/family' | '/calendar' | '/meals', hash?: string) {
     return (e: MouseEvent) => {
       e.preventDefault()
       if (hash) window.history.replaceState(null, '', `${path}${hash}`)
@@ -101,6 +105,8 @@ export function TodayDashboard() {
     activities.filter((a) => a.status !== 'finished' && a.next_payment_due_date && a.next_payment_due_date < today)
       .length + medicalRecords.filter((r) => isMedicalRecordOverdue(r, today)).length
 
+  const todaysMeals = sortEntriesForDay(planEntries.filter((entry) => entry.entry_date === today))
+
   return (
     <>
       <Header name={currentMember.display_name} />
@@ -135,6 +141,34 @@ export function TodayDashboard() {
             onMarkDone={markDone}
           />
         )}
+      </section>
+
+      <section className="section">
+        <h2>{t.today.mealsTodayTitle}</h2>
+        {todaysMeals.length === 0 ? (
+          <EmptyState
+            title={t.today.noMealsToday}
+            action={{ label: t.today.planTodayAction, onClick: () => navigate('/meals') }}
+          />
+        ) : (
+          <ul className="section-list">
+            {todaysMeals.map((entry) => (
+              <li key={entry.id}>
+                <span className="row-meta">{mealSlotLabel(entry.meal_slot)}</span>
+                <span className="row-title">{displayTitle(entry, '—')}</span>
+                {entry.responsible_member_id && (
+                  <MemberAvatar
+                    member={{ id: entry.responsible_member_id, display_name: memberName(entry.responsible_member_id) }}
+                    size={22}
+                  />
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        <a className="link section-footer-link" href="/meals" onClick={goTo('/meals')}>
+          {t.today.seeMealPlanAction}
+        </a>
       </section>
 
       <section className="section">
