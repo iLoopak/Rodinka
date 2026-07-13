@@ -3,12 +3,14 @@ import { t } from '../strings'
 import { useFamilyData } from '../context/FamilyDataContext'
 import { supabase } from '../supabaseClient'
 import { Link } from '../router'
+import { useInstallPrompt } from '../hooks/useInstallPrompt'
 import { Modal } from './ui/Modal'
 import { SetPasswordForm } from './SetPasswordForm'
 
 export function MoreScreen() {
   const { currentMember, userEmail, familyName } = useFamilyData()
   const [showSetPassword, setShowSetPassword] = useState(false)
+  const { canPrompt, showIOSInstructions, isStandalone, isNative, promptInstall } = useInstallPrompt()
 
   return (
     <>
@@ -36,10 +38,30 @@ export function MoreScreen() {
             <span className="row-spacer" />
             <span className="row-title">{t.more.languageValue}</span>
           </li>
+          {!isNative && isStandalone && (
+            <li>
+              <span className="row-title">{t.install.moreAction}</span>
+              <span className="row-spacer" />
+              <span className="badge badge-done">{t.install.installedBadge}</span>
+            </li>
+          )}
+          {!isNative && showIOSInstructions && (
+            <li>
+              <span className="row-title">{t.install.iosTitle}</span>
+              <p className="row-description">{t.install.iosBody}</p>
+            </li>
+          )}
         </ul>
-        <button className="btn-secondary" onClick={() => setShowSetPassword(true)}>
-          {t.more.setPasswordAction}
-        </button>
+        <div className="family-actions">
+          <button className="btn-secondary" onClick={() => setShowSetPassword(true)}>
+            {t.more.setPasswordAction}
+          </button>
+          {!isNative && canPrompt && (
+            <button className="btn-secondary" onClick={promptInstall}>
+              {t.install.moreAction}
+            </button>
+          )}
+        </div>
       </section>
 
       {showSetPassword && (
