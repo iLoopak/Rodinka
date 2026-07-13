@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { t } from '../strings'
+import { Logo } from './Logo'
 
 export function LoginScreen() {
   const [email, setEmail] = useState('')
@@ -32,7 +33,10 @@ export function LoginScreen() {
   if (sent) {
     return (
       <div className="auth-screen">
-        <h1>{t.login.checkEmailTitle}</h1>
+        <div className="brand-lockup">
+          <Logo size={44} />
+          <h1>{t.login.checkEmailTitle}</h1>
+        </div>
         <p>{t.login.checkEmailBody(email)}</p>
       </div>
     )
@@ -40,7 +44,11 @@ export function LoginScreen() {
 
   return (
     <div className="auth-screen">
-      <h1>{t.login.title}</h1>
+      <div className="brand-lockup">
+        <Logo size={44} />
+        <h1>{t.login.title}</h1>
+      </div>
+      <p className="claim">{t.claim}</p>
       <p>{t.login.subtitle}</p>
       <form onSubmit={handleSubmit}>
         <input

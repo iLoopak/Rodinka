@@ -106,24 +106,40 @@ export function ChoresDashboard({ familyId, userId }: Props) {
   }
 
   return (
-    <section className="chores-dashboard">
-      <h2>{t.chores.sectionTitle}</h2>
-      <AddChildForm familyId={familyId} onAdded={refreshMembers} />
-      <AddChoreForm kids={kids} onSubmit={handleAddChore} />
-      <ChoreList
-        chores={chores}
-        memberName={memberName}
-        latestCompletionFor={latestCompletionFor}
-        onMarkDone={handleMarkDone}
-      />
-      <PendingApprovals
-        completions={pendingCompletions}
-        chores={chores}
-        memberName={memberName}
-        onApprove={handleApprove}
-        onReject={handleReject}
-      />
-      <AllowanceBalances kids={kids} balances={balances} onPayout={handlePayout} />
-    </section>
+    <>
+      {pendingCompletions.length > 0 && (
+        <section className="section accent-coral">
+          <h2>{t.home.needsAttention}</h2>
+          <PendingApprovals
+            completions={pendingCompletions}
+            chores={chores}
+            memberName={memberName}
+            onApprove={handleApprove}
+            onReject={handleReject}
+          />
+        </section>
+      )}
+
+      <section className="section accent-sage">
+        <h2>{t.home.thisWeek}</h2>
+        <ChoreList
+          chores={chores}
+          memberName={memberName}
+          latestCompletionFor={latestCompletionFor}
+          onMarkDone={handleMarkDone}
+        />
+      </section>
+
+      <section className="section accent-lavender">
+        <h2>{t.home.howWeAreDoing}</h2>
+        <AllowanceBalances kids={kids} balances={balances} onPayout={handlePayout} />
+      </section>
+
+      <details className="manage">
+        <summary>{t.home.manage}</summary>
+        <AddChildForm familyId={familyId} onAdded={refreshMembers} />
+        <AddChoreForm kids={kids} onSubmit={handleAddChore} />
+      </details>
+    </>
   )
 }

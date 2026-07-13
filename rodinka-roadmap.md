@@ -17,6 +17,18 @@
   boolean flag; real recurrence logic comes later once the core loop is
   validated with actual use
 
+## Visual identity foundation ✅ Done
+- Implemented per `visual-identity.md`: color tokens, Manrope type, card/button/
+  badge components, the four-piece mosaic logo mark, and the "Dnes u nás"
+  chronological home screen (needs attention / this week / how we're doing,
+  with setup actions tucked into a collapsible "Spravovat" section)
+- Module accent colors wired up for Phase 1 (sage = chores, lavender =
+  allowance); sky, honey, and berry are reserved and ready for Phase 2/3
+  (activities, meals, medical) to reuse the same `.section.accent-*` pattern
+  in `src/index.css`
+- Per-member avatar colors from the doc are *not* implemented yet — `members`
+  has no color field; revisit if/when that's worth the schema change
+
 ## Phase 2 — Activities/Clubs + Medical Tracker (planned)
 - Structured records for swim class, dance, etc. — coach contact,
   membership/payment due dates, skill level

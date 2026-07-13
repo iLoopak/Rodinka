@@ -48,33 +48,32 @@ export function PendingApprovals({ completions, chores, memberName, onApprove, o
     }
   }
 
+  if (completions.length === 0) {
+    return null
+  }
+
   return (
-    <div className="pending-approvals">
-      <h3>{t.chores.approvalsTitle}</h3>
+    <div>
       {error && <p className="error">{error}</p>}
-      {completions.length === 0 ? (
-        <p>{t.chores.noApprovals}</p>
-      ) : (
-        <ul>
-          {completions.map((completion) => {
-            const chore = choreFor(completion.chore_id)
-            const busy = busyId === completion.id
-            return (
-              <li key={completion.id}>
-                <strong>{chore?.title ?? '?'}</strong>
-                {' — '}
-                {t.chores.completedBy(memberName(completion.completed_by))}
-                <button onClick={() => handleApprove(completion)} disabled={busy}>
-                  {busy && busyAction === 'approve' ? t.chores.approving : t.chores.approve}
-                </button>
-                <button onClick={() => handleReject(completion)} disabled={busy}>
-                  {busy && busyAction === 'reject' ? t.chores.rejecting : t.chores.reject}
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-      )}
+      <ul className="section-list">
+        {completions.map((completion) => {
+          const chore = choreFor(completion.chore_id)
+          const busy = busyId === completion.id
+          return (
+            <li key={completion.id}>
+              <span className="row-title">{chore?.title ?? '?'}</span>
+              <span className="row-meta">{t.chores.completedBy(memberName(completion.completed_by))}</span>
+              <span className="row-spacer" />
+              <button className="btn-secondary" onClick={() => handleReject(completion)} disabled={busy}>
+                {busy && busyAction === 'reject' ? t.chores.rejecting : t.chores.reject}
+              </button>
+              <button onClick={() => handleApprove(completion)} disabled={busy}>
+                {busy && busyAction === 'approve' ? t.chores.approving : t.chores.approve}
+              </button>
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
 }

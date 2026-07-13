@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { t } from '../strings'
+import { Logo } from './Logo'
 
 interface Props {
   onDone: () => void
@@ -52,18 +53,23 @@ export function OnboardingScreen({ onDone }: Props) {
 
   if (mode === 'choose') {
     return (
-      <div className="onboarding-screen">
-        <h1>{t.onboarding.welcomeTitle}</h1>
+      <div className="auth-screen">
+        <div className="brand-lockup">
+          <Logo size={44} />
+          <h1>{t.onboarding.welcomeTitle}</h1>
+        </div>
         <p>{t.onboarding.welcomeSubtitle}</p>
         <button onClick={() => setMode('create')}>{t.onboarding.createFamilyButton}</button>
-        <button onClick={() => setMode('join')}>{t.onboarding.joinFamilyButton}</button>
+        <button className="btn-secondary" onClick={() => setMode('join')}>
+          {t.onboarding.joinFamilyButton}
+        </button>
       </div>
     )
   }
 
   if (mode === 'create') {
     return (
-      <div className="onboarding-screen">
+      <div className="auth-screen">
         <h1>{t.onboarding.createTitle}</h1>
         <form onSubmit={handleCreate}>
           <label>
@@ -95,7 +101,7 @@ export function OnboardingScreen({ onDone }: Props) {
   }
 
   return (
-    <div className="onboarding-screen">
+    <div className="auth-screen">
       <h1>{t.onboarding.joinTitle}</h1>
       <form onSubmit={handleJoin}>
         <label>

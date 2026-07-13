@@ -36,48 +36,49 @@ export function AllowanceBalances({ kids, balances, onPayout }: Props) {
     }
   }
 
+  if (kids.length === 0) {
+    return <p className="empty-state">{t.chores.noMembers}</p>
+  }
+
   return (
-    <div className="allowance-balances">
-      <h3>{t.chores.balancesTitle}</h3>
-      {kids.length === 0 ? (
-        <p>{t.chores.noMembers}</p>
-      ) : (
-        <ul>
-          {kids.map((kid) => (
-            <li key={kid.id}>
-              {t.chores.balanceLabel(kid.display_name, t.chores.formatAmount(balances.get(kid.id) ?? 0))}
-              <button onClick={() => openPayout(kid.id)}>{t.chores.payoutButton}</button>
-              {payoutFor === kid.id && (
-                <form onSubmit={(e) => handleSubmit(e, kid.id)}>
-                  <h4>{t.chores.payoutTitle}</h4>
-                  <label>
-                    {t.chores.payoutAmountLabel}
-                    <input
-                      required
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                    />
-                  </label>
-                  <label>
-                    {t.chores.payoutReasonLabel}
-                    <input value={reason} onChange={(e) => setReason(e.target.value)} />
-                  </label>
-                  <button type="submit" disabled={loading}>
-                    {loading ? t.chores.payingOut : t.chores.payoutSubmit}
-                  </button>
-                  <button type="button" onClick={() => setPayoutFor(null)}>
-                    {t.chores.cancel}
-                  </button>
-                  {error && <p className="error">{error}</p>}
-                </form>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <ul className="section-list">
+      {kids.map((kid) => (
+        <li key={kid.id}>
+          <span className="row-title">{kid.display_name}</span>
+          <span className="row-spacer" />
+          <span className="row-amount">{t.chores.formatAmount(balances.get(kid.id) ?? 0)}</span>
+          <button className="btn-secondary" onClick={() => openPayout(kid.id)}>
+            {t.chores.payoutButton}
+          </button>
+          {payoutFor === kid.id && (
+            <form onSubmit={(e) => handleSubmit(e, kid.id)}>
+              <h4>{t.chores.payoutTitle}</h4>
+              <label>
+                {t.chores.payoutAmountLabel}
+                <input
+                  required
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+              </label>
+              <label>
+                {t.chores.payoutReasonLabel}
+                <input value={reason} onChange={(e) => setReason(e.target.value)} />
+              </label>
+              <button type="submit" disabled={loading}>
+                {loading ? t.chores.payingOut : t.chores.payoutSubmit}
+              </button>
+              <button type="button" className="link" onClick={() => setPayoutFor(null)}>
+                {t.chores.cancel}
+              </button>
+              {error && <p className="error">{error}</p>}
+            </form>
+          )}
+        </li>
+      ))}
+    </ul>
   )
 }

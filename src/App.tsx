@@ -3,6 +3,7 @@ import { useFamily } from './hooks/useFamily'
 import { LoginScreen } from './components/LoginScreen'
 import { OnboardingScreen } from './components/OnboardingScreen'
 import { ChoresDashboard } from './components/ChoresDashboard'
+import { Logo } from './components/Logo'
 import { supabase } from './supabaseClient'
 import { t } from './strings'
 
@@ -28,14 +29,20 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header>
-        <h1>{t.appName}</h1>
+      <header className="app-header">
+        <div className="brand">
+          <Logo size={28} />
+          <span className="wordmark">{t.appName}</span>
+        </div>
         <button className="link" onClick={() => supabase.auth.signOut()}>
           {t.dashboard.signOut}
         </button>
       </header>
       <main>
-        <p>{t.dashboard.welcome(member.display_name, member.role)}</p>
+        <div className="home-header">
+          <h1 className="home-title">{t.home.title}</h1>
+          <p className="home-subtitle">{t.home.welcome(member.display_name)}</p>
+        </div>
         <ChoresDashboard familyId={member.family_id} userId={session.user.id} />
       </main>
     </div>
