@@ -8,6 +8,7 @@ export interface Chore {
   title: string
   description: string | null
   assigned_to: string
+  due_date: string
   reward_amount: number
   recurring: boolean
   created_at: string
@@ -28,7 +29,7 @@ export function useChores(familyId: string | undefined) {
     setLoading(true)
     const { data, error } = await supabase
       .from('chores')
-      .select('id, family_id, title, description, assigned_to, reward_amount, recurring, created_at')
+      .select('id, family_id, title, description, assigned_to, due_date, reward_amount, recurring, created_at')
       .eq('family_id', familyId)
       .order('created_at')
 

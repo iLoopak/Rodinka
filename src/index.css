@@ -234,6 +234,26 @@ main {
   margin-bottom: 20px;
 }
 
+.screen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.screen-header .home-title {
+  margin-bottom: 0;
+}
+
+.header-action-button {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
 .home-title {
   font-size: 1.5rem;
 }
@@ -354,6 +374,11 @@ main {
 .badge-done {
   background: rgba(118, 169, 139, 0.2);
   color: #3f6b53;
+}
+
+.badge-overdue {
+  background: rgba(151, 48, 43, 0.14);
+  color: var(--brick-dark);
 }
 
 /* ------------------------------------------------------------------ */

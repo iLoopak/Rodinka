@@ -15,6 +15,7 @@ import { useChores, type Chore } from '../hooks/useChores'
 import { useChoreCompletions, type ChoreCompletion } from '../hooks/useChoreCompletions'
 import { useAllowanceLedger } from '../hooks/useAllowanceLedger'
 import { getChoreState } from '../utils/choreState'
+import { compareChoresByDueDate, isDueTodayOrEarlier } from '../utils/dueDate'
 
 // Single shared data layer for Today/Chores/Family so they don't each
 // independently re-fetch members/chores/completions/ledger, and so a
@@ -32,7 +33,7 @@ interface FamilyDataContextValue {
   chores: Chore[]
   completions: ChoreCompletion[]
   pendingCompletions: ChoreCompletion[]
-  actionableChores: Chore[]
+  todaysChores: Chore[]
   balances: Map<string, number>
   memberName: (id: string) => string
   latestCompletionFor: (choreId: string) => ChoreCompletion | null
@@ -43,6 +44,7 @@ interface FamilyDataContextValue {
     title: string
     description: string
     assignedTo: string
+    dueDate: string
     rewardAmount: number
     recurring: boolean
   }) => Promise<void>
@@ -79,7 +81,12 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     error: membersError,
     refresh: refreshMembers,
   } = useFamilyMembers(familyId)
-  const { chores, loading: choresLoading, error: choresError, refresh: refreshChores } = useChores(familyId)
+  const {
+    chores: rawChores,
+    loading: choresLoading,
+    error: choresError,
+    refresh: refreshChores,
+  } = useChores(familyId)
   const {
     completions,
     loading: completionsLoading,
@@ -113,6 +120,10 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
 
   const isParentOrAdmin = member.role === 'admin' || member.role === 'parent'
 
+  // Sorted once here (overdue/earliest due date first) so every screen that
+  // reads `chores` from context gets consistent ordering for free.
+  const chores = useMemo(() => [...rawChores].sort(compareChoresByDueDate), [rawChores])
+
   const kids = useMemo(() => members.filter((m) => m.role === 'child'), [members])
 
   const memberName = useMemo(() => {
@@ -141,6 +152,14 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
   const actionableChores = useMemo(
     () => chores.filter((chore) => getChoreState(chore, latestCompletionFor(chore.id)) === 'actionable'),
     [chores, latestCompletionFor]
+  )
+
+  // What Today should show: actionable chores due today or already overdue.
+  // Future-dated actionable chores stay out of Today and remain visible in
+  // the main Chores screen instead (order is inherited from `chores`).
+  const todaysChores = useMemo(
+    () => actionableChores.filter((chore) => isDueTodayOrEarlier(chore.due_date)),
+    [actionableChores]
   )
 
   const loading = membersLoading || choresLoading || completionsLoading || ledgerLoading
@@ -172,6 +191,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
       title: string
       description: string
       assignedTo: string
+      dueDate: string
       rewardAmount: number
       recurring: boolean
     }) => {
@@ -180,6 +200,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
         title: input.title,
         description: input.description || null,
         assigned_to: input.assignedTo,
+        due_date: input.dueDate,
         reward_amount: input.rewardAmount,
         recurring: input.recurring,
         created_by: userId,
@@ -252,7 +273,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     chores,
     completions,
     pendingCompletions,
-    actionableChores,
+    todaysChores,
     balances,
     memberName,
     latestCompletionFor,

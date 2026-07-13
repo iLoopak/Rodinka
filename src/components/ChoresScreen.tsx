@@ -22,6 +22,8 @@ export function ChoresScreen() {
   const {
     chores,
     kids,
+    members,
+    currentMember,
     pendingCompletions,
     balances,
     memberName,
@@ -49,6 +51,7 @@ export function ChoresScreen() {
     title: string
     description: string
     assignedTo: string
+    dueDate: string
     rewardAmount: number
     recurring: boolean
   }) {
@@ -65,8 +68,17 @@ export function ChoresScreen() {
 
   return (
     <>
-      <div className="home-header">
+      <div className="screen-header">
         <h1 className="home-title">{t.nav.chores}</h1>
+        {isParentOrAdmin && (
+          <button
+            type="button"
+            className="header-action-button"
+            onClick={() => setShowAddChore(true)}
+          >
+            <span aria-hidden="true">+</span> {t.chores.addChoreAction}
+          </button>
+        )}
       </div>
 
       <div className="tabs" role="tablist">
@@ -121,15 +133,12 @@ export function ChoresScreen() {
       {tab === 'manage' && (
         <section className="section">
           <p>{t.chores.manageIntro}</p>
-          {isParentOrAdmin && (
-            <button onClick={() => setShowAddChore(true)}>{t.chores.addChoreAction}</button>
-          )}
         </section>
       )}
 
       {showAddChore && (
         <Modal title={t.chores.addTitle} onClose={() => setShowAddChore(false)}>
-          <AddChoreForm kids={kids} onSubmit={handleAddChore} />
+          <AddChoreForm members={members} currentMemberId={currentMember.id} onSubmit={handleAddChore} />
         </Modal>
       )}
     </>

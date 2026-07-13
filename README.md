@@ -27,8 +27,10 @@ and `src/` for the app code.
   their data on their behalf.
 - **invites** — short codes that let a second parent join an existing
   family.
-- **chores** — a task belonging to a family, assigned to one child member,
-  with a `reward_amount` and a `recurring` flag.
+- **chores** — a task belonging to a family, assigned to exactly one family
+  member (any role — child, parent, or admin), with a `reward_amount`, a
+  `due_date` (date-only — which day, not a precise time), and a `recurring`
+  flag.
 - **chore_completions** — a log of each time a chore is marked done, with a
   `status` (`pending_approval`, `approved`, `rejected`).
 - **allowance_ledger** — a running record of amounts owed/paid per child;
@@ -38,11 +40,13 @@ and `src/` for the app code.
 Row Level Security enforces that a logged-in user can only ever see data
 belonging to families they're a member of. See `supabase/001_schema.sql` for
 the Phase 0 tables/policies, `supabase/002_functions.sql` for the
-`create_family` / `create_invite` / `redeem_invite` RPC functions, and
+`create_family` / `create_invite` / `redeem_invite` RPC functions,
 `supabase/003_chores.sql` for the Phase 1 tables/policies plus the
 `approve_chore_completion` / `reject_chore_completion` / `record_payout` RPC
 functions (approving a completion and crediting the ledger happens
-atomically inside `approve_chore_completion`).
+atomically inside `approve_chore_completion`), and `supabase/004_chore_due_date.sql`
+for the `chores.due_date` column plus a tightened insert policy that
+verifies a chore's `assigned_to` belongs to the same family.
 
 ### App flow (implemented so far)
 
@@ -88,8 +92,9 @@ npm run dev
 ```
 
 In Supabase, run `supabase/001_schema.sql`, `supabase/002_functions.sql`,
-then `supabase/003_chores.sql` in the SQL Editor (in that order — later
-files depend on earlier tables/functions existing).
+`supabase/003_chores.sql`, then `supabase/004_chore_due_date.sql` in the SQL
+Editor (in that order — later files depend on earlier tables/functions
+existing).
 
 Auth (email/password + Google) needs a few settings changed in the Supabase
 dashboard and a Google Cloud OAuth client — see `supabase-auth-setup.md` for
