@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { t } from '../strings'
 
-export type CalendarItemType = 'chore' | 'activity' | 'payment' | 'medical' | 'vaccination'
+export type CalendarItemType = 'chore' | 'activity' | 'payment' | 'medical' | 'vaccination' | 'meal'
 
 interface ItemTypeStyle {
   colorVar: string
@@ -52,6 +52,14 @@ function VaccinationIcon() {
   )
 }
 
+function MealIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M7 3v7a2 2 0 0 0 4 0V3M9 10v11M17 3c-1.7 0-3 2-3 5s1.3 5 3 5v8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 export function getItemTypeStyle(type: CalendarItemType): ItemTypeStyle {
   switch (type) {
     case 'chore':
@@ -64,5 +72,7 @@ export function getItemTypeStyle(type: CalendarItemType): ItemTypeStyle {
       return { colorVar: '--accent-sky', label: t.calendar.typeMedical, icon: <MedicalIcon /> }
     case 'vaccination':
       return { colorVar: '--accent-berry', label: t.calendar.typeVaccination, icon: <VaccinationIcon /> }
+    case 'meal':
+      return { colorVar: '--brick', label: t.calendar.typeMeal, icon: <MealIcon /> }
   }
 }

@@ -2,9 +2,11 @@ import { t } from '../strings'
 import type { Chore } from '../hooks/useChores'
 import type { Activity } from '../hooks/useActivities'
 import type { MedicalRecord } from '../hooks/useMedicalRecords'
+import type { MealPlanEntry } from '../hooks/useMealPlanEntries'
 import type { CalendarItemType } from './itemTypeStyle'
 import { classifyDueDate, compareISODates, todayISODate, type DueUrgency } from './dueDate'
 import { expandActivitiesOccurrences } from './recurrence'
+import { displayTitle } from './mealPlanGrouping'
 
 export interface CalendarEntry {
   id: string
@@ -19,7 +21,7 @@ export interface CalendarEntry {
   responsibleMemberId: string | null
   recurring: boolean
   /** What kind of source record this was derived from, for navigation. */
-  sourceType: 'chore' | 'activity' | 'activity_payment' | 'medical' | 'medical_due'
+  sourceType: 'chore' | 'activity' | 'activity_payment' | 'medical' | 'medical_due' | 'meal'
   sourceId: string
 }
 
@@ -31,20 +33,29 @@ interface BuildCalendarEntriesInput {
   chores: Chore[]
   activities: Activity[]
   medicalRecords: MedicalRecord[]
+  // Optional and additive: meal plan entries were not part of the original
+  // calendar projection (Phase 2). Only 'confirmed'/'completed' entries are
+  // projected — 'proposed'/'skipped' stay out to avoid flooding the
+  // calendar with every rough meal idea (see the Phase 3 PR description
+  // for the full reasoning). Omitting this field entirely is equivalent to
+  // passing an empty array.
+  mealPlanEntries?: MealPlanEntry[]
   rangeStart: string
   rangeEnd: string
 }
 
-// Projects the source records (chores/activities/medical records) into a
-// flat, sorted list of calendar entries for a bounded date range. Nothing
-// is persisted or cached — this is recomputed on every call, so it always
-// reflects the current source data. Callers are expected to pre-filter
-// the source arrays for any status-based exclusion (e.g. hiding completed
-// chores) since what counts as "done" differs per record type.
+// Projects the source records (chores/activities/medical records/meal
+// plan entries) into a flat, sorted list of calendar entries for a
+// bounded date range. Nothing is persisted or cached — this is
+// recomputed on every call, so it always reflects the current source
+// data. Callers are expected to pre-filter the source arrays for any
+// status-based exclusion (e.g. hiding completed chores) since what
+// counts as "done" differs per record type.
 export function buildCalendarEntries({
   chores,
   activities,
   medicalRecords,
+  mealPlanEntries = [],
   rangeStart,
   rangeEnd,
 }: BuildCalendarEntriesInput): CalendarEntry[] {
@@ -139,6 +150,24 @@ export function buildCalendarEntries({
         sourceId: record.id,
       })
     }
+  }
+
+  for (const entry of mealPlanEntries) {
+    if (entry.status !== 'confirmed' && entry.status !== 'completed') continue
+    if (!withinRange(entry.entry_date, rangeStart, rangeEnd)) continue
+    entries.push({
+      id: `meal:${entry.id}`,
+      type: 'meal',
+      date: entry.entry_date,
+      time: null,
+      title: displayTitle(entry, '—'),
+      subtitle: null,
+      childOrPatientId: null,
+      responsibleMemberId: entry.responsible_member_id,
+      recurring: false,
+      sourceType: 'meal',
+      sourceId: entry.id,
+    })
   }
 
   return entries.sort(compareEntries)
