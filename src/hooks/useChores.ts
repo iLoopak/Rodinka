@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../supabaseClient'
+import { t } from '../strings'
 
 export interface Chore {
   id: string
@@ -15,6 +16,7 @@ export interface Chore {
 export function useChores(familyId: string | undefined) {
   const [chores, setChores] = useState<Chore[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
     if (!familyId) {
@@ -33,8 +35,10 @@ export function useChores(familyId: string | undefined) {
     if (error) {
       console.error('Failed to load chores:', error.message)
       setChores([])
+      setError(t.errors.loadFailed)
     } else {
       setChores(data)
+      setError(null)
     }
     setLoading(false)
   }, [familyId])
@@ -43,5 +47,5 @@ export function useChores(familyId: string | undefined) {
     refresh()
   }, [refresh])
 
-  return { chores, loading, refresh }
+  return { chores, loading, error, refresh }
 }

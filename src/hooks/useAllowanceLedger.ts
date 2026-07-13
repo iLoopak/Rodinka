@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../supabaseClient'
+import { t } from '../strings'
 
 export interface LedgerEntry {
   id: string
@@ -12,6 +13,7 @@ export interface LedgerEntry {
 export function useAllowanceLedger(familyId: string | undefined) {
   const [entries, setEntries] = useState<LedgerEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
     if (!familyId) {
@@ -30,8 +32,10 @@ export function useAllowanceLedger(familyId: string | undefined) {
     if (error) {
       console.error('Failed to load allowance ledger:', error.message)
       setEntries([])
+      setError(t.errors.loadFailed)
     } else {
       setEntries(data)
+      setError(null)
     }
     setLoading(false)
   }, [familyId])
@@ -40,5 +44,5 @@ export function useAllowanceLedger(familyId: string | undefined) {
     refresh()
   }, [refresh])
 
-  return { entries, loading, refresh }
+  return { entries, loading, error, refresh }
 }
