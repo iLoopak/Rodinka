@@ -7,6 +7,7 @@ import { ChoresScreen } from './ChoresScreen'
 import { FamilyScreen } from './FamilyScreen'
 import { MoreScreen } from './MoreScreen'
 import { CalendarScreen } from './CalendarScreen'
+import { PlannerScreen } from './PlannerScreen'
 import { ActivitiesScreen } from './ActivitiesScreen'
 import { HealthScreen } from './HealthScreen'
 import { MealPlanScreen } from './meals/MealPlanScreen'
@@ -27,6 +28,7 @@ export function AppShell() {
       <main className="app-main">
         {path === '/' && <TodayDashboard />}
         {path === '/calendar' && <CalendarScreen />}
+        {path === '/plan' && <PlannerScreen />}
         {path === '/chores' && <ChoresScreen />}
         {path === '/activities' && <ActivitiesScreen />}
         {path === '/health' && <HealthScreen />}

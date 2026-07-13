@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { t } from '../strings'
 import { useFamilyData } from '../context/FamilyDataContext'
 import { supabase } from '../supabaseClient'
-import { Link } from '../router'
 import { useInstallPrompt } from '../hooks/useInstallPrompt'
 import { Modal } from './ui/Modal'
 import { SetPasswordForm } from './SetPasswordForm'
@@ -69,33 +68,6 @@ export function MoreScreen() {
           <SetPasswordForm onDone={() => setShowSetPassword(false)} />
         </Modal>
       )}
-
-      <section className="section">
-        <h2>{t.more.sectionsTitle}</h2>
-        <ul className="section-list plain-list">
-          <li>
-            <Link to="/activities" className="row-link">
-              <span className="row-title">{t.nav.activities}</span>
-              <span className="row-spacer" />
-              <span aria-hidden="true">›</span>
-            </Link>
-          </li>
-          <li>
-            <Link to="/health" className="row-link">
-              <span className="row-title">{t.nav.health}</span>
-              <span className="row-spacer" />
-              <span aria-hidden="true">›</span>
-            </Link>
-          </li>
-          <li>
-            <Link to="/meals" className="row-link">
-              <span className="row-title">{t.nav.meals}</span>
-              <span className="row-spacer" />
-              <span aria-hidden="true">›</span>
-            </Link>
-          </li>
-        </ul>
-      </section>
 
       <section className="section">
         <ul className="section-list plain-list">
