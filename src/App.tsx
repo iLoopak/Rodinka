@@ -3,13 +3,14 @@ import { useFamily } from './hooks/useFamily'
 import { LoginScreen } from './components/LoginScreen'
 import { OnboardingScreen } from './components/OnboardingScreen'
 import { supabase } from './supabaseClient'
+import { t } from './strings'
 
 export default function App() {
   const { session, loading: sessionLoading } = useSession()
   const { member, loading: familyLoading, refresh } = useFamily(session?.user.id)
 
   if (sessionLoading) {
-    return <div className="loading">Loading...</div>
+    return <div className="loading">{t.loading.session}</div>
   }
 
   if (!session) {
@@ -17,7 +18,7 @@ export default function App() {
   }
 
   if (familyLoading) {
-    return <div className="loading">Loading your family...</div>
+    return <div className="loading">{t.loading.family}</div>
   }
 
   if (!member) {
@@ -29,14 +30,14 @@ export default function App() {
   return (
     <div className="app-shell">
       <header>
-        <h1>Family Organizer</h1>
+        <h1>{t.appName}</h1>
         <button className="link" onClick={() => supabase.auth.signOut()}>
-          Sign out
+          {t.dashboard.signOut}
         </button>
       </header>
       <main>
-        <p>Welcome, {member.display_name} ({member.role}).</p>
-        <p>Family dashboard and modules go here next.</p>
+        <p>{t.dashboard.welcome(member.display_name, member.role)}</p>
+        <p>{t.dashboard.placeholder}</p>
       </main>
     </div>
   )

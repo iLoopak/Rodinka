@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
+import { t } from '../strings'
 
 interface Props {
   onDone: () => void
@@ -52,10 +53,10 @@ export function OnboardingScreen({ onDone }: Props) {
   if (mode === 'choose') {
     return (
       <div className="onboarding-screen">
-        <h1>Welcome!</h1>
-        <p>Are you starting a new family, or joining one that already exists?</p>
-        <button onClick={() => setMode('create')}>Create a new family</button>
-        <button onClick={() => setMode('join')}>I have an invite code</button>
+        <h1>{t.onboarding.welcomeTitle}</h1>
+        <p>{t.onboarding.welcomeSubtitle}</p>
+        <button onClick={() => setMode('create')}>{t.onboarding.createFamilyButton}</button>
+        <button onClick={() => setMode('join')}>{t.onboarding.joinFamilyButton}</button>
       </div>
     )
   }
@@ -63,64 +64,64 @@ export function OnboardingScreen({ onDone }: Props) {
   if (mode === 'create') {
     return (
       <div className="onboarding-screen">
-        <h1>Create your family</h1>
+        <h1>{t.onboarding.createTitle}</h1>
         <form onSubmit={handleCreate}>
           <label>
-            Family name
+            {t.onboarding.familyNameLabel}
             <input
               required
               value={familyName}
               onChange={(e) => setFamilyName(e.target.value)}
-              placeholder="e.g. The Novaks"
+              placeholder={t.onboarding.familyNamePlaceholder}
             />
           </label>
           <label>
-            Your name
+            {t.onboarding.yourNameLabel}
             <input
               required
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="e.g. Lukáš"
+              placeholder={t.onboarding.yourNamePlaceholder}
             />
           </label>
           <button type="submit" disabled={loading}>
-            {loading ? 'Creating...' : 'Create family'}
+            {loading ? t.onboarding.creating : t.onboarding.createSubmit}
           </button>
         </form>
         {error && <p className="error">{error}</p>}
-        <button className="link" onClick={() => setMode('choose')}>Back</button>
+        <button className="link" onClick={() => setMode('choose')}>{t.onboarding.back}</button>
       </div>
     )
   }
 
   return (
     <div className="onboarding-screen">
-      <h1>Join a family</h1>
+      <h1>{t.onboarding.joinTitle}</h1>
       <form onSubmit={handleJoin}>
         <label>
-          Invite code
+          {t.onboarding.inviteCodeLabel}
           <input
             required
             value={inviteCode}
             onChange={(e) => setInviteCode(e.target.value)}
-            placeholder="e.g. SUNNY-42"
+            placeholder={t.onboarding.inviteCodePlaceholder}
           />
         </label>
         <label>
-          Your name
+          {t.onboarding.yourNameLabel}
           <input
             required
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="e.g. Partner's name"
+            placeholder={t.onboarding.yourNamePlaceholder}
           />
         </label>
         <button type="submit" disabled={loading}>
-          {loading ? 'Joining...' : 'Join family'}
+          {loading ? t.onboarding.joining : t.onboarding.joinSubmit}
         </button>
       </form>
       {error && <p className="error">{error}</p>}
-      <button className="link" onClick={() => setMode('choose')}>Back</button>
+      <button className="link" onClick={() => setMode('choose')}>{t.onboarding.back}</button>
     </div>
   )
 }

@@ -1,8 +1,8 @@
-# Family Organizer
+# Rodinka
 
 A PWA for managing family life: shared activity/club schedules, medical
 appointments, chores tied to allowance, and weekly meal planning — built for
-non-technical parents, starting Czech-first.
+non-technical parents, starting Czech-first (CZ + EN).
 
 ## Stack
 
@@ -42,6 +42,14 @@ calls.
 
 See `src/App.tsx` for how these states are wired together via the
 `useSession` and `useFamily` hooks.
+
+### Localization
+
+All user-facing text lives in `src/strings.ts`, keyed by language (`cs`/`en`),
+same centralized-strings pattern as the invoicing app. Components import `t`
+from `strings.ts` rather than hardcoding any text. Currently hardcoded to
+`cs` (Czech-first) via `currentLang` — a real language switcher (stored
+per-user, or browser-locale detection) is a Phase 1+ task, not Phase 0.
 
 ## Roadmap (planned, not yet built)
 

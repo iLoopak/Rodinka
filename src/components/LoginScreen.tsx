@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
+import { t } from '../strings'
 
 export function LoginScreen() {
   const [email, setEmail] = useState('')
@@ -31,26 +32,26 @@ export function LoginScreen() {
   if (sent) {
     return (
       <div className="auth-screen">
-        <h1>Check your email</h1>
-        <p>We sent a login link to {email}. Click it to continue.</p>
+        <h1>{t.login.checkEmailTitle}</h1>
+        <p>{t.login.checkEmailBody(email)}</p>
       </div>
     )
   }
 
   return (
     <div className="auth-screen">
-      <h1>Family Organizer</h1>
-      <p>Enter your email to sign in — no password needed.</p>
+      <h1>{t.login.title}</h1>
+      <p>{t.login.subtitle}</p>
       <form onSubmit={handleSubmit}>
         <input
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
+          placeholder={t.login.emailPlaceholder}
         />
         <button type="submit" disabled={loading}>
-          {loading ? 'Sending...' : 'Send magic link'}
+          {loading ? t.login.submitting : t.login.submit}
         </button>
       </form>
       {error && <p className="error">{error}</p>}
