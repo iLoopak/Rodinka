@@ -1,6 +1,6 @@
 import { useSession } from './hooks/useSession'
 import { useFamily } from './hooks/useFamily'
-import { LoginScreen } from './components/LoginScreen'
+import { AuthScreen } from './components/AuthScreen'
 import { OnboardingScreen } from './components/OnboardingScreen'
 import { AppShell } from './components/AppShell'
 import { RouterProvider } from './router'
@@ -16,7 +16,7 @@ export default function App() {
   }
 
   if (!session) {
-    return <LoginScreen />
+    return <AuthScreen />
   }
 
   if (familyLoading) {
