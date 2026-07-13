@@ -230,6 +230,53 @@ main {
   overflow-x: hidden;
 }
 
+/* ------------------------------------------------------------------ */
+/* Install-app banner                                                   */
+/* ------------------------------------------------------------------ */
+
+.install-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 20px 8px;
+  padding: 14px 16px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  animation: rise 220ms ease both;
+}
+
+.install-banner-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.install-banner-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin: 0 0 2px;
+}
+
+.install-banner-body {
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+  margin: 0;
+}
+
+.install-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.install-banner-actions button:not(.modal-close) {
+  min-height: 40px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+}
+
 .home-header {
   margin-bottom: 20px;
 }

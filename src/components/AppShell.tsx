@@ -9,6 +9,7 @@ import { MoreScreen } from './MoreScreen'
 import { CalendarScreen } from './CalendarScreen'
 import { ActivitiesScreen } from './ActivitiesScreen'
 import { HealthScreen } from './HealthScreen'
+import { InstallAppBanner } from './InstallAppBanner'
 
 export function AppShell() {
   const { path } = useRouter()
@@ -21,6 +22,7 @@ export function AppShell() {
           <span className="wordmark">{t.appName}</span>
         </div>
       </header>
+      <InstallAppBanner />
       <main className="app-main">
         {path === '/' && <TodayDashboard />}
         {path === '/calendar' && <CalendarScreen />}

@@ -116,6 +116,16 @@ export const strings = {
       thisWeek: 'Tento týden',
       completed: 'Hotovo',
     },
+    install: {
+      bannerTitle: 'Nainstalovat Rodinku',
+      bannerBody: 'Přidejte si Rodinku na plochu a otevírejte ji jako appku, bez prohlížeče.',
+      installAction: 'Nainstalovat',
+      dismiss: 'Zavřít',
+      iosTitle: 'Přidat na plochu',
+      iosBody: 'V prohlížeči klepněte na tlačítko Sdílet a poté na „Přidat na plochu“.',
+      moreAction: 'Nainstalovat aplikaci',
+      installedBadge: 'Nainstalováno',
+    },
     chores: {
       addChildTitle: 'Přidat dítě',
       childNameLabel: 'Jméno dítěte',
@@ -526,6 +536,16 @@ export const strings = {
       tomorrow: 'Tomorrow',
       thisWeek: 'This week',
       completed: 'Done',
+    },
+    install: {
+      bannerTitle: 'Install Rodinka',
+      bannerBody: 'Add Rodinka to your home screen and open it like an app, no browser needed.',
+      installAction: 'Install',
+      dismiss: 'Close',
+      iosTitle: 'Add to Home Screen',
+      iosBody: 'In your browser, tap the Share button, then "Add to Home Screen".',
+      moreAction: 'Install app',
+      installedBadge: 'Installed',
     },
     chores: {
       addChildTitle: 'Add a child',
