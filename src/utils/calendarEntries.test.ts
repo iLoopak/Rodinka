@@ -138,6 +138,7 @@ describe('buildCalendarEntries — meal plan entries', () => {
     expect(entries).toHaveLength(2)
     expect(entries.every((e) => e.type === 'meal' && e.sourceType === 'meal')).toBe(true)
     expect(entries.map((e) => e.title)).toEqual(['Pizza', 'Soup'])
+    expect(entries.map((e) => e.mealSlot)).toEqual(['dinner', 'dinner'])
   })
 
   it('excludes proposed and skipped entries to avoid cluttering the calendar', () => {
