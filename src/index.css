@@ -1161,24 +1161,22 @@ details.manage .add-child-form + .add-chore-form {
 /* Weekly meal planner                                                  */
 /* ------------------------------------------------------------------ */
 
+/* One day = one card, always. Never a fixed 7-column "spreadsheet" grid —
+   auto-fill naturally gives 1 column on a phone, 2 on a tablet/small
+   desktop, more on a wide monitor, without a single breakpoint to
+   maintain. */
 .week-planner {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 10px;
   margin-bottom: 16px;
-}
-
-@media (max-width: 720px) {
-  .week-planner {
-    grid-template-columns: 1fr;
-  }
 }
 
 .day-plan-card {
   background: var(--paper);
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
-  padding: 12px;
+  padding: 14px;
   min-width: 0;
 }
 
@@ -1203,17 +1201,80 @@ details.manage .add-child-form + .add-chore-form {
   font-size: 0.8rem;
 }
 
-.day-plan-card .section-list li {
-  flex-wrap: wrap;
+/* A day with nothing planned is exactly one line + one button — never
+   three empty "Nothing planned" cards for breakfast/lunch/dinner. */
+.day-plan-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
-.empty-slot-row {
-  opacity: 0.7;
+.day-plan-empty .empty-state {
+  margin: 0;
 }
 
-.empty-slot-label {
+.day-plan-meals {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Multiple meals in a day stack as their own compact cards instead of
+   reserving a slot for every theoretical meal type. */
+.day-plan-meal {
+  background: var(--canvas);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-row);
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+/* Meal type is metadata, not a heading — small, muted, only rendered at
+   all when a day has more than one meal and disambiguation is useful. */
+.day-plan-meal-slot {
+  display: block;
   color: var(--ink-muted);
-  font-weight: 500;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 2px;
+}
+
+/* What we're eating is the headline. */
+.day-plan-meal-title {
+  display: block;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.day-plan-meal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 6px;
+}
+
+.day-plan-meal-responsible {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.day-plan-add-more {
+  width: 100%;
+  text-align: left;
+  min-height: 36px;
+  padding: 4px 2px;
+  font-size: 0.85rem;
 }
 
 /* ------------------------------------------------------------------ */

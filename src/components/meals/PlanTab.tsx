@@ -6,14 +6,12 @@ import { getCurrentWeekStart, getWeekDates, isCurrentWeek, shiftWeek, formatWeek
 import { displayTitle, groupEntriesByDate } from '../../utils/mealPlanGrouping'
 import { mealPlanStatusLabel, mealSlotLabel } from '../../utils/mealLabels'
 import { onActivateKey } from '../../utils/a11y'
-import { EmptyState } from '../ui/EmptyState'
 import { Modal } from '../ui/Modal'
 import { MemberAvatar } from '../ui/MemberAvatar'
 import { AddPlanEntryForm } from './AddPlanEntryForm'
 import type { MealPlanEntry, MealSlot } from '../../hooks/useMealPlanEntries'
 import type { PlanEntryInput } from '../../context/useMealsData'
 
-const PRIMARY_SLOTS: MealSlot[] = ['breakfast', 'lunch', 'dinner']
 const WEEKDAY_LABELS = [
   t.calendar.weekdayShortMon,
   t.calendar.weekdayShortTue,
@@ -57,7 +55,6 @@ export function PlanTab({ prefill, onPrefillConsumed }: Props) {
   const dates = getWeekDates(weekStart)
   const grouped = groupEntriesByDate(planEntries, dates)
   const today = todayISODate()
-  const totalThisWeek = dates.reduce((sum, date) => sum + (grouped.get(date)?.length ?? 0), 0)
 
   function closeAddSheet() {
     setPendingAdd(null)
@@ -95,6 +92,8 @@ export function PlanTab({ prefill, onPrefillConsumed }: Props) {
 
   return (
     <>
+      {/* Week navigation is deliberately compact and secondary — the day
+          list below is what the eye should land on first. */}
       <div className="month-nav">
         <button type="button" className="btn-secondary" onClick={() => setWeekStart(shiftWeek(weekStart, -1))} aria-label={t.mealPlan.previousWeekAction}>
           ‹
@@ -116,81 +115,75 @@ export function PlanTab({ prefill, onPrefillConsumed }: Props) {
             {copying ? t.mealPlan.copyingWeek : t.mealPlan.copyPreviousWeekAction}
           </button>
         )}
-        {isParentOrAdmin && (
-          <button
-            type="button"
-            className="header-action-button"
-            onClick={() => setPendingAdd({ date: today >= weekStart && today <= dates[6] ? today : weekStart, slot: 'dinner' })}
-          >
-            <span aria-hidden="true">+</span> {t.mealPlan.addEntryAction}
-          </button>
-        )}
       </div>
 
       {error && <p className="error">{error}</p>}
 
-      {totalThisWeek === 0 ? (
-        <EmptyState
-          title={t.mealPlan.noMealsPlannedThisWeek}
-          action={isParentOrAdmin ? { label: t.mealPlan.addEntryAction, onClick: () => setPendingAdd({ date: today, slot: 'dinner' }) } : undefined}
-        />
-      ) : (
-        <div className="week-planner">
-          {dates.map((date, index) => {
-            const entries = grouped.get(date) ?? []
-            const slotsWithEntries = new Set(entries.map((entry) => entry.meal_slot))
-            const missingPrimarySlots = PRIMARY_SLOTS.filter((slot) => !slotsWithEntries.has(slot))
+      <div className="week-planner">
+        {dates.map((date, index) => {
+          const entries = grouped.get(date) ?? []
+          const showSlotBadge = entries.length > 1
 
-            return (
-              <div key={date} className={`day-plan-card${date === today ? ' today' : ''}`}>
-                <div className="day-plan-header">
-                  <span className="day-plan-weekday">{WEEKDAY_LABELS[index]}</span>
-                  <span className="day-plan-date">{formatShortDate(date)}</span>
+          return (
+            <div key={date} className={`day-plan-card${date === today ? ' today' : ''}`}>
+              <div className="day-plan-header">
+                <span className="day-plan-weekday">{WEEKDAY_LABELS[index]}</span>
+                <span className="day-plan-date">{formatShortDate(date)}</span>
+              </div>
+
+              {entries.length === 0 ? (
+                <div className="day-plan-empty">
+                  <p className="empty-state">{t.mealPlan.dayEmpty}</p>
+                  {isParentOrAdmin && (
+                    <button type="button" className="btn-secondary" onClick={() => setPendingAdd({ date, slot: 'dinner' })}>
+                      {t.mealPlan.addEntryAction}
+                    </button>
+                  )}
                 </div>
-                <ul className="section-list">
+              ) : (
+                <ul className="day-plan-meals">
                   {entries.map((entry) => (
                     <li
                       key={entry.id}
-                      className="clickable-row"
+                      className="day-plan-meal clickable-row"
                       role="button"
                       tabIndex={0}
                       onClick={() => setEditingEntry(entry)}
                       onKeyDown={onActivateKey(() => setEditingEntry(entry))}
                     >
-                      <span className="row-meta">{mealSlotLabel(entry.meal_slot)}</span>
-                      <span className="row-title">{displayTitle(entry, '—')}</span>
-                      {entry.responsible_member_id && (
-                        <MemberAvatar
-                          member={{ id: entry.responsible_member_id, display_name: memberName(entry.responsible_member_id) }}
-                          size={22}
-                        />
-                      )}
-                      <span className="row-spacer" />
-                      <span className={`badge ${statusBadgeClass(entry.status)}`}>{mealPlanStatusLabel(entry.status)}</span>
+                      {showSlotBadge && <span className="day-plan-meal-slot">{mealSlotLabel(entry.meal_slot)}</span>}
+                      <span className="day-plan-meal-title">{displayTitle(entry, '—')}</span>
+                      <div className="day-plan-meal-meta">
+                        {entry.responsible_member_id && (
+                          <span className="day-plan-meal-responsible">
+                            <MemberAvatar
+                              member={{ id: entry.responsible_member_id, display_name: memberName(entry.responsible_member_id) }}
+                              size={20}
+                            />
+                            {t.mealPlan.preparedByLabel(memberName(entry.responsible_member_id))}
+                          </span>
+                        )}
+                        <span className={`badge ${statusBadgeClass(entry.status)}`}>{mealPlanStatusLabel(entry.status)}</span>
+                      </div>
                     </li>
                   ))}
-                  {isParentOrAdmin &&
-                    missingPrimarySlots.map((slot) => (
-                      <li
-                        key={slot}
-                        className="clickable-row empty-slot-row"
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => setPendingAdd({ date, slot })}
-                        onKeyDown={onActivateKey(() => setPendingAdd({ date, slot }))}
+                  {isParentOrAdmin && (
+                    <li>
+                      <button
+                        type="button"
+                        className="link day-plan-add-more"
+                        onClick={() => setPendingAdd({ date, slot: 'dinner' })}
                       >
-                        <span className="row-meta">{mealSlotLabel(slot)}</span>
-                        <span className="row-title empty-slot-label">{t.mealPlan.emptySlot}</span>
-                        <span className="row-spacer" />
-                        <span aria-hidden="true">+</span>
-                      </li>
-                    ))}
+                        {t.mealPlan.addAnotherMealAction}
+                      </button>
+                    </li>
+                  )}
                 </ul>
-              </div>
-            )
-          })}
-        </div>
-      )}
+              )}
+            </div>
+          )
+        })}
+      </div>
 
       {pendingAdd && (
         <Modal title={t.mealPlan.addEntryTitle} onClose={closeAddSheet}>
