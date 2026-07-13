@@ -86,7 +86,7 @@ export function ChoresScreen() {
       </div>
 
       {tab === 'active' && (
-        <section className="section accent-sage">
+        <section className="section">
           <ChoreList
             chores={chores}
             memberName={memberName}
@@ -97,7 +97,7 @@ export function ChoresScreen() {
       )}
 
       {tab === 'pending' && (
-        <section className="section accent-coral">
+        <section className="section">
           {pendingCompletions.length === 0 ? (
             <p className="empty-state">{t.chores.noPendingApprovals}</p>
           ) : (
@@ -113,13 +113,13 @@ export function ChoresScreen() {
       )}
 
       {tab === 'allowance' && (
-        <section className="section accent-lavender">
+        <section className="section">
           <AllowanceBalances kids={kids} balances={balances} onPayout={payout} />
         </section>
       )}
 
       {tab === 'manage' && (
-        <section className="section accent-honey">
+        <section className="section">
           <p>{t.chores.manageIntro}</p>
           {isParentOrAdmin && (
             <button onClick={() => setShowAddChore(true)}>{t.chores.addChoreAction}</button>

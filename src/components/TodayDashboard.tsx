@@ -48,7 +48,7 @@ export function TodayDashboard() {
     return (
       <>
         <Header name={currentMember.display_name} />
-        <section className="section accent-lavender">
+        <section className="section">
           <EmptyState
             title={t.today.setupAddChildTitle}
             body={t.today.setupAddChildBody}
@@ -63,7 +63,7 @@ export function TodayDashboard() {
     return (
       <>
         <Header name={currentMember.display_name} />
-        <section className="section accent-sage">
+        <section className="section">
           <EmptyState
             title={t.today.setupAddChoreTitle}
             body={t.today.setupAddChoreBody}
@@ -82,7 +82,7 @@ export function TodayDashboard() {
       <Header name={currentMember.display_name} />
 
       {pendingCompletions.length > 0 && (
-        <section className="section accent-coral">
+        <section className="section">
           <h2>{t.today.approvalsTitle}</h2>
           <PendingApprovals
             completions={pendingPreview}
@@ -99,7 +99,7 @@ export function TodayDashboard() {
         </section>
       )}
 
-      <section className="section accent-sage">
+      <section className="section">
         <h2>{t.today.choresTitle}</h2>
         {actionableChores.length === 0 ? (
           <p className="empty-state">{t.today.choresEmpty}</p>
@@ -113,7 +113,7 @@ export function TodayDashboard() {
         )}
       </section>
 
-      <section className="section accent-lavender">
+      <section className="section">
         <h2>{t.today.allowanceTitle}</h2>
         <ul className="section-list">
           {kids.map((kid) => (

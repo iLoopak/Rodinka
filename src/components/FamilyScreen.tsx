@@ -36,7 +36,7 @@ export function FamilyScreen() {
         <h1 className="home-title">{familyName ?? t.family.title}</h1>
       </div>
 
-      <section className="section accent-sky">
+      <section className="section">
         <h2>{t.family.membersTitle}</h2>
         <ul className="section-list">
           {members.map((m) => (
@@ -53,7 +53,7 @@ export function FamilyScreen() {
       </section>
 
       {isParentOrAdmin && (
-        <section className="section accent-lavender">
+        <section className="section">
           <div className="family-actions">
             <button className="btn-secondary" onClick={() => setShowAddChild(true)}>
               {t.family.addChildAction}

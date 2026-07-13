@@ -15,7 +15,7 @@ export function MoreScreen() {
         <h1 className="home-title">{t.more.title}</h1>
       </div>
 
-      <section className="section accent-sky">
+      <section className="section">
         <ul className="section-list plain-list">
           <li>
             <span className="row-meta">{t.more.signedInAs}</span>
@@ -47,7 +47,7 @@ export function MoreScreen() {
         </Modal>
       )}
 
-      <section className="section accent-lavender">
+      <section className="section">
         <ul className="section-list plain-list">
           <li className="disabled-row">
             <span className="row-title">{t.more.placeholderActivities}</span>
