@@ -1,8 +1,16 @@
 import type { ReactNode } from 'react'
 import { Link, useRouter, type Route } from '../router'
 import { t } from '../strings'
+import { isNavigationItemActive } from '../utils/navigation'
 
-const items: { to: Route; label: string; icon: (active: boolean) => ReactNode }[] = [
+interface NavigationItem {
+  to: Route
+  label: string
+  activeRoutes?: readonly Route[]
+  icon: (active: boolean) => ReactNode
+}
+
+const items: NavigationItem[] = [
   {
     to: '/',
     label: t.nav.today,
@@ -24,12 +32,13 @@ const items: { to: Route; label: string; icon: (active: boolean) => ReactNode }[
     ),
   },
   {
-    to: '/chores',
-    label: t.nav.chores,
+    to: '/plan',
+    label: t.nav.plan,
+    activeRoutes: ['/plan', '/chores', '/activities', '/health', '/meals'],
     icon: () => (
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="4" y="4" width="16" height="16" rx="5" strokeLinejoin="round" />
-        <path d="m8.5 12.5 2.5 2.5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" strokeLinejoin="round" />
+        <path d="M8 2v4M16 2v4M7 10h10M7 14h4M14 14h3M7 18h3" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -64,9 +73,14 @@ export function BottomNavigation() {
   return (
     <nav className="bottom-nav" aria-label="Primary">
       {items.map((item) => {
-        const active = path === item.to
+        const active = isNavigationItemActive(item, path)
         return (
-          <Link key={item.to} to={item.to} className={`bottom-nav-item${active ? ' active' : ''}`}>
+          <Link
+            key={item.to}
+            to={item.to}
+            className={`bottom-nav-item${active ? ' active' : ''}`}
+            aria-current={active ? 'page' : undefined}
+          >
             {item.icon(active)}
             <span>{item.label}</span>
           </Link>
