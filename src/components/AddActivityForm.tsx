@@ -33,10 +33,11 @@ interface Props {
   kids: FamilyMember[]
   currentMemberId: string
   initial?: Activity
+  initialStartDate?: string
   onSubmit: (input: ActivityInput) => Promise<void>
 }
 
-export function AddActivityForm({ members, kids, currentMemberId, initial, onSubmit }: Props) {
+export function AddActivityForm({ members, kids, currentMemberId, initial, initialStartDate, onSubmit }: Props) {
   const [title, setTitle] = useState(initial?.title ?? '')
   const [category, setCategory] = useState<ActivityCategory>(initial?.category ?? 'other')
   const [childId, setChildId] = useState(initial?.child_id ?? kids[0]?.id ?? '')
@@ -52,7 +53,7 @@ export function AddActivityForm({ members, kids, currentMemberId, initial, onSub
   const [coachPhone, setCoachPhone] = useState(initial?.coach_phone ?? '')
   const [coachEmail, setCoachEmail] = useState(initial?.coach_email ?? '')
   const [notes, setNotes] = useState(initial?.notes ?? '')
-  const [startDate, setStartDate] = useState(initial?.start_date ?? todayISODate())
+  const [startDate, setStartDate] = useState(initial?.start_date ?? initialStartDate ?? todayISODate())
   const [endDate, setEndDate] = useState(initial?.end_date ?? '')
   const [recurrenceType, setRecurrenceType] = useState<ActivityRecurrenceType>(
     initial?.recurrence_type ?? 'weekly'

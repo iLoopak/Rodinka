@@ -1,22 +1,24 @@
+import { useState } from 'react'
 import { useFamilyData } from '../context/FamilyDataContext'
 import { t } from '../strings'
 import { getChoreState } from '../utils/choreState'
 import { formatDueDateLabel, todayISODate } from '../utils/dueDate'
-import { getItemTypeStyle, type CalendarItemType } from '../utils/itemTypeStyle'
+import { getItemTypeStyle } from '../utils/itemTypeStyle'
 import { displayTitle } from '../utils/mealPlanGrouping'
 import { isMedicalRecordOverdue } from '../utils/medicalDueState'
 import { nextOccurrenceDate } from '../utils/recurrence'
-import { Link, type Route } from '../router'
+import type { PlannerItemType } from '../utils/plannerCreate'
 import { ErrorState } from './ui/ErrorState'
 import { PlannerAreaCard } from './planner/PlannerAreaCard'
+import { UniversalCreateModal } from './planner/UniversalCreateModal'
 
 interface QuickAction {
-  to: Route
   label: string
-  type: Extract<CalendarItemType, 'chore' | 'activity' | 'medical' | 'meal'>
+  type: PlannerItemType
 }
 
 export function PlannerScreen() {
+  const [createConfig, setCreateConfig] = useState<{ type?: PlannerItemType } | null>(null)
   const {
     chores,
     pendingCompletions,
@@ -63,10 +65,10 @@ export function PlannerScreen() {
   const openVotes = voteRounds.filter((round) => round.status === 'open')
 
   const quickActions: QuickAction[] = [
-    { to: '/chores', label: t.planner.addChore, type: 'chore' },
-    { to: '/activities', label: t.planner.addActivity, type: 'activity' },
-    { to: '/health', label: t.planner.addMedical, type: 'medical' },
-    { to: '/meals', label: t.planner.addMeal, type: 'meal' },
+    { label: t.planner.addChore, type: 'chore' },
+    { label: t.planner.addActivity, type: 'activity' },
+    { label: t.planner.addMedical, type: 'medical' },
+    { label: t.planner.addMeal, type: 'meal' },
   ]
 
   const choreStyle = getItemTypeStyle('chore')
@@ -76,9 +78,14 @@ export function PlannerScreen() {
 
   return (
     <>
-      <div className="home-header">
-        <h1 className="home-title">{t.planner.title}</h1>
-        <p className="home-subtitle">{t.planner.subtitle}</p>
+      <div className="screen-header">
+        <div>
+          <h1 className="home-title">{t.planner.title}</h1>
+          <p className="home-subtitle">{t.planner.subtitle}</p>
+        </div>
+        <button type="button" className="header-action-button" onClick={() => setCreateConfig({})}>
+          <span aria-hidden="true">+</span> {t.create.addAction}
+        </button>
       </div>
 
       <section className="section planner-section">
@@ -87,12 +94,17 @@ export function PlannerScreen() {
           {quickActions.map((action) => {
             const style = getItemTypeStyle(action.type)
             return (
-              <Link key={action.to} to={action.to} className="planner-quick-action">
+              <button
+                key={action.type}
+                type="button"
+                className="planner-quick-action"
+                onClick={() => setCreateConfig({ type: action.type })}
+              >
                 <span className="planner-quick-icon" style={{ color: `var(${style.colorVar})` }}>
                   {style.icon}
                 </span>
                 <span>{action.label}</span>
-              </Link>
+              </button>
             )
           })}
         </div>
@@ -164,6 +176,13 @@ export function PlannerScreen() {
           />
         </div>
       </section>
+
+      {createConfig && (
+        <UniversalCreateModal
+          initialType={createConfig.type}
+          onClose={() => setCreateConfig(null)}
+        />
+      )}
     </>
   )
 }
