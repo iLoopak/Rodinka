@@ -416,6 +416,159 @@ main {
 }
 
 /* ------------------------------------------------------------------ */
+/* Today agenda                                                         */
+/* ------------------------------------------------------------------ */
+
+.today-date {
+  margin: 6px 0 0;
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.today-summary {
+  margin: 2px 0 0;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+}
+
+.today-attention-section > h2,
+.today-program-section > h2 {
+  margin-bottom: 12px;
+}
+
+.today-attention-group + .today-attention-group {
+  margin-top: 16px;
+}
+
+.today-section-subheading {
+  margin-bottom: 8px;
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.today-agenda-list,
+.today-attention-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.today-agenda-item {
+  display: grid;
+  grid-template-columns: minmax(48px, auto) auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 68px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-row);
+  background: var(--canvas);
+}
+
+.today-agenda-when {
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.today-agenda-icon,
+.today-attention-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.today-agenda-copy,
+.today-attention-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.today-agenda-title,
+.today-attention-title {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.today-agenda-type {
+  color: var(--ink-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.today-agenda-people,
+.today-attention-people,
+.today-attention-reason {
+  overflow-wrap: anywhere;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.today-agenda-chevron {
+  color: var(--ink-muted);
+  font-size: 1.3rem;
+}
+
+.today-attention-list > li {
+  min-width: 0;
+}
+
+.today-attention-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 68px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-row);
+  background: var(--canvas);
+  color: inherit;
+  text-decoration: none;
+}
+
+.today-attention-link:hover {
+  border-color: var(--coral-light);
+}
+
+.today-attention-copy {
+  flex: 1;
+}
+
+.today-attention-action {
+  flex: 0 0 auto;
+  color: var(--brick);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.today-setup-card p {
+  color: var(--ink-muted);
+}
+
+.detail-view .row-meta svg {
+  display: inline-block;
+  vertical-align: -3px;
+  margin-right: 4px;
+}
+
+
+/* ------------------------------------------------------------------ */
 /* Badges                                                               */
 /* ------------------------------------------------------------------ */
 
