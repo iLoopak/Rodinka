@@ -905,6 +905,8 @@ details.manage .add-child-form + .add-chore-form {
 .setting-row.disabled { opacity: .62; }
 .category-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; }
 .digest-preview { display: flex; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 13px; border-radius: 14px; background: var(--blue-soft); color: var(--ink-muted); font-size: .86rem; }
+.reminder-digest { align-items: center; margin: 18px 0 0; }
+.reminder-digest > span { display: grid; gap: 3px; }
 .quiet-hours { display: flex; gap: 16px; margin: 12px 0; }
 .quiet-hours label { display: grid; gap: 5px; color: var(--ink-muted); font-size: .82rem; }
 .quiet-hours input { padding: 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--paper-raised); }

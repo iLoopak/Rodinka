@@ -49,6 +49,7 @@ export function VoteTab({ onAddWinnerToPlan, prefillMealId, onPrefillConsumed }:
 
   return (
     <>
+      {requestedRoundId && !requestedRound && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
       {isParentOrAdmin && !activeRound && (
         <div className="tab-toolbar">
           <button type="button" className="header-action-button" onClick={() => setShowCreate(true)}>
