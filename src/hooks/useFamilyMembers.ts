@@ -25,6 +25,7 @@ export interface FamilyMember {
   avatar_path: string | null
   avatar_url: string | null
   grammatical_gender: GrammaticalGender | null
+  vocative_name: string | null
 }
 
 const AVATAR_SIGNED_URL_SECONDS = 12 * 60 * 60
@@ -44,7 +45,7 @@ export function useFamilyMembers(familyId: string | undefined) {
     setLoading(true)
     const { data, error } = await supabase
       .from('members')
-      .select('id, family_id, display_name, role, user_id, birth_date, color_key, avatar_path, grammatical_gender')
+      .select('id, family_id, display_name, role, user_id, birth_date, color_key, avatar_path, grammatical_gender, vocative_name')
       .eq('family_id', familyId)
       .order('display_name')
 

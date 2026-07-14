@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -164,6 +165,7 @@ interface FamilyDataContextValue extends ReturnType<typeof useShoppingData> {
   currentMember: FamilyMember
   isParentOrAdmin: boolean
   familyName: string | null
+  familyNameLoading: boolean
   members: FamilyMember[]
   kids: FamilyMember[]
   chores: Chore[]
@@ -213,6 +215,7 @@ interface FamilyDataContextValue extends ReturnType<typeof useShoppingData> {
   refreshAll: () => Promise<void>
   refreshReminderSources: () => Promise<void>
   refreshMembers: () => Promise<void>
+  updateFamilyName: (name: string) => Promise<void>
 }
 
 const FamilyDataContext = createContext<FamilyDataContextValue | null>(null)
@@ -233,6 +236,8 @@ interface ProviderProps {
 
 export function FamilyDataProvider({ member, userId, userEmail, children }: ProviderProps) {
   const familyId = member.family_id
+  const activeFamilyIdRef = useRef(familyId)
+  activeFamilyIdRef.current = familyId
 
   const {
     members,
@@ -300,18 +305,37 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
   const shoppingData = useShoppingData(familyId)
   const refreshShopping = shoppingData.refreshShopping
 
-  const [familyName, setFamilyName] = useState<string | null>(null)
+  const [familyNameState, setFamilyNameState] = useState<{
+    familyId: string | null
+    name: string | null
+    loading: boolean
+  }>({ familyId: null, name: null, loading: true })
   const [familyNameError, setFamilyNameError] = useState<string | null>(null)
+  const familyName = familyNameState.familyId === familyId ? familyNameState.name : null
+  const familyNameLoading = familyNameState.familyId !== familyId || familyNameState.loading
 
   const refreshFamilyName = useCallback(async () => {
+    setFamilyNameState({ familyId, name: null, loading: true })
     const { data, error } = await supabase.from('families').select('name').eq('id', familyId).single()
+    if (activeFamilyIdRef.current !== familyId) return
     if (error) {
       console.error('Failed to load family name:', error.message)
       setFamilyNameError(t.errors.loadFailed)
     } else {
-      setFamilyName(data.name)
+      setFamilyNameState({ familyId, name: data.name, loading: false })
       setFamilyNameError(null)
     }
+    if (error) setFamilyNameState({ familyId, name: null, loading: false })
+  }, [familyId])
+
+  const updateFamilyName = useCallback(async (name: string) => {
+    const normalized = name.trim().replace(/\s+/g, ' ')
+    if (!normalized) throw new Error(t.errors.generic)
+    const { error } = await supabase.from('families').update({ name: normalized }).eq('id', familyId)
+    if (error) throw friendly(error)
+    if (activeFamilyIdRef.current !== familyId) return
+    setFamilyNameState({ familyId, name: normalized, loading: false })
+    setFamilyNameError(null)
   }, [familyId])
 
   useEffect(() => {
@@ -354,6 +378,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
   )
 
   const loading =
+    familyNameLoading ||
     membersLoading ||
     choresLoading ||
     completionsLoading ||
@@ -426,7 +451,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
       const { data, error } = await supabase
         .from('members')
         .insert({ family_id: familyId, display_name: displayName, role: 'child' })
-        .select('id, family_id, display_name, role, user_id, birth_date, color_key, avatar_path, grammatical_gender')
+        .select('id, family_id, display_name, role, user_id, birth_date, color_key, avatar_path, grammatical_gender, vocative_name')
         .single()
       if (error) throw friendly(error)
       if (avatarFile) {
@@ -436,6 +461,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
             birthDate: null,
             colorKey: null,
             grammaticalGender: null,
+            vocativeName: null,
             avatarFile,
             removeAvatar: false,
           })
@@ -651,6 +677,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     currentMember,
     isParentOrAdmin,
     familyName,
+    familyNameLoading,
     members,
     kids,
     chores,
@@ -701,6 +728,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     refreshAll,
     refreshReminderSources,
     refreshMembers,
+    updateFamilyName,
   }
 
   return <FamilyDataContext.Provider value={value}>{children}</FamilyDataContext.Provider>

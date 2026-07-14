@@ -247,8 +247,31 @@ textarea:focus {
 .brand {
   display: flex;
   align-items: center;
+  flex: 1;
   gap: 8px;
+  min-width: 0;
 }
+
+.brand-lockup {
+  display: flex;
+  align-items: baseline;
+  flex: 1;
+  min-width: 0;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.household-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: 0.92rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brand-lockup .wordmark { flex: none; }
 
 .wordmark {
   font-weight: 700;
@@ -1435,6 +1458,21 @@ label.profile-photo-picker:focus-within {
   font-size: 0.8rem;
 }
 
+.vocative-preview {
+  margin: -4px 0 14px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: var(--coral-soft);
+  color: var(--brick-dark);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.family-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.family-name-edit { flex: none; }
+.family-name-form { margin-top: 12px; padding: 14px; border: 1px solid var(--border-soft); border-radius: 16px; background: var(--paper-raised); }
+.family-name-form .modal-actions { justify-content: flex-start; }
+
 .profile-avatar-button {
   position: relative;
   min-width: 112px;
@@ -2521,8 +2559,11 @@ label.member-gender-option {
 
 .app-header {
   position: relative;
+  gap: 12px;
   padding: 18px 22px 10px;
 }
+
+.app-header > :last-child { flex: none; }
 
 .app-header::after {
   content: '';
@@ -3042,6 +3083,9 @@ label.member-gender-option {
 @media (max-width: 390px) {
   main { padding-inline: 14px; }
   .app-header { padding-inline: 16px; }
+  .brand-lockup { gap: 5px; }
+  .wordmark { font-size: 1.08rem; }
+  .household-name { max-width: min(42vw, 150px); font-size: 0.8rem; }
   .today-hero { align-items: flex-start; flex-direction: column; min-height: 0; padding: 20px; }
   .today-hero .home-title { max-width: none; }
   .hero-action-button { align-self: flex-start; }

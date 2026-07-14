@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.2",
+    "czech-vocative": "^2.1.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },

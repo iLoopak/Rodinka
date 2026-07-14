@@ -6,7 +6,7 @@ import type { ShoppingItem } from '../../utils/shopping'
 
 const members = [{
   id: 'member-1', family_id: 'family-1', display_name: 'Alex', role: 'parent' as const,
-  user_id: 'user-1', birth_date: null, color_key: null, avatar_path: null, avatar_url: null, grammatical_gender: null,
+  user_id: 'user-1', birth_date: null, color_key: null, avatar_path: null, avatar_url: null, grammatical_gender: null, vocative_name: null,
 }]
 
 const item: ShoppingItem = {

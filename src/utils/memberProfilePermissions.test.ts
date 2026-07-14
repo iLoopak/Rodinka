@@ -35,6 +35,7 @@ describe('editable profile fields', () => {
         color: true,
         avatar: true,
         grammaticalGender: true,
+        vocativeName: true,
       })
     }
   })
@@ -46,6 +47,7 @@ describe('editable profile fields', () => {
       color: true,
       avatar: true,
       grammaticalGender: true,
+      vocativeName: true,
     })
   })
 })

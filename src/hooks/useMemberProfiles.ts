@@ -15,6 +15,7 @@ export interface MemberProfileInput {
   birthDate: string | null
   colorKey: MemberColorKey | null
   grammaticalGender: GrammaticalGender | null
+  vocativeName: string | null
   avatarFile: File | null
   removeAvatar: boolean
 }
@@ -82,6 +83,7 @@ export function useMemberProfiles(refreshMembers: () => Promise<void>) {
         p_color_key: input.colorKey,
         p_avatar_path: nextAvatarPath,
         p_grammatical_gender: input.grammaticalGender,
+        p_vocative_name: input.vocativeName?.trim().replace(/\s+/g, ' ') || null,
       })
 
       if (profileError) {

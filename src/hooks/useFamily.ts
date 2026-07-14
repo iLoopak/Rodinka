@@ -19,7 +19,7 @@ export function useFamily(userId: string | undefined) {
     // RLS ensures this only ever returns rows the current user is allowed to see
     const { data, error } = await supabase
       .from('members')
-      .select('id, family_id, display_name, role, user_id, birth_date, color_key, avatar_path, grammatical_gender')
+      .select('id, family_id, display_name, role, user_id, birth_date, color_key, avatar_path, grammatical_gender, vocative_name')
       .eq('user_id', userId)
       .maybeSingle()
 

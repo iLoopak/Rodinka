@@ -20,11 +20,30 @@ function formatDate(iso: string) {
 }
 
 export function FamilyScreen() {
-  const { familyName, members, currentMember, isParentOrAdmin, addChild, createInvite, loading, error, refreshAll, refreshMembers } =
+  const { familyName, members, currentMember, isParentOrAdmin, addChild, createInvite, loading, error, refreshAll, refreshMembers, updateFamilyName } =
     useFamilyData()
   const [showAddChild, setShowAddChild] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null)
+  const [editingFamilyName, setEditingFamilyName] = useState(false)
+  const [familyNameDraft, setFamilyNameDraft] = useState(familyName ?? '')
+  const [familyNameSaving, setFamilyNameSaving] = useState(false)
+  const [familyNameSaveError, setFamilyNameSaveError] = useState<string | null>(null)
+
+  async function handleFamilyNameSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    if (!familyNameDraft.trim()) return
+    setFamilyNameSaving(true)
+    setFamilyNameSaveError(null)
+    try {
+      await updateFamilyName(familyNameDraft)
+      setEditingFamilyName(false)
+    } catch {
+      setFamilyNameSaveError(t.family.errors.familyNameSaveFailed)
+    } finally {
+      setFamilyNameSaving(false)
+    }
+  }
 
   if (loading) {
     return <p className="loading">{t.loading.generic}</p>
@@ -37,7 +56,29 @@ export function FamilyScreen() {
   return (
     <>
       <div className="home-header">
-        <h1 className="home-title">{familyName ?? t.family.title}</h1>
+        <div className="family-title-row">
+          <h1 className="home-title">{familyName ?? t.family.title}</h1>
+          {currentMember.role === 'admin' && !editingFamilyName && (
+            <button type="button" className="btn-secondary family-name-edit" onClick={() => {
+              setFamilyNameDraft(familyName ?? '')
+              setFamilyNameSaveError(null)
+              setEditingFamilyName(true)
+            }}>{t.family.editFamilyName}</button>
+          )}
+        </div>
+        {editingFamilyName && (
+          <form className="family-name-form" onSubmit={handleFamilyNameSubmit}>
+            <label>
+              {t.family.familyNameLabel}
+              <input value={familyNameDraft} onChange={(event) => setFamilyNameDraft(event.target.value)} required disabled={familyNameSaving} />
+            </label>
+            <div className="modal-actions">
+              <button type="submit" disabled={familyNameSaving || !familyNameDraft.trim()}>{familyNameSaving ? t.family.savingFamilyName : t.family.saveFamilyName}</button>
+              <button type="button" className="btn-secondary" disabled={familyNameSaving} onClick={() => setEditingFamilyName(false)}>{t.common.close}</button>
+            </div>
+            {familyNameSaveError && <p className="error" role="alert">{familyNameSaveError}</p>}
+          </form>
+        )}
       </div>
 
       <section className="section">
