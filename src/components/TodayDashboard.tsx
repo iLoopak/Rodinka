@@ -13,6 +13,7 @@ import { TodayAttentionList } from './today/TodayAttentionList'
 import { EmptyState } from './ui/EmptyState'
 import { ErrorState } from './ui/ErrorState'
 import { getLocalizedAddressName } from '../utils/personalizedName'
+import { FamilyMark } from './FamilyMark'
 
 export function TodayDashboard() {
   const [showCreate, setShowCreate] = useState(false)
@@ -20,6 +21,7 @@ export function TodayDashboard() {
   const [approvalFeedback, setApprovalFeedback] = useState<string | null>(null)
   const {
     currentMember,
+    members,
     kids,
     chores,
     activities,
@@ -86,6 +88,7 @@ export function TodayDashboard() {
         name={addressName || null}
         date={today}
         itemCount={entries.length}
+        members={members}
         onAdd={() => setShowCreate(true)}
       />
 
@@ -155,13 +158,14 @@ interface HeaderProps {
   name: string | null
   date: string
   itemCount: number
+  members: Parameters<typeof FamilyMark>[0]['members']
   onAdd: () => void
 }
 
-function TodayHeader({ name, date, itemCount, onAdd }: HeaderProps) {
+function TodayHeader({ name, date, itemCount, members, onAdd }: HeaderProps) {
   return (
     <div className="today-hero">
-      <span className="brand-motif" aria-hidden="true"><i /><i /><i /><i /></span>
+      <FamilyMark members={members} size={74} className="today-family-mark" />
       <div className="today-hero-copy">
         <span className="page-eyebrow">{t.home.title}</span>
         <h1 className="home-title">{t.home.welcome(name)}</h1>

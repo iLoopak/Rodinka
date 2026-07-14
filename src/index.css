@@ -265,13 +265,28 @@ textarea:focus {
   min-width: 0;
   overflow: hidden;
   color: var(--ink-muted);
-  font-size: 0.92rem;
-  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .brand-lockup .wordmark { flex: none; }
+
+.family-brand-lockup {
+  font-family: var(--font-family);
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.family-brand-lockup .wordmark,
+.family-brand-lockup .household-name {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+}
 
 .wordmark {
   font-weight: 700;
@@ -1469,6 +1484,7 @@ label.profile-photo-picker:focus-within {
 }
 
 .family-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.family-title-row .home-title { margin-right: auto; }
 .family-name-edit { flex: none; }
 .family-name-form { margin-top: 12px; padding: 14px; border: 1px solid var(--border-soft); border-radius: 16px; background: var(--paper-raised); }
 .family-name-form .modal-actions { justify-content: flex-start; }
@@ -2965,22 +2981,48 @@ label.member-gender-option {
 
 .app-header > :last-child { flex: none; }
 
-.app-header::after {
-  content: '';
-  position: absolute;
-  right: 25px;
-  top: 23px;
-  width: 7px;
-  height: 7px;
-  border-radius: 3px;
-  background: var(--coral-light);
-  box-shadow: 11px 4px 0 var(--coral-soft), 20px -2px 0 var(--coral);
-  transform: rotate(28deg);
-  opacity: 0.65;
-}
-
 .brand { gap: 9px; }
 .wordmark { font-size: 1.25rem; letter-spacing: -0.025em; }
+
+.family-mark {
+  display: block;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.family-mark-petal {
+  filter: saturate(0.9);
+}
+
+.family-mark-loading-ring {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 4;
+}
+
+.family-mark-loading-petal {
+  opacity: 0.88;
+}
+
+.family-mark-overflow-label {
+  fill: #fff;
+  font-family: var(--font-family);
+  font-size: 7px;
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: central;
+  paint-order: stroke;
+  stroke: rgba(38, 51, 59, 0.2);
+  stroke-width: 0.75px;
+}
+
+.family-screen-mark {
+  flex: 0 0 auto;
+}
+
+.family-settings-brand-row .family-mark {
+  margin-right: 2px;
+}
 
 .home-title {
   color: var(--ink);
@@ -3068,7 +3110,7 @@ label.member-gender-option {
   box-shadow: 0 8px 20px rgba(151, 48, 43, 0.18);
 }
 
-.brand-motif {
+.today-family-mark {
   position: absolute;
   z-index: -1;
   right: 30px;
@@ -3485,7 +3527,8 @@ label.member-gender-option {
   .app-header { padding-inline: 16px; }
   .brand-lockup { gap: 5px; }
   .wordmark { font-size: 1.08rem; }
-  .household-name { max-width: min(42vw, 150px); font-size: 0.8rem; }
+  .family-brand-lockup { font-size: 1.08rem; }
+  .household-name { max-width: min(42vw, 150px); }
   .today-hero { align-items: flex-start; flex-direction: column; min-height: 0; padding: 20px; }
   .today-hero .home-title { max-width: none; }
   .hero-action-button { align-self: flex-start; }

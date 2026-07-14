@@ -8,6 +8,7 @@ import { MemberAvatar } from './ui/MemberAvatar'
 import { MemberProfileModal } from './family/MemberProfileModal'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
 import { canEditMemberProfile } from '../utils/memberProfilePermissions'
+import { FamilyMark } from './FamilyMark'
 
 function roleLabel(role: FamilyMember['role']) {
   if (role === 'admin') return t.family.roleAdmin
@@ -57,6 +58,7 @@ export function FamilyScreen() {
     <>
       <div className="home-header">
         <div className="family-title-row">
+          <FamilyMark members={members} size={44} className="family-screen-mark" />
           <h1 className="home-title">{familyName ?? t.family.title}</h1>
           {currentMember.role === 'admin' && !editingFamilyName && (
             <button type="button" className="btn-secondary family-name-edit" onClick={() => {
