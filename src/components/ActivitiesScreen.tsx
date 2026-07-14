@@ -34,7 +34,6 @@ export function ActivitiesScreen() {
     activities,
     kids,
     members,
-    currentMember,
     memberName,
     memberById,
     isParentOrAdmin,
@@ -251,8 +250,8 @@ export function ActivitiesScreen() {
       )}
 
       {showAdd && (
-        <Modal title={t.activities.addTitle} onClose={() => setShowAdd(false)}>
-          <AddActivityForm members={members} kids={kids} currentMemberId={currentMember.id} onSubmit={handleAdd} />
+        <Modal title={t.activities.addTitle} onClose={() => setShowAdd(false)} className="activity-form-modal">
+          <AddActivityForm members={members} kids={kids} onSubmit={handleAdd} />
         </Modal>
       )}
 
@@ -261,7 +260,6 @@ export function ActivitiesScreen() {
           activity={selectedActivity}
           members={members}
           kids={kids}
-          currentMemberId={currentMember.id}
           memberName={memberName}
           memberById={memberById}
           onUpdate={updateActivity}

@@ -5,9 +5,10 @@ interface Props {
   title: string
   onClose: () => void
   children: ReactNode
+  className?: string
 }
 
-export function Modal({ title, onClose, children }: Props) {
+export function Modal({ title, onClose, children, className }: Props) {
   const sheetRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -31,7 +32,7 @@ export function Modal({ title, onClose, children }: Props) {
     <div className="modal-backdrop" onClick={onClose}>
       <div
         ref={sheetRef}
-        className="modal-sheet"
+        className={`modal-sheet${className ? ` ${className}` : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
