@@ -6,6 +6,7 @@ import { AppShell } from './components/AppShell'
 import { RouterProvider } from './router'
 import { FamilyDataProvider } from './context/FamilyDataContext'
 import { ReminderProvider } from './context/ReminderContext'
+import { PushProvider } from './context/PushContext'
 import { t } from './strings'
 
 export default function App() {
@@ -32,7 +33,9 @@ export default function App() {
     <RouterProvider>
       <FamilyDataProvider member={member} userId={session.user.id} userEmail={session.user.email ?? ''}>
         <ReminderProvider>
-          <AppShell />
+          <PushProvider>
+            <AppShell />
+          </PushProvider>
         </ReminderProvider>
       </FamilyDataProvider>
     </RouterProvider>

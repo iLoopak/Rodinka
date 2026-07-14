@@ -864,6 +864,22 @@ details.manage .add-child-form + .add-chore-form {
   }
 }
 
+.push-settings { display: grid; gap: 12px; padding-top: 4px; }
+.push-summary { padding-inline: 0; }
+.status-pill { padding: 5px 9px; border-radius: 999px; background: var(--neutral-soft); color: var(--ink-muted); font-size: 0.78rem; font-weight: 800; }
+.status-pill.active { background: var(--category-chores-soft); color: var(--category-chores); }
+.push-actions, .modal-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.push-consent, .push-guidance { padding: 16px; border: 1px solid var(--border-soft); border-radius: 16px; background: var(--paper); }
+.push-consent p, .push-guidance ol { margin: 8px 0 14px; color: var(--ink-muted); line-height: 1.5; }
+.push-guidance ol { padding-left: 22px; }
+.push-warning { padding: 10px 12px; border-radius: 12px; background: var(--category-meals-soft); }
+.push-devices { display: grid; gap: 8px; padding-top: 6px; border-top: 1px solid var(--border-soft); }
+.push-devices h3 { margin: 0; font-size: 0.9rem; }
+.push-device { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 13px; background: var(--neutral-soft); }
+.push-device span { display: grid; gap: 2px; }
+.push-device small { color: var(--ink-muted); }
+.danger-link { color: var(--brick-dark); justify-self: start; }
+
 /* Reminder Center */
 .reminder-bell { position: relative; z-index: 1; display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--border-soft); border-radius: 50%; background: var(--paper-raised); color: var(--ink-muted); box-shadow: var(--shadow-soft); }
 .reminder-bell svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
