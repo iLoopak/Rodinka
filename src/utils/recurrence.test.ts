@@ -12,6 +12,13 @@ describe('expandActivityOccurrences', () => {
     expect(expandActivityOccurrences(activity, '2026-08-01', '2026-08-31')).toEqual([])
   })
 
+  it('one_off: projects every day of an inclusive multi-day range and clips to the window', () => {
+    const activity = makeActivity({ recurrence_type: 'one_off', start_date: '2026-07-18', end_date: '2026-07-25' })
+    expect(expandActivityOccurrences(activity, '2026-07-20', '2026-07-23').map((item) => item.date))
+      .toEqual(['2026-07-20', '2026-07-21', '2026-07-22', '2026-07-23'])
+    expect(expandActivityOccurrences(activity, '2026-07-01', '2026-07-31')).toHaveLength(8)
+  })
+
   it('weekly: recurs every 7 days anchored to start_date, fast-forwarded into a later range', () => {
     const activity = makeActivity({ recurrence_type: 'weekly', start_date: '2026-07-01' }) // Wednesday
 

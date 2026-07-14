@@ -13,8 +13,9 @@ import {
   activityWeekdayOptions,
 } from '../utils/activityLabels'
 import type { ActivityInput } from '../context/FamilyDataContext'
-import type { Activity, ActivityCategory, ActivityPaymentFrequency, ActivityRecurrenceType } from '../hooks/useActivities'
+import type { Activity, ActivityCategory, ActivityKind, ActivityPaymentFrequency, ActivityRecurrenceType } from '../hooks/useActivities'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
+import { MemberAvatar } from './ui/MemberAvatar'
 
 const CATEGORY_OPTIONS = ACTIVITY_CATEGORY_VALUES.map((value) => ({ value, label: activityCategoryLabel(value) }))
 const RECURRENCE_OPTIONS = ACTIVITY_RECURRENCE_VALUES.map((value) => ({
@@ -39,8 +40,11 @@ interface Props {
 
 export function AddActivityForm({ members, kids, currentMemberId, initial, initialStartDate, onSubmit }: Props) {
   const [title, setTitle] = useState(initial?.title ?? '')
+  const [kind, setKind] = useState<ActivityKind>(initial?.kind ?? 'club')
   const [category, setCategory] = useState<ActivityCategory>(initial?.category ?? 'other')
-  const [childId, setChildId] = useState(initial?.child_id ?? kids[0]?.id ?? '')
+  const [participantIds, setParticipantIds] = useState<string[]>(
+    initial?.participant_ids ?? (initial?.child_id ? [initial.child_id] : kids[0]?.id ? [kids[0].id] : [])
+  )
   const [responsibleMemberId, setResponsibleMemberId] = useState(
     initial?.responsible_member_id ?? currentMemberId
   )
@@ -61,6 +65,7 @@ export function AddActivityForm({ members, kids, currentMemberId, initial, initi
   const [weekdays, setWeekdays] = useState<number[]>(initial?.recurrence_weekdays ?? [])
   const [startTime, setStartTime] = useState(initial?.start_time ?? '')
   const [endTime, setEndTime] = useState(initial?.end_time ?? '')
+  const [allDay, setAllDay] = useState(initial?.all_day ?? false)
   const [paymentAmount, setPaymentAmount] = useState(
     initial?.payment_amount != null ? String(initial.payment_amount) : ''
   )
@@ -81,12 +86,27 @@ export function AddActivityForm({ members, kids, currentMemberId, initial, initi
     setWeekdays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()))
   }
 
+  function toggleParticipant(memberId: string) {
+    setParticipantIds((previous) => previous.includes(memberId)
+      ? previous.filter((id) => id !== memberId)
+      : [...previous, memberId])
+  }
+
+  function changeKind(nextKind: ActivityKind) {
+    setKind(nextKind)
+    if (!initial) {
+      setRecurrenceType(nextKind === 'event' ? 'one_off' : 'weekly')
+      setCategory(nextKind === 'event' ? 'other_event' : 'other')
+      setAllDay(nextKind === 'event')
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
 
-    if (!childId || !members.some((m) => m.id === childId)) {
-      setError(t.activities.errors.childRequired)
+    if (participantIds.length === 0 || participantIds.some((id) => !members.some((m) => m.id === id))) {
+      setError(t.activities.errors.participantRequired)
       return
     }
     if (!startDate) {
@@ -107,7 +127,9 @@ export function AddActivityForm({ members, kids, currentMemberId, initial, initi
       await onSubmit({
         title,
         category,
-        childId,
+        kind,
+        allDay,
+        participantIds,
         responsibleMemberId: responsibleMemberId || null,
         secondaryResponsibleMemberId: secondaryResponsibleMemberId || null,
         location,
@@ -120,8 +142,8 @@ export function AddActivityForm({ members, kids, currentMemberId, initial, initi
         endDate: endDate || null,
         recurrenceType,
         recurrenceWeekdays: recurrenceType === 'custom_weekdays' ? weekdays : null,
-        startTime: startTime || null,
-        endTime: endTime || null,
+        startTime: allDay ? null : startTime || null,
+        endTime: allDay ? null : endTime || null,
         paymentAmount: paymentAmount ? Number(paymentAmount) : null,
         paymentFrequency: paymentFrequency || null,
         nextPaymentDueDate: nextPaymentDueDate || null,
@@ -140,6 +162,14 @@ export function AddActivityForm({ members, kids, currentMemberId, initial, initi
     <form className="sectioned-form" onSubmit={handleSubmit}>
       <div className="form-section">
         <h4>{t.activities.sectionBasic}</h4>
+        <div className="tabs" role="group" aria-label={t.activities.kindLabel}>
+          <button type="button" className={`tab-button${kind === 'club' ? ' active' : ''}`} onClick={() => changeKind('club')}>
+            {t.activities.kindClub}
+          </button>
+          <button type="button" className={`tab-button${kind === 'event' ? ' active' : ''}`} onClick={() => changeKind('event')}>
+            {t.activities.kindEvent}
+          </button>
+        </div>
         <label>
           {t.activities.titleLabel}
           <input
@@ -159,14 +189,10 @@ export function AddActivityForm({ members, kids, currentMemberId, initial, initi
             ))}
           </select>
         </label>
-        <label>
+        {kind === 'club' && <label>
           {t.activities.skillLevelLabel}
-          <input
-            value={skillLevel}
-            onChange={(e) => setSkillLevel(e.target.value)}
-            placeholder={t.activities.skillLevelPlaceholder}
-          />
-        </label>
+          <input value={skillLevel} onChange={(e) => setSkillLevel(e.target.value)} placeholder={t.activities.skillLevelPlaceholder} />
+        </label>}
         {initial && (
           <label>
             {t.activities.statusLabel}
@@ -183,16 +209,19 @@ export function AddActivityForm({ members, kids, currentMemberId, initial, initi
 
       <div className="form-section">
         <h4>{t.activities.sectionParticipants}</h4>
-        <label>
-          {t.activities.childLabel}
-          <select required value={childId} onChange={(e) => setChildId(e.target.value)}>
-            {kids.map((kid) => (
-              <option key={kid.id} value={kid.id}>
-                {kid.display_name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="form-inline-actions">
+          <button type="button" className="link" onClick={() => setParticipantIds(members.map((member) => member.id))}>{t.activities.selectWholeFamily}</button>
+          <button type="button" className="link" onClick={() => setParticipantIds([])}>{t.activities.clearParticipants}</button>
+        </div>
+        <div className="participant-picker" role="group" aria-label={t.activities.participantsLabel}>
+          {members.map((member) => (
+            <label key={member.id} className="checkbox-label">
+              <input type="checkbox" checked={participantIds.includes(member.id)} onChange={() => toggleParticipant(member.id)} />
+              <MemberAvatar member={member} size={28} />
+              {member.display_name} · {t.family[`role${member.role[0].toUpperCase()}${member.role.slice(1)}` as 'roleAdmin' | 'roleParent' | 'roleChild']}
+            </label>
+          ))}
+        </div>
         <label>
           {t.activities.responsibleLabel}
           <select value={responsibleMemberId} onChange={(e) => setResponsibleMemberId(e.target.value)}>
@@ -223,11 +252,11 @@ export function AddActivityForm({ members, kids, currentMemberId, initial, initi
       <div className="form-section">
         <h4>{t.activities.sectionSchedule}</h4>
         <label>
-          {t.activities.startDateLabel}
+          {recurrenceType === 'one_off' ? t.activities.rangeStartLabel : t.activities.seriesStartLabel}
           <input required type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </label>
         <label>
-          {t.activities.endDateLabel}
+          {recurrenceType === 'one_off' ? t.activities.rangeEndLabel : t.activities.seriesEndLabel}
           <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
         </label>
         <label>
@@ -258,14 +287,14 @@ export function AddActivityForm({ members, kids, currentMemberId, initial, initi
             ))}
           </div>
         )}
-        <label>
-          {t.activities.startTimeLabel}
-          <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+        <label className="checkbox-label">
+          <input type="checkbox" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} />
+          {t.activities.allDayLabel}
         </label>
-        <label>
-          {t.activities.endTimeLabel}
-          <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-        </label>
+        {!allDay && <>
+          <label>{t.activities.startTimeLabel}<input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} /></label>
+          <label>{t.activities.endTimeLabel}<input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} /></label>
+        </>}
       </div>
 
       <div className="form-section">
@@ -274,21 +303,21 @@ export function AddActivityForm({ members, kids, currentMemberId, initial, initi
           {t.activities.locationLabel}
           <input value={location} onChange={(e) => setLocation(e.target.value)} />
         </label>
-        <label>
+        {kind === 'club' && <label>
           {t.activities.coachNameLabel}
           <input value={coachName} onChange={(e) => setCoachName(e.target.value)} />
-        </label>
-        <label>
+        </label>}
+        {kind === 'club' && <label>
           {t.activities.coachPhoneLabel}
           <input type="tel" value={coachPhone} onChange={(e) => setCoachPhone(e.target.value)} />
-        </label>
-        <label>
+        </label>}
+        {kind === 'club' && <label>
           {t.activities.coachEmailLabel}
           <input type="email" value={coachEmail} onChange={(e) => setCoachEmail(e.target.value)} />
-        </label>
+        </label>}
       </div>
 
-      <div className="form-section">
+      {kind === 'club' && <div className="form-section">
         <h4>{t.activities.sectionPayment}</h4>
         <label>
           {t.activities.paymentAmountLabel}
@@ -322,7 +351,7 @@ export function AddActivityForm({ members, kids, currentMemberId, initial, initi
             onChange={(e) => setNextPaymentDueDate(e.target.value)}
           />
         </label>
-      </div>
+      </div>}
 
       <div className="form-section">
         <h4>{t.activities.sectionReminders}</h4>

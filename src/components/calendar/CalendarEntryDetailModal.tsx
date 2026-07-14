@@ -41,6 +41,8 @@ export function CalendarEntryDetailModal({ entry, onClose }: Props) {
   const sourceRoute: Route =
     entry.sourceType === 'chore'
       ? '/chores'
+      : entry.sourceType === 'allowance'
+        ? '/chores'
       : entry.sourceType === 'activity' || entry.sourceType === 'activity_payment'
         ? '/activities'
         : entry.sourceType === 'meal'
@@ -87,10 +89,15 @@ export function CalendarEntryDetailModal({ entry, onClose }: Props) {
           {style.icon} {style.label}
         </p>
         <p className="row-meta">
-          {formatFullDate(entry.date)}
+          {entry.isMultiDay && entry.rangeStart && entry.rangeEnd
+            ? `${formatFullDate(entry.rangeStart)} – ${formatFullDate(entry.rangeEnd)}`
+            : formatFullDate(entry.date)}
           {entry.time ? ` · ${entry.time.slice(0, 5)}` : ''}
         </p>
-        {person && (
+        {(entry.participantMemberIds?.length ?? 0) > 1 ? entry.participantMemberIds!.map((id) => {
+          const participant = memberById(id)
+          return participant ? <div className="detail-person" key={id}><MemberAvatar member={participant} /><span>{participant.display_name}</span></div> : null
+        }) : person && (
           <div className="detail-person">
             <MemberAvatar member={person} />
             <span>{person.display_name}</span>

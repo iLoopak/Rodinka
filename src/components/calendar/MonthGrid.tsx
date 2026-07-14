@@ -68,12 +68,16 @@ export function MonthGrid({ monthAnchor, entries, today, onSelectDay }: Props) {
                   <span className="month-grid-day-dots">
                     {visible.map((entry) => {
                       const style = getItemTypeStyle(entry.type)
+                      const rangePosition = entry.isMultiDay
+                        ? entry.date === entry.rangeStart ? 'start' : entry.date === entry.rangeEnd ? 'end' : 'continuation'
+                        : null
                       return (
                         <span
                           key={entry.id}
-                          className="month-grid-dot"
+                          className={`month-grid-dot${rangePosition ? ' multi-day' : ''}`}
                           style={{ backgroundColor: `var(${style.colorVar})` }}
-                        />
+                          aria-label={rangePosition ? t.calendar[`range${rangePosition[0].toUpperCase()}${rangePosition.slice(1)}` as 'rangeStart' | 'rangeEnd' | 'rangeContinuation'] : undefined}
+                        >{rangePosition === 'start' ? '▶' : rangePosition === 'end' ? '■' : rangePosition ? '—' : ''}</span>
                       )
                     })}
                     {overflow > 0 && <span className="month-grid-more">+{overflow}</span>}

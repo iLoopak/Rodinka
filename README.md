@@ -144,6 +144,39 @@ used once a family exists. Meal-specific state and mutations live in
 calls and spreads into its own value — kept separate purely to stop that
 file from growing into a monolith, not a second data boundary.
 
+### Monthly allowance plans
+
+`allowance_plans` defines an independent monthly allowance for a child. It
+can be unconditional or reference recurring chores through
+`allowance_plan_requirements`; individual `reward_amount` chore credits remain
+supported at the same time. A cycle is anchored to the configured payout day:
+the evaluated interval is the previous payout date (inclusive) through the
+current payout date (exclusive), with the first interval clamped to `starts_on`.
+Days 29–31 are clamped to the month's last day. Weekly requirements use
+Monday–Sunday buckets and include a partial edge week only when at least four
+of its days are inside the cycle.
+
+Parents explicitly settle due cycles through the idempotent
+`credit_monthly_allowance` or `skip_monthly_allowance` RPC. Crediting adds money
+owed to the child's existing ledger; the separate payout action records money
+physically handed over and reduces that balance. Ledger `entry_type` values are
+`chore_reward`, `monthly_allowance`, `payout`, and `adjustment`, with unique
+source links preventing duplicate chore or monthly credits.
+
+### Family events and participants
+
+Activities are classified as `club` or `event`. Participants are stored in
+`activity_participants`, allowing any non-empty subset of current family
+members; “select whole family” is only a form shortcut and stores explicit
+member rows. Create and update RPCs write the activity and participant set in
+one transaction. The legacy `child_id` is retained as a compatibility pointer
+to the first participant.
+
+For `one_off` records, `end_date` is the inclusive last event day. A multi-day
+event remains one database row and is projected into every covered calendar
+day; Agenda deduplicates those projections back to one range row. For recurring
+activities, `end_date` keeps its existing meaning as the series cutoff.
+
 ### Localization
 
 All user-facing text lives in `src/strings.ts`, keyed by language (`cs`/`en`),
@@ -177,9 +210,18 @@ npm run dev
 
 In Supabase, run `supabase/001_schema.sql`, `supabase/002_functions.sql`,
 `supabase/003_chores.sql`, `supabase/004_chore_due_date.sql`,
-`supabase/005_activities_medical.sql`, then `supabase/006_meal_planning.sql`
-and `supabase/007_member_profiles.sql` in the SQL Editor (in that order — later files depend on earlier
+`supabase/005_activities_medical.sql`, then `supabase/006_meal_planning.sql`,
+`supabase/007_member_profiles.sql`, and
+`supabase/008_allowance_plans_family_events.sql` in the SQL Editor (in that order — later files depend on earlier
 tables/functions existing).
+
+Migration `008_allowance_plans_family_events.sql` adds allowance plans,
+requirements, settled cycles, ledger provenance, activity kinds/all-day
+semantics, generalized participants, RLS, integrity guards, and the atomic
+credit/skip/activity RPCs. Existing activities are backfilled with their
+original child as a participant; existing positive ledger entries are assumed
+to be historical chore rewards and negative entries payouts because older rows
+did not retain stronger provenance.
 
 Migration `007_member_profiles.sql` creates and configures the private
 `member-avatars` bucket, its 5 MB JPEG/PNG/WebP restrictions, and all Storage

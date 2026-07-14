@@ -21,7 +21,9 @@ import {
   type ActivityPaymentFrequency,
   type ActivityRecurrenceType,
   type ActivityStatus,
+  type ActivityKind,
 } from '../hooks/useActivities'
+import { useAllowancePlans, type AllowanceCycle, type AllowancePlan, type AllowancePlanInput } from '../hooks/useAllowancePlans'
 import {
   useMedicalRecords,
   type MedicalRecord,
@@ -38,7 +40,9 @@ import { createMemberLookup, resolveCurrentMember } from '../utils/memberLookup'
 export interface ActivityInput {
   title: string
   category: ActivityCategory
-  childId: string
+  kind: ActivityKind
+  allDay: boolean
+  participantIds: string[]
   responsibleMemberId: string | null
   secondaryResponsibleMemberId: string | null
   location: string
@@ -65,7 +69,8 @@ function activityInputToRow(input: ActivityInput) {
   return {
     title: input.title,
     category: input.category,
-    child_id: input.childId,
+    kind: input.kind,
+    all_day: input.allDay,
     responsible_member_id: input.responsibleMemberId,
     secondary_responsible_member_id: input.secondaryResponsibleMemberId,
     location: input.location || null,
@@ -154,6 +159,8 @@ interface FamilyDataContextValue {
   completions: ChoreCompletion[]
   pendingCompletions: ChoreCompletion[]
   activities: Activity[]
+  allowancePlans: AllowancePlan[]
+  allowanceCycles: AllowanceCycle[]
   medicalRecords: MedicalRecord[]
   meals: Meal[]
   voteRounds: MealVoteRound[]
@@ -177,6 +184,9 @@ interface FamilyDataContextValue {
   approve: (completionId: string) => Promise<void>
   reject: (completionId: string) => Promise<void>
   payout: (memberId: string, amount: number, reason: string) => Promise<void>
+  saveAllowancePlan: (input: AllowancePlanInput, planId?: string) => Promise<void>
+  creditAllowance: (planId: string, payoutDate: string) => Promise<void>
+  skipAllowance: (planId: string, payoutDate: string) => Promise<void>
   createInvite: () => Promise<{ code: string; expiresAt: string | null }>
   addActivity: (input: ActivityInput) => Promise<void>
   updateActivity: (id: string, input: ActivityInput) => Promise<void>
@@ -240,6 +250,13 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     error: ledgerError,
     refresh: refreshLedger,
   } = useAllowanceLedger(familyId)
+  const {
+    plans: allowancePlans,
+    cycles: allowanceCycles,
+    loading: allowancePlansLoading,
+    error: allowancePlansError,
+    refresh: refreshAllowancePlans,
+  } = useAllowancePlans(familyId)
   const {
     activities,
     loading: activitiesLoading,
@@ -330,6 +347,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     choresLoading ||
     completionsLoading ||
     ledgerLoading ||
+    allowancePlansLoading ||
     activitiesLoading ||
     medicalLoading ||
     mealsDataLoading
@@ -338,6 +356,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     choresError ||
     completionsError ||
     ledgerError ||
+    allowancePlansError ||
     familyNameError ||
     activitiesError ||
     medicalError ||
@@ -349,6 +368,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
       refreshChores(),
       refreshCompletions(),
       refreshLedger(),
+      refreshAllowancePlans(),
       refreshFamilyName(),
       refreshActivities(),
       refreshMedicalRecords(),
@@ -359,6 +379,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     refreshChores,
     refreshCompletions,
     refreshLedger,
+    refreshAllowancePlans,
     refreshFamilyName,
     refreshActivities,
     refreshMedicalRecords,
@@ -443,6 +464,41 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     [refreshLedger]
   )
 
+  const saveAllowancePlan = useCallback(async (input: AllowancePlanInput, planId?: string) => {
+    const planData = {
+      family_id: familyId,
+      member_id: input.memberId,
+      amount: input.amount,
+      payout_day: input.payoutDay,
+      starts_on: input.startsOn,
+      status: input.status,
+      condition_mode: input.conditionMode,
+    }
+    const { error } = await supabase.rpc('save_allowance_plan', {
+      target_plan_id: planId ?? null,
+      plan_data: planData,
+      requirements_data: input.requirements.map((requirement) => ({
+        chore_id: requirement.choreId,
+        requirement_type: requirement.requirementType,
+        required_count: requirement.requiredCount,
+      })),
+    })
+    if (error) throw friendly(error)
+    await refreshAllowancePlans()
+  }, [familyId, refreshAllowancePlans])
+
+  const creditAllowance = useCallback(async (planId: string, payoutDate: string) => {
+    const { error } = await supabase.rpc('credit_monthly_allowance', { plan_id: planId, payout_date: payoutDate })
+    if (error) throw friendly(error)
+    await Promise.all([refreshAllowancePlans(), refreshLedger()])
+  }, [refreshAllowancePlans, refreshLedger])
+
+  const skipAllowance = useCallback(async (planId: string, payoutDate: string) => {
+    const { error } = await supabase.rpc('skip_monthly_allowance', { plan_id: planId, payout_date: payoutDate })
+    if (error) throw friendly(error)
+    await refreshAllowancePlans()
+  }, [refreshAllowancePlans])
+
   const createInvite = useCallback(async () => {
     const { data: code, error } = await supabase.rpc('create_invite', { fid: familyId })
     if (error) throw friendly(error)
@@ -453,21 +509,23 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
 
   const addActivity = useCallback(
     async (input: ActivityInput) => {
-      const { error } = await supabase
-        .from('activities')
-        .insert({ family_id: familyId, created_by: userId, ...activityInputToRow(input) })
+      const { error } = await supabase.rpc('create_activity_with_participants', {
+        activity_data: { family_id: familyId, ...activityInputToRow(input) },
+        participant_ids: input.participantIds,
+      })
       if (error) throw friendly(error)
       await refreshActivities()
     },
-    [familyId, userId, refreshActivities]
+    [familyId, refreshActivities]
   )
 
   const updateActivity = useCallback(
     async (id: string, input: ActivityInput) => {
-      const { error } = await supabase
-        .from('activities')
-        .update({ ...activityInputToRow(input), updated_at: new Date().toISOString() })
-        .eq('id', id)
+      const { error } = await supabase.rpc('update_activity_with_participants', {
+        target_activity_id: id,
+        activity_data: activityInputToRow(input),
+        participant_ids: input.participantIds,
+      })
       if (error) throw friendly(error)
       await refreshActivities()
     },
@@ -510,6 +568,8 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     completions,
     pendingCompletions,
     activities,
+    allowancePlans,
+    allowanceCycles,
     medicalRecords,
     meals,
     voteRounds,
@@ -526,6 +586,9 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     approve,
     reject,
     payout,
+    saveAllowancePlan,
+    creditAllowance,
+    skipAllowance,
     createInvite,
     addActivity,
     updateActivity,

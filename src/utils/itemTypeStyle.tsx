@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { t } from '../strings'
 
-export type CalendarItemType = 'chore' | 'activity' | 'payment' | 'medical' | 'vaccination' | 'meal'
+export type CalendarItemType = 'chore' | 'activity' | 'payment' | 'medical' | 'vaccination' | 'meal' | 'allowance'
 
 interface ItemTypeStyle {
   colorVar: string
@@ -74,5 +74,7 @@ export function getItemTypeStyle(type: CalendarItemType): ItemTypeStyle {
       return { colorVar: '--accent-berry', label: t.calendar.typeVaccination, icon: <VaccinationIcon /> }
     case 'meal':
       return { colorVar: '--brick', label: t.calendar.typeMeal, icon: <MealIcon /> }
+    case 'allowance':
+      return { colorVar: '--accent-honey', label: t.calendar.typeAllowance, icon: <PaymentIcon /> }
   }
 }

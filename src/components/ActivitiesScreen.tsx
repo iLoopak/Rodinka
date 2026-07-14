@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { t } from '../strings'
 import { useFamilyData } from '../context/FamilyDataContext'
-import { useRouter } from '../router'
 import { AddActivityForm } from './AddActivityForm'
 import { ActivityDetailModal } from './ActivityDetailModal'
 import { Modal } from './ui/Modal'
@@ -24,7 +23,7 @@ export function ActivitiesScreen() {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null)
   const [filterChild, setFilterChild] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
-  const { navigate } = useRouter()
+  const [filterKind, setFilterKind] = useState('')
 
   const {
     activities,
@@ -65,39 +64,17 @@ export function ActivitiesScreen() {
     </div>
   )
 
-  if (kids.length === 0) {
-    return (
-      <>
-        {header}
-        <section className="section">
-          <EmptyState
-            title={t.activities.noActivities}
-            action={{ label: t.family.addChildAction, onClick: () => navigate('/family') }}
-          />
-        </section>
-        {showAdd && (
-          <Modal title={t.activities.addTitle} onClose={() => setShowAdd(false)}>
-            <AddActivityForm
-              members={members}
-              kids={kids}
-              currentMemberId={currentMember.id}
-              onSubmit={handleAdd}
-            />
-          </Modal>
-        )}
-      </>
-    )
-  }
-
-  const hasFilters = filterChild !== '' || filterCategory !== ''
+  const hasFilters = filterChild !== '' || filterCategory !== '' || filterKind !== ''
   function clearFilters() {
     setFilterChild('')
     setFilterCategory('')
+    setFilterKind('')
   }
 
   const filtered = activities.filter((a) => {
-    if (filterChild && a.child_id !== filterChild) return false
+    if (filterChild && !a.participant_ids.includes(filterChild) && a.responsible_member_id !== filterChild && a.secondary_responsible_member_id !== filterChild) return false
     if (filterCategory && a.category !== filterCategory) return false
+    if (filterKind && a.kind !== filterKind) return false
     return true
   })
 
@@ -120,11 +97,16 @@ export function ActivitiesScreen() {
           <option value="">
             {t.activities.filterChildLabel}: {t.activities.filterAll}
           </option>
-          {kids.map((kid) => (
-            <option key={kid.id} value={kid.id}>
-              {kid.display_name}
+          {members.map((member) => (
+            <option key={member.id} value={member.id}>
+              {member.display_name}
             </option>
           ))}
+        </select>
+        <select value={filterKind} onChange={(e) => setFilterKind(e.target.value)} aria-label={t.activities.filterKindLabel}>
+          <option value="">{t.activities.filterKindLabel}: {t.activities.filterAll}</option>
+          <option value="club">{t.activities.kindClub}</option>
+          <option value="event">{t.activities.kindEvent}</option>
         </select>
         <select
           value={filterCategory}
@@ -188,7 +170,7 @@ export function ActivitiesScreen() {
           ) : (
             <ul className="section-list">
               {withPayments.map((activity) => {
-                const child = memberById(activity.child_id)
+                const child = memberById(activity.participant_ids[0] ?? '')
                 return (
                   <li
                     key={activity.id}
@@ -200,7 +182,7 @@ export function ActivitiesScreen() {
                   >
                     <MemberAvatar member={child} />
                     <span className="row-title">{activity.title}</span>
-                    <span className="row-meta">{child?.display_name ?? memberName(activity.child_id)}</span>
+                    <span className="row-meta">{child?.display_name ?? '?'}</span>
                     <span className="row-spacer" />
                     <DueBadge dueDate={activity.next_payment_due_date} />
                     {activity.payment_amount != null && (
@@ -263,12 +245,16 @@ interface ActivityRowProps {
 
 function ActivityRow({ activity, memberById, onClick }: ActivityRowProps) {
   const next = nextOccurrenceDate(activity)
-  const child = memberById(activity.child_id)
+  const participants = activity.participant_ids.map(memberById).filter((member) => !!member)
+  const child = participants[0]
   return (
     <li className="clickable-row" role="button" tabIndex={0} onClick={onClick} onKeyDown={onActivateKey(onClick)}>
-      <MemberAvatar member={child} />
+      <div className="avatar-stack">
+        {participants.slice(0, 3).map((member) => <MemberAvatar key={member.id} member={member} />)}
+        {participants.length > 3 && <span className="avatar-more">+{participants.length - 3}</span>}
+      </div>
       <span className="row-title">{activity.title}</span>
-      <span className="row-meta">{child?.display_name ?? '?'}</span>
+      <span className="row-meta">{participants.map((member) => member.display_name).join(', ') || child?.display_name || '?'}</span>
       <span className="row-spacer" />
       {next ? (
         <span className="row-meta">{formatFullDate(next)}</span>

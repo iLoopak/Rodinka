@@ -12,6 +12,13 @@ export type ActivityCategory =
   | 'camp'
   | 'after_school'
   | 'other'
+  | 'vacation'
+  | 'trip'
+  | 'celebration'
+  | 'family_visit'
+  | 'other_event'
+
+export type ActivityKind = 'club' | 'event'
 
 export type ActivityRecurrenceType = 'one_off' | 'weekly' | 'biweekly' | 'custom_weekdays'
 export type ActivityPaymentFrequency = 'one_time' | 'weekly' | 'monthly' | 'term' | 'yearly'
@@ -22,7 +29,10 @@ export interface Activity {
   family_id: string
   title: string
   category: ActivityCategory
-  child_id: string
+  kind: ActivityKind
+  all_day: boolean
+  child_id: string | null
+  participant_ids: string[]
   responsible_member_id: string | null
   secondary_responsible_member_id: string | null
   location: string | null
@@ -63,7 +73,7 @@ export function useActivities(familyId: string | undefined) {
     setLoading(true)
     const { data, error } = await supabase
       .from('activities')
-      .select('id, family_id, title, category, child_id, responsible_member_id, secondary_responsible_member_id, location, coach_name, coach_phone, coach_email, notes, skill_level, start_date, end_date, recurrence_type, recurrence_weekdays, start_time, end_time, payment_amount, payment_frequency, next_payment_due_date, status, reminder_enabled, reminder_days_before, created_at, updated_at')
+      .select('id, family_id, title, category, kind, all_day, child_id, responsible_member_id, secondary_responsible_member_id, location, coach_name, coach_phone, coach_email, notes, skill_level, start_date, end_date, recurrence_type, recurrence_weekdays, start_time, end_time, payment_amount, payment_frequency, next_payment_due_date, status, reminder_enabled, reminder_days_before, created_at, updated_at, activity_participants(member_id)')
       .eq('family_id', familyId)
       .order('start_date')
 
@@ -72,7 +82,10 @@ export function useActivities(familyId: string | undefined) {
       setActivities([])
       setError(t.errors.loadFailed)
     } else {
-      setActivities(data)
+      setActivities(data.map((row) => ({
+        ...row,
+        participant_ids: row.activity_participants.map((participant) => participant.member_id),
+      })))
       setError(null)
     }
     setLoading(false)

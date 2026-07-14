@@ -4,7 +4,9 @@ import type { Activity } from '../hooks/useActivities'
 import type { MedicalRecord } from '../hooks/useMedicalRecords'
 import type { MealPlanEntry, MealSlot } from '../hooks/useMealPlanEntries'
 import type { CalendarItemType } from './itemTypeStyle'
+import type { AllowancePlan } from '../hooks/useAllowancePlans'
 import { classifyDueDate, compareISODates, todayISODate, type DueUrgency } from './dueDate'
+import { nextPayoutDate } from './allowanceCycles'
 import { expandActivitiesOccurrences } from './recurrence'
 import { displayTitle } from './mealPlanGrouping'
 
@@ -19,9 +21,14 @@ export interface CalendarEntry {
   childOrPatientId: string | null
   /** The accompanying/responsible adult, or the chore assignee. */
   responsibleMemberId: string | null
+  participantMemberIds?: string[]
+  responsibleMemberIds?: string[]
+  rangeStart?: string
+  rangeEnd?: string
+  isMultiDay?: boolean
   recurring: boolean
   /** What kind of source record this was derived from, for navigation. */
-  sourceType: 'chore' | 'activity' | 'activity_payment' | 'medical' | 'medical_due' | 'meal'
+  sourceType: 'chore' | 'activity' | 'activity_payment' | 'medical' | 'medical_due' | 'meal' | 'allowance'
   sourceId: string
   /** Meal-plan ordering metadata; present only for projected meals. */
   mealSlot?: MealSlot
@@ -42,6 +49,7 @@ interface BuildCalendarEntriesInput {
   // for the full reasoning). Omitting this field entirely is equivalent to
   // passing an empty array.
   mealPlanEntries?: MealPlanEntry[]
+  allowancePlans?: AllowancePlan[]
   rangeStart: string
   rangeEnd: string
 }
@@ -58,6 +66,7 @@ export function buildCalendarEntries({
   activities,
   medicalRecords,
   mealPlanEntries = [],
+  allowancePlans = [],
   rangeStart,
   rangeEnd,
 }: BuildCalendarEntriesInput): CalendarEntry[] {
@@ -74,6 +83,8 @@ export function buildCalendarEntries({
       subtitle: null,
       childOrPatientId: chore.assigned_to,
       responsibleMemberId: chore.assigned_to,
+      participantMemberIds: [chore.assigned_to],
+      responsibleMemberIds: [chore.assigned_to],
       recurring: chore.recurring,
       sourceType: 'chore',
       sourceId: chore.id,
@@ -88,11 +99,16 @@ export function buildCalendarEntries({
       id: `activity:${occurrence.id}`,
       type: 'activity',
       date: occurrence.date,
-      time: activity.start_time,
+      time: activity.all_day ? null : activity.start_time,
       title: activity.title,
       subtitle: activity.location,
-      childOrPatientId: activity.child_id,
+      childOrPatientId: activity.participant_ids[0] ?? activity.child_id,
       responsibleMemberId: activity.responsible_member_id,
+      participantMemberIds: activity.participant_ids,
+      responsibleMemberIds: [activity.responsible_member_id, activity.secondary_responsible_member_id].filter((id): id is string => !!id),
+      rangeStart: activity.start_date,
+      rangeEnd: activity.end_date ?? activity.start_date,
+      isMultiDay: activity.recurrence_type === 'one_off' && !!activity.end_date && activity.end_date > activity.start_date,
       recurring: activity.recurrence_type !== 'one_off',
       sourceType: 'activity',
       sourceId: activity.id,
@@ -109,8 +125,10 @@ export function buildCalendarEntries({
       time: null,
       title: t.calendar.paymentTitle(activity.title),
       subtitle: null,
-      childOrPatientId: activity.child_id,
+      childOrPatientId: activity.participant_ids[0] ?? activity.child_id,
       responsibleMemberId: activity.responsible_member_id,
+      participantMemberIds: activity.participant_ids,
+      responsibleMemberIds: [activity.responsible_member_id, activity.secondary_responsible_member_id].filter((id): id is string => !!id),
       recurring: false,
       sourceType: 'activity_payment',
       sourceId: activity.id,
@@ -130,6 +148,8 @@ export function buildCalendarEntries({
         subtitle: record.provider,
         childOrPatientId: record.patient_id,
         responsibleMemberId: record.responsible_member_id,
+        participantMemberIds: [record.patient_id],
+        responsibleMemberIds: record.responsible_member_id ? [record.responsible_member_id] : [],
         recurring: false,
         sourceType: 'medical',
         sourceId: record.id,
@@ -147,6 +167,8 @@ export function buildCalendarEntries({
         subtitle: record.provider,
         childOrPatientId: record.patient_id,
         responsibleMemberId: record.responsible_member_id,
+        participantMemberIds: [record.patient_id],
+        responsibleMemberIds: record.responsible_member_id ? [record.responsible_member_id] : [],
         recurring: false,
         sourceType: 'medical_due',
         sourceId: record.id,
@@ -166,6 +188,8 @@ export function buildCalendarEntries({
       subtitle: null,
       childOrPatientId: null,
       responsibleMemberId: entry.responsible_member_id,
+      participantMemberIds: [],
+      responsibleMemberIds: entry.responsible_member_id ? [entry.responsible_member_id] : [],
       recurring: false,
       sourceType: 'meal',
       sourceId: entry.id,
@@ -173,7 +197,45 @@ export function buildCalendarEntries({
     })
   }
 
+  for (const plan of allowancePlans) {
+    if (plan.status !== 'active') continue
+    const payoutDate = nextPayoutDate(rangeStart, plan.payout_day)
+    if (!withinRange(payoutDate, rangeStart, rangeEnd) || payoutDate < plan.starts_on) continue
+    entries.push({
+      id: `allowance:${plan.id}:${payoutDate}`,
+      type: 'allowance',
+      date: payoutDate,
+      time: null,
+      title: t.allowance.calendarTitle(plan.amount),
+      subtitle: null,
+      childOrPatientId: plan.member_id,
+      responsibleMemberId: null,
+      participantMemberIds: [plan.member_id],
+      responsibleMemberIds: [],
+      recurring: true,
+      sourceType: 'allowance',
+      sourceId: plan.id,
+    })
+  }
+
   return entries.sort(compareEntries)
+}
+
+export function entryMatchesMember(entry: CalendarEntry, memberId: string): boolean {
+  return (entry.participantMemberIds ?? []).includes(memberId) ||
+    (entry.responsibleMemberIds ?? []).includes(memberId) ||
+    entry.childOrPatientId === memberId || entry.responsibleMemberId === memberId
+}
+
+export function deduplicateAgendaRanges(entries: CalendarEntry[]): CalendarEntry[] {
+  const seen = new Set<string>()
+  return entries.filter((entry) => {
+    if (!entry.isMultiDay) return true
+    const key = `${entry.sourceType}:${entry.sourceId}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }
 
 function compareEntries(a: CalendarEntry, b: CalendarEntry): number {

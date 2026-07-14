@@ -22,6 +22,8 @@ function reasonLabel(item: TodayAttentionItem): string {
       return t.today.attentionMedicalReason(date ?? t.due.overdue)
     case 'meal_vote':
       return t.today.attentionVoteReason
+    case 'allowance_due':
+      return t.today.attentionAllowanceReason(date ?? t.due.today)
   }
 }
 
@@ -30,6 +32,7 @@ function peopleLabel(item: TodayAttentionItem, memberById: (id: string) => Famil
   const responsible = item.responsibleMemberId ? memberById(item.responsibleMemberId)?.display_name : null
   if (item.kind === 'overdue_chore') return person ? t.today.choreAssignee(person) : null
   if (item.kind === 'meal_vote') return t.today.attentionVoteAction
+  if (item.kind === 'allowance_due') return person ?? null
   if (person && responsible && person !== responsible) return t.today.responsiblePeople(person, responsible)
   return person ?? responsible ?? null
 }

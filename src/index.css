@@ -1987,3 +1987,57 @@ label.member-gender-option {
   color: #fff;
   border-color: var(--accent-berry);
 }
+
+.month-grid-dot.multi-day {
+  display: inline-grid;
+  place-items: center;
+  width: 11px;
+  height: 8px;
+  border-radius: 3px;
+  color: white;
+  font-size: 6px;
+  line-height: 1;
+}
+
+.participant-picker,
+.requirement-editor {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.participant-picker .checkbox-label,
+.requirement-row {
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+.avatar-stack {
+  display: inline-flex;
+  align-items: center;
+}
+
+.avatar-stack > * + * { margin-left: -0.45rem; }
+
+.avatar-more {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  background: var(--canvas);
+  font-size: 0.75rem;
+}
+
+.allowance-card,
+.allowance-plan-summary { gap: 0.65rem; }
+
+.allowance-plan-summary {
+  display: grid;
+  flex-basis: 100%;
+  width: 100%;
+  padding-top: 0.5rem;
+}
+
+.compact-list { margin: 0; padding-left: 1.2rem; }
