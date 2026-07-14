@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const sql = readFileSync(
-  join(process.cwd(), 'supabase', '009_chore_recurrence_lifecycle.sql'),
+  join(process.cwd(), 'supabase', 'migrations', '20260714000900_chore_recurrence_lifecycle.sql'),
   'utf8'
 ).toLowerCase()
 

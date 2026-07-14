@@ -3,11 +3,11 @@ import { isNavigationItemActive } from '../utils/navigation'
 
 const plannerItem = {
   to: '/plan' as const,
-  activeRoutes: ['/plan', '/chores', '/activities', '/health', '/meals'] as const,
+  activeRoutes: ['/plan', '/chores', '/activities', '/health', '/meals', '/shopping'] as const,
 }
 
 describe('isNavigationItemActive', () => {
-  it.each(['/plan', '/chores', '/activities', '/health', '/meals'] as const)(
+  it.each(['/plan', '/chores', '/activities', '/health', '/meals', '/shopping'] as const)(
     'keeps Planner active on %s',
     (path) => {
       expect(isNavigationItemActive(plannerItem, path)).toBe(true)
