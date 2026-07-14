@@ -9,12 +9,14 @@ import { ReminderProvider } from './context/ReminderContext'
 import { PushProvider } from './context/PushContext'
 import { t } from './strings'
 import { FamilyMark } from './components/FamilyMark'
+import { useLanguage } from './i18n/languageContext'
 
 function AppLoading({ label }: { label: string }) {
   return <div className="loading app-loading"><FamilyMark variant="static" size={32} />{label}</div>
 }
 
 export default function App() {
+  useLanguage()
   const { session, loading: sessionLoading } = useSession()
   const { member, loading: familyLoading, refresh } = useFamily(session?.user.id)
 

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useFamilyData } from '../context/FamilyDataContext'
 import { useRouter } from '../router'
-import { currentLang, t } from '../strings'
+import { t } from '../strings'
+import { getCurrentLanguage } from '../i18n'
 import type { CalendarEntry } from '../utils/calendarEntries'
 import { formatFullDate, todayISODate } from '../utils/dueDate'
 import { buildTodayAttentionItems, buildTodayEntries } from '../utils/todayAgenda'
@@ -71,7 +72,7 @@ export function TodayDashboard() {
   const addressName = getLocalizedAddressName({
     firstName: currentMember.display_name,
     manualVocative: currentMember.vocative_name,
-    locale: currentLang,
+    locale: getCurrentLanguage(),
   })
 
   async function handleApprove(completionId: string) {

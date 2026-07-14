@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import type { FamilyMember } from '../../hooks/useFamilyMembers'
-import { currentLang, t } from '../../strings'
+import { t } from '../../strings'
+import { getCurrentLanguage } from '../../i18n'
 import type { CalendarEntry } from '../../utils/calendarEntries'
 import { formatShortDate } from '../../utils/dueDate'
 import {
@@ -13,11 +14,11 @@ import {
 import { MemberAvatar } from '../ui/MemberAvatar'
 import { WeekCalendarEntryRow } from './WeekCalendarEntryRow'
 
-const WEEKDAY_LABELS = [
+function weekdayLabels() { return [
   t.calendar.weekdayShortMon, t.calendar.weekdayShortTue, t.calendar.weekdayShortWed,
   t.calendar.weekdayShortThu, t.calendar.weekdayShortFri, t.calendar.weekdayShortSat,
   t.calendar.weekdayShortSun,
-]
+] }
 
 interface Props {
   weekStart: string
@@ -33,7 +34,7 @@ interface Props {
 }
 
 export function WeekAgenda({ weekStart, entries, today, selectedDay, scrollVersion, memberById, onChangeWeek, onSelectDay, onSelectEntry, onAddDay }: Props) {
-  const locale = currentLang === 'en' ? 'en' : 'cs'
+  const locale = getCurrentLanguage()
   const days = useMemo(() => groupEntriesForWeek(entries, weekStart), [entries, weekStart])
   const sectionRefs = useRef(new Map<string, HTMLElement>())
 
@@ -72,7 +73,7 @@ export function WeekAgenda({ weekStart, entries, today, selectedDay, scrollVersi
           aria-label={`${formatWeekDayHeading(day.date, locale)}, ${t.calendar.itemCount(day.entries.length)}`}
           onClick={() => selectDay(day.date)}
         >
-          <span className="week-strip-weekday">{WEEKDAY_LABELS[index]}</span>
+          <span className="week-strip-weekday">{weekdayLabels()[index]}</span>
           <span className="week-strip-number">{Number(day.date.slice(8, 10))}</span>
           <span className="week-strip-indicators" aria-hidden="true">
             {memberIds.slice(0, 2).map((id) => <MemberAvatar key={id} member={memberById(id)} size={14} />)}

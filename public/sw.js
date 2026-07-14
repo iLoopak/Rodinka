@@ -24,7 +24,7 @@ self.addEventListener('fetch', (event) => {
       const copy = response.clone()
       caches.open(CACHE_NAME).then((cache) => cache.put('/', copy))
       return response
-    }).catch(async () => (await caches.match('/')) || new Response('Rodinka je momentálně offline.', { status: 503, headers: { 'content-type': 'text/plain; charset=utf-8' } })))
+    }).catch(async () => (await caches.match('/')) || new Response((await preferredLocale()) === 'cs' ? 'Rodinka je momentálně offline.' : 'Rodinka is currently offline.', { status: 503, headers: { 'content-type': 'text/plain; charset=utf-8' } })))
     return
   }
   if (url.pathname.startsWith('/assets/') || ['style', 'script', 'image', 'font'].includes(request.destination)) {
@@ -44,8 +44,13 @@ function safeDeepLink(value) {
   } catch { return '/reminders' }
 }
 
-function pushPayload(event) {
-  const fallback = { version: 1, title: 'Rodinka', body: 'Máte novou připomínku.', deepLink: '/reminders', tag: 'rodinka-reminder' }
+async function preferredLocale() {
+  const response = await caches.open(CONFIG_CACHE).then((cache) => cache.match('/__app-locale'))
+  return response && await response.text() === 'en' ? 'en' : 'cs'
+}
+
+function pushPayload(event, locale) {
+  const fallback = { version: 1, title: 'Rodinka', body: locale === 'en' ? 'You have a new reminder.' : 'Máte novou připomínku.', deepLink: '/reminders', tag: 'rodinka-reminder' }
   if (!event.data) return fallback
   try {
     const value = event.data.json()
@@ -62,14 +67,16 @@ function pushPayload(event) {
 }
 
 self.addEventListener('push', (event) => {
-  const payload = pushPayload(event)
-  event.waitUntil(self.registration.showNotification(payload.title, {
-    body: payload.body,
-    icon: '/icon.svg',
-    badge: '/notification-badge.svg',
-    tag: payload.tag,
-    renotify: true,
-    data: { deepLink: payload.deepLink, deliveryId: payload.deliveryId },
+  event.waitUntil(preferredLocale().then((locale) => {
+    const payload = pushPayload(event, locale)
+    return self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: '/icon.svg',
+      badge: '/notification-badge.svg',
+      tag: payload.tag,
+      renotify: true,
+      data: { deepLink: payload.deepLink, deliveryId: payload.deliveryId },
+    })
   }))
 })
 
@@ -88,8 +95,12 @@ self.addEventListener('notificationclick', (event) => {
 })
 
 self.addEventListener('message', (event) => {
-  if (event.data?.type !== 'PUSH_CONFIG' || typeof event.data.vapidPublicKey !== 'string') return
-  event.waitUntil(caches.open(CONFIG_CACHE).then((cache) => cache.put('/__push-config', new Response(event.data.vapidPublicKey))))
+  if (event.data?.type === 'PUSH_CONFIG' && typeof event.data.vapidPublicKey === 'string') {
+    event.waitUntil(caches.open(CONFIG_CACHE).then((cache) => cache.put('/__push-config', new Response(event.data.vapidPublicKey))))
+  }
+  if (event.data?.type === 'APP_LOCALE' && (event.data.locale === 'cs' || event.data.locale === 'en')) {
+    event.waitUntil(caches.open(CONFIG_CACHE).then((cache) => cache.put('/__app-locale', new Response(event.data.locale))))
+  }
 })
 
 function applicationServerKey(value) {

@@ -105,7 +105,7 @@ export function ActivityDetailModal({
         {activity.notes && <p className="row-description">{activity.notes}</p>}
       </div>
       <div className="family-actions">
-        {activity.next_payment_due_date && activity.payment_paid_for_date !== activity.next_payment_due_date && <button className="btn-secondary" disabled={paymentBusy} onClick={async () => { setPaymentBusy(true); try { await onMarkPaymentPaid(activity.id); onClose() } finally { setPaymentBusy(false) } }}>Označit platbu jako zaplacenou</button>}
+        {activity.next_payment_due_date && activity.payment_paid_for_date !== activity.next_payment_due_date && <button className="btn-secondary" disabled={paymentBusy} onClick={async () => { setPaymentBusy(true); try { await onMarkPaymentPaid(activity.id); onClose() } finally { setPaymentBusy(false) } }}>{t.activities.markPaymentPaid}</button>}
         <button className="btn-secondary" onClick={() => setEditing(true)}>
           {t.activities.edit}
         </button>

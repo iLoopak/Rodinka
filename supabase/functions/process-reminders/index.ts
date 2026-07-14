@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.110.2'
-import { reminderCopy } from '../../../src/notifications/reminderCopy.ts'
+import { reminderCopyFor } from '../../../src/notifications/reminderCopy.ts'
 import {
   DEFAULT_CATEGORY_PREFERENCES,
   defaultNotificationPreferences,
@@ -183,7 +183,7 @@ Deno.serve(async (request) => {
         shoppingItems: snapshot.shoppingItems as never,
         documents: snapshot.documents as never,
         preferences,
-        copy: reminderCopy,
+        copy: reminderCopyFor(preferences.locale),
         now,
       })
       const existingState: Record<string, ReminderDeliveryState> = {}

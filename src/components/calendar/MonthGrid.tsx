@@ -6,7 +6,7 @@ import { getItemTypeStyle } from '../../utils/itemTypeStyle'
 import { buildMonthWeeks } from '../../utils/monthGrid'
 import { MemberAvatar } from '../ui/MemberAvatar'
 
-const WEEKDAY_LABELS = [
+function weekdayLabels() { return [
   t.calendar.weekdayShortMon,
   t.calendar.weekdayShortTue,
   t.calendar.weekdayShortWed,
@@ -14,7 +14,7 @@ const WEEKDAY_LABELS = [
   t.calendar.weekdayShortFri,
   t.calendar.weekdayShortSat,
   t.calendar.weekdayShortSun,
-]
+] }
 
 const MAX_INDICATORS_PER_DAY = 3
 
@@ -44,7 +44,7 @@ export function MonthGrid({ monthAnchor, entries, today, selectedDay, memberById
   return (
     <div className="month-grid">
       <div className="month-grid-row month-grid-header">
-        {WEEKDAY_LABELS.map((label) => <div key={label} className="month-grid-weekday">{label}</div>)}
+        {weekdayLabels().map((label) => <div key={label} className="month-grid-weekday">{label}</div>)}
       </div>
       {weeks.map((week) => (
         <div className="month-grid-row" key={week[0]}>

@@ -1,6 +1,8 @@
 import { t } from '../strings'
 import { formatShoppingQuantity } from './shopping'
 import type { ShoppingCategory, ShoppingUnit } from './shopping'
+import { getCurrentLanguage } from '../i18n'
+import { formatLocalizedNumber } from '../i18n/format'
 
 export function shoppingCategoryLabel(category: ShoppingCategory) {
   return {
@@ -29,6 +31,6 @@ export function shoppingUnitLabel(unit: ShoppingUnit) {
 }
 
 export function formatLocalizedShoppingQuantity(quantity: number | null, unit: ShoppingUnit | null) {
-  const formattedQuantity = formatShoppingQuantity(quantity, null)
+  const formattedQuantity = quantity === null ? formatShoppingQuantity(quantity, null) : formatLocalizedNumber(quantity, getCurrentLanguage())
   return [formattedQuantity, unit ? shoppingUnitLabel(unit) : ''].filter(Boolean).join(' ')
 }

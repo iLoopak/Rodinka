@@ -77,16 +77,16 @@ function errorResult(error: unknown) {
   return { status, code: 'push_network_error', dead: false, retryable: true }
 }
 
-function safePayload(delivery: Delivery, reminder: Record<string, unknown> | null) {
+function safePayload(delivery: Delivery, reminder: Record<string, unknown> | null, locale: 'cs' | 'en') {
   let title = delivery.title.slice(0, 120)
-  let body = (delivery.body || 'Máte novou připomínku.').slice(0, 400)
+  let body = (delivery.body || (locale === 'en' ? 'You have a new reminder.' : 'Máte novou připomínku.')).slice(0, 400)
   const source = String(reminder?.source ?? '')
   if (source === 'medical-appointment' || source === 'vaccination') {
-    title = 'Zdravotní připomínka'
-    body = 'Čeká vás důležitý zdravotní termín.'
+    title = locale === 'en' ? 'Health reminder' : 'Zdravotní připomínka'
+    body = locale === 'en' ? 'You have an important health appointment coming up.' : 'Čeká vás důležitý zdravotní termín.'
   } else if (source === 'document') {
-    title = 'Připomínka dokumentu'
-    body = 'Je čas zkontrolovat důležitý rodinný dokument.'
+    title = locale === 'en' ? 'Document reminder' : 'Připomínka dokumentu'
+    body = locale === 'en' ? 'It is time to check an important family document.' : 'Je čas zkontrolovat důležitý rodinný dokument.'
   }
   const tagKind = delivery.delivery_type === 'daily_digest' ? 'daily-digest' : delivery.delivery_type === 'weekly_digest' ? 'weekly-digest' : 'reminder'
   return JSON.stringify({
@@ -166,7 +166,7 @@ Deno.serve(async (request) => {
     }
     if (!subscriptions?.length) { await finish('cancelled', 'no_active_subscription'); diagnostics.cancelled += 1; continue }
 
-    const payload = safePayload(delivery, reminder as Record<string, unknown> | null)
+    const payload = safePayload(delivery, reminder as Record<string, unknown> | null, preferences.locale)
     let succeeded = 0; let retryable = 0; let permanent = 0
     for (const subscription of subscriptions as Subscription[]) {
       diagnostics.attempts += 1

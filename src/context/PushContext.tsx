@@ -11,6 +11,7 @@ import {
   type PushCapability,
   type PushDevice,
 } from '../push/pushClient'
+import { t } from '../strings'
 
 interface PushContextValue {
   capability: PushCapability
@@ -47,7 +48,7 @@ export function PushProvider({ children }: { children: ReactNode }) {
       setDevices(await loadPushDevices(endpoint))
       setError(null)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Stav oznámení se nepodařilo načíst.')
+      setError(caught instanceof Error ? caught.message : t.reminders.pushStateLoadFailed)
     } finally {
       setLoading(false)
     }
@@ -64,7 +65,7 @@ export function PushProvider({ children }: { children: ReactNode }) {
   const run = useCallback(async (operation: () => Promise<void>) => {
     setBusy(true); setError(null)
     try { await operation(); await refresh() }
-    catch (caught) { const message = caught instanceof Error ? caught.message : 'Operace se nezdařila.'; setError(message); throw caught }
+    catch (caught) { const message = caught instanceof Error ? caught.message : t.reminders.operationFailed; setError(message); throw caught }
     finally { setBusy(false) }
   }, [refresh])
 

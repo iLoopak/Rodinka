@@ -1,4 +1,5 @@
-import { t, currentLang } from '../strings'
+import { t } from '../strings'
+import { getCurrentLanguage } from '../i18n'
 import type { Chore } from '../hooks/useChores'
 
 export type DueUrgency = 'overdue' | 'today' | 'tomorrow' | 'thisWeek' | 'upcoming'
@@ -58,7 +59,7 @@ export function isDueTodayOrEarlier(dueDate: string, today: string = todayISODat
 }
 
 export function formatShortDate(iso: string): string {
-  return toUTCDate(iso).toLocaleDateString(currentLang === 'cs' ? 'cs-CZ' : 'en-US', {
+  return toUTCDate(iso).toLocaleDateString(getCurrentLanguage() === 'cs' ? 'cs-CZ' : 'en-US', {
     day: 'numeric',
     month: 'short',
     timeZone: 'UTC',
@@ -68,7 +69,7 @@ export function formatShortDate(iso: string): string {
 // Longer form used where the year matters (e.g. far-future/past dates in
 // detail views) — still UTC-anchored for the same drift-safety reason.
 export function formatFullDate(iso: string): string {
-  return toUTCDate(iso).toLocaleDateString(currentLang === 'cs' ? 'cs-CZ' : 'en-US', {
+  return toUTCDate(iso).toLocaleDateString(getCurrentLanguage() === 'cs' ? 'cs-CZ' : 'en-US', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -78,7 +79,7 @@ export function formatFullDate(iso: string): string {
 
 // "Červenec 2026" / "July 2026" — used for the calendar's month header.
 export function formatMonthYear(iso: string): string {
-  return toUTCDate(iso).toLocaleDateString(currentLang === 'cs' ? 'cs-CZ' : 'en-US', {
+  return toUTCDate(iso).toLocaleDateString(getCurrentLanguage() === 'cs' ? 'cs-CZ' : 'en-US', {
     month: 'long',
     year: 'numeric',
     timeZone: 'UTC',

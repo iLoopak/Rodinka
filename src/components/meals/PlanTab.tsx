@@ -13,7 +13,7 @@ import type { MealPlanEntry, MealSlot } from '../../hooks/useMealPlanEntries'
 import type { PlanEntryInput } from '../../context/useMealsData'
 import { MealIngredientsSection } from './MealIngredientsSection'
 
-const WEEKDAY_LABELS = [
+function weekdayLabels() { return [
   t.calendar.weekdayShortMon,
   t.calendar.weekdayShortTue,
   t.calendar.weekdayShortWed,
@@ -21,7 +21,7 @@ const WEEKDAY_LABELS = [
   t.calendar.weekdayShortFri,
   t.calendar.weekdayShortSat,
   t.calendar.weekdayShortSun,
-]
+] }
 
 interface PendingAdd {
   date: string
@@ -131,7 +131,7 @@ export function PlanTab({ prefill, onPrefillConsumed }: Props) {
           return (
             <div key={date} className={`day-plan-card${date === today ? ' today' : ''}`}>
               <div className="day-plan-header">
-                <span className="day-plan-weekday">{WEEKDAY_LABELS[index]}</span>
+                <span className="day-plan-weekday">{weekdayLabels()[index]}</span>
                 <span className="day-plan-date">{formatShortDate(date)}</span>
               </div>
 

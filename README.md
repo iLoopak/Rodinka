@@ -1,6 +1,6 @@
 # Rodinka
 
-Deployment notes: [server reminder processing](./supabase-reminder-processing.md) · [PWA Web Push delivery](./supabase-web-push.md)
+Deployment notes: [server reminder processing](./supabase-reminder-processing.md) · [PWA Web Push delivery](./supabase-web-push.md) · [localization](./I18N.md)
 
 A PWA for managing family life: shared activity/club schedules, medical
 appointments, chores tied to allowance, and weekly meal planning — built for

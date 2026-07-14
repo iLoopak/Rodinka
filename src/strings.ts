@@ -3,6 +3,7 @@
 // keyed by language, so nothing is hardcoded inline in components.
 
 import { memberGrammarVariant, type GrammaticalValue } from './utils/memberGrammar'
+import { formatLocalizedCurrency } from './i18n/format'
 
 export type Lang = 'cs' | 'en'
 
@@ -10,7 +11,7 @@ export const strings = {
   cs: {
     appName: 'Rodinka',
     claim: 'Ať doma všechno klape.',
-    common: { close: 'Zavřít' },
+    common: { close: 'Zavřít', primaryNavigation: 'Hlavní navigace' },
     login: {
       title: 'Rodinka',
       tabSignIn: 'Přihlásit se',
@@ -274,7 +275,7 @@ export const strings = {
       payoutSubmit: 'Zaznamenat',
       payingOut: 'Ukládám...',
       cancel: 'Zrušit',
-      formatAmount: (amount: number) => `${amount.toFixed(2)} Kč`,
+      formatAmount: (amount: number) => formatLocalizedCurrency(amount, 'cs'),
       tabActive: 'Aktivní',
       tabPending: 'Čeká na schválení',
       tabAllowance: 'Kapesné',
@@ -323,7 +324,7 @@ export const strings = {
       planStatus: 'Stav plánu', active: 'Aktivní', paused: 'Pozastavený', archived: 'Archivovaný',
       save: 'Uložit plán', saving: 'Ukládám…', requirementRequired: 'Vyberte alespoň jeden úkol.',
       noEligibleChores: 'Nejsou dostupné žádné aktivní opakované úkoly tohoto dítěte.',
-      calendarTitle: (amount: number) => `Měsíční kapesné · ${amount.toFixed(2)} Kč`,
+      calendarTitle: (amount: number) => `Měsíční kapesné · ${formatLocalizedCurrency(amount, 'cs')}`,
     },
     family: {
       title: 'Rodina',
@@ -408,6 +409,8 @@ export const strings = {
       familyLabel: 'Rodina',
       languageLabel: 'Jazyk',
       languageValue: 'Čeština',
+      languageHelp: 'Jazyk aplikace',
+      remindersAction: 'Připomínky a oznámení',
       comingSoonBadge: 'Již brzy',
       placeholderNotifications: 'Oznámení',
       sectionsTitle: 'Rodinné záznamy',
@@ -420,6 +423,54 @@ export const strings = {
       setPasswordSubmit: 'Uložit heslo',
       settingPassword: 'Ukládám...',
       passwordSetSuccess: 'Heslo bylo nastaveno.',
+    },
+    reminders: {
+      title: 'Připomínky', subtitle: 'Co je dobré zařídit, pohromadě a bez zbytečného hluku.',
+      loading: 'Načítám připomínky…', markAllRead: 'Přečíst vše', settingsSaved: 'Nastavení je uložené.',
+      settingsSaveFailed: 'Nastavení se nepodařilo uložit.',
+      tabActive: (count: number) => count ? `Aktivní (${count})` : 'Aktivní', tabHistory: 'Historie', tabSettings: 'Nastavení',
+      sectionOverdue: 'Po termínu', sectionToday: 'Dnes', sectionUpcoming: 'Nadcházející', sectionEarlier: 'Bez termínu',
+      categoryChores: 'Úkoly', categoryActivities: 'Aktivity', categoryMedical: 'Zdraví', categoryVoting: 'Hlasování',
+      categoryMeals: 'Jídlo', categoryAllowance: 'Kapesné', categoryDocuments: 'Dokumenty', categoryShopping: 'Nákupy',
+      dailyDigest: 'Denní přehled', weeklyDigest: 'Týdenní přehled',
+      digestCounts: (active: number, important: number) => `${active} aktivních · ${important} důležitých`,
+      allDoneTitle: 'Máte všechno hotovo', allDoneBody: 'Nové připomínky se tu objeví, až bude potřeba něco zařídit.',
+      reminderSettings: 'Nastavení připomínek', historyEmpty: 'Historie je zatím prázdná',
+      stateResolved: 'Vyřešeno', stateDismissed: 'Skryto', stateRead: 'Přečteno', stateUnread: 'Nepřečteno',
+      important: 'Důležité', markRead: 'Označit jako přečtené', dismiss: 'Skrýt',
+      deliveryTitle: 'Doručování', inAppTitle: 'Připomínky v aplikaci', inAppBody: 'Zobrazí zvonek, centrum a historii.',
+      quietPushTitle: 'Tiché připomínky jen v aplikaci', quietPushBody: 'Push vynechá méně naléhavé položky.',
+      summariesTitle: 'Souhrny', summariesBody: 'Přehled se vždy zobrazí v centru připomínek. Se zapnutým push dorazí i při zavřené aplikaci.',
+      dailyDigestBody: 'Krátký přehled dneška a zítřka.', weeklyDigestBody: 'Výhled na příštích sedm dnů.', digestPreview: 'Náhled přehledu',
+      categoriesTitle: 'Kategorie', timeTitle: 'Čas a klidné hodiny', timezoneAuto: 'Časové pásmo automaticky',
+      timezoneDetected: (timezone: string) => `Podle tohoto zařízení: ${timezone}`, timezoneCustom: 'Vlastní časové pásmo',
+      timezoneCustomBody: 'Volba zůstane zachovaná i na jiném zařízení.', quietHoursTitle: 'Odložit budoucí doručení',
+      quietHoursBody: 'Server respektuje tento interval při plánování; centrum připomínek zůstává dostupné.',
+      quietFrom: 'Od', quietTo: 'Do', timezoneUsed: (timezone: string) => `Používané časové pásmo: ${timezone}`,
+      pushTitle: 'Push oznámení', enabled: 'Zapnuto', disabled: 'Vypnuto', enabledForAccount: 'Zapnutá pro účet', disabledForAccount: 'Vypnutá pro účet',
+      otherDevices: (count: number) => `další zařízení: ${count}`, thisDevice: 'toto zařízení', registered: 'registrované', syncing: 'čeká na synchronizaci', unregistered: 'neregistrované',
+      capabilityInsecure: 'Oznámení vyžadují zabezpečené HTTPS připojení.', capabilityServiceWorker: 'Tento prohlížeč nepodporuje práci aplikace na pozadí.',
+      capabilityNotifications: 'Tento prohlížeč nepodporuje systémová oznámení.', capabilityPush: 'Web Push není v tomto prohlížeči dostupný.',
+      capabilityVapid: 'Push zatím není nakonfigurovaný pro toto prostředí.', capabilityBlocked: 'Oznámení jsou zablokovaná. Povolte je v nastavení prohlížeče nebo systému.',
+      iosInstallTitle: 'Na iPhonu nebo iPadu nejprve přidejte Rodinku na plochu',
+      iosStepShare: 'Otevřete nabídku Sdílet.', iosStepHome: 'Zvolte Přidat na plochu.', iosStepLaunch: 'Spusťte Rodinku z nové ikony.', iosStepEnable: 'V Rodince zapněte oznámení.',
+      enableDevice: 'Zapnout na tomto zařízení', testPush: 'Poslat testovací oznámení', disableDevice: 'Vypnout na tomto zařízení', disableAccount: 'Vypnout push pro celý účet',
+      consentLabel: 'Zapnutí push oznámení', consentTitle: 'Chcete zapnout push na tomto zařízení?',
+      consentBody: 'Rodinka pošle seskupené připomínky k rodinnému plánu. Text na zamčené obrazovce nebude obsahovat citlivé podrobnosti. Povolení lze později změnit a každé zařízení se zapíná zvlášť.',
+      allow: 'Povolit oznámení', notNow: 'Teď ne', devicesTitle: 'Zařízení', browserDevice: 'Webový prohlížeč', currentDeviceSuffix: ' · toto zařízení',
+      lastActive: (date: string) => `Naposledy aktivní ${date}`, remove: 'Odebrat',
+      deviceRegistered: 'Zařízení je zaregistrované. Můžete poslat test.', enableFailed: 'Push se nepodařilo zapnout.',
+      deviceDisabled: 'Push byl na tomto zařízení vypnutý.', deviceRemoveFailed: 'Zařízení se nepodařilo odebrat.',
+      accountDisabled: 'Push je vypnutý pro celý účet. Zařízení zůstávají uložená pro snadné opětovné zapnutí.',
+      testSending: 'Odesílám test skutečnou push cestou…', testSent: 'Test byl předán push službě. Oznámení by mělo dorazit během chvilky.', testFailed: 'Test se nepodařilo odeslat.',
+      bellLabel: 'Připomínky', bellUnread: (count: number) => `${count} nepřečtených připomínek`,
+      loadFailed: 'Připomínky se nepodařilo načíst.', preferencesLoadFailed: 'Nastavení připomínek se nepodařilo načíst.',
+      syncFailed: 'Připomínky se nepodařilo aktualizovat.', reminderSaveFailed: 'Připomínku se nepodařilo uložit.',
+      invalidTimezone: 'Vyberte platné časové pásmo.', pushStateLoadFailed: 'Stav oznámení se nepodařilo načíst.', operationFailed: 'Operace se nezdařila.',
+      deviceGeneric: 'Zařízení', browserGeneric: 'Prohlížeč', subscriptionInvalid: 'Prohlížeč neposkytl platné údaje push odběru.',
+      deviceStoreFailed: 'Zařízení se nepodařilo uložit. Zkuste to prosím znovu.', pushUnavailable: 'Push oznámení nejsou v tomto prostředí dostupná.',
+      permissionBlocked: 'Oznámení jsou zablokovaná v nastavení prohlížeče.', permissionMissing: 'Povolení oznámení nebylo uděleno.',
+      deviceListFailed: 'Seznam zařízení se nepodařilo načíst.', testNotificationFailed: 'Testovací oznámení se nepodařilo odeslat.',
     },
     activities: {
       title: 'Aktivity a události',
@@ -571,6 +622,7 @@ export const strings = {
 
       detailNoPayment: 'Bez nastavené platby',
       detailNoResponsible: 'Bez doprovázejícího dospělého',
+      markPaymentPaid: 'Označit platbu jako zaplacenou',
     },
     medical: {
       title: 'Zdraví',
@@ -706,7 +758,13 @@ export const strings = {
     shopping: {
       title: 'Nákupní seznam',
       subtitle: 'Společný seznam pro celou rodinu',
-      activeCount: (count: number) => count === 1 ? '1 položka k nákupu' : `${count} položek k nákupu`,
+      activeCount: (count: number) => count === 1
+        ? '1 položka k nákupu'
+        : count % 100 >= 12 && count % 100 <= 14
+          ? `${count} položek k nákupu`
+          : count % 10 >= 2 && count % 10 <= 4
+            ? `${count} položky k nákupu`
+            : `${count} položek k nákupu`,
       quickAddPlaceholder: 'Co potřebujete koupit?',
       quickAddAction: 'Přidat',
       quickAddHint: 'Enter položku rovnou přidá',
@@ -946,7 +1004,7 @@ export const strings = {
   en: {
     appName: 'Rodinka',
     claim: 'Keep the household running smoothly.',
-    common: { close: 'Close' },
+    common: { close: 'Close', primaryNavigation: 'Primary navigation' },
     login: {
       title: 'Rodinka',
       tabSignIn: 'Sign in',
@@ -984,7 +1042,7 @@ export const strings = {
       familyNameLabel: 'Family name',
       familyNamePlaceholder: 'e.g. The Novaks',
       yourNameLabel: 'Your name',
-      yourNamePlaceholder: 'e.g. Lukáš',
+      yourNamePlaceholder: 'e.g. Luke',
       createSubmit: 'Create family',
       creating: 'Creating...',
       joinTitle: 'Join a family',
@@ -1208,7 +1266,7 @@ export const strings = {
       payoutSubmit: 'Record',
       payingOut: 'Saving...',
       cancel: 'Cancel',
-      formatAmount: (amount: number) => `$${amount.toFixed(2)}`,
+      formatAmount: (amount: number) => formatLocalizedCurrency(amount, 'en'),
       tabActive: 'Active',
       tabPending: 'Pending approval',
       tabAllowance: 'Allowance',
@@ -1257,7 +1315,7 @@ export const strings = {
       planStatus: 'Plan status', active: 'Active', paused: 'Paused', archived: 'Archived',
       save: 'Save plan', saving: 'Saving…', requirementRequired: 'Choose at least one chore.',
       noEligibleChores: 'This child has no active recurring chores available.',
-      calendarTitle: (amount: number) => `Monthly allowance · $${amount.toFixed(2)}`,
+      calendarTitle: (amount: number) => `Monthly allowance · ${formatLocalizedCurrency(amount, 'en')}`,
     },
     family: {
       title: 'Family',
@@ -1342,6 +1400,8 @@ export const strings = {
       familyLabel: 'Family',
       languageLabel: 'Language',
       languageValue: 'English',
+      languageHelp: 'App language',
+      remindersAction: 'Reminders and notifications',
       comingSoonBadge: 'Coming soon',
       placeholderNotifications: 'Notifications',
       sectionsTitle: 'Family records',
@@ -1354,6 +1414,54 @@ export const strings = {
       setPasswordSubmit: 'Save password',
       settingPassword: 'Saving...',
       passwordSetSuccess: 'Password set.',
+    },
+    reminders: {
+      title: 'Reminders', subtitle: 'Everything worth taking care of, together and without the noise.',
+      loading: 'Loading reminders…', markAllRead: 'Mark all as read', settingsSaved: 'Settings saved.',
+      settingsSaveFailed: 'Could not save settings.',
+      tabActive: (count: number) => count ? `Active (${count})` : 'Active', tabHistory: 'History', tabSettings: 'Settings',
+      sectionOverdue: 'Overdue', sectionToday: 'Today', sectionUpcoming: 'Upcoming', sectionEarlier: 'No date',
+      categoryChores: 'Tasks', categoryActivities: 'Activities', categoryMedical: 'Health', categoryVoting: 'Voting',
+      categoryMeals: 'Meals', categoryAllowance: 'Allowance', categoryDocuments: 'Documents', categoryShopping: 'Shopping',
+      dailyDigest: 'Daily digest', weeklyDigest: 'Weekly digest',
+      digestCounts: (active: number, important: number) => `${active} active · ${important} important`,
+      allDoneTitle: 'You are all caught up', allDoneBody: 'New reminders will appear here when something needs your attention.',
+      reminderSettings: 'Reminder settings', historyEmpty: 'History is empty',
+      stateResolved: 'Resolved', stateDismissed: 'Hidden', stateRead: 'Read', stateUnread: 'Unread',
+      important: 'Important', markRead: 'Mark as read', dismiss: 'Hide',
+      deliveryTitle: 'Delivery', inAppTitle: 'In-app reminders', inAppBody: 'Shows the bell, reminder center and history.',
+      quietPushTitle: 'Keep quiet reminders in the app', quietPushBody: 'Push skips less urgent items.',
+      summariesTitle: 'Digests', summariesBody: 'The digest always appears in the reminder center. With push enabled, it is delivered even when the app is closed.',
+      dailyDigestBody: 'A short look at today and tomorrow.', weeklyDigestBody: 'A look at the next seven days.', digestPreview: 'Digest preview',
+      categoriesTitle: 'Categories', timeTitle: 'Time and quiet hours', timezoneAuto: 'Set time zone automatically',
+      timezoneDetected: (timezone: string) => `From this device: ${timezone}`, timezoneCustom: 'Custom time zone',
+      timezoneCustomBody: 'This choice is kept across devices.', quietHoursTitle: 'Delay future deliveries',
+      quietHoursBody: 'The server respects this interval when scheduling; the reminder center remains available.',
+      quietFrom: 'From', quietTo: 'To', timezoneUsed: (timezone: string) => `Time zone in use: ${timezone}`,
+      pushTitle: 'Push notifications', enabled: 'On', disabled: 'Off', enabledForAccount: 'Enabled for account', disabledForAccount: 'Disabled for account',
+      otherDevices: (count: number) => `other devices: ${count}`, thisDevice: 'this device', registered: 'registered', syncing: 'waiting to sync', unregistered: 'not registered',
+      capabilityInsecure: 'Notifications require a secure HTTPS connection.', capabilityServiceWorker: 'This browser does not support background app activity.',
+      capabilityNotifications: 'This browser does not support system notifications.', capabilityPush: 'Web Push is not available in this browser.',
+      capabilityVapid: 'Push is not configured for this environment yet.', capabilityBlocked: 'Notifications are blocked. Allow them in your browser or system settings.',
+      iosInstallTitle: 'First add Rodinka to the Home Screen on your iPhone or iPad',
+      iosStepShare: 'Open the Share menu.', iosStepHome: 'Choose Add to Home Screen.', iosStepLaunch: 'Open Rodinka from the new icon.', iosStepEnable: 'Enable notifications in Rodinka.',
+      enableDevice: 'Enable on this device', testPush: 'Send test notification', disableDevice: 'Disable on this device', disableAccount: 'Disable push for the whole account',
+      consentLabel: 'Enable push notifications', consentTitle: 'Enable push on this device?',
+      consentBody: 'Rodinka will send grouped family-plan reminders. Lock-screen text will not include sensitive details. Permission can be changed later and each device is enabled separately.',
+      allow: 'Allow notifications', notNow: 'Not now', devicesTitle: 'Devices', browserDevice: 'Web browser', currentDeviceSuffix: ' · this device',
+      lastActive: (date: string) => `Last active ${date}`, remove: 'Remove',
+      deviceRegistered: 'The device is registered. You can send a test.', enableFailed: 'Could not enable push.',
+      deviceDisabled: 'Push was disabled on this device.', deviceRemoveFailed: 'Could not remove the device.',
+      accountDisabled: 'Push is disabled for the whole account. Devices are kept for easy re-enabling.',
+      testSending: 'Sending a test through the push service…', testSent: 'The test was sent to the push service. It should arrive shortly.', testFailed: 'Could not send the test.',
+      bellLabel: 'Reminders', bellUnread: (count: number) => `${count} unread reminders`,
+      loadFailed: 'Could not load reminders.', preferencesLoadFailed: 'Could not load reminder settings.',
+      syncFailed: 'Could not update reminders.', reminderSaveFailed: 'Could not save the reminder.',
+      invalidTimezone: 'Choose a valid time zone.', pushStateLoadFailed: 'Could not load notification status.', operationFailed: 'The operation failed.',
+      deviceGeneric: 'Device', browserGeneric: 'Browser', subscriptionInvalid: 'The browser did not provide a valid push subscription.',
+      deviceStoreFailed: 'Could not save the device. Please try again.', pushUnavailable: 'Push notifications are not available in this environment.',
+      permissionBlocked: 'Notifications are blocked in the browser settings.', permissionMissing: 'Notification permission was not granted.',
+      deviceListFailed: 'Could not load the device list.', testNotificationFailed: 'Could not send the test notification.',
     },
     activities: {
       title: 'Activities and events',
@@ -1505,6 +1613,7 @@ export const strings = {
 
       detailNoPayment: 'No payment set up',
       detailNoResponsible: 'No accompanying adult',
+      markPaymentPaid: 'Mark payment as paid',
     },
     medical: {
       title: 'Health',
@@ -1877,7 +1986,16 @@ export const strings = {
   },
 } as const
 
-// Phase 0: hardcode to Czech-first. Phase 1+ can wire this up to a real
-// language switcher (e.g. stored per-user, or browser locale detection).
-export const currentLang: Lang = 'cs'
-export const t = strings[currentLang]
+// Compatibility facade for the existing typed catalog. The root proxy resolves
+// every section against the current i18next language at access time, so existing
+// call sites update immediately without caching translated module constants.
+import { getCurrentLanguage } from './i18n'
+
+type CzechCatalog = (typeof strings)['cs']
+
+export const t = new Proxy({} as CzechCatalog, {
+  get: (_target, property) => {
+    const catalog = strings[getCurrentLanguage()] as unknown as Record<PropertyKey, unknown>
+    return catalog[property]
+  },
+})

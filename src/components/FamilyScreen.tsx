@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { t, currentLang } from '../strings'
+import { t } from '../strings'
+import { getCurrentLanguage } from '../i18n'
 import { useFamilyData } from '../context/FamilyDataContext'
 import { AddChildForm } from './AddChildForm'
 import { ErrorState } from './ui/ErrorState'
@@ -17,7 +18,7 @@ function roleLabel(role: FamilyMember['role']) {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(currentLang === 'cs' ? 'cs-CZ' : 'en-US')
+  return new Date(iso).toLocaleDateString(getCurrentLanguage() === 'cs' ? 'cs-CZ' : 'en-US')
 }
 
 export function FamilyScreen() {

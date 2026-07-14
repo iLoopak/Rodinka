@@ -8,10 +8,12 @@ import { SetPasswordForm } from './SetPasswordForm'
 import { Link } from '../router'
 import { FamilyMark } from './FamilyMark'
 import { useActiveFamilyMark } from '../hooks/useActiveFamilyMark'
+import { useLanguage } from '../i18n/languageContext'
 
 export function MoreScreen() {
   const { currentMember, userEmail, familyName } = useFamilyData()
   const familyMark = useActiveFamilyMark()
+  const { language, changeLanguage } = useLanguage()
   const [showSetPassword, setShowSetPassword] = useState(false)
   const { canPrompt, showIOSInstructions, isStandalone, isNative, promptInstall } = useInstallPrompt()
 
@@ -37,10 +39,22 @@ export function MoreScreen() {
             <span className="row-spacer" />
             <span className="row-title">{familyName ?? '—'}</span>
           </li>
-          <li>
-            <span className="row-meta">{t.more.languageLabel}</span>
+          <li className="language-setting-row">
+            <label htmlFor="app-language">
+              <span className="row-title">{t.more.languageLabel}</span>
+              <small>{t.more.languageHelp}</small>
+            </label>
             <span className="row-spacer" />
-            <span className="row-title">{t.more.languageValue}</span>
+            <select
+              id="app-language"
+              className="language-select"
+              value={language}
+              aria-label={t.more.languageLabel}
+              onChange={(event) => void changeLanguage(event.target.value === 'cs' ? 'cs' : 'en')}
+            >
+              <option value="cs">Čeština</option>
+              <option value="en">English</option>
+            </select>
           </li>
           {!isNative && isStandalone && (
             <li>
@@ -77,7 +91,7 @@ export function MoreScreen() {
       <section className="section">
         <ul className="section-list plain-list">
           <li>
-            <Link to="/reminders" hash="#settings" className="row-title">Připomínky a oznámení</Link>
+            <Link to="/reminders" hash="#settings" className="row-title">{t.more.remindersAction}</Link>
             <span className="row-spacer" />
             <span aria-hidden="true">›</span>
           </li>

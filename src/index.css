@@ -3022,6 +3022,22 @@ label.member-gender-option {
   margin-right: 2px;
 }
 
+.language-setting-row label {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.language-setting-row small {
+  color: var(--muted);
+}
+
+.language-select {
+  min-height: 44px;
+  width: auto;
+  max-width: 11rem;
+  margin: 0;
+}
+
 .home-title {
   color: var(--ink);
   font-size: clamp(1.55rem, 5vw, 1.9rem);
