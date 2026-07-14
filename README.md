@@ -290,6 +290,12 @@ A future implementation needs a service worker, subscription persistence and
 revocation, a server-side Web Push sender, and a scheduled digest job; no new
 deployment variables are required for the current in-app implementation.
 
+Phase 4.1 adds browser-independent reminder processing and a durable planned
+delivery outbox. Deployment, Vault-authenticated ten-minute Cron setup, dry-run,
+verification and rollback instructions are in
+[`supabase-reminder-processing.md`](./supabase-reminder-processing.md). Actual
+Web Push subscriptions and sending remain intentionally deferred to PR2.
+
 There is currently no documents entity/module in Rodinka. Document-expiry rule
 contracts (30/7/1 days and overdue) are implemented and tested, but no reminders
 are generated until a real family-scoped document source is added. Document

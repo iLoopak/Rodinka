@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { supabase } from '../supabaseClient'
+import { currentLang } from '../strings'
 import { useFamilyData } from './FamilyDataContext'
 import { reminderCopy } from '../notifications/reminderCopy'
 import {
@@ -42,7 +43,7 @@ interface ReminderContextValue {
 const ReminderContext = createContext<ReminderContextValue | null>(null)
 
 function mapPreferences(row: Record<string, unknown> | null, memberId: string, familyId: string): NotificationPreferences {
-  const defaults = defaultNotificationPreferences(memberId, familyId)
+  const defaults = defaultNotificationPreferences(memberId, familyId, browserTimezone(), currentLang)
   if (!row) return defaults
   const dailyDigestEnabled = Boolean(row.daily_digest_enabled)
   const storedTimezone = String(row.timezone ?? defaults.timezone)
@@ -59,6 +60,7 @@ function mapPreferences(row: Record<string, unknown> | null, memberId: string, f
     quietHoursEnd: String(row.quiet_hours_end ?? defaults.quietHoursEnd).slice(0, 5),
     timezone: isValidTimeZone(storedTimezone) ? storedTimezone : 'UTC',
     timezoneMode: row.timezone_mode === 'explicit' ? 'explicit' : 'auto',
+    locale: row.locale === 'en' ? 'en' : 'cs',
     categories: { ...DEFAULT_CATEGORY_PREFERENCES, ...((row.category_preferences as Partial<Record<ReminderCategory, boolean>> | null) ?? {}) },
   }
 }
@@ -82,7 +84,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
   const data = useFamilyData()
   const refreshSourceData = data.refreshReminderSources
   const [reminders, setReminders] = useState<ReminderRecord[]>([])
-  const [preferences, setPreferences] = useState(() => defaultNotificationPreferences(data.currentMember.id, data.familyId))
+  const [preferences, setPreferences] = useState(() => defaultNotificationPreferences(data.currentMember.id, data.familyId, browserTimezone(), currentLang))
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [generationTick, setGenerationTick] = useState(0)
@@ -139,7 +141,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
 
     if (!row) {
       const { error: insertError } = await supabase.from('notification_preferences').upsert({
-        member_id: next.memberId, family_id: next.familyId, timezone: next.timezone, timezone_mode: next.timezoneMode,
+        member_id: next.memberId, family_id: next.familyId, timezone: next.timezone, timezone_mode: next.timezoneMode, locale: next.locale,
       }, { onConflict: 'member_id', ignoreDuplicates: true })
       if (insertError) console.error('Failed to create reminder preferences:', insertError.message)
     } else if (String(row.timezone) !== next.timezone || row.timezone_mode !== next.timezoneMode) {
@@ -155,7 +157,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
     let cancelled = false
     setLoading(true)
     setReminders([])
-    setPreferences(defaultNotificationPreferences(data.currentMember.id, data.familyId))
+    setPreferences(defaultNotificationPreferences(data.currentMember.id, data.familyId, browserTimezone(), currentLang))
     lastBroadcastFingerprint.current = null
     Promise.all([loadPreferences(), refresh()]).finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
@@ -286,6 +288,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       quiet_push_enabled: normalized.quietPushEnabled, quiet_hours_enabled: normalized.quietHoursEnabled,
       quiet_hours_start: normalized.quietHoursStart, quiet_hours_end: normalized.quietHoursEnd,
       timezone: normalized.timezone, timezone_mode: normalized.timezoneMode,
+      locale: normalized.locale,
       category_preferences: normalized.categories, updated_at: new Date().toISOString(),
     })
     if (saveError) throw new Error('Nastavení se nepodařilo uložit.')
