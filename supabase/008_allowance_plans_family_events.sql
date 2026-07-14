@@ -159,13 +159,22 @@ begin
     else
       -- Monday-Sunday buckets; partial edge weeks count only with >= 4 days.
       for bucket in
-        with days as (
-          select d::date day, date_trunc('week', d)::date week_start
-          from generate_series(p_period_start, p_period_end - 1, interval '1 day') d
+        with cycle_days as (
+          select
+            generated_day::date as bucket_day,
+            date_trunc('week', generated_day)::date as week_start
+          from generate_series(
+            p_period_start::timestamp,
+            (p_period_end - 1)::timestamp,
+            interval '1 day'
+          ) as generated_days(generated_day)
         )
-        select greatest(min(day), p_period_start) bucket_start,
-               least(max(day) + 1, p_period_end) bucket_end
-        from days group by week_start having count(*) >= 4
+        select
+          greatest(min(bucket_day), p_period_start) as bucket_start,
+          least(max(bucket_day) + 1, p_period_end) as bucket_end
+        from cycle_days
+        group by week_start
+        having count(*) >= 4
       loop
         select count(*) into approved_count
         from chore_completions cc
