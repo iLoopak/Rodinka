@@ -15,8 +15,12 @@ export interface CalendarEntry {
   type: CalendarItemType
   date: string
   time: string | null
+  endTime?: string | null
+  allDay?: boolean
   title: string
   subtitle: string | null
+  location?: string | null
+  completed?: boolean
   /** The child/patient this entry is about, if any. */
   childOrPatientId: string | null
   /** The accompanying/responsible adult, or the chore assignee. */
@@ -79,6 +83,7 @@ export function buildCalendarEntries({
       type: 'chore',
       date: chore.due_date,
       time: null,
+      allDay: false,
       title: chore.title,
       subtitle: null,
       childOrPatientId: chore.assigned_to,
@@ -100,8 +105,11 @@ export function buildCalendarEntries({
       type: 'activity',
       date: occurrence.date,
       time: activity.all_day ? null : activity.start_time,
+      endTime: activity.all_day ? null : activity.end_time,
+      allDay: activity.all_day,
       title: activity.title,
       subtitle: activity.location,
+      location: activity.location,
       childOrPatientId: activity.participant_ids[0] ?? activity.child_id,
       responsibleMemberId: activity.responsible_member_id,
       participantMemberIds: activity.participant_ids,
@@ -123,6 +131,7 @@ export function buildCalendarEntries({
       type: 'payment',
       date: activity.next_payment_due_date,
       time: null,
+      allDay: false,
       title: t.calendar.paymentTitle(activity.title),
       subtitle: null,
       childOrPatientId: activity.participant_ids[0] ?? activity.child_id,
@@ -130,6 +139,7 @@ export function buildCalendarEntries({
       participantMemberIds: activity.participant_ids,
       responsibleMemberIds: [activity.responsible_member_id, activity.secondary_responsible_member_id].filter((id): id is string => !!id),
       recurring: false,
+      completed: activity.payment_paid_for_date === activity.next_payment_due_date,
       sourceType: 'activity_payment',
       sourceId: activity.id,
     })
@@ -144,8 +154,12 @@ export function buildCalendarEntries({
         type: entryType,
         date: record.record_date,
         time: record.start_time,
+        endTime: record.end_time,
+        allDay: false,
         title: record.title,
         subtitle: record.provider,
+        location: record.location,
+        completed: record.status === 'completed',
         childOrPatientId: record.patient_id,
         responsibleMemberId: record.responsible_member_id,
         participantMemberIds: [record.patient_id],
@@ -163,6 +177,7 @@ export function buildCalendarEntries({
         type: entryType,
         date: nextDue,
         time: null,
+        allDay: false,
         title: t.calendar.dueTitle(record.title),
         subtitle: record.provider,
         childOrPatientId: record.patient_id,
@@ -184,6 +199,7 @@ export function buildCalendarEntries({
       type: 'meal',
       date: entry.entry_date,
       time: null,
+      allDay: false,
       title: displayTitle(entry, '—'),
       subtitle: null,
       childOrPatientId: null,
@@ -191,6 +207,7 @@ export function buildCalendarEntries({
       participantMemberIds: [],
       responsibleMemberIds: entry.responsible_member_id ? [entry.responsible_member_id] : [],
       recurring: false,
+      completed: entry.status === 'completed',
       sourceType: 'meal',
       sourceId: entry.id,
       mealSlot: entry.meal_slot,
@@ -206,6 +223,7 @@ export function buildCalendarEntries({
       type: 'allowance',
       date: payoutDate,
       time: null,
+      allDay: false,
       title: t.allowance.calendarTitle(plan.amount),
       subtitle: null,
       childOrPatientId: plan.member_id,
