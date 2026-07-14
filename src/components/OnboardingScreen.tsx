@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { t } from '../strings'
-import { Logo } from './Logo'
+import { FamilyMark } from './FamilyMark'
 
 interface Props {
   onDone: () => void
@@ -55,7 +55,7 @@ export function OnboardingScreen({ onDone }: Props) {
     return (
       <div className="auth-screen">
         <div className="brand-lockup">
-          <Logo size={44} />
+          <FamilyMark variant="static" size={48} />
           <h1>{t.onboarding.welcomeTitle}</h1>
         </div>
         <p>{t.onboarding.welcomeSubtitle}</p>

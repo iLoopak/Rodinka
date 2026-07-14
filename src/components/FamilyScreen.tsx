@@ -58,7 +58,7 @@ export function FamilyScreen() {
     <>
       <div className="home-header">
         <div className="family-title-row">
-          <FamilyMark members={members} size={44} className="family-screen-mark" />
+          <FamilyMark variant="dynamic" members={members} size={48} className="family-screen-mark" />
           <h1 className="home-title">{familyName ?? t.family.title}</h1>
           {currentMember.role === 'admin' && !editingFamilyName && (
             <button type="button" className="btn-secondary family-name-edit" onClick={() => {

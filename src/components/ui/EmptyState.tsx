@@ -1,3 +1,6 @@
+import { useActiveFamilyMark } from '../../hooks/useActiveFamilyMark'
+import { FamilyMark } from '../FamilyMark'
+
 interface Props {
   title: string
   body?: string
@@ -5,9 +8,17 @@ interface Props {
 }
 
 export function EmptyState({ title, body, action }: Props) {
+  const familyMark = useActiveFamilyMark()
+
   return (
     <div className="empty-state-card">
-      <span className="empty-state-motif" aria-hidden="true"><i /><i /><i /><i /></span>
+      <FamilyMark
+        variant="dynamic"
+        members={familyMark.members}
+        loading={familyMark.loading}
+        size={48}
+        className="empty-state-mark"
+      />
       <p className="empty-state-title">{title}</p>
       {body && <p className="empty-state-body">{body}</p>}
       {action && (

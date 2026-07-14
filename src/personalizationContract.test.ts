@@ -10,6 +10,7 @@ const profile = readFileSync(join(root, 'src/components/family/MemberProfileModa
 const shell = readFileSync(join(root, 'src/components/AppShell.tsx'), 'utf8')
 const familyContext = readFileSync(join(root, 'src/context/FamilyDataContext.tsx'), 'utf8')
 const familyScreen = readFileSync(join(root, 'src/components/FamilyScreen.tsx'), 'utf8')
+const familyMarkHook = readFileSync(join(root, 'src/hooks/useActiveFamilyMark.ts'), 'utf8')
 
 describe('personalization persistence and UI contracts', () => {
   it('adds a nullable manual override without requiring a backfill', () => {
@@ -28,11 +29,11 @@ describe('personalization persistence and UI contracts', () => {
 
   it('loads the shared brand from the active family context', () => {
     expect(shell).toContain('useFamilyData()')
-    expect(shell).toContain('members={activeFamilyMembers}')
+    expect(shell).toContain('members={familyMark.members}')
     expect(shell).toContain('loading={familyNameLoading}')
-    expect(shell).toContain('markLoading={familyMarkLoading}')
-    expect(shell).toContain('member.family_id === familyId')
-    expect(shell).toContain('scopedFamilyMembers.length > 0 ? scopedFamilyMembers : [currentMember]')
+    expect(shell).toContain('markLoading={familyMark.loading}')
+    expect(familyMarkHook).toContain('member.family_id === familyId')
+    expect(familyMarkHook).toContain('scopedMembers.length > 0 ? scopedMembers : currentMember ? [currentMember] : []')
   })
 
   it('updates the shared source immediately after an admin family rename', () => {

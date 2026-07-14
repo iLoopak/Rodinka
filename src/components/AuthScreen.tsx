@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { t } from '../strings'
-import { Logo } from './Logo'
+import { FamilyMark } from './FamilyMark'
 import { translateAuthError } from '../lib/authErrors'
 import { getAuthRedirectUrl } from '../lib/authRedirect'
 
@@ -82,7 +82,7 @@ export function AuthScreen() {
   return (
     <div className="auth-screen">
       <div className="brand-lockup">
-        <Logo size={44} />
+        <FamilyMark variant="static" size={48} />
         <h1>{t.login.title}</h1>
       </div>
       <p className="claim">{t.claim}</p>
