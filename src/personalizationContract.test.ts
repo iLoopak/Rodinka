@@ -28,7 +28,11 @@ describe('personalization persistence and UI contracts', () => {
 
   it('loads the shared brand from the active family context', () => {
     expect(shell).toContain('useFamilyData()')
-    expect(shell).toContain('<FamilyBrand familyName={familyName} loading={familyNameLoading} />')
+    expect(shell).toContain('members={activeFamilyMembers}')
+    expect(shell).toContain('loading={familyNameLoading}')
+    expect(shell).toContain('markLoading={familyMarkLoading}')
+    expect(shell).toContain('member.family_id === familyId')
+    expect(shell).toContain('scopedFamilyMembers.length > 0 ? scopedFamilyMembers : [currentMember]')
   })
 
   it('updates the shared source immediately after an admin family rename', () => {

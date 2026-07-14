@@ -166,6 +166,7 @@ interface FamilyDataContextValue extends ReturnType<typeof useShoppingData> {
   isParentOrAdmin: boolean
   familyName: string | null
   familyNameLoading: boolean
+  membersLoading: boolean
   members: FamilyMember[]
   kids: FamilyMember[]
   chores: Chore[]
@@ -678,6 +679,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     isParentOrAdmin,
     familyName,
     familyNameLoading,
+    membersLoading,
     members,
     kids,
     chores,

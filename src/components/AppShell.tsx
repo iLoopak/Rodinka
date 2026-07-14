@@ -18,12 +18,20 @@ import { FamilyBrand } from './FamilyBrand'
 
 export function AppShell() {
   const { path } = useRouter()
-  const { familyName, familyNameLoading } = useFamilyData()
+  const { familyId, familyName, familyNameLoading, currentMember, members, membersLoading } = useFamilyData()
+  const scopedFamilyMembers = members.filter((member) => member.family_id === familyId)
+  const activeFamilyMembers = scopedFamilyMembers.length > 0 ? scopedFamilyMembers : [currentMember]
+  const familyMarkLoading = familyNameLoading || membersLoading
 
   return (
     <div className="app-shell">
       <header className="app-header">
-        <FamilyBrand familyName={familyName} loading={familyNameLoading} />
+        <FamilyBrand
+          familyName={familyName}
+          members={activeFamilyMembers}
+          loading={familyNameLoading}
+          markLoading={familyMarkLoading}
+        />
         <ReminderBell />
       </header>
       <InstallAppBanner />
