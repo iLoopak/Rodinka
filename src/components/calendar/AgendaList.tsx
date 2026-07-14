@@ -1,17 +1,18 @@
 import { t } from '../../strings'
 import { groupEntriesForAgenda, type CalendarEntry } from '../../utils/calendarEntries'
 import { CalendarEntryRow } from './CalendarEntryRow'
+import type { FamilyMember } from '../../hooks/useFamilyMembers'
 
 interface Props {
   entries: CalendarEntry[]
   today: string
-  memberName: (id: string) => string
+  memberById: (id: string) => FamilyMember | undefined
   onSelectEntry: (entry: CalendarEntry) => void
 }
 
 // The compact, mobile-preferred overview: entries grouped into
 // overdue/today/tomorrow/this week/later buckets.
-export function AgendaList({ entries, today, memberName, onSelectEntry }: Props) {
+export function AgendaList({ entries, today, memberById, onSelectEntry }: Props) {
   const groups = groupEntriesForAgenda(entries, today)
 
   if (groups.length === 0) {
@@ -28,7 +29,7 @@ export function AgendaList({ entries, today, memberName, onSelectEntry }: Props)
               <CalendarEntryRow
                 key={entry.id}
                 entry={entry}
-                memberName={memberName}
+                memberById={memberById}
                 onClick={() => onSelectEntry(entry)}
               />
             ))}

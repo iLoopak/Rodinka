@@ -1,15 +1,24 @@
-// Deterministic per-member color, built entirely from the app's existing
-// accent palette (index.css :root) rather than introducing a new color
-// system. Same member id always maps to the same swatch.
-const MEMBER_COLOR_VARS = [
-  '--brick',
-  '--coral',
-  '--accent-sky',
-  '--accent-sage',
-  '--accent-honey',
-  '--accent-lavender',
-  '--accent-berry',
-]
+import type { MemberColorKey } from '../hooks/useFamilyMembers'
+
+export const MEMBER_COLOR_KEYS = [
+  'brick',
+  'coral',
+  'sky',
+  'sage',
+  'honey',
+  'lavender',
+  'berry',
+] as const satisfies readonly MemberColorKey[]
+
+export const MEMBER_COLOR_VAR_BY_KEY: Record<MemberColorKey, string> = {
+  brick: '--brick',
+  coral: '--coral',
+  sky: '--accent-sky',
+  sage: '--accent-sage',
+  honey: '--accent-honey',
+  lavender: '--accent-lavender',
+  berry: '--accent-berry',
+}
 
 function hashString(input: string): number {
   let hash = 0
@@ -19,9 +28,19 @@ function hashString(input: string): number {
   return Math.abs(hash)
 }
 
-export function memberColorVar(memberId: string): string {
-  const index = hashString(memberId) % MEMBER_COLOR_VARS.length
-  return MEMBER_COLOR_VARS[index]
+export function isMemberColorKey(value: unknown): value is MemberColorKey {
+  return typeof value === 'string' && MEMBER_COLOR_KEYS.includes(value as MemberColorKey)
+}
+
+export function memberColorKey(member: { id: string; color_key?: unknown } | string): MemberColorKey {
+  const memberId = typeof member === 'string' ? member : member.id
+  const savedColor = typeof member === 'string' ? null : member.color_key
+  if (isMemberColorKey(savedColor)) return savedColor
+  return MEMBER_COLOR_KEYS[hashString(memberId) % MEMBER_COLOR_KEYS.length]
+}
+
+export function memberColorVar(member: { id: string; color_key?: unknown } | string): string {
+  return MEMBER_COLOR_VAR_BY_KEY[memberColorKey(member)]
 }
 
 export function memberInitials(displayName: string): string {

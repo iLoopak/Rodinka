@@ -2,16 +2,18 @@ import { useState } from 'react'
 import { t } from '../strings'
 import type { Chore } from '../hooks/useChores'
 import type { ChoreCompletion } from '../hooks/useChoreCompletions'
+import type { FamilyMember } from '../hooks/useFamilyMembers'
+import { MemberAvatar } from './ui/MemberAvatar'
 
 interface Props {
   completions: ChoreCompletion[]
   chores: Chore[]
-  memberName: (id: string) => string
+  memberById: (id: string) => FamilyMember | undefined
   onApprove: (completionId: string) => Promise<void>
   onReject: (completionId: string) => Promise<void>
 }
 
-export function PendingApprovals({ completions, chores, memberName, onApprove, onReject }: Props) {
+export function PendingApprovals({ completions, chores, memberById, onApprove, onReject }: Props) {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [busyAction, setBusyAction] = useState<'approve' | 'reject' | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -58,11 +60,18 @@ export function PendingApprovals({ completions, chores, memberName, onApprove, o
       <ul className="section-list">
         {completions.map((completion) => {
           const chore = choreFor(completion.chore_id)
+          const completedBy = memberById(completion.completed_by)
           const busy = busyId === completion.id
           return (
             <li key={completion.id}>
+              <MemberAvatar member={completedBy} />
               <span className="row-title">{chore?.title ?? '?'}</span>
-              <span className="row-meta">{t.chores.completedBy(memberName(completion.completed_by))}</span>
+              <span className="row-meta">
+                {t.memberGrammar.completedBy(
+                  completedBy?.display_name ?? '?',
+                  completedBy?.grammatical_gender ?? null
+                )}
+              </span>
               <span className="row-spacer" />
               <button className="btn-secondary" onClick={() => handleReject(completion)} disabled={busy}>
                 {busy && busyAction === 'reject' ? t.chores.rejecting : t.chores.reject}

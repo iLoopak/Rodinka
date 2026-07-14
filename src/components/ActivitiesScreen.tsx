@@ -32,6 +32,7 @@ export function ActivitiesScreen() {
     members,
     currentMember,
     memberName,
+    memberById,
     isParentOrAdmin,
     addActivity,
     updateActivity,
@@ -171,7 +172,7 @@ export function ActivitiesScreen() {
                 <ActivityRow
                   key={activity.id}
                   activity={activity}
-                  memberName={memberName}
+                  memberById={memberById}
                   onClick={() => setSelectedActivity(activity)}
                 />
               ))}
@@ -186,24 +187,28 @@ export function ActivitiesScreen() {
             <p className="empty-state">{t.activities.noUpcomingPayments}</p>
           ) : (
             <ul className="section-list">
-              {withPayments.map((activity) => (
-                <li
-                  key={activity.id}
-                  className="clickable-row"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setSelectedActivity(activity)}
-                  onKeyDown={onActivateKey(() => setSelectedActivity(activity))}
-                >
-                  <span className="row-title">{activity.title}</span>
-                  <span className="row-meta">{memberName(activity.child_id)}</span>
-                  <span className="row-spacer" />
-                  <DueBadge dueDate={activity.next_payment_due_date} />
-                  {activity.payment_amount != null && (
-                    <span className="row-amount">{t.chores.formatAmount(activity.payment_amount)}</span>
-                  )}
-                </li>
-              ))}
+              {withPayments.map((activity) => {
+                const child = memberById(activity.child_id)
+                return (
+                  <li
+                    key={activity.id}
+                    className="clickable-row"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedActivity(activity)}
+                    onKeyDown={onActivateKey(() => setSelectedActivity(activity))}
+                  >
+                    <MemberAvatar member={child} />
+                    <span className="row-title">{activity.title}</span>
+                    <span className="row-meta">{child?.display_name ?? memberName(activity.child_id)}</span>
+                    <span className="row-spacer" />
+                    <DueBadge dueDate={activity.next_payment_due_date} />
+                    {activity.payment_amount != null && (
+                      <span className="row-amount">{t.chores.formatAmount(activity.payment_amount)}</span>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           )}
         </section>
@@ -219,7 +224,7 @@ export function ActivitiesScreen() {
                 <ActivityRow
                   key={activity.id}
                   activity={activity}
-                  memberName={memberName}
+                  memberById={memberById}
                   onClick={() => setSelectedActivity(activity)}
                 />
               ))}
@@ -241,6 +246,7 @@ export function ActivitiesScreen() {
           kids={kids}
           currentMemberId={currentMember.id}
           memberName={memberName}
+          memberById={memberById}
           onUpdate={updateActivity}
           onClose={() => setSelectedActivity(null)}
         />
@@ -251,17 +257,18 @@ export function ActivitiesScreen() {
 
 interface ActivityRowProps {
   activity: Activity
-  memberName: (id: string) => string
+  memberById: ReturnType<typeof useFamilyData>['memberById']
   onClick: () => void
 }
 
-function ActivityRow({ activity, memberName, onClick }: ActivityRowProps) {
+function ActivityRow({ activity, memberById, onClick }: ActivityRowProps) {
   const next = nextOccurrenceDate(activity)
+  const child = memberById(activity.child_id)
   return (
     <li className="clickable-row" role="button" tabIndex={0} onClick={onClick} onKeyDown={onActivateKey(onClick)}>
-      <MemberAvatar member={{ id: activity.child_id, display_name: memberName(activity.child_id) }} />
+      <MemberAvatar member={child} />
       <span className="row-title">{activity.title}</span>
-      <span className="row-meta">{memberName(activity.child_id)}</span>
+      <span className="row-meta">{child?.display_name ?? '?'}</span>
       <span className="row-spacer" />
       {next ? (
         <span className="row-meta">{formatFullDate(next)}</span>

@@ -25,7 +25,7 @@ export function TodayDashboard() {
     planEntries,
     voteRounds,
     pendingCompletions,
-    memberName,
+    memberById,
     latestCompletionFor,
     approve,
     reject,
@@ -76,7 +76,7 @@ export function TodayDashboard() {
               <PendingApprovals
                 completions={pendingCompletions}
                 chores={chores}
-                memberName={memberName}
+                memberById={memberById}
                 onApprove={approve}
                 onReject={reject}
               />
@@ -87,7 +87,7 @@ export function TodayDashboard() {
               {pendingCompletions.length > 0 && (
                 <h3 className="today-section-subheading">{t.today.otherAttentionTitle}</h3>
               )}
-              <TodayAttentionList items={attentionItems} memberName={memberName} />
+              <TodayAttentionList items={attentionItems} memberById={memberById} />
             </div>
           )}
         </section>
@@ -102,7 +102,7 @@ export function TodayDashboard() {
             action={{ label: t.create.addAction, onClick: () => setShowCreate(true) }}
           />
         ) : (
-          <TodayAgendaList entries={entries} memberName={memberName} onSelectEntry={setSelectedEntry} />
+          <TodayAgendaList entries={entries} memberById={memberById} onSelectEntry={setSelectedEntry} />
         )}
       </section>
 

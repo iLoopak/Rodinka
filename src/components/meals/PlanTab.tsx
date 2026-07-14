@@ -44,7 +44,7 @@ function statusBadgeClass(status: MealPlanEntry['status']): string {
 }
 
 export function PlanTab({ prefill, onPrefillConsumed }: Props) {
-  const { meals, members, planEntries, memberName, isParentOrAdmin, addPlanEntry, updatePlanEntry, deletePlanEntry, copyWeek } =
+  const { meals, members, planEntries, memberById, isParentOrAdmin, addPlanEntry, updatePlanEntry, deletePlanEntry, copyWeek } =
     useFamilyData()
   const [weekStart, setWeekStart] = useState(getCurrentWeekStart())
   const [pendingAdd, setPendingAdd] = useState<PendingAdd | null>(prefill ? { date: todayISODate(), slot: 'dinner' } : null)
@@ -142,31 +142,38 @@ export function PlanTab({ prefill, onPrefillConsumed }: Props) {
                 </div>
               ) : (
                 <ul className="day-plan-meals">
-                  {entries.map((entry) => (
-                    <li
-                      key={entry.id}
-                      className="day-plan-meal clickable-row"
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setEditingEntry(entry)}
-                      onKeyDown={onActivateKey(() => setEditingEntry(entry))}
-                    >
-                      {showSlotBadge && <span className="day-plan-meal-slot">{mealSlotLabel(entry.meal_slot)}</span>}
-                      <span className="day-plan-meal-title">{displayTitle(entry, '—')}</span>
-                      <div className="day-plan-meal-meta">
-                        {entry.responsible_member_id && (
-                          <span className="day-plan-meal-responsible">
-                            <MemberAvatar
-                              member={{ id: entry.responsible_member_id, display_name: memberName(entry.responsible_member_id) }}
-                              size={20}
-                            />
-                            {t.mealPlan.preparedByLabel(memberName(entry.responsible_member_id))}
+                  {entries.map((entry) => {
+                    const responsible = entry.responsible_member_id
+                      ? memberById(entry.responsible_member_id)
+                      : undefined
+                    return (
+                      <li
+                        key={entry.id}
+                        className="day-plan-meal clickable-row"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setEditingEntry(entry)}
+                        onKeyDown={onActivateKey(() => setEditingEntry(entry))}
+                      >
+                        {showSlotBadge && <span className="day-plan-meal-slot">{mealSlotLabel(entry.meal_slot)}</span>}
+                        <span className="day-plan-meal-title">{displayTitle(entry, '—')}</span>
+                        <div className="day-plan-meal-meta">
+                          {entry.responsible_member_id && (
+                            <span className="day-plan-meal-responsible">
+                              <MemberAvatar member={responsible} size={20} />
+                              {t.memberGrammar.preparedBy(
+                                responsible?.display_name ?? '?',
+                                responsible?.grammatical_gender ?? null
+                              )}
+                            </span>
+                          )}
+                          <span className={`badge ${statusBadgeClass(entry.status)}`}>
+                            {mealPlanStatusLabel(entry.status)}
                           </span>
-                        )}
-                        <span className={`badge ${statusBadgeClass(entry.status)}`}>{mealPlanStatusLabel(entry.status)}</span>
-                      </div>
-                    </li>
-                  ))}
+                        </div>
+                      </li>
+                    )
+                  })}
                   {isParentOrAdmin && (
                     <li>
                       <button

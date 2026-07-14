@@ -4,16 +4,17 @@ import type { CalendarEntry } from '../../utils/calendarEntries'
 import { getItemTypeStyle } from '../../utils/itemTypeStyle'
 import { mealSlotLabel } from '../../utils/mealLabels'
 import { MemberAvatar } from '../ui/MemberAvatar'
+import type { FamilyMember } from '../../hooks/useFamilyMembers'
 
 interface Props {
   entries: CalendarEntry[]
-  memberName: (id: string) => string
+  memberById: (id: string) => FamilyMember | undefined
   onSelectEntry: (entry: CalendarEntry) => void
 }
 
-function peopleLabel(entry: CalendarEntry, memberName: (id: string) => string): string {
-  const person = entry.childOrPatientId ? memberName(entry.childOrPatientId) : null
-  const responsible = entry.responsibleMemberId ? memberName(entry.responsibleMemberId) : null
+function peopleLabel(entry: CalendarEntry, memberById: (id: string) => FamilyMember | undefined): string {
+  const person = entry.childOrPatientId ? memberById(entry.childOrPatientId)?.display_name : null
+  const responsible = entry.responsibleMemberId ? memberById(entry.responsibleMemberId)?.display_name : null
 
   if (entry.sourceType === 'chore') {
     return person ? t.today.choreAssignee(person) : t.today.personUnassigned
@@ -39,12 +40,13 @@ function whenLabel(entry: CalendarEntry): string {
   return t.due.today
 }
 
-export function TodayAgendaList({ entries, memberName, onSelectEntry }: Props) {
+export function TodayAgendaList({ entries, memberById, onSelectEntry }: Props) {
   return (
     <ul className="today-agenda-list">
       {entries.map((entry) => {
         const style = getItemTypeStyle(entry.type)
         const personId = entry.childOrPatientId ?? entry.responsibleMemberId
+        const person = personId ? memberById(personId) : undefined
         const activate = () => onSelectEntry(entry)
 
         return (
@@ -61,12 +63,12 @@ export function TodayAgendaList({ entries, memberName, onSelectEntry }: Props) {
               {style.icon}
             </span>
             {personId && (
-              <MemberAvatar member={{ id: personId, display_name: memberName(personId) }} size={26} />
+              <MemberAvatar member={person} size={26} />
             )}
             <span className="today-agenda-copy">
               <span className="today-agenda-title">{entry.title}</span>
               <span className="today-agenda-type">{style.label}</span>
-              <span className="today-agenda-people">{peopleLabel(entry, memberName)}</span>
+              <span className="today-agenda-people">{peopleLabel(entry, memberById)}</span>
             </span>
             <span className="today-agenda-chevron" aria-hidden="true">›</span>
           </li>

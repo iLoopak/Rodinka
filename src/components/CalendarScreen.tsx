@@ -35,7 +35,7 @@ export function CalendarScreen() {
     medicalRecords,
     planEntries,
     members,
-    memberName,
+    memberById,
     latestCompletionFor,
     loading,
     error,
@@ -176,7 +176,7 @@ export function CalendarScreen() {
           {entries.length === 0 && hasFilters ? (
             <p className="empty-state">{t.calendar.filtersNoResults}</p>
           ) : (
-            <AgendaList entries={entries} today={today} memberName={memberName} onSelectEntry={setSelectedEntry} />
+            <AgendaList entries={entries} today={today} memberById={memberById} onSelectEntry={setSelectedEntry} />
           )}
         </section>
       )}
@@ -197,7 +197,7 @@ export function CalendarScreen() {
                 <CalendarEntryRow
                   key={entry.id}
                   entry={entry}
-                  memberName={memberName}
+                  memberById={memberById}
                   onClick={() => {
                     setSelectedEntry(entry)
                     setSelectedDay(null)

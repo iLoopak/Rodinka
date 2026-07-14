@@ -33,6 +33,7 @@ import { useMealsData, type MealInput, type PlanEntryInput, type VoteRoundInput 
 import type { Meal } from '../hooks/useMeals'
 import type { MealVoteRound, VoteValue } from '../hooks/useMealVoteRounds'
 import type { MealPlanEntry } from '../hooks/useMealPlanEntries'
+import { createMemberLookup, resolveCurrentMember } from '../utils/memberLookup'
 
 export interface ActivityInput {
   title: string
@@ -144,7 +145,7 @@ interface FamilyDataContextValue {
   familyId: string
   userId: string
   userEmail: string
-  currentMember: Member
+  currentMember: FamilyMember
   isParentOrAdmin: boolean
   familyName: string | null
   members: FamilyMember[]
@@ -159,6 +160,7 @@ interface FamilyDataContextValue {
   planEntries: MealPlanEntry[]
   balances: Map<string, number>
   memberName: (id: string) => string
+  memberById: (id: string) => FamilyMember | undefined
   latestCompletionFor: (choreId: string) => ChoreCompletion | null
   loading: boolean
   error: string | null
@@ -192,6 +194,7 @@ interface FamilyDataContextValue {
   deletePlanEntry: (id: string) => Promise<void>
   copyWeek: (fromWeekStart: string, toWeekStart: string) => Promise<void>
   refreshAll: () => Promise<void>
+  refreshMembers: () => Promise<void>
 }
 
 const FamilyDataContext = createContext<FamilyDataContextValue | null>(null)
@@ -287,18 +290,22 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     refreshFamilyName()
   }, [refreshFamilyName])
 
-  const isParentOrAdmin = member.role === 'admin' || member.role === 'parent'
-
   // Sorted once here (overdue/earliest due date first) so every screen that
   // reads `chores` from context gets consistent ordering for free.
   const chores = useMemo(() => [...rawChores].sort(compareChoresByDueDate), [rawChores])
 
   const kids = useMemo(() => members.filter((m) => m.role === 'child'), [members])
 
-  const memberName = useMemo(() => {
-    const byId = new Map(members.map((m) => [m.id, m.display_name]))
-    return (id: string) => byId.get(id) ?? '?'
+  const memberById = useMemo(() => {
+    return createMemberLookup(members)
   }, [members])
+
+  const currentMember = resolveCurrentMember(member, memberById)
+  const isParentOrAdmin = currentMember.role === 'admin' || currentMember.role === 'parent'
+
+  const memberName = useMemo(() => {
+    return (id: string) => memberById(id)?.display_name ?? '?'
+  }, [memberById])
 
   const latestCompletionFor = useMemo(() => {
     // `completions` is ordered newest-first by the hook, so the first match is the latest.
@@ -494,7 +501,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     familyId,
     userId,
     userEmail,
-    currentMember: member,
+    currentMember,
     isParentOrAdmin,
     familyName,
     members,
@@ -509,6 +516,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     planEntries,
     balances,
     memberName,
+    memberById,
     latestCompletionFor,
     loading,
     error,
@@ -535,6 +543,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     deletePlanEntry,
     copyWeek,
     refreshAll,
+    refreshMembers,
   }
 
   return <FamilyDataContext.Provider value={value}>{children}</FamilyDataContext.Provider>

@@ -4,7 +4,10 @@ import { useFamilyData } from '../context/FamilyDataContext'
 import { AddChildForm } from './AddChildForm'
 import { ErrorState } from './ui/ErrorState'
 import { Modal } from './ui/Modal'
+import { MemberAvatar } from './ui/MemberAvatar'
+import { MemberProfileModal } from './family/MemberProfileModal'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
+import { canEditMemberProfile } from '../utils/memberProfilePermissions'
 
 function roleLabel(role: FamilyMember['role']) {
   if (role === 'admin') return t.family.roleAdmin
@@ -17,10 +20,11 @@ function formatDate(iso: string) {
 }
 
 export function FamilyScreen() {
-  const { familyName, members, isParentOrAdmin, addChild, createInvite, loading, error, refreshAll } =
+  const { familyName, members, currentMember, isParentOrAdmin, addChild, createInvite, loading, error, refreshAll, refreshMembers } =
     useFamilyData()
   const [showAddChild, setShowAddChild] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
+  const [editingMember, setEditingMember] = useState<FamilyMember | null>(null)
 
   if (loading) {
     return <p className="loading">{t.loading.generic}</p>
@@ -40,13 +44,26 @@ export function FamilyScreen() {
         <h2>{t.family.membersTitle}</h2>
         <ul className="section-list">
           {members.map((m) => (
-            <li key={m.id}>
-              <span className="row-title">{m.display_name}</span>
-              <span className="row-meta">{roleLabel(m.role)}</span>
+            <li key={m.id} className="family-member-row">
+              <MemberAvatar member={m} size={42} />
+              <span className="family-member-copy">
+                <span className="row-title">{m.display_name}</span>
+                <span className="row-meta">{roleLabel(m.role)}</span>
+              </span>
               <span className="row-spacer" />
               <span className={`badge ${m.user_id ? 'badge-done' : 'badge-pending'}`}>
                 {m.user_id ? t.family.hasAccount : t.family.noAccount}
               </span>
+              {canEditMemberProfile(currentMember, m) && (
+                <button
+                  type="button"
+                  className="btn-secondary member-edit-button"
+                  onClick={() => setEditingMember(m)}
+                  aria-label={`${t.family.editProfile}: ${m.display_name}`}
+                >
+                  {t.family.editProfile}
+                </button>
+              )}
             </li>
           ))}
         </ul>
@@ -77,6 +94,15 @@ export function FamilyScreen() {
       )}
 
       {showInvite && <InviteModal onClose={() => setShowInvite(false)} createInvite={createInvite} />}
+
+      {editingMember && (
+        <MemberProfileModal
+          member={editingMember}
+          currentMember={currentMember}
+          refreshMembers={refreshMembers}
+          onClose={() => setEditingMember(null)}
+        />
+      )}
     </>
   )
 }

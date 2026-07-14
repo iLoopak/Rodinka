@@ -24,7 +24,7 @@ export function HealthScreen() {
   const [filterMember, setFilterMember] = useState('')
   const [filterType, setFilterType] = useState('')
 
-  const { medicalRecords, members, currentMember, memberName, isParentOrAdmin, addMedicalRecord, updateMedicalRecord, loading, error, refreshAll } =
+  const { medicalRecords, members, currentMember, memberName, memberById, isParentOrAdmin, addMedicalRecord, updateMedicalRecord, loading, error, refreshAll } =
     useFamilyData()
 
   if (loading) {
@@ -134,7 +134,7 @@ export function HealthScreen() {
         ) : (
           <ul className="section-list">
             {currentList.map((record) => (
-              <MedicalRow key={record.id} record={record} memberName={memberName} onClick={() => setSelectedRecord(record)} />
+              <MedicalRow key={record.id} record={record} memberById={memberById} onClick={() => setSelectedRecord(record)} />
             ))}
           </ul>
         )}
@@ -152,6 +152,7 @@ export function HealthScreen() {
           members={members}
           currentMemberId={currentMember.id}
           memberName={memberName}
+          memberById={memberById}
           onUpdate={updateMedicalRecord}
           onClose={() => setSelectedRecord(null)}
         />
@@ -162,17 +163,18 @@ export function HealthScreen() {
 
 interface MedicalRowProps {
   record: MedicalRecord
-  memberName: (id: string) => string
+  memberById: ReturnType<typeof useFamilyData>['memberById']
   onClick: () => void
 }
 
-function MedicalRow({ record, memberName, onClick }: MedicalRowProps) {
+function MedicalRow({ record, memberById, onClick }: MedicalRowProps) {
   const dueDate = record.record_type === 'vaccination' ? record.vaccine_next_dose_date : record.next_due_date
+  const patient = memberById(record.patient_id)
   return (
     <li className="clickable-row" role="button" tabIndex={0} onClick={onClick} onKeyDown={onActivateKey(onClick)}>
-      <MemberAvatar member={{ id: record.patient_id, display_name: memberName(record.patient_id) }} />
+      <MemberAvatar member={patient} />
       <span className="row-title">{record.title}</span>
-      <span className="row-meta">{memberName(record.patient_id)}</span>
+      <span className="row-meta">{patient?.display_name ?? '?'}</span>
       <span className="row-spacer" />
       <span className="row-meta">{formatFullDate(record.record_date)}</span>
       {dueDate && <DueBadge dueDate={dueDate} />}

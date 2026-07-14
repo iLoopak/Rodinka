@@ -8,6 +8,7 @@ import { formatFullDate } from '../../utils/dueDate'
 import { getItemTypeStyle } from '../../utils/itemTypeStyle'
 import { recordToInput } from '../MedicalDetailModal'
 import { Modal } from '../ui/Modal'
+import { MemberAvatar } from '../ui/MemberAvatar'
 
 interface Props {
   entry: CalendarEntry
@@ -18,7 +19,7 @@ export function CalendarEntryDetailModal({ entry, onClose }: Props) {
   const {
     chores,
     medicalRecords,
-    memberName,
+    memberById,
     latestCompletionFor,
     markDone,
     updateMedicalRecord,
@@ -75,6 +76,8 @@ export function CalendarEntryDetailModal({ entry, onClose }: Props) {
   }
 
   const personId = entry.childOrPatientId ?? entry.responsibleMemberId
+  const person = personId ? memberById(personId) : undefined
+  const responsible = entry.responsibleMemberId ? memberById(entry.responsibleMemberId) : undefined
   const showResponsible = entry.responsibleMemberId && entry.responsibleMemberId !== entry.childOrPatientId
 
   return (
@@ -87,9 +90,17 @@ export function CalendarEntryDetailModal({ entry, onClose }: Props) {
           {formatFullDate(entry.date)}
           {entry.time ? ` · ${entry.time.slice(0, 5)}` : ''}
         </p>
-        {personId && <p className="row-meta">{memberName(personId)}</p>}
+        {person && (
+          <div className="detail-person">
+            <MemberAvatar member={person} />
+            <span>{person.display_name}</span>
+          </div>
+        )}
         {showResponsible && entry.responsibleMemberId && (
-          <p className="row-meta">{t.calendar.responsibleLabel(memberName(entry.responsibleMemberId))}</p>
+          <div className="detail-person">
+            <MemberAvatar member={responsible} />
+            <span>{t.calendar.responsibleLabel(responsible?.display_name ?? '?')}</span>
+          </div>
         )}
         {entry.subtitle && <p className="row-meta">{entry.subtitle}</p>}
       </div>
