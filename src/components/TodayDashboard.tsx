@@ -154,14 +154,15 @@ interface HeaderProps {
 
 function TodayHeader({ name, date, itemCount, onAdd }: HeaderProps) {
   return (
-    <div className="screen-header today-header">
-      <div>
-        <h1 className="home-title">{t.home.title}</h1>
-        <p className="home-subtitle">{t.home.welcome(name)}</p>
+    <div className="today-hero">
+      <span className="brand-motif" aria-hidden="true"><i /><i /><i /><i /></span>
+      <div className="today-hero-copy">
+        <span className="page-eyebrow">{t.home.title}</span>
+        <h1 className="home-title">{t.home.welcome(name)}</h1>
         <p className="today-date">{formatFullDate(date)}</p>
         <p className="today-summary">{t.today.itemsSummary(itemCount)}</p>
       </div>
-      <button type="button" className="header-action-button" onClick={onAdd}>
+      <button type="button" className="hero-action-button" onClick={onAdd}>
         <span aria-hidden="true">+</span> {t.create.addAction}
       </button>
     </div>
