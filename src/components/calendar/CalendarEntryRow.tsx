@@ -34,7 +34,10 @@ export function CalendarEntryRow({ entry, memberById, onClick }: Props) {
       <span className="calendar-entry-icon" style={{ color: `var(${style.colorVar})` }}>
         {style.icon}
       </span>
-      {personId && <MemberAvatar member={person} size={22} />}
+      {(entry.participantMemberIds?.length ?? 0) > 1 ? <span className="avatar-stack">
+        {entry.participantMemberIds!.slice(0, 3).map((id) => <MemberAvatar key={id} member={memberById(id)} size={22} />)}
+        {entry.participantMemberIds!.length > 3 && <span className="avatar-more">+{entry.participantMemberIds!.length - 3}</span>}
+      </span> : personId && <MemberAvatar member={person} size={22} />}
       <span className="row-title">{entry.title}</span>
       <span className="row-meta">{style.label}</span>
       {showResponsible && entry.responsibleMemberId && (
@@ -44,6 +47,7 @@ export function CalendarEntryRow({ entry, memberById, onClick }: Props) {
       )}
       <span className="row-spacer" />
       {entry.time && <span className="row-meta font-tabular">{entry.time.slice(0, 5)}</span>}
+      {entry.isMultiDay && <span className="row-meta">{entry.rangeStart} – {entry.rangeEnd}</span>}
       <DueBadge dueDate={entry.date} />
     </li>
   )

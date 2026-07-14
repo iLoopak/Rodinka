@@ -58,7 +58,7 @@ export function ActivityDetailModal({
   ].filter(Boolean)
 
   const coachParts = [activity.coach_name, activity.coach_phone, activity.coach_email].filter(Boolean)
-  const child = memberById(activity.child_id)
+  const participants = activity.participant_ids.map(memberById).filter((member) => !!member)
   const responsible = activity.responsible_member_id
     ? memberById(activity.responsible_member_id)
     : undefined
@@ -66,13 +66,13 @@ export function ActivityDetailModal({
   return (
     <Modal title={activity.title} onClose={onClose}>
       <div className="detail-view">
-        <p className="row-meta">{activityCategoryLabel(activity.category)}</p>
+        <p className="row-meta">{activity.kind === 'event' ? t.activities.kindEvent : t.activities.kindClub} · {activityCategoryLabel(activity.category)}</p>
 
         <div className="detail-people">
-          <div className="detail-person">
-            <MemberAvatar member={child} />
-            <span>{child?.display_name ?? memberName(activity.child_id)}</span>
-          </div>
+          {participants.map((participant) => <div className="detail-person" key={participant.id}>
+            <MemberAvatar member={participant} />
+            <span>{participant.display_name}</span>
+          </div>)}
           {activity.responsible_member_id ? (
             <div className="detail-person">
               <MemberAvatar member={responsible} />
@@ -84,18 +84,22 @@ export function ActivityDetailModal({
         </div>
 
         {scheduleParts.length > 0 && <p className="row-meta">{scheduleParts.join(' · ')}</p>}
+        {activity.recurrence_type === 'one_off' && <p className="row-meta">
+          {formatFullDate(activity.start_date)}{activity.end_date && activity.end_date !== activity.start_date ? ` – ${formatFullDate(activity.end_date)}` : ''}
+          {activity.all_day ? ` · ${t.activities.allDayLabel}` : ''}
+        </p>}
         {next && <p className="row-meta">{t.activities.nextOccurrence(formatFullDate(next))}</p>}
         {activity.location && <p className="row-meta">{activity.location}</p>}
-        {coachParts.length > 0 && <p className="row-meta">{coachParts.join(' · ')}</p>}
+        {activity.kind === 'club' && coachParts.length > 0 && <p className="row-meta">{coachParts.join(' · ')}</p>}
 
-        {activity.payment_amount ? (
+        {activity.kind === 'club' && (activity.payment_amount ? (
           <p className="row-meta">
             {t.chores.formatAmount(activity.payment_amount)}
             {activity.next_payment_due_date ? ` · ${formatFullDate(activity.next_payment_due_date)}` : ''}
           </p>
         ) : (
           <p className="row-meta">{t.activities.detailNoPayment}</p>
-        )}
+        ))}
 
         {activity.notes && <p className="row-description">{activity.notes}</p>}
       </div>

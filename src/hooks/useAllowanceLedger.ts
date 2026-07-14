@@ -8,6 +8,9 @@ export interface LedgerEntry {
   amount: number
   reason: string | null
   created_at: string
+  entry_type: 'chore_reward' | 'monthly_allowance' | 'payout' | 'adjustment'
+  source_chore_completion_id: string | null
+  source_allowance_cycle_id: string | null
 }
 
 export function useAllowanceLedger(familyId: string | undefined) {
@@ -25,7 +28,7 @@ export function useAllowanceLedger(familyId: string | undefined) {
     setLoading(true)
     const { data, error } = await supabase
       .from('allowance_ledger')
-      .select('id, member_id, amount, reason, created_at')
+      .select('id, member_id, amount, reason, created_at, entry_type, source_chore_completion_id, source_allowance_cycle_id')
       .eq('family_id', familyId)
       .order('created_at', { ascending: false })
 

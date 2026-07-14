@@ -16,6 +16,11 @@ export const ACTIVITY_CATEGORY_VALUES: ActivityCategory[] = [
   'camp',
   'after_school',
   'other',
+  'vacation',
+  'trip',
+  'celebration',
+  'family_visit',
+  'other_event',
 ]
 
 export function activityCategoryLabel(category: ActivityCategory): string {
@@ -29,6 +34,11 @@ export function activityCategoryLabel(category: ActivityCategory): string {
     camp: t.activities.categoryCamp,
     after_school: t.activities.categoryAfterSchool,
     other: t.activities.categoryOther,
+    vacation: t.activities.categoryVacation,
+    trip: t.activities.categoryTrip,
+    celebration: t.activities.categoryCelebration,
+    family_visit: t.activities.categoryFamilyVisit,
+    other_event: t.activities.categoryOtherEvent,
   }
   return labels[category]
 }

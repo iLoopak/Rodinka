@@ -133,7 +133,10 @@ export function PlannerScreen() {
             summary={t.planner.activitiesActive(activeActivities.length)}
             details={[
               nextActivity
-                ? t.planner.activitiesNext(
+                ? nextActivity.activity.kind === 'event' && nextActivity.activity.start_date < today &&
+                  !!nextActivity.activity.end_date && nextActivity.activity.end_date >= today
+                  ? t.planner.activityOngoing(nextActivity.activity.title)
+                  : t.planner.activitiesNext(
                     nextActivity.activity.title,
                     formatDueDateLabel(nextActivity.date, today)
                   )

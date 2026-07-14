@@ -21,6 +21,7 @@ export function ChoresScreen() {
   const [showAddChore, setShowAddChore] = useState(false)
   const {
     chores,
+    completions,
     kids,
     members,
     currentMember,
@@ -32,6 +33,11 @@ export function ChoresScreen() {
     approve,
     reject,
     payout,
+    allowancePlans,
+    allowanceCycles,
+    saveAllowancePlan,
+    creditAllowance,
+    skipAllowance,
     addChore,
     isParentOrAdmin,
     loading,
@@ -126,7 +132,9 @@ export function ChoresScreen() {
 
       {tab === 'allowance' && (
         <section className="section">
-          <AllowanceBalances kids={kids} balances={balances} onPayout={payout} />
+          <AllowanceBalances kids={kids} balances={balances} onPayout={payout} chores={chores}
+            completions={completions} plans={allowancePlans} cycles={allowanceCycles}
+            canManage={isParentOrAdmin} onSavePlan={saveAllowancePlan} onCredit={creditAllowance} onSkip={skipAllowance} />
         </section>
       )}
 

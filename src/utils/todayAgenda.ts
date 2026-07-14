@@ -11,6 +11,9 @@ import { getChoreState } from './choreState'
 import { compareISODates, todayISODate } from './dueDate'
 import { isMedicalRecordOverdue } from './medicalDueState'
 import type { CalendarItemType } from './itemTypeStyle'
+import type { AllowancePlan } from '../hooks/useAllowancePlans'
+import type { AllowanceCycle } from '../hooks/useAllowancePlans'
+import { allowanceCycleForPayout, evaluateAllowanceRequirements, unsettledDuePayoutDates } from './allowanceCycles'
 
 const MEAL_SLOT_ORDER: Record<MealSlot, number> = {
   breakfast: 0,
@@ -45,6 +48,7 @@ interface TodayEntriesInput {
   activities: Activity[]
   medicalRecords: MedicalRecord[]
   mealPlanEntries: MealPlanEntry[]
+  allowancePlans?: AllowancePlan[]
   latestCompletionFor: (choreId: string) => ChoreCompletion | null
   today?: string
 }
@@ -54,6 +58,7 @@ export function buildTodayEntries({
   activities,
   medicalRecords,
   mealPlanEntries,
+  allowancePlans = [],
   latestCompletionFor,
   today = todayISODate(),
 }: TodayEntriesInput): CalendarEntry[] {
@@ -67,12 +72,13 @@ export function buildTodayEntries({
     activities,
     medicalRecords: visibleMedicalRecords,
     mealPlanEntries,
+    allowancePlans,
     rangeStart: today,
     rangeEnd: today,
   }).sort(compareTodayEntries)
 }
 
-export type TodayAttentionKind = 'overdue_chore' | 'overdue_payment' | 'overdue_medical' | 'meal_vote'
+export type TodayAttentionKind = 'overdue_chore' | 'overdue_payment' | 'overdue_medical' | 'meal_vote' | 'allowance_due'
 
 export interface TodayAttentionItem {
   id: string
@@ -91,6 +97,9 @@ interface TodayAttentionInput {
   activities: Activity[]
   medicalRecords: MedicalRecord[]
   voteRounds: MealVoteRound[]
+  allowancePlans?: AllowancePlan[]
+  allowanceCycles?: AllowanceCycle[]
+  completions?: ChoreCompletion[]
   currentMemberId: string
   latestCompletionFor: (choreId: string) => ChoreCompletion | null
   today?: string
@@ -110,11 +119,39 @@ export function buildTodayAttentionItems({
   activities,
   medicalRecords,
   voteRounds,
+  allowancePlans = [],
+  allowanceCycles = [],
+  completions = [],
   currentMemberId,
   latestCompletionFor,
   today = todayISODate(),
 }: TodayAttentionInput): TodayAttentionItem[] {
   const items: TodayAttentionItem[] = []
+
+  for (const plan of allowancePlans) {
+    const dueDates = unsettledDuePayoutDates(
+      plan,
+      allowanceCycles.filter((cycle) => cycle.plan_id === plan.id).map((cycle) => cycle.payout_date),
+      today
+    )
+    const payoutDate = dueDates[0]
+    if (!payoutDate) continue
+    const evaluation = evaluateAllowanceRequirements(
+      plan.member_id, plan.condition_mode, plan.requirements, completions,
+      allowanceCycleForPayout(plan, payoutDate)
+    )
+    items.push({
+      id: `allowance-due:${plan.id}:${payoutDate}`,
+      kind: 'allowance_due',
+      itemType: 'allowance',
+      title: `${t.allowance.monthly} · ${evaluation.eligible ? t.allowance.conditionsMet : t.allowance.conditionsMissing}`,
+      personId: plan.member_id,
+      responsibleMemberId: null,
+      date: payoutDate,
+      route: '/chores',
+      hash: '#allowance',
+    })
+  }
 
   for (const chore of chores) {
     if (chore.due_date >= today) continue
@@ -144,7 +181,7 @@ export function buildTodayAttentionItems({
       kind: 'overdue_payment',
       itemType: 'payment',
       title: t.calendar.paymentTitle(activity.title),
-      personId: activity.child_id,
+      personId: activity.participant_ids[0] ?? activity.child_id,
       responsibleMemberId: activity.responsible_member_id,
       date: activity.next_payment_due_date,
       route: '/activities',

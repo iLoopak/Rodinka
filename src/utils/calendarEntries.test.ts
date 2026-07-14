@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildCalendarEntries, groupEntriesForAgenda } from './calendarEntries'
+import { buildCalendarEntries, deduplicateAgendaRanges, entryMatchesMember, groupEntriesForAgenda } from './calendarEntries'
 import { makeActivity, makeChore, makeMealPlanEntry, makeMedicalRecord } from './testFixtures'
 
 const RANGE_START = '2026-07-01'
@@ -75,6 +75,21 @@ describe('buildCalendarEntries — activities', () => {
       rangeEnd: RANGE_END,
     })
     expect(entries.filter((e) => e.sourceType === 'activity')).toEqual([])
+  })
+
+  it('carries all participants and emits one agenda row for a multi-day event', () => {
+    const activity = makeActivity({
+      kind: 'event', all_day: true, participant_ids: ['child-1', 'parent-1'],
+      start_date: '2026-07-18', end_date: '2026-07-25', recurrence_type: 'one_off',
+      responsible_member_id: 'parent-2',
+    })
+    const entries = buildCalendarEntries({ chores: [], activities: [activity], medicalRecords: [], rangeStart: RANGE_START, rangeEnd: RANGE_END })
+    expect(entries.filter((entry) => entry.sourceType === 'activity')).toHaveLength(8)
+    expect(entries[0]).toMatchObject({ participantMemberIds: ['child-1', 'parent-1'], isMultiDay: true, time: null })
+    expect(deduplicateAgendaRanges(entries)).toHaveLength(1)
+    expect(entryMatchesMember(entries[0], 'parent-1')).toBe(true)
+    expect(entryMatchesMember(entries[0], 'parent-2')).toBe(true)
+    expect(entryMatchesMember(entries[0], 'absent')).toBe(false)
   })
 })
 

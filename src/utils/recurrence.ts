@@ -44,10 +44,17 @@ export function expandActivityOccurrences(
   if (compareISODates(windowStart, windowEnd) > 0) return []
 
   if (activity.recurrence_type === 'one_off') {
-    const inRange =
-      compareISODates(activity.start_date, rangeStart) >= 0 &&
-      compareISODates(activity.start_date, rangeEnd) <= 0
-    return inRange ? [makeOccurrence(activity, activity.start_date)] : []
+    const eventEnd = activity.end_date ?? activity.start_date
+    const firstDate = compareISODates(activity.start_date, rangeStart) > 0 ? activity.start_date : rangeStart
+    const lastDate = compareISODates(eventEnd, rangeEnd) < 0 ? eventEnd : rangeEnd
+    if (compareISODates(firstDate, lastDate) > 0) return []
+    const occurrences: ActivityOccurrence[] = []
+    let cursor = firstDate
+    while (compareISODates(cursor, lastDate) <= 0 && occurrences.length < MAX_OCCURRENCES_PER_ACTIVITY) {
+      occurrences.push(makeOccurrence(activity, cursor))
+      cursor = addDays(cursor, 1)
+    }
+    return occurrences
   }
 
   if (activity.recurrence_type === 'custom_weekdays') {
@@ -100,6 +107,10 @@ export function nextOccurrenceDate(
 ): string | null {
   const occurrences = expandActivityOccurrences(activity, today, addDays(today, horizonDays))
   return occurrences[0]?.date ?? null
+}
+
+export function isMultiDayActivity(activity: Activity): boolean {
+  return activity.recurrence_type === 'one_off' && !!activity.end_date && activity.end_date > activity.start_date
 }
 
 export function expandActivitiesOccurrences(

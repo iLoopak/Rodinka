@@ -5,6 +5,7 @@ import { getItemTypeStyle } from '../../utils/itemTypeStyle'
 import { mealSlotLabel } from '../../utils/mealLabels'
 import { MemberAvatar } from '../ui/MemberAvatar'
 import type { FamilyMember } from '../../hooks/useFamilyMembers'
+import { daysBetweenISO } from '../../utils/dueDate'
 
 interface Props {
   entries: CalendarEntry[]
@@ -37,7 +38,22 @@ function peopleLabel(entry: CalendarEntry, memberById: (id: string) => FamilyMem
 function whenLabel(entry: CalendarEntry): string {
   if (entry.time) return entry.time.slice(0, 5)
   if (entry.type === 'meal') return mealSlotLabel(entry.mealSlot ?? 'other')
+  if (entry.isMultiDay && entry.rangeStart && entry.rangeEnd) {
+    if (entry.date === entry.rangeStart) return t.activities.startsToday
+    if (entry.date === entry.rangeEnd) return t.activities.endsToday
+    return t.activities.ongoing
+  }
   return t.due.today
+}
+
+function rangeLabel(entry: CalendarEntry): string | null {
+  if (!entry.isMultiDay || !entry.rangeStart || !entry.rangeEnd) return null
+  return t.activities.dayOfRange(
+    entry.rangeStart,
+    entry.rangeEnd,
+    daysBetweenISO(entry.rangeStart, entry.date) + 1,
+    daysBetweenISO(entry.rangeStart, entry.rangeEnd) + 1
+  )
 }
 
 export function TodayAgendaList({ entries, memberById, onSelectEntry }: Props) {
@@ -67,7 +83,7 @@ export function TodayAgendaList({ entries, memberById, onSelectEntry }: Props) {
             )}
             <span className="today-agenda-copy">
               <span className="today-agenda-title">{entry.title}</span>
-              <span className="today-agenda-type">{style.label}</span>
+              <span className="today-agenda-type">{style.label}{rangeLabel(entry) ? ` · ${rangeLabel(entry)}` : ''}</span>
               <span className="today-agenda-people">{peopleLabel(entry, memberById)}</span>
             </span>
             <span className="today-agenda-chevron" aria-hidden="true">›</span>

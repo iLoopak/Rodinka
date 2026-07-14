@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { t } from '../strings'
 import { useFamilyData } from '../context/FamilyDataContext'
-import { buildCalendarEntries, type CalendarEntry } from '../utils/calendarEntries'
+import { buildCalendarEntries, deduplicateAgendaRanges, entryMatchesMember, type CalendarEntry } from '../utils/calendarEntries'
 import { getChoreState } from '../utils/choreState'
 import { addDays, formatFullDate, formatMonthYear, todayISODate } from '../utils/dueDate'
 import { getMonthGridRange, shiftMonth } from '../utils/monthGrid'
@@ -16,7 +16,7 @@ import { CalendarEntryDetailModal } from './calendar/CalendarEntryDetailModal'
 
 type ViewMode = 'month' | 'agenda'
 
-const ITEM_TYPES: CalendarItemType[] = ['chore', 'activity', 'payment', 'medical', 'vaccination', 'meal']
+const ITEM_TYPES: CalendarItemType[] = ['chore', 'activity', 'payment', 'allowance', 'medical', 'vaccination', 'meal']
 const AGENDA_PAST_DAYS = 180
 const AGENDA_FUTURE_DAYS = 60
 
@@ -34,6 +34,7 @@ export function CalendarScreen() {
     activities,
     medicalRecords,
     planEntries,
+    allowancePlans,
     members,
     memberById,
     latestCompletionFor,
@@ -66,12 +67,13 @@ export function CalendarScreen() {
     activities,
     medicalRecords: visibleMedical,
     mealPlanEntries: planEntries,
+    allowancePlans,
     rangeStart: range.start,
     rangeEnd: range.end,
   })
 
   if (filterPerson) {
-    entries = entries.filter((e) => e.childOrPatientId === filterPerson || e.responsibleMemberId === filterPerson)
+    entries = entries.filter((entry) => entryMatchesMember(entry, filterPerson))
   }
   if (filterType) {
     entries = entries.filter((e) => e.type === filterType)
@@ -176,7 +178,7 @@ export function CalendarScreen() {
           {entries.length === 0 && hasFilters ? (
             <p className="empty-state">{t.calendar.filtersNoResults}</p>
           ) : (
-            <AgendaList entries={entries} today={today} memberById={memberById} onSelectEntry={setSelectedEntry} />
+            <AgendaList entries={deduplicateAgendaRanges(entries)} today={today} memberById={memberById} onSelectEntry={setSelectedEntry} />
           )}
         </section>
       )}
