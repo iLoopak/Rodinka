@@ -1,6 +1,7 @@
 import type { ReminderCopy } from './reminders'
+import type { Lang } from '../strings'
 
-export const reminderCopy: ReminderCopy = {
+const czechReminderCopy: ReminderCopy = {
   choreDueToday: (count, name) => count === 1 ? `Dnes čeká úkol pro ${name}` : `${count} úkoly jsou dnes na řadě pro ${name}`,
   choreOverdue: (count, name) => count === 1 ? `Úkol pro ${name} je po termínu` : `${count} úkoly pro ${name} jsou po termínu`,
   activitySoon: (title) => `Brzy začíná: ${title}`,
@@ -15,4 +16,25 @@ export const reminderCopy: ReminderCopy = {
   shoppingAssigned: (count) => count === 1 ? 'Máte přiřazenou položku k nákupu' : `${count} položek máte přiřazeno k nákupu`,
   openDetail: 'Otevřít detail',
   forMember: (name) => `Pro: ${name}`,
+}
+
+const englishReminderCopy: ReminderCopy = {
+  choreDueToday: (count, name) => count === 1 ? `A task for ${name} is due today` : `${count} tasks for ${name} are due today`,
+  choreOverdue: (count, name) => count === 1 ? `A task for ${name} is overdue` : `${count} tasks for ${name} are overdue`,
+  activitySoon: (title) => `Starting soon: ${title}`,
+  activityPayment: (count) => count === 1 ? 'An activity payment is coming up' : `${count} activity payments are coming up`,
+  medicalTomorrow: 'You have a health appointment tomorrow',
+  vaccinationDue: 'A vaccination is due soon',
+  votingCloses: (title) => `Voting on “${title}” closes soon`,
+  mealEmpty: "Tomorrow's meal plan is still empty",
+  mealIncomplete: (count) => count === 1 ? 'One meal is still missing for tomorrow' : `${count} meals are still missing for tomorrow`,
+  allowancePending: (count) => count === 1 ? 'One reward is waiting for approval' : `${count} rewards are waiting for approval`,
+  documentExpiry: (count) => count === 1 ? 'A family document expires soon' : `${count} family documents expire soon`,
+  shoppingAssigned: (count) => count === 1 ? 'A shopping item is assigned to you' : `${count} shopping items are assigned to you`,
+  openDetail: 'Open details',
+  forMember: (name) => `For: ${name}`,
+}
+
+export function reminderCopyFor(language: Lang): ReminderCopy {
+  return language === 'cs' ? czechReminderCopy : englishReminderCopy
 }

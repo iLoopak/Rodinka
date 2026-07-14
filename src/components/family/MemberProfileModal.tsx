@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { currentLang, t } from '../../strings'
+import { t } from '../../strings'
+import { getCurrentLanguage } from '../../i18n'
 import type { FamilyMember, GrammaticalGender, MemberColorKey } from '../../hooks/useFamilyMembers'
 import { MemberProfileError, useMemberProfiles } from '../../hooks/useMemberProfiles'
 import { editableMemberProfileFields } from '../../utils/memberProfilePermissions'
@@ -16,22 +17,18 @@ interface Props {
   onClose: () => void
 }
 
-const COLOR_LABELS: Record<MemberColorKey, string> = {
-  brick: t.family.colorBrick,
-  coral: t.family.colorCoral,
-  sky: t.family.colorSky,
-  sage: t.family.colorSage,
-  honey: t.family.colorHoney,
-  lavender: t.family.colorLavender,
-  berry: t.family.colorBerry,
+function colorLabel(key: MemberColorKey) {
+  return { brick: t.family.colorBrick, coral: t.family.colorCoral, sky: t.family.colorSky, sage: t.family.colorSage, honey: t.family.colorHoney, lavender: t.family.colorLavender, berry: t.family.colorBerry }[key]
 }
 
-const GENDER_OPTIONS: Array<{ value: GrammaticalGender | null; label: string }> = [
-  { value: 'masculine', label: t.family.grammarMasculine },
-  { value: 'feminine', label: t.family.grammarFeminine },
-  { value: 'neutral', label: t.family.grammarNeutral },
-  { value: null, label: t.family.grammarUnspecified },
-]
+function genderOptions(): Array<{ value: GrammaticalGender | null; label: string }> {
+  return [
+    { value: 'masculine', label: t.family.grammarMasculine },
+    { value: 'feminine', label: t.family.grammarFeminine },
+    { value: 'neutral', label: t.family.grammarNeutral },
+    { value: null, label: t.family.grammarUnspecified },
+  ]
+}
 
 function avatarValidationMessage(error: AvatarValidationError | 'corrupt'): string {
   if (error === 'empty') return t.family.errors.avatarEmpty
@@ -67,7 +64,7 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
   const vocativePreview = getLocalizedAddressName({
     firstName: displayName,
     manualVocative: vocativeName,
-    locale: currentLang,
+    locale: getCurrentLanguage(),
   })
 
   function handleRemoveAvatar() {
@@ -184,7 +181,7 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
               <label
                 key={key}
                 className={`member-color-option${colorKey === key ? ' selected' : ''}`}
-                title={COLOR_LABELS[key]}
+                title={colorLabel(key)}
               >
                 <input
                   className="visually-hidden"
@@ -201,7 +198,7 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
                 <span className="member-color-swatch" style={{ backgroundColor: `var(${MEMBER_COLOR_VAR_BY_KEY[key]})` }}>
                   {colorKey === key && <span aria-hidden="true">✓</span>}
                 </span>
-                <span className="visually-hidden">{COLOR_LABELS[key]}</span>
+                <span className="visually-hidden">{colorLabel(key)}</span>
               </label>
             ))}
           </div>
@@ -211,7 +208,7 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
           <legend>{t.family.grammarTitle}</legend>
           <p className="field-hint">{t.family.grammarExplain}</p>
           <div className="member-gender-options">
-            {GENDER_OPTIONS.map((option) => {
+            {genderOptions().map((option) => {
               const value = option.value ?? 'unspecified'
               return (
                 <label key={value} className="member-gender-option">

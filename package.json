@@ -13,8 +13,10 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.110.2",
     "czech-vocative": "^2.1.0",
+    "i18next": "^26.3.6",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "react-i18next": "^17.0.9"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",

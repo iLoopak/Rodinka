@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 vi.mock('../../router', () => ({ Link: ({ children, to, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { to: string }) => <a href={to} {...props}>{children}</a> }))
 
 import { compactReminderCount, ReminderBellView } from './ReminderBell'
+import { changeLanguage } from '../../i18n'
 
 describe('ReminderBell', () => {
   it('caps the badge and announces the real unread count', () => {
@@ -18,5 +19,11 @@ describe('ReminderBell', () => {
     const html = renderToStaticMarkup(<ReminderBellView unreadCount={0} hasImportantUnread={false} />)
     expect(html).not.toContain('reminder-badge')
     expect(html).toContain('aria-label="Připomínky"')
+  })
+
+  it('updates its accessible label when the language changes', async () => {
+    await changeLanguage('en')
+    expect(renderToStaticMarkup(<ReminderBellView unreadCount={2} hasImportantUnread={false} />)).toContain('2 unread reminders')
+    await changeLanguage('cs')
   })
 })

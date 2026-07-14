@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient'
+import { t } from '../strings'
 
 export type PushCapabilityCode =
   | 'supported'
@@ -85,7 +86,7 @@ export function urlBase64ToUint8Array(value: string) {
 
 export function normalizeSubscription(subscription: PushSubscription): NormalizedSubscription {
   const json = subscription.toJSON()
-  if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) throw new Error('Prohlížeč neposkytl platné údaje push odběru.')
+  if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) throw new Error(t.reminders.subscriptionInvalid)
   return { endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth, contentEncoding: 'aes128gcm' }
 }
 
@@ -94,9 +95,9 @@ export function describeDevice(userAgent = navigator.userAgent) {
     : /Android/.test(userAgent) ? 'Android'
       : /Windows/.test(userAgent) ? 'Windows'
         : /Macintosh/.test(userAgent) ? 'macOS'
-          : /Linux/.test(userAgent) ? 'Linux' : 'Zařízení'
+          : /Linux/.test(userAgent) ? 'Linux' : t.reminders.deviceGeneric
   const browser = /Edg\//.test(userAgent) ? 'Edge' : /CriOS|Chrome\//.test(userAgent) ? 'Chrome'
-    : /FxiOS|Firefox\//.test(userAgent) ? 'Firefox' : /Safari\//.test(userAgent) ? 'Safari' : 'Prohlížeč'
+    : /FxiOS|Firefox\//.test(userAgent) ? 'Firefox' : /Safari\//.test(userAgent) ? 'Safari' : t.reminders.browserGeneric
   return { deviceName: `${browser} · ${platform}`, platform, browser }
 }
 
@@ -113,7 +114,7 @@ async function storeSubscription(familyId: string, subscription: PushSubscriptio
     p_platform: device.platform,
     p_browser: device.browser,
   })
-  if (error) throw new Error('Zařízení se nepodařilo uložit. Zkuste to prosím znovu.')
+  if (error) throw new Error(t.reminders.deviceStoreFailed)
   return normalized
 }
 
@@ -130,9 +131,9 @@ export async function reconcileCurrentSubscription(familyId: string) {
 
 export async function enablePushOnCurrentDevice(familyId: string) {
   const capability = detectPushCapability()
-  if (!capability.supported) throw new Error('Push oznámení nejsou v tomto prostředí dostupná.')
+  if (!capability.supported) throw new Error(t.reminders.pushUnavailable)
   const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission()
-  if (permission !== 'granted') throw new Error(permission === 'denied' ? 'Oznámení jsou zablokovaná v nastavení prohlížeče.' : 'Povolení oznámení nebylo uděleno.')
+  if (permission !== 'granted') throw new Error(permission === 'denied' ? t.reminders.permissionBlocked : t.reminders.permissionMissing)
   const registration = await navigator.serviceWorker.ready
   registration.active?.postMessage({ type: 'PUSH_CONFIG', vapidPublicKey: VAPID_PUBLIC_KEY })
   const existing = await registration.pushManager.getSubscription()
@@ -153,7 +154,7 @@ export async function loadPushDevices(currentEndpoint: string | null): Promise<P
   const { data, error } = await supabase.from('push_subscriptions')
     .select('id,endpoint,device_name,platform,browser,created_at,last_seen_at,revoked_at,disabled_at')
     .order('last_seen_at', { ascending: false })
-  if (error) throw new Error('Seznam zařízení se nepodařilo načíst.')
+  if (error) throw new Error(t.reminders.deviceListFailed)
   return (data ?? []).map((row) => ({
     id: row.id, endpoint: row.endpoint, deviceName: row.device_name, platform: row.platform, browser: row.browser,
     createdAt: row.created_at, lastSeenAt: row.last_seen_at, revokedAt: row.revoked_at, disabledAt: row.disabled_at,
@@ -163,7 +164,7 @@ export async function loadPushDevices(currentEndpoint: string | null): Promise<P
 
 export async function revokePushDevice(id: string) {
   const { data, error } = await supabase.rpc('revoke_push_subscription', { p_subscription_id: id })
-  if (error || !data) throw new Error('Zařízení se nepodařilo odebrat.')
+  if (error || !data) throw new Error(t.reminders.deviceRemoveFailed)
 }
 
 export async function unsubscribeCurrentDevice(deviceId: string | null) {
@@ -178,8 +179,8 @@ export async function sendTestPush(familyId: string) {
   const { data, error } = await supabase.functions.invoke('send-notification-deliveries', {
     body: { mode: 'test', familyId },
   })
-  if (error) throw new Error('Testovací oznámení se nepodařilo odeslat.')
-  if (!data?.ok) throw new Error(data?.error ?? 'Testovací oznámení se nepodařilo odeslat.')
+  if (error) throw new Error(t.reminders.testNotificationFailed)
+  if (!data?.ok) throw new Error(data?.error ?? t.reminders.testNotificationFailed)
   return data
 }
 

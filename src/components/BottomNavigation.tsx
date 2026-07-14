@@ -5,7 +5,7 @@ import { isNavigationItemActive } from '../utils/navigation'
 
 interface NavigationItem {
   to: Route
-  label: string
+  label: () => string
   activeRoutes?: readonly Route[]
   icon: (active: boolean) => ReactNode
 }
@@ -13,7 +13,7 @@ interface NavigationItem {
 const items: NavigationItem[] = [
   {
     to: '/',
-    label: t.nav.today,
+    label: () => t.nav.today,
     icon: () => (
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M3 11.5 12 4l9 7.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -23,7 +23,7 @@ const items: NavigationItem[] = [
   },
   {
     to: '/calendar',
-    label: t.nav.calendar,
+    label: () => t.nav.calendar,
     icon: () => (
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="4" y="5" width="16" height="15" rx="3" strokeLinejoin="round" />
@@ -33,7 +33,7 @@ const items: NavigationItem[] = [
   },
   {
     to: '/plan',
-    label: t.nav.plan,
+    label: () => t.nav.plan,
     activeRoutes: ['/plan', '/chores', '/activities', '/health', '/meals', '/shopping'],
     icon: () => (
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
@@ -44,7 +44,7 @@ const items: NavigationItem[] = [
   },
   {
     to: '/family',
-    label: t.nav.family,
+    label: () => t.nav.family,
     icon: () => (
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
         <circle cx="9" cy="8.5" r="2.75" />
@@ -56,7 +56,7 @@ const items: NavigationItem[] = [
   },
   {
     to: '/more',
-    label: t.nav.more,
+    label: () => t.nav.more,
     icon: () => (
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
         <circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none" />
@@ -71,7 +71,7 @@ export function BottomNavigation() {
   const { path } = useRouter()
 
   return (
-    <nav className="bottom-nav" aria-label="Primary">
+    <nav className="bottom-nav" aria-label={t.common.primaryNavigation}>
       {items.map((item) => {
         const active = isNavigationItemActive(item, path)
         return (
@@ -82,7 +82,7 @@ export function BottomNavigation() {
             aria-current={active ? 'page' : undefined}
           >
             {item.icon(active)}
-            <span>{item.label}</span>
+            <span>{item.label()}</span>
           </Link>
         )
       })}
