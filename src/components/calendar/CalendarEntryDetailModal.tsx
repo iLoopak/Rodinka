@@ -10,13 +10,15 @@ import { recordToInput } from '../MedicalDetailModal'
 import { Modal } from '../ui/Modal'
 import { MemberAvatar } from '../ui/MemberAvatar'
 import { ShareLinkButton } from '../ui/ShareLinkButton'
+import { eligibleOccurrenceMembers } from '../../utils/occurrenceAssignments'
 
 interface Props {
   entry: CalendarEntry
   onClose: () => void
+  openAssignmentInitially?: boolean
 }
 
-export function CalendarEntryDetailModal({ entry, onClose }: Props) {
+export function CalendarEntryDetailModal({ entry, onClose, openAssignmentInitially = false }: Props) {
   const {
     chores,
     medicalRecords,
@@ -24,10 +26,16 @@ export function CalendarEntryDetailModal({ entry, onClose }: Props) {
     latestCompletionFor,
     markDone,
     updateMedicalRecord,
+    members,
+    isParentOrAdmin,
+    setOccurrenceMember,
   } = useFamilyData()
   const { navigate } = useRouter()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [assignmentOpen, setAssignmentOpen] = useState(openAssignmentInitially)
+  const [displayMemberId, setDisplayMemberId] = useState(entry.responsibleMemberId)
+  const [isOverride, setIsOverride] = useState(Boolean(entry.assignmentOverridden))
 
   const style = getItemTypeStyle(entry.type)
   const chore = entry.sourceType === 'chore' ? chores.find((item) => item.id === entry.sourceId) : undefined
@@ -55,7 +63,7 @@ export function CalendarEntryDetailModal({ entry, onClose }: Props) {
     setBusy(true)
     setError(null)
     try {
-      await markDone(chore.id, chore.assigned_to)
+      await markDone(chore.id, displayMemberId ?? undefined, entry.date)
       onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -80,8 +88,30 @@ export function CalendarEntryDetailModal({ entry, onClose }: Props) {
 
   const personId = entry.childOrPatientId ?? entry.responsibleMemberId
   const person = personId ? memberById(personId) : undefined
-  const responsible = entry.responsibleMemberId ? memberById(entry.responsibleMemberId) : undefined
-  const showResponsible = entry.responsibleMemberId && entry.responsibleMemberId !== entry.childOrPatientId
+  const responsible = displayMemberId ? memberById(displayMemberId) : undefined
+  const showResponsible = displayMemberId && displayMemberId !== entry.childOrPatientId
+  const canChangeAssignment = Boolean(isParentOrAdmin && entry.assignmentSeriesType && (entry.sourceType === 'chore' || entry.sourceType === 'activity'))
+  const eligibleMembers = entry.assignmentSeriesType ? eligibleOccurrenceMembers(members, entry.assignmentSeriesType) : []
+
+  async function changeOccurrenceMember(memberId: string | null, restoreDefault = false) {
+    if (!entry.assignmentSeriesType) return
+    const previousMemberId = displayMemberId
+    const previousOverride = isOverride
+    setDisplayMemberId(restoreDefault ? entry.defaultResponsibleMemberId ?? null : memberId)
+    setIsOverride(!restoreDefault && Boolean(entry.recurring))
+    setBusy(true)
+    setError(null)
+    try {
+      await setOccurrenceMember(entry.assignmentSeriesType, entry.sourceId, entry.date, memberId, restoreDefault)
+      setAssignmentOpen(false)
+    } catch {
+      setDisplayMemberId(previousMemberId)
+      setIsOverride(previousOverride)
+      setError(t.calendar.overrideSaveError)
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <Modal title={entry.title} onClose={onClose}>
@@ -110,6 +140,34 @@ export function CalendarEntryDetailModal({ entry, onClose }: Props) {
             <span>{t.calendar.responsibleLabel(responsible?.display_name ?? '?')}</span>
           </div>
         )}
+        {canChangeAssignment && <div className="occurrence-assignment">
+          <span className="field-label">{entry.assignmentSeriesType === 'activity' ? t.calendar.companionTitle : t.calendar.assigneeTitle}</span>
+          <button
+            type="button"
+            className="btn-secondary occurrence-assignment-trigger"
+            aria-expanded={assignmentOpen}
+            aria-label={entry.assignmentSeriesType === 'activity' ? t.calendar.changeCompanion : t.calendar.changeAssignee}
+            onClick={() => setAssignmentOpen((value) => !value)}
+          >
+            {responsible && <MemberAvatar member={responsible} />}
+            {responsible?.display_name ?? t.calendar.unassignedMember}
+            {isOverride && <span className="badge" aria-label={t.calendar.occurrenceOverrideBadge}>↔ {t.calendar.occurrenceOverrideBadge}</span>}
+          </button>
+          {assignmentOpen && <div className="occurrence-assignment-options" role="group" aria-label={entry.assignmentSeriesType === 'activity' ? t.calendar.changeCompanion : t.calendar.changeAssignee}>
+            <button type="button" className="btn-secondary" disabled={busy} onClick={() => changeOccurrenceMember(null)}>{t.calendar.unassignedMember}</button>
+            {eligibleMembers.map((member) => <button
+              key={member.id}
+              type="button"
+              className={`btn-secondary${member.id === displayMemberId ? ' active' : ''}`}
+              aria-pressed={member.id === displayMemberId}
+              disabled={busy}
+              onClick={() => changeOccurrenceMember(member.id)}
+            ><MemberAvatar member={member} />{member.display_name}</button>)}
+            {isOverride && <button type="button" className="btn-link" disabled={busy} onClick={() => changeOccurrenceMember(null, true)}>
+              {entry.assignmentSeriesType === 'activity' ? t.calendar.restoreDefaultCompanion : t.calendar.restoreDefaultAssignee}
+            </button>}
+          </div>}
+        </div>}
         {entry.subtitle && <p className="row-meta">{entry.subtitle}</p>}
       </div>
       <div className="family-actions">

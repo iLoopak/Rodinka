@@ -181,7 +181,8 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
     members: data.members, chores: data.chores, completions: data.completions, activities: data.activities,
     medicalRecords: data.medicalRecords, voteRounds: data.voteRounds,
     planEntries: data.planEntries, shoppingItems: data.shoppingItems,
-  }), [data.members, data.chores, data.completions, data.activities, data.medicalRecords, data.voteRounds, data.planEntries, data.shoppingItems])
+    occurrenceOverrides: data.occurrenceOverrides, assignmentHistory: data.assignmentHistory,
+  }), [data.members, data.chores, data.completions, data.activities, data.medicalRecords, data.voteRounds, data.planEntries, data.shoppingItems, data.occurrenceOverrides, data.assignmentHistory])
 
   const refreshSources = useCallback(async (force = false) => {
     const now = Date.now()
@@ -251,10 +252,11 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       familyId: data.familyId, currentMember: data.currentMember, isParentOrAdmin: data.isParentOrAdmin,
       members: data.members, chores: data.chores, latestCompletionFor: data.latestCompletionFor,
       activities: data.activities, medicalRecords: data.medicalRecords, voteRounds: data.voteRounds,
+      occurrenceOverrides: data.occurrenceOverrides, assignmentHistory: data.assignmentHistory,
       planEntries: data.planEntries, pendingCompletions: data.pendingCompletions, shoppingItems: data.shoppingItems,
       preferences: { ...preferences, locale: language }, copy: reminderCopyFor(language), now: new Date(),
     })
-  }, [data.familyId, data.currentMember, data.isParentOrAdmin, data.members, data.chores, data.latestCompletionFor, data.activities, data.medicalRecords, data.voteRounds, data.planEntries, data.pendingCompletions, data.shoppingItems, preferences, language, generationTick])
+  }, [data.familyId, data.currentMember, data.isParentOrAdmin, data.members, data.chores, data.latestCompletionFor, data.activities, data.occurrenceOverrides, data.assignmentHistory, data.medicalRecords, data.voteRounds, data.planEntries, data.pendingCompletions, data.shoppingItems, preferences, language, generationTick])
 
   useEffect(() => {
     if (data.loading || loading) return

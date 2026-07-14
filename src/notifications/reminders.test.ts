@@ -96,7 +96,7 @@ describe('reminder rule engine', () => {
   it('creates an important overdue chore reminder and resolves from generation after completion', () => {
     const chore = makeChore({ assigned_to: child.id, due_date: '2026-07-13' })
     expect(generateReminderDrafts(baseInput({ chores: [chore] })).find((item) => item.type === 'chore-overdue')?.importance).toBe('important')
-    expect(generateReminderDrafts(baseInput({ chores: [chore], latestCompletionFor: () => completion({ status: 'approved', occurrence_due_date: chore.due_date }) })).some((item) => item.source === 'chore')).toBe(false)
+    expect(generateReminderDrafts(baseInput({ chores: [chore], latestCompletionFor: () => completion({ status: 'approved', occurrence_due_date: chore.due_date ?? undefined }) })).some((item) => item.source === 'chore')).toBe(false)
   })
 
   it('uses the recurring chore due date as the occurrence identity', () => {

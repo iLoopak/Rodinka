@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { t } from '../strings'
 import { todayISODate } from '../utils/dueDate'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
-import type { Chore, ChoreInput, ChoreRecurrenceType } from '../utils/choreModel'
+import { TASK_CATEGORIES, type Chore, type ChoreInput, type ChoreRecurrenceType, type TaskCategory, type TaskPriority } from '../utils/choreModel'
 import { choreRecurrenceSummary } from '../utils/choreRecurrence'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7]
@@ -21,14 +21,19 @@ function dayOfMonth(date: string): number {
 }
 
 export function AddChoreForm({ members, currentMemberId, initial, initialDueDate, requiresNewDueDate = false, onSubmit }: Props) {
-  const kids = useMemo(() => members.filter((member) => member.role === 'child'), [members])
-  const defaultAssignee = kids[0]?.id ?? currentMemberId
+  const defaultAssignee = members.some((member) => member.id === currentMemberId) ? currentMemberId : ''
 
   const [title, setTitle] = useState(initial?.title ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [assignedTo, setAssignedTo] = useState(initial?.assigned_to ?? defaultAssignee)
+  const [hasDueDate, setHasDueDate] = useState(initial ? Boolean(initial.due_date) : true)
   const [dueDate, setDueDate] = useState(initial?.due_date ?? initialDueDate ?? todayISODate())
   const [rewardAmount, setRewardAmount] = useState(initial ? String(initial.reward_amount) : '')
+  const [rewardEnabled, setRewardEnabled] = useState(initial?.reward_enabled ?? false)
+  const [requiresApproval, setRequiresApproval] = useState(initial?.requires_approval ?? false)
+  const [category, setCategory] = useState<TaskCategory | ''>(initial?.category ?? '')
+  const [priority, setPriority] = useState<TaskPriority>(initial?.priority ?? 'normal')
+  const [advanced, setAdvanced] = useState(Boolean(initial && (initial.description || initial.reward_enabled || initial.requires_approval || initial.category || initial.priority && initial.priority !== 'normal')))
   const [recurrenceType, setRecurrenceType] = useState<ChoreRecurrenceType>(initial?.recurrence_type ?? 'none')
   const [weekdays, setWeekdays] = useState<number[]>(initial?.recurrence_weekdays ?? WEEKDAYS)
   const [error, setError] = useState<string | null>(null)
@@ -45,7 +50,7 @@ export function AddChoreForm({ members, currentMemberId, initial, initialDueDate
       : [...previous, day].sort((a, b) => a - b))
   }
 
-  const preferredDayOfMonth = recurrenceType === 'monthly'
+  const preferredDayOfMonth = hasDueDate && recurrenceType === 'monthly'
     ? initial?.recurrence_type === 'monthly' && dueDate === initial.due_date
       ? initial.preferred_day_of_month ?? dayOfMonth(dueDate)
       : dayOfMonth(dueDate)
@@ -55,22 +60,22 @@ export function AddChoreForm({ members, currentMemberId, initial, initialDueDate
     recurrence_type: recurrenceType,
     recurrence_weekdays: recurrenceType === 'daily' ? weekdays : null,
     preferred_day_of_month: preferredDayOfMonth,
-    due_date: dueDate,
+    due_date: hasDueDate ? dueDate : todayISODate(),
   })
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     setError(null)
 
-    if (!assignedTo || !members.some((member) => member.id === assignedTo)) {
-      setError(t.chores.errors.assigneeRequired)
+    if (assignedTo && !members.some((member) => member.id === assignedTo)) {
+      setError(t.errors.generic)
       return
     }
-    if (!dueDate) {
+    if (hasDueDate && !dueDate) {
       setError(t.chores.errors.dueDateRequired)
       return
     }
-    if (recurrenceType === 'daily' && weekdays.length === 0) {
+    if (hasDueDate && recurrenceType === 'daily' && weekdays.length === 0) {
       setError(t.chores.errors.weekdaysRequired)
       return
     }
@@ -84,11 +89,16 @@ export function AddChoreForm({ members, currentMemberId, initial, initialDueDate
       await onSubmit({
         title,
         description,
-        assignedTo,
-        dueDate,
+        assignedTo: assignedTo || null,
+        dueDate: hasDueDate ? dueDate : null,
         rewardAmount: Number(rewardAmount) || 0,
-        recurrenceType,
-        recurrenceWeekdays: recurrenceType === 'daily' ? weekdays : null,
+        rewardEnabled,
+        rewardCurrency: initial?.reward_currency ?? 'CZK',
+        requiresApproval,
+        category: category || null,
+        priority,
+        recurrenceType: hasDueDate ? recurrenceType : 'none',
+        recurrenceWeekdays: hasDueDate && recurrenceType === 'daily' ? weekdays : null,
         preferredDayOfMonth,
       })
       if (!initial) {
@@ -97,6 +107,11 @@ export function AddChoreForm({ members, currentMemberId, initial, initialDueDate
         setAssignedTo(defaultAssignee)
         setDueDate(initialDueDate ?? todayISODate())
         setRewardAmount('')
+        setRewardEnabled(false)
+        setRequiresApproval(false)
+        setCategory('')
+        setPriority('normal')
+        setAdvanced(false)
         setRecurrenceType('none')
         setWeekdays(WEEKDAYS)
       }
@@ -109,34 +124,30 @@ export function AddChoreForm({ members, currentMemberId, initial, initialDueDate
 
   return (
     <form className="sectioned-form" onSubmit={handleSubmit}>
-      <div className="form-section">
-        <h4>{t.chores.sectionDetails}</h4>
+      <div className="form-section compact-task-form">
         <label>
           {t.chores.titleLabel}
           <input required value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t.chores.titlePlaceholder} />
         </label>
         <label>
-          {t.chores.descriptionLabel}
-          <input value={description} onChange={(event) => setDescription(event.target.value)} placeholder={t.chores.descriptionPlaceholder} />
-        </label>
-        <label>
           {t.chores.assignedToLabel}
-          <select required value={assignedTo} onChange={(event) => setAssignedTo(event.target.value)}>
+          <select value={assignedTo} onChange={(event) => setAssignedTo(event.target.value)}>
+            <option value="">{t.chores.unassigned}</option>
             {members.map((member) => <option key={member.id} value={member.id}>{member.display_name}</option>)}
           </select>
         </label>
+        <label className="checkbox-row">
+          <input type="checkbox" checked={!hasDueDate} onChange={(event) => {
+            setHasDueDate(!event.target.checked)
+            if (event.target.checked) setRecurrenceType('none')
+          }} />
+          {t.chores.noDueDate}
+        </label>
+        {hasDueDate && <>
         <label>
           {t.chores.dueDateLabel}
           <input required type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
         </label>
-        <label>
-          {t.chores.rewardAmountLabel}
-          <input required type="number" min="0" step="0.01" value={rewardAmount} onChange={(event) => setRewardAmount(event.target.value)} />
-        </label>
-      </div>
-
-      <div className="form-section">
-        <h4>{t.chores.recurrenceSection}</h4>
         <label>
           {t.chores.recurrenceLabel}
           <select value={recurrenceType} onChange={(event) => changeRecurrence(event.target.value as ChoreRecurrenceType)}>
@@ -164,7 +175,46 @@ export function AddChoreForm({ members, currentMemberId, initial, initialDueDate
         </>}
 
         <p className="recurrence-summary" role="status">{recurrenceSummary}</p>
+        </>}
       </div>
+
+      <button type="button" className="btn-secondary" aria-expanded={advanced} onClick={() => setAdvanced((value) => !value)}>
+        {advanced ? t.chores.hideOptions : t.chores.moreOptions}
+      </button>
+
+      {advanced && <div className="form-section" data-testid="task-advanced-options">
+        <label>
+          {t.chores.descriptionLabel}
+          <input value={description} onChange={(event) => setDescription(event.target.value)} placeholder={t.chores.descriptionPlaceholder} />
+        </label>
+        <label>
+          {t.chores.categoryLabel}
+          <select value={category} onChange={(event) => setCategory(event.target.value as TaskCategory | '')}>
+            <option value="">—</option>
+            {TASK_CATEGORIES.map((value, index) => <option key={value} value={value}>{t.chores.categoryLabels[index]}</option>)}
+          </select>
+        </label>
+        <label>
+          {t.chores.priorityLabel}
+          <select value={priority} onChange={(event) => setPriority(event.target.value as TaskPriority)}>
+            <option value="low">{t.chores.priorityLow}</option>
+            <option value="normal">{t.chores.priorityNormal}</option>
+            <option value="high">{t.chores.priorityHigh}</option>
+          </select>
+        </label>
+        <label className="checkbox-row">
+          <input type="checkbox" checked={rewardEnabled} onChange={(event) => setRewardEnabled(event.target.checked)} />
+          {t.chores.addReward}
+        </label>
+        {rewardEnabled && <label>
+          {t.chores.rewardAmountLabel}
+          <input required type="number" min="0" step="0.01" value={rewardAmount} onChange={(event) => setRewardAmount(event.target.value)} />
+        </label>}
+        <label className="checkbox-row">
+          <input type="checkbox" checked={requiresApproval} onChange={(event) => setRequiresApproval(event.target.checked)} />
+          {t.chores.requiresApproval}
+        </label>
+      </div>}
 
       <button type="submit" disabled={loading}>
         {loading ? t.chores.saving : initial ? t.chores.saveChanges : t.chores.addSubmit}

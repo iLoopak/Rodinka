@@ -42,7 +42,7 @@ export function PlannerScreen() {
     const state = getChoreState(chore, latestCompletionFor(chore.id))
     return state !== 'done' && state !== 'archived'
   })
-  const overdueChores = activeChores.filter((chore) => chore.due_date < today)
+  const overdueChores = activeChores.filter((chore) => chore.due_date !== null && chore.due_date < today)
   const activeActivities = activities.filter((activity) => activity.status === 'active')
   const overduePayments = activities.filter(
     (activity) =>

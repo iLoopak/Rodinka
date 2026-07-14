@@ -29,6 +29,23 @@ describe('chore model compatibility', () => {
       title: 'Tidy room', description: 'Before dinner', assigned_to: 'child-1',
       due_date: '2026-07-16', reward_amount: 12, recurring: true,
       recurrence_type: 'daily', recurrence_weekdays: [2, 4], preferred_day_of_month: null,
+      reward_enabled: true, reward_currency: 'CZK', requires_approval: true,
+      category: null, priority: 'normal',
     })
+  })
+
+  it('creates a normal unassigned task without reward or approval', () => {
+    expect(choreInputToRow({
+      title: 'Fix shelf', description: '', assignedTo: null, dueDate: null, rewardAmount: 50,
+      rewardEnabled: false, requiresApproval: false, recurrenceType: 'weekly', recurrenceWeekdays: null,
+      preferredDayOfMonth: null,
+    })).toMatchObject({
+      assigned_to: null, due_date: null, reward_amount: 0, reward_enabled: false,
+      requires_approval: false, recurrence_type: 'none', recurring: false,
+    })
+  })
+
+  it('preserves a migrated rewarded child chore and approval workflow', () => {
+    expect(normalizeChore(legacy)).toMatchObject({ reward_enabled: true, requires_approval: true, reward_currency: 'CZK' })
   })
 })

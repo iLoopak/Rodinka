@@ -196,7 +196,7 @@ export function ChoresScreen() {
             <ul className="section-list">
               {chores.map((chore) => <li key={chore.id}>
                 <span className="row-title">{chore.title}</span>
-                <span className="row-meta">{memberById(chore.assigned_to)?.display_name ?? '?'}</span>
+                <span className="row-meta">{chore.assigned_to ? memberById(chore.assigned_to)?.display_name ?? '?' : t.chores.unassigned}</span>
                 <span className="row-description">{choreRecurrenceSummary(chore)}</span>
                 <span className="row-spacer" />
                 {chore.status === 'archived' && <span className="badge">{t.chores.archivedBadge}</span>}
@@ -215,7 +215,7 @@ export function ChoresScreen() {
 
       {selectedChore && <ChoreDetailModal
         chore={selectedChore}
-        assignee={memberById(selectedChore.assigned_to)}
+        assignee={selectedChore.assigned_to ? memberById(selectedChore.assigned_to) : undefined}
         members={members}
         currentMemberId={currentMember.id}
         completions={completions.filter((completion) => completion.chore_id === selectedChore.id)}

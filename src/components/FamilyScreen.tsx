@@ -10,6 +10,7 @@ import { MemberProfileModal } from './family/MemberProfileModal'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
 import { canEditMemberProfile } from '../utils/memberProfilePermissions'
 import { FamilyMark } from './FamilyMark'
+import { MemberRemovalDialog } from './family/MemberRemovalDialog'
 
 function roleLabel(role: FamilyMember['role']) {
   if (role === 'admin') return t.family.roleAdmin
@@ -22,11 +23,15 @@ function formatDate(iso: string) {
 }
 
 export function FamilyScreen() {
-  const { familyName, members, currentMember, isParentOrAdmin, addChild, createInvite, loading, error, refreshAll, refreshMembers, updateFamilyName } =
+  const { familyName, members, allMembers, chores, activities, currentMember, isParentOrAdmin, addChild, createInvite, removeMember, leaveHousehold, restoreMember, loading, error, refreshAll, refreshMembers, updateFamilyName } =
     useFamilyData()
   const [showAddChild, setShowAddChild] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null)
+  const [removingMember, setRemovingMember] = useState<FamilyMember | null>(null)
+  const [leavingHousehold, setLeavingHousehold] = useState(false)
+  const [restoringMemberId, setRestoringMemberId] = useState<string | null>(null)
+  const [memberActionError, setMemberActionError] = useState<string | null>(null)
   const [editingFamilyName, setEditingFamilyName] = useState(false)
   const [familyNameDraft, setFamilyNameDraft] = useState(familyName ?? '')
   const [familyNameSaving, setFamilyNameSaving] = useState(false)
@@ -113,6 +118,24 @@ export function FamilyScreen() {
         </ul>
       </section>
 
+      {isParentOrAdmin && allMembers.some((candidate) => candidate.status === 'removed') && <section className="section">
+        <h2>{t.family.removedMembersTitle}</h2>
+        {memberActionError && <p className="error" role="alert">{memberActionError}</p>}
+        <ul className="section-list">
+          {allMembers.filter((candidate) => candidate.status === 'removed').map((archived) => <li key={archived.id}>
+            <MemberAvatar member={archived} size={42} />
+            <span className="row-title">{archived.display_name}</span>
+            <span className="badge">{t.family.removedMemberBadge}</span>
+            <span className="row-spacer" />
+            <button type="button" className="btn-secondary" disabled={restoringMemberId === archived.id} onClick={async () => {
+              setRestoringMemberId(archived.id)
+              setMemberActionError(null)
+              try { await restoreMember(archived.id) } catch { setMemberActionError(t.family.restoreError) } finally { setRestoringMemberId(null) }
+            }}>{restoringMemberId === archived.id ? t.family.restoringMember : t.family.restoreMemberAction}</button>
+          </li>)}
+        </ul>
+      </section>}
+
       {isParentOrAdmin && (
         <section className="section">
           <div className="family-actions">
@@ -144,9 +167,35 @@ export function FamilyScreen() {
           member={editingMember}
           currentMember={currentMember}
           refreshMembers={refreshMembers}
+          onRequestRemove={isParentOrAdmin && editingMember.id !== currentMember.id ? () => {
+            setRemovingMember(editingMember)
+            setEditingMember(null)
+          } : undefined}
+          onRequestLeave={isParentOrAdmin && editingMember.id === currentMember.id ? () => {
+            setLeavingHousehold(true)
+            setEditingMember(null)
+          } : undefined}
           onClose={() => setEditingMember(null)}
         />
       )}
+
+      {removingMember && <MemberRemovalDialog
+        member={removingMember}
+        activeMembers={members}
+        chores={chores}
+        activities={activities}
+        onConfirm={(replacementMemberId, taskStrategy, activityStrategy) => removeMember(removingMember.id, replacementMemberId, taskStrategy, activityStrategy)}
+        onClose={() => setRemovingMember(null)}
+      />}
+      {leavingHousehold && <MemberRemovalDialog
+        member={currentMember}
+        activeMembers={members}
+        chores={chores}
+        activities={activities}
+        selfLeave
+        onConfirm={leaveHousehold}
+        onClose={() => setLeavingHousehold(false)}
+      />}
     </>
   )
 }

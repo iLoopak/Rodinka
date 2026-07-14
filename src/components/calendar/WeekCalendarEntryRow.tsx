@@ -9,13 +9,14 @@ interface Props {
   entry: CalendarEntry
   memberById: (id: string) => FamilyMember | undefined
   onClick: () => void
+  onAssignmentClick?: () => void
 }
 
 function shortTime(value: string) {
   return value.slice(0, 5)
 }
 
-export function WeekCalendarEntryRow({ entry, memberById, onClick }: Props) {
+export function WeekCalendarEntryRow({ entry, memberById, onClick, onAssignmentClick }: Props) {
   const style = getItemTypeStyle(entry.type)
   const participantIds = [...new Set([
     ...(entry.participantMemberIds ?? []),
@@ -50,6 +51,12 @@ export function WeekCalendarEntryRow({ entry, memberById, onClick }: Props) {
         {!entry.completed && <DueBadge dueDate={entry.date} />}
       </span>
     </button>
+    {entry.assignmentSeriesType && onAssignmentClick && <button
+      type="button"
+      className="week-entry-assignment"
+      aria-label={`${entry.assignmentSeriesType === 'activity' ? t.calendar.changeCompanion : t.calendar.changeAssignee}${entry.assignmentOverridden ? `. ${t.calendar.occurrenceOverrideBadge}` : ''}`}
+      onClick={onAssignmentClick}
+    ><MemberAvatar member={responsible} size={24} />{entry.assignmentOverridden && <span aria-hidden="true">↔</span>}</button>}
   </li>
 }
 

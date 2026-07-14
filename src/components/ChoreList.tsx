@@ -12,7 +12,7 @@ interface Props {
   chores: Chore[]
   memberById: (id: string) => FamilyMember | undefined
   latestCompletionFor: (choreId: string) => ChoreCompletion | null
-  onMarkDone: (choreId: string, assignedTo: string) => Promise<void>
+  onMarkDone: (choreId: string, assignedTo?: string) => Promise<void>
   onSelect: (chore: Chore) => void
 }
 
@@ -24,7 +24,7 @@ export function ChoreList({ chores, memberById, latestCompletionFor, onMarkDone,
     setMarkingId(chore.id)
     setError(null)
     try {
-      await onMarkDone(chore.id, chore.assigned_to)
+      await onMarkDone(chore.id, chore.assigned_to ?? undefined)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -41,7 +41,7 @@ export function ChoreList({ chores, memberById, latestCompletionFor, onMarkDone,
       {error && <p className="error">{error}</p>}
       <ul className="section-list">
         {chores.map((chore) => {
-          const assignee = memberById(chore.assigned_to)
+          const assignee = chore.assigned_to ? memberById(chore.assigned_to) : undefined
           const latest = latestCompletionFor(chore.id)
           const state = getChoreState(chore, latest)
           const isPending = state === 'pending'
@@ -51,12 +51,12 @@ export function ChoreList({ chores, memberById, latestCompletionFor, onMarkDone,
             <li key={chore.id}>
               <MemberAvatar member={assignee} />
               <span className="row-title">{chore.title}</span>
-              <span className="row-meta">{assignee?.display_name ?? '?'}</span>
+              <span className="row-meta">{assignee?.display_name ?? t.chores.unassigned}</span>
               {chore.description && <p className="row-description">{chore.description}</p>}
               <p className="row-description recurrence-summary">{choreRecurrenceSummary(chore)}</p>
               <span className="row-spacer" />
               <DueBadge dueDate={chore.due_date} completed={isDone} />
-              <span className="row-amount">{t.chores.formatAmount(chore.reward_amount)}</span>
+              {chore.reward_enabled && <span className="row-amount">{t.chores.formatAmount(chore.reward_amount)}</span>}
               {isPending && <span className="badge badge-pending">{t.chores.pendingBadge}</span>}
               <button type="button" className="btn-secondary" onClick={() => onSelect(chore)}>
                 {t.deepLinks.openDetail}

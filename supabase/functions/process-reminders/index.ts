@@ -38,6 +38,8 @@ interface SourceSnapshot {
   pendingCompletions: Array<Record<string, unknown>>
   shoppingItems: Array<Record<string, unknown>>
   documents: Array<Record<string, unknown>>
+  occurrenceOverrides: Array<Record<string, unknown>>
+  assignmentHistory: Array<Record<string, unknown>>
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -141,9 +143,13 @@ Deno.serve(async (request) => {
   const loadSnapshot = (familyId: string) => {
     const cached = snapshotCache.get(familyId)
     if (cached) return cached
-    const operation = supabase.rpc('get_reminder_source_snapshot', { p_family_id: familyId }).then(({ data, error }) => {
-      if (error) throw new Error(error.message)
-      return data as SourceSnapshot
+    const operation = Promise.all([
+      supabase.rpc('get_reminder_source_snapshot', { p_family_id: familyId }),
+      supabase.from('occurrence_overrides').select('id,family_id,series_type,series_id,occurrence_date,companion_member_id,assignee_member_id,cancelled,updated_at').eq('family_id', familyId),
+      supabase.from('series_assignment_history').select('id,family_id,series_type,series_id,effective_from,member_id').eq('family_id', familyId),
+    ]).then(([snapshotResult, overrideResult, historyResult]) => {
+      if (snapshotResult.error || overrideResult.error || historyResult.error) throw new Error(snapshotResult.error?.message ?? overrideResult.error?.message ?? historyResult.error?.message)
+      return { ...(snapshotResult.data as SourceSnapshot), occurrenceOverrides: overrideResult.data ?? [], assignmentHistory: historyResult.data ?? [] }
     })
     snapshotCache.set(familyId, operation)
     return operation
@@ -176,6 +182,8 @@ Deno.serve(async (request) => {
         chores: snapshot.chores as never,
         latestCompletionFor: (choreId) => (completionByChore.get(choreId) ?? null) as never,
         activities: snapshot.activities as never,
+        occurrenceOverrides: snapshot.occurrenceOverrides as never,
+        assignmentHistory: snapshot.assignmentHistory as never,
         medicalRecords: snapshot.medicalRecords as never,
         voteRounds: snapshot.voteRounds as never,
         planEntries: snapshot.planEntries as never,

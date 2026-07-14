@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Chore, ChoreInput } from '../utils/choreModel'
+import { TASK_CATEGORIES, type Chore, type ChoreInput } from '../utils/choreModel'
 import type { ChoreCompletion } from '../hooks/useChoreCompletions'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
 import { t } from '../strings'
@@ -19,7 +19,7 @@ interface Props {
   completions: ChoreCompletion[]
   latestCompletion: ChoreCompletion | null
   canManage: boolean
-  onMarkDone: (choreId: string, assignedTo: string) => Promise<void>
+  onMarkDone: (choreId: string, assignedTo?: string) => Promise<void>
   onUpdate: (choreId: string, input: ChoreInput) => Promise<void>
   onSetArchived: (choreId: string, archived: boolean) => Promise<void>
   onClose: () => void
@@ -61,7 +61,7 @@ export function ChoreDetailModal({
     setBusy(true)
     setError(null)
     try {
-      await onMarkDone(chore.id, chore.assigned_to)
+      await onMarkDone(chore.id, chore.assigned_to ?? undefined)
       onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -104,11 +104,15 @@ export function ChoreDetailModal({
             <MemberAvatar member={assignee} />
             <span>{assignee.display_name}</span>
           </div>}
-          <p className="row-meta">{formatFullDate(chore.due_date)}</p>
-          <p className="row-meta">{t.chores.formatAmount(chore.reward_amount)}</p>
+          {!assignee && <p className="row-meta">{t.chores.unassigned}</p>}
+          <p className="row-meta">{chore.due_date ? formatFullDate(chore.due_date) : t.chores.noDueDate}</p>
+          {chore.reward_enabled && <p className="row-meta">{t.chores.formatAmount(chore.reward_amount)}</p>}
           {chore.description && <p className="row-description">{chore.description}</p>}
           <dl className="detail-facts">
             <div><dt>{t.chores.recurrenceDetailLabel}</dt><dd>{choreRecurrenceSummary(chore)}</dd></div>
+            {chore.category && <div><dt>{t.chores.categoryLabel}</dt><dd>{t.chores.categoryLabels[TASK_CATEGORIES.indexOf(chore.category)]}</dd></div>}
+            {chore.priority && chore.priority !== 'normal' && <div><dt>{t.chores.priorityLabel}</dt><dd>{chore.priority === 'high' ? t.chores.priorityHigh : t.chores.priorityLow}</dd></div>}
+            {chore.requires_approval && <div><dt>{t.chores.requiresApproval}</dt><dd>{t.chores.enabledValue}</dd></div>}
             <div><dt>{t.chores.currentStatusLabel}</dt><dd>{stateLabel(state)}</dd></div>
           </dl>
         </div>
@@ -137,7 +141,9 @@ export function ChoreDetailModal({
                 <strong>{completion.chore_title}</strong>
                 <span>{completionStatusLabel(completion.status)}</span>
                 <span>{t.chores.historyDue(formatFullDate(completion.occurrence_due_date))}</span>
-                <span>{t.chores.formatAmount(completion.reward_amount)}</span>
+                <span>{t.chores.historyAssigned(completion.assigned_member_id ? members.find((member) => member.id === completion.assigned_member_id)?.display_name ?? t.family.removedMemberBadge : t.chores.unassigned)}</span>
+                {completion.assignment_was_override && <span className="badge">↔ {t.chores.historyAssignmentOverride}</span>}
+                {(completion.reward_enabled ?? completion.reward_amount > 0) && <span>{t.chores.formatAmount(completion.reward_amount)}</span>}
               </li>)}
             </ul>
           )}
