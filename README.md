@@ -36,10 +36,13 @@ optional responsibility assignment — see `supabase/` for the DB schema and
   family.
 - **chores** — a task belonging to a family, assigned to exactly one family
   member (any role — child, parent, or admin), with a `reward_amount`, a
-  `due_date` (date-only — which day, not a precise time), and a `recurring`
-  flag.
+  `due_date` (date-only — which day, not a precise time), structured
+  recurrence (`none`/`daily`/`weekly`/`monthly`), optional ISO weekdays,
+  a preserved preferred monthly day, and an `active`/`archived` status. The
+  legacy `recurring` flag remains synchronized for compatibility.
 - **chore_completions** — a log of each time a chore is marked done, with a
-  `status` (`pending_approval`, `approved`, `rejected`).
+  `status` (`pending_approval`, `approved`, `rejected`) plus immutable
+  occurrence due-date, title, and reward snapshots.
 - **allowance_ledger** — a running record of amounts owed/paid per child;
   positive entries are credits (from approved chores), negative entries are
   payouts.
@@ -121,6 +124,18 @@ admin/parent adding a child; the existing security-definer family/invite RPCs
 continue to create adult memberships. Avatar read/write policies apply the
 same family/profile permission logic, and signed URLs are derived temporarily
 in the frontend rather than stored in `members`.
+
+`supabase/009_chore_recurrence_lifecycle.sql` upgrades the former boolean
+chore recurrence to `none`/`daily`/`weekly`/`monthly`, backfilling legacy
+`recurring=true` rows as weekly because the old schema stored no cadence. It
+also snapshots every completion occurrence and replaces chore approval with
+an atomic operation that approves once, credits the linked ledger row once,
+and either archives a one-off chore or advances a recurring chore to its next
+non-past due date. Chores are archived rather than deleted so history and
+allowance-plan references remain intact. Scheduling, reward, assignee, and
+status changes are blocked while a completion is pending approval; the UI
+uses the simpler rule of disabling all editing until that completion is
+approved or rejected.
 
 ### App flow (implemented so far)
 
@@ -212,7 +227,8 @@ In Supabase, run `supabase/001_schema.sql`, `supabase/002_functions.sql`,
 `supabase/003_chores.sql`, `supabase/004_chore_due_date.sql`,
 `supabase/005_activities_medical.sql`, then `supabase/006_meal_planning.sql`,
 `supabase/007_member_profiles.sql`, and
-`supabase/008_allowance_plans_family_events.sql` in the SQL Editor (in that order — later files depend on earlier
+`supabase/008_allowance_plans_family_events.sql`, then
+`supabase/009_chore_recurrence_lifecycle.sql` in the SQL Editor (in that order — later files depend on earlier
 tables/functions existing).
 
 Migration `008_allowance_plans_family_events.sql` adds allowance plans,

@@ -5,6 +5,8 @@ import type { ChoreCompletion } from '../hooks/useChoreCompletions'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
 import { DueBadge } from './ui/DueBadge'
 import { MemberAvatar } from './ui/MemberAvatar'
+import { getChoreState } from '../utils/choreState'
+import { choreRecurrenceSummary } from '../utils/choreRecurrence'
 
 interface Props {
   chores: Chore[]
@@ -41,8 +43,9 @@ export function ChoreList({ chores, memberById, latestCompletionFor, onMarkDone,
         {chores.map((chore) => {
           const assignee = memberById(chore.assigned_to)
           const latest = latestCompletionFor(chore.id)
-          const isPending = latest?.status === 'pending_approval'
-          const isDone = !chore.recurring && latest?.status === 'approved'
+          const state = getChoreState(chore, latest)
+          const isPending = state === 'pending'
+          const isDone = state === 'done' || state === 'archived'
 
           return (
             <li key={chore.id}>
@@ -50,6 +53,7 @@ export function ChoreList({ chores, memberById, latestCompletionFor, onMarkDone,
               <span className="row-title">{chore.title}</span>
               <span className="row-meta">{assignee?.display_name ?? '?'}</span>
               {chore.description && <p className="row-description">{chore.description}</p>}
+              <p className="row-description recurrence-summary">{choreRecurrenceSummary(chore)}</p>
               <span className="row-spacer" />
               <DueBadge dueDate={chore.due_date} completed={isDone} />
               <span className="row-amount">{t.chores.formatAmount(chore.reward_amount)}</span>
@@ -57,7 +61,7 @@ export function ChoreList({ chores, memberById, latestCompletionFor, onMarkDone,
               <button type="button" className="btn-secondary" onClick={() => onSelect(chore)}>
                 {t.deepLinks.openDetail}
               </button>
-              {!isPending && !isDone && (
+              {state === 'actionable' && (
                 <button onClick={() => handleMarkDone(chore)} disabled={markingId === chore.id}>
                   {markingId === chore.id ? t.chores.markingDone : t.chores.markDone}
                 </button>

@@ -1,18 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../supabaseClient'
 import { t } from '../strings'
+import { normalizeChore, type Chore } from '../utils/choreModel'
 
-export interface Chore {
-  id: string
-  family_id: string
-  title: string
-  description: string | null
-  assigned_to: string
-  due_date: string
-  reward_amount: number
-  recurring: boolean
-  created_at: string
-}
+export type { Chore } from '../utils/choreModel'
 
 export function useChores(familyId: string | undefined) {
   const [chores, setChores] = useState<Chore[]>([])
@@ -29,7 +20,7 @@ export function useChores(familyId: string | undefined) {
     setLoading(true)
     const { data, error } = await supabase
       .from('chores')
-      .select('id, family_id, title, description, assigned_to, due_date, reward_amount, recurring, created_at')
+      .select('id, family_id, title, description, assigned_to, due_date, reward_amount, recurring, recurrence_type, recurrence_weekdays, preferred_day_of_month, status, created_at, updated_at')
       .eq('family_id', familyId)
       .order('created_at')
 
@@ -38,7 +29,7 @@ export function useChores(familyId: string | undefined) {
       setChores([])
       setError(t.errors.loadFailed)
     } else {
-      setChores(data)
+      setChores((data ?? []).map((row) => normalizeChore(row)))
       setError(null)
     }
     setLoading(false)

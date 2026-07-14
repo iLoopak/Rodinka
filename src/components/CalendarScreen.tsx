@@ -132,7 +132,10 @@ export function CalendarScreen() {
   // Calendar shows what's still relevant: leave out chores already done
   // (non-recurring, approved) and cancelled medical records — everything
   // else is projected as-is from the source records.
-  const visibleChores = chores.filter((c) => getChoreState(c, latestCompletionFor(c.id)) !== 'done')
+  const visibleChores = chores.filter((chore) => {
+    const state = getChoreState(chore, latestCompletionFor(chore.id))
+    return state !== 'done' && state !== 'archived'
+  })
   const visibleMedical = medicalRecords.filter((r) => r.status !== 'cancelled')
 
   let entries = buildCalendarEntries({

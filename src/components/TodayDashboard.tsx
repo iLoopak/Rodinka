@@ -16,6 +16,7 @@ import { ErrorState } from './ui/ErrorState'
 export function TodayDashboard() {
   const [showCreate, setShowCreate] = useState(false)
   const [selectedEntry, setSelectedEntry] = useState<CalendarEntry | null>(null)
+  const [approvalFeedback, setApprovalFeedback] = useState<string | null>(null)
   const {
     currentMember,
     kids,
@@ -65,6 +66,14 @@ export function TodayDashboard() {
   })
   const needsAttention = pendingCompletions.length > 0 || attentionItems.length > 0
 
+  async function handleApprove(completionId: string) {
+    const result = await approve(completionId)
+    setApprovalFeedback(result.nextDueDate
+      ? t.chores.approvedNextDue(formatFullDate(result.nextDueDate))
+      : t.chores.approvedOneOff)
+    return result
+  }
+
   return (
     <>
       <TodayHeader
@@ -73,6 +82,8 @@ export function TodayDashboard() {
         itemCount={entries.length}
         onAdd={() => setShowCreate(true)}
       />
+
+      {approvalFeedback && <p className="success approval-feedback" role="status">{approvalFeedback}</p>}
 
       {needsAttention && (
         <section className="section today-attention-section">
@@ -84,7 +95,7 @@ export function TodayDashboard() {
                 completions={pendingCompletions}
                 chores={chores}
                 memberById={memberById}
-                onApprove={approve}
+                onApprove={handleApprove}
                 onReject={reject}
               />
             </div>

@@ -27,7 +27,7 @@ export function AllowancePlanForm({ child, chores, initial, onSubmit }: Props) {
   ))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const availableChores = chores.filter((chore) => chore.assigned_to === child.id && chore.recurring)
+  const availableChores = chores.filter((chore) => chore.assigned_to === child.id && chore.recurring && chore.status === 'active')
 
   function toggleChore(choreId: string) {
     setRequirements((previous) => {
