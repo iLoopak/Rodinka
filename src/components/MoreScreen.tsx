@@ -5,6 +5,7 @@ import { supabase } from '../supabaseClient'
 import { useInstallPrompt } from '../hooks/useInstallPrompt'
 import { Modal } from './ui/Modal'
 import { SetPasswordForm } from './SetPasswordForm'
+import { Link } from '../router'
 
 export function MoreScreen() {
   const { currentMember, userEmail, familyName } = useFamilyData()
@@ -71,10 +72,10 @@ export function MoreScreen() {
 
       <section className="section">
         <ul className="section-list plain-list">
-          <li className="disabled-row">
-            <span className="row-title">{t.more.placeholderNotifications}</span>
+          <li>
+            <Link to="/reminders" hash="#settings" className="row-title">Připomínky a oznámení</Link>
             <span className="row-spacer" />
-            <span className="badge badge-pending">{t.more.comingSoonBadge}</span>
+            <span aria-hidden="true">›</span>
           </li>
         </ul>
       </section>

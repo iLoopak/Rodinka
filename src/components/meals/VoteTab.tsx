@@ -23,7 +23,9 @@ export function VoteTab({ onAddWinnerToPlan, prefillMealId, onPrefillConsumed }:
     useFamilyData()
   const [showCreate, setShowCreate] = useState(false)
 
-  const activeRound = voteRounds.find((round) => round.status === 'open') ?? voteRounds.find((round) => round.status === 'draft')
+  const requestedRoundId = new URLSearchParams(window.location.search).get('round')
+  const requestedRound = voteRounds.find((round) => round.id === requestedRoundId && round.status !== 'closed')
+  const activeRound = requestedRound ?? voteRounds.find((round) => round.status === 'open') ?? voteRounds.find((round) => round.status === 'draft')
   const closedRounds = voteRounds.filter((round) => round.status === 'closed')
 
   // "Add to vote" from the meal library only opens a prefilled create-round

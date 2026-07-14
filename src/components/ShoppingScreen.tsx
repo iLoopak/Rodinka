@@ -13,12 +13,12 @@ import { ShoppingItemForm } from './shopping/ShoppingItemForm'
 
 export function ShoppingScreen() {
   const {
-    members, memberById, activeShoppingItems, purchasedShoppingItems, commonShoppingItems, shoppingSessions,
+    members, memberById, currentMember, activeShoppingItems, purchasedShoppingItems, commonShoppingItems, shoppingSessions,
     shoppingLoading, shoppingError, refreshShopping, addShoppingItem, updateShoppingItem, deleteShoppingItem,
     toggleShoppingPurchased, archivePurchasedShoppingItems, importShoppingItems,
   } = useFamilyData()
   const [quickName, setQuickName] = useState('')
-  const [filterResponsible, setFilterResponsible] = useState('')
+  const [filterResponsible, setFilterResponsible] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('assignedTo') === 'me' ? currentMember.id : '')
   const [selectedItem, setSelectedItem] = useState<ShoppingItem | null>(null)
   const [showCommon, setShowCommon] = useState(false)
   const [showHistory, setShowHistory] = useState(false)

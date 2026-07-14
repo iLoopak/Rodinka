@@ -14,7 +14,7 @@ import { updateUrlQuery, type QueryHistoryMode } from './utils/deepLinks'
 // No dependency needed: pushState/popstate covers back/forward, no-reload
 // navigation, and reading window.location on mount covers direct refresh.
 
-export const ROUTES = ['/', '/calendar', '/plan', '/chores', '/activities', '/health', '/meals', '/shopping', '/family', '/more'] as const
+export const ROUTES = ['/', '/calendar', '/plan', '/chores', '/activities', '/health', '/meals', '/shopping', '/family', '/more', '/reminders'] as const
 export type Route = (typeof ROUTES)[number]
 
 function normalize(pathname: string): Route {
@@ -25,6 +25,7 @@ interface RouterContextValue {
   path: Route
   searchParams: URLSearchParams
   navigate: (to: Route, hash?: string) => void
+  navigateHref: (href: string) => void
   setQueryParam: (name: string, value: string, mode?: QueryHistoryMode) => void
   removeQueryParam: (name: string, mode?: QueryHistoryMode) => void
 }
@@ -54,6 +55,14 @@ export function RouterProvider({ children }: { children: ReactNode }) {
     syncLocation()
   }, [syncLocation])
 
+  const navigateHref = useCallback((href: string) => {
+    const target = new URL(href, window.location.origin)
+    const safePath = normalize(target.pathname)
+    const next = `${safePath}${target.search}${target.hash}`
+    window.history.pushState(null, '', next)
+    syncLocation()
+  }, [syncLocation])
+
   const changeQueryParam = useCallback((name: string, value: string | null, mode: QueryHistoryMode) => {
     const target = updateUrlQuery(window.location.href, name, value)
     window.history[mode === 'push' ? 'pushState' : 'replaceState'](null, '', target)
@@ -70,7 +79,7 @@ export function RouterProvider({ children }: { children: ReactNode }) {
 
   const searchParams = useMemo(() => new URLSearchParams(search), [search])
 
-  return <RouterContext.Provider value={{ path, searchParams, navigate, setQueryParam, removeQueryParam }}>{children}</RouterContext.Provider>
+  return <RouterContext.Provider value={{ path, searchParams, navigate, navigateHref, setQueryParam, removeQueryParam }}>{children}</RouterContext.Provider>
 }
 
 export function useRouter() {

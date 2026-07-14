@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { t } from '../../strings'
 import { useFamilyData } from '../../context/FamilyDataContext'
 import { formatShortDate, todayISODate } from '../../utils/dueDate'
-import { getCurrentWeekStart, getWeekDates, isCurrentWeek, shiftWeek, formatWeekRangeLabel } from '../../utils/mealWeek'
+import { getCurrentWeekStart, getWeekStart, getWeekDates, isCurrentWeek, shiftWeek, formatWeekRangeLabel } from '../../utils/mealWeek'
 import { displayTitle, groupEntriesByDate } from '../../utils/mealPlanGrouping'
 import { mealPlanStatusLabel, mealSlotLabel } from '../../utils/mealLabels'
 import { onActivateKey } from '../../utils/a11y'
@@ -47,7 +47,10 @@ function statusBadgeClass(status: MealPlanEntry['status']): string {
 export function PlanTab({ prefill, onPrefillConsumed }: Props) {
   const { meals, members, planEntries, memberById, isParentOrAdmin, addPlanEntry, updatePlanEntry, deletePlanEntry, copyWeek } =
     useFamilyData()
-  const [weekStart, setWeekStart] = useState(getCurrentWeekStart())
+  const [weekStart, setWeekStart] = useState(() => {
+    const date = new URLSearchParams(window.location.search).get('date')
+    return date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? getWeekStart(date) : getCurrentWeekStart()
+  })
   const [pendingAdd, setPendingAdd] = useState<PendingAdd | null>(prefill ? { date: todayISODate(), slot: 'dinner' } : null)
   const [editingEntry, setEditingEntry] = useState<MealPlanEntry | null>(null)
   const [copying, setCopying] = useState(false)

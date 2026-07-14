@@ -263,6 +263,45 @@ Run `npm test` for the unit tests (pure date/recurrence/calendar-projection/
 vote-ranking/weekly-planning logic — see `src/utils/*.test.ts`). There's no
 component/UI test setup yet; that's a known gap, not a goal of any phase so far.
 
+### Notifications and Reminder Center
+
+Phase 4 adds a normalized, persisted reminder lifecycle. A centralized rule
+engine derives responsibility-aware reminders from chores, activities and
+payments, medical appointments and vaccinations, meal voting and planning,
+allowance approvals, and assigned shopping items. Related routine items are
+grouped; source IDs and occurrence dates remain in metadata so a group can be
+updated or resolved without producing one alert per item. Read, dismissed and
+resolved state is stored separately, and completed history is retained for 90
+days. The bell route is `/reminders`; source links reuse the existing query and
+hash deep-link conventions.
+
+Preferences are per linked member. Existing members default to in-app reminders
+on, every category on, push off, digests off, quiet reminders visible in-app,
+and quiet hours disabled (21:00-07:00 is only the default interval). The browser
+timezone is stored when the preference row is first created. Daily and weekly
+digests are mutually exclusive in the UI and are generated from the same active
+reminder set.
+
+Production push delivery is intentionally not enabled. The repository has no
+service worker push handler, subscription endpoint, application server key, or
+trusted scheduler. The settings screen exposes this boundary instead of asking
+for browser permission or pretending that foreground-only delivery is push.
+A future implementation needs a service worker, subscription persistence and
+revocation, a server-side Web Push sender, and a scheduled digest job; no new
+deployment variables are required for the current in-app implementation.
+
+There is currently no documents entity/module in Rodinka. Document-expiry rule
+contracts (30/7/1 days and overdue) are implemented and tested, but no reminders
+are generated until a real family-scoped document source is added. The fallback
+destination is `/more`, so a stale or unavailable document never opens a fake
+or unauthorized detail route.
+
+Migration `20260714110000_notifications_reminder_center.sql` adds
+`notification_preferences`, `reminders`, the idempotent
+`sync_member_reminders` RPC, RLS policies, and activity payment occurrence
+tracking. Apply it through the normal Supabase CLI migration flow before
+deploying the matching frontend.
+
 Auth (email/password + Google) needs a few settings changed in the Supabase
 dashboard and a Google Cloud OAuth client — see `supabase-auth-setup.md` for
 the exact steps, including which redirect URLs to allow for local dev,

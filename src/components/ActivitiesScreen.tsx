@@ -20,7 +20,7 @@ import { resolveDeepLinkedItem } from '../utils/deepLinks'
 type Tab = 'upcoming' | 'payments' | 'archived'
 
 export function ActivitiesScreen() {
-  const [tab, setTab] = useState<Tab>('upcoming')
+  const [tab, setTab] = useState<Tab>(() => window.location.hash === '#payments' ? 'payments' : 'upcoming')
   const [showAdd, setShowAdd] = useState(false)
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null)
   const [filterChild, setFilterChild] = useState('')
@@ -40,6 +40,7 @@ export function ActivitiesScreen() {
     isParentOrAdmin,
     addActivity,
     updateActivity,
+    markActivityPaymentPaid,
     loading,
     error,
     refreshAll,
@@ -264,6 +265,7 @@ export function ActivitiesScreen() {
           memberName={memberName}
           memberById={memberById}
           onUpdate={updateActivity}
+          onMarkPaymentPaid={markActivityPaymentPaid}
           onClose={closeActivity}
         />
       )}
