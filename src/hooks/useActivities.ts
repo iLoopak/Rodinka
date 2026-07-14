@@ -51,6 +51,8 @@ export interface Activity {
   payment_amount: number | null
   payment_frequency: ActivityPaymentFrequency | null
   next_payment_due_date: string | null
+  payment_paid_at: string | null
+  payment_paid_for_date: string | null
   status: ActivityStatus
   reminder_enabled: boolean
   reminder_days_before: number | null
@@ -73,7 +75,7 @@ export function useActivities(familyId: string | undefined) {
     setLoading(true)
     const { data, error } = await supabase
       .from('activities')
-      .select('id, family_id, title, category, kind, all_day, child_id, responsible_member_id, secondary_responsible_member_id, location, coach_name, coach_phone, coach_email, notes, skill_level, start_date, end_date, recurrence_type, recurrence_weekdays, start_time, end_time, payment_amount, payment_frequency, next_payment_due_date, status, reminder_enabled, reminder_days_before, created_at, updated_at, activity_participants(member_id)')
+      .select('id, family_id, title, category, kind, all_day, child_id, responsible_member_id, secondary_responsible_member_id, location, coach_name, coach_phone, coach_email, notes, skill_level, start_date, end_date, recurrence_type, recurrence_weekdays, start_time, end_time, payment_amount, payment_frequency, next_payment_due_date, payment_paid_at, payment_paid_for_date, status, reminder_enabled, reminder_days_before, created_at, updated_at, activity_participants(member_id)')
       .eq('family_id', familyId)
       .order('start_date')
 

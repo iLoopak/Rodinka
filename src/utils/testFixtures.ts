@@ -73,6 +73,8 @@ export function makeActivity(overrides: Partial<Activity> = {}): Activity {
     payment_amount: null,
     payment_frequency: null,
     next_payment_due_date: null,
+    payment_paid_at: null,
+    payment_paid_for_date: null,
     status: 'active',
     reminder_enabled: false,
     reminder_days_before: null,

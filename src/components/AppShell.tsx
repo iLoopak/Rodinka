@@ -13,6 +13,8 @@ import { HealthScreen } from './HealthScreen'
 import { MealPlanScreen } from './meals/MealPlanScreen'
 import { InstallAppBanner } from './InstallAppBanner'
 import { ShoppingScreen } from './ShoppingScreen'
+import { ReminderBell } from './reminders/ReminderBell'
+import { ReminderCenter } from './reminders/ReminderCenter'
 
 export function AppShell() {
   const { path } = useRouter()
@@ -24,6 +26,7 @@ export function AppShell() {
           <Logo size={28} />
           <span className="wordmark">{t.appName}</span>
         </div>
+        <ReminderBell />
       </header>
       <InstallAppBanner />
       <main className="app-main">
@@ -37,6 +40,7 @@ export function AppShell() {
         {path === '/shopping' && <ShoppingScreen />}
         {path === '/family' && <FamilyScreen />}
         {path === '/more' && <MoreScreen />}
+        {path === '/reminders' && <ReminderCenter />}
       </main>
       <BottomNavigation />
     </div>

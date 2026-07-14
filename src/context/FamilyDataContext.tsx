@@ -196,6 +196,7 @@ interface FamilyDataContextValue extends ReturnType<typeof useShoppingData> {
   createInvite: () => Promise<{ code: string; expiresAt: string | null }>
   addActivity: (input: ActivityInput) => Promise<void>
   updateActivity: (id: string, input: ActivityInput) => Promise<void>
+  markActivityPaymentPaid: (id: string) => Promise<void>
   addMedicalRecord: (input: MedicalRecordInput) => Promise<void>
   updateMedicalRecord: (id: string, input: MedicalRecordInput) => Promise<void>
   addMeal: (input: MealInput) => Promise<void>
@@ -590,6 +591,14 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     [refreshActivities]
   )
 
+  const markActivityPaymentPaid = useCallback(async (id: string) => {
+    const activity = activities.find((item) => item.id === id)
+    if (!activity?.next_payment_due_date) return
+    const { error } = await supabase.from('activities').update({ payment_paid_at: new Date().toISOString(), payment_paid_for_date: activity.next_payment_due_date }).eq('id', id).eq('family_id', familyId)
+    if (error) throw friendly(error)
+    await refreshActivities()
+  }, [activities, familyId, refreshActivities])
+
   const addMedicalRecord = useCallback(
     async (input: MedicalRecordInput) => {
       const { error } = await supabase
@@ -653,6 +662,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     createInvite,
     addActivity,
     updateActivity,
+    markActivityPaymentPaid,
     addMedicalRecord,
     updateMedicalRecord,
     addMeal,

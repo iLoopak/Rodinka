@@ -19,6 +19,7 @@ interface Props {
   memberName: (id: string) => string
   memberById: (id: string) => FamilyMember | undefined
   onUpdate: (id: string, input: ActivityInput) => Promise<void>
+  onMarkPaymentPaid: (id: string) => Promise<void>
   onClose: () => void
 }
 
@@ -30,9 +31,11 @@ export function ActivityDetailModal({
   memberName,
   memberById,
   onUpdate,
+  onMarkPaymentPaid,
   onClose,
 }: Props) {
   const [editing, setEditing] = useState(false)
+  const [paymentBusy, setPaymentBusy] = useState(false)
 
   if (editing) {
     return (
@@ -105,6 +108,7 @@ export function ActivityDetailModal({
         {activity.notes && <p className="row-description">{activity.notes}</p>}
       </div>
       <div className="family-actions">
+        {activity.next_payment_due_date && activity.payment_paid_for_date !== activity.next_payment_due_date && <button className="btn-secondary" disabled={paymentBusy} onClick={async () => { setPaymentBusy(true); try { await onMarkPaymentPaid(activity.id); onClose() } finally { setPaymentBusy(false) } }}>Označit platbu jako zaplacenou</button>}
         <button className="btn-secondary" onClick={() => setEditing(true)}>
           {t.activities.edit}
         </button>
