@@ -7,6 +7,7 @@ import {
   applyReminderPreferences,
   defaultNotificationPreferences,
   generateReminderDrafts,
+  isValidTimeZone,
   reminderStatus,
   todayInTimeZone,
   type GenerateReminderInput,
@@ -17,6 +18,7 @@ import {
 const NOW = new Date('2026-07-14T10:00:00.000Z')
 const parent = makeFamilyMember({ id: 'parent', display_name: 'Pat', role: 'parent', user_id: 'user-parent' })
 const child = makeFamilyMember({ id: 'child-1', display_name: 'Viktor', role: 'child' })
+const otherParent = makeFamilyMember({ id: 'parent-2', display_name: 'Robin', role: 'parent', user_id: 'user-parent-2' })
 const copy: ReminderCopy = {
   choreDueToday: (count, name) => `${count} due for ${name}`,
   choreOverdue: (count, name) => `${count} overdue for ${name}`,
@@ -113,6 +115,16 @@ describe('reminder rule engine', () => {
     expect(reminders.some((item) => item.type === 'activity-payment-due')).toBe(true)
   })
 
+  it('does not notify another guardian when a responsible parent is explicit', () => {
+    const activity = makeActivity({ start_date: '2026-07-15', reminder_enabled: true, reminder_days_before: 1, responsible_member_id: parent.id, next_payment_due_date: '2026-07-15' })
+    const appointment = makeMedicalRecord({ patient_id: child.id, responsible_member_id: parent.id, record_date: '2026-07-15' })
+    const reminders = generateReminderDrafts(baseInput({
+      currentMember: otherParent, isParentOrAdmin: true, members: [parent, otherParent, child],
+      preferences: defaultNotificationPreferences(otherParent.id, 'family-1', 'UTC'), activities: [activity], medicalRecords: [appointment],
+    }))
+    expect(reminders.some((item) => item.source === 'activity' || item.source === 'activity-payment' || item.source === 'medical-appointment')).toBe(false)
+  })
+
   it('removes a paid activity payment until the next due date advances', () => {
     const paid = makeActivity({ responsible_member_id: parent.id, next_payment_due_date: '2026-07-14', payment_paid_at: '2026-07-13T09:00:00Z', payment_paid_for_date: '2026-07-14' })
     expect(generateReminderDrafts(baseInput({ activities: [paid] })).some((item) => item.source === 'activity-payment')).toBe(false)
@@ -158,6 +170,20 @@ describe('reminder rule engine', () => {
     expect(partial?.metadata.count).toBe(2)
   })
 
+  it('keeps grouped chore and allowance identities while some children resolve', () => {
+    const chores = [makeChore({ id: 'a', assigned_to: child.id, due_date: '2026-07-14' }), makeChore({ id: 'b', assigned_to: child.id, due_date: '2026-07-14' })]
+    const twoChores = generateReminderDrafts(baseInput({ chores })).find((item) => item.source === 'chore')
+    const oneChore = generateReminderDrafts(baseInput({ chores: chores.slice(1) })).find((item) => item.source === 'chore')
+    expect(oneChore?.dedupeKey).toBe(twoChores?.dedupeKey)
+    expect(oneChore?.metadata.count).toBe(1)
+
+    const approvals = [completion({ id: 'a' }), completion({ id: 'b' })]
+    const twoApprovals = generateReminderDrafts(baseInput({ pendingCompletions: approvals })).find((item) => item.source === 'allowance')
+    const oneApproval = generateReminderDrafts(baseInput({ pendingCompletions: approvals.slice(1) })).find((item) => item.source === 'allowance')
+    expect(oneApproval?.dedupeKey).toBe(twoApprovals?.dedupeKey)
+    expect(oneApproval?.metadata.count).toBe(1)
+  })
+
   it('groups pending approvals only for approvers', () => {
     expect(generateReminderDrafts(baseInput({ pendingCompletions: [completion(), completion({ id: 'completion-2' })] })).find((item) => item.source === 'allowance')?.metadata.count).toBe(2)
     const childInput = baseInput({ currentMember: child, isParentOrAdmin: false, preferences: defaultNotificationPreferences(child.id, 'family-1', 'UTC'), pendingCompletions: [completion()] })
@@ -172,13 +198,27 @@ describe('reminder rule engine', () => {
   it('keeps an expired important document overdue', () => {
     const documents: ReminderDocument[] = [{ id: 'doc', family_id: 'family-1', title: 'Passport', expires_on: '2026-07-01', important: true, responsible_member_id: parent.id, status: 'active' }]
     const reminder = generateReminderDrafts(baseInput({ documents })).find((item) => item.source === 'document')
-    expect(reminder).toMatchObject({ type: 'document-expired', importance: 'important' })
+    expect(reminder).toMatchObject({ type: 'document-expired', importance: 'important', deepLink: null })
   })
 
   it('groups newly assigned shopping and removes purchased items', () => {
     const items = [shoppingItem(), shoppingItem({ id: 'shopping-2', name: 'Bread' })]
     expect(generateReminderDrafts(baseInput({ shoppingItems: items })).find((item) => item.source === 'shopping')?.metadata.count).toBe(2)
     expect(generateReminderDrafts(baseInput({ shoppingItems: items.map((item) => ({ ...item, purchased: true })) })).some((item) => item.source === 'shopping')).toBe(false)
+  })
+
+  it('updates a partial shopping group and moves it on reassignment', () => {
+    const items = Array.from({ length: 5 }, (_, index) => shoppingItem({ id: `shopping-${index}`, name: `Item ${index}` }))
+    const five = generateReminderDrafts(baseInput({ shoppingItems: items })).find((item) => item.source === 'shopping')
+    const remaining = items.map((item, index) => index < 3 ? { ...item, purchased: true } : item)
+    const two = generateReminderDrafts(baseInput({ shoppingItems: remaining })).find((item) => item.source === 'shopping')
+    expect(two?.dedupeKey).toBe(five?.dedupeKey)
+    expect(two?.metadata.count).toBe(2)
+
+    const reassigned = items.map((item) => ({ ...item, responsible_member_id: otherParent.id }))
+    expect(generateReminderDrafts(baseInput({ shoppingItems: reassigned })).some((item) => item.source === 'shopping')).toBe(false)
+    const newRecipient = generateReminderDrafts(baseInput({ currentMember: otherParent, members: [parent, otherParent, child], preferences: defaultNotificationPreferences(otherParent.id, 'family-1', 'UTC'), shoppingItems: reassigned }))
+    expect(newRecipient.find((item) => item.source === 'shopping')?.metadata.count).toBe(5)
   })
 
   it('does not notify a member about shopping assigned by themself', () => {
@@ -196,6 +236,16 @@ describe('preferences, lifecycle and time', () => {
     expect(applyReminderPreferences(generated, { ...preferences, inAppEnabled: false })).toEqual([])
   })
 
+  it('restores the same currently actionable occurrence when a category is re-enabled', () => {
+    const chore = makeChore({ assigned_to: child.id, due_date: '2026-07-14' })
+    const enabled = defaultNotificationPreferences(parent.id, 'family-1', 'UTC')
+    const before = generateReminderDrafts(baseInput({ preferences: enabled, chores: [chore] })).find((item) => item.source === 'chore')
+    const disabled = { ...enabled, categories: { ...enabled.categories, chores: false } }
+    expect(generateReminderDrafts(baseInput({ preferences: disabled, chores: [chore] })).some((item) => item.source === 'chore')).toBe(false)
+    const after = generateReminderDrafts(baseInput({ preferences: enabled, chores: [chore] })).find((item) => item.source === 'chore')
+    expect(after?.dedupeKey).toBe(before?.dedupeKey)
+  })
+
   it('distinguishes unread, read, resolved and dismissed state', () => {
     expect(reminderStatus({ readAt: null, resolvedAt: null, dismissedAt: null })).toBe('unread')
     expect(reminderStatus({ readAt: NOW.toISOString(), resolvedAt: null, dismissedAt: null })).toBe('read')
@@ -207,6 +257,12 @@ describe('preferences, lifecycle and time', () => {
     const instant = new Date('2026-07-14T23:30:00Z')
     expect(todayInTimeZone(instant, 'UTC')).toBe('2026-07-14')
     expect(todayInTimeZone(instant, 'Europe/Prague')).toBe('2026-07-15')
+  })
+
+  it('distinguishes automatic timezone defaults and rejects invalid zones', () => {
+    expect(defaultNotificationPreferences('m', 'f', 'UTC').timezoneMode).toBe('auto')
+    expect(isValidTimeZone('Europe/Prague')).toBe(true)
+    expect(isValidTimeZone('Not/A_Real_Zone')).toBe(false)
   })
 
   it('keeps local dates stable across a daylight-saving transition', () => {

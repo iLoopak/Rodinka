@@ -211,6 +211,7 @@ interface FamilyDataContextValue extends ReturnType<typeof useShoppingData> {
   deletePlanEntry: (id: string) => Promise<void>
   copyWeek: (fromWeekStart: string, toWeekStart: string) => Promise<void>
   refreshAll: () => Promise<void>
+  refreshReminderSources: () => Promise<void>
   refreshMembers: () => Promise<void>
 }
 
@@ -297,6 +298,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     copyWeek,
   } = useMealsData(familyId, userId)
   const shoppingData = useShoppingData(familyId)
+  const refreshShopping = shoppingData.refreshShopping
 
   const [familyName, setFamilyName] = useState<string | null>(null)
   const [familyNameError, setFamilyNameError] = useState<string | null>(null)
@@ -384,7 +386,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
       refreshActivities(),
       refreshMedicalRecords(),
       refreshMealsData(),
-      shoppingData.refreshShopping(),
+      refreshShopping(),
     ])
   }, [
     refreshMembers,
@@ -396,7 +398,27 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     refreshActivities,
     refreshMedicalRecords,
     refreshMealsData,
-    shoppingData,
+    refreshShopping,
+  ])
+
+  const refreshReminderSources = useCallback(async () => {
+    await Promise.all([
+      refreshMembers(),
+      refreshChores(),
+      refreshCompletions(),
+      refreshActivities(),
+      refreshMedicalRecords(),
+      refreshMealsData(),
+      refreshShopping(),
+    ])
+  }, [
+    refreshMembers,
+    refreshChores,
+    refreshCompletions,
+    refreshActivities,
+    refreshMedicalRecords,
+    refreshMealsData,
+    refreshShopping,
   ])
 
   const addChild = useCallback(
@@ -677,6 +699,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     deletePlanEntry,
     copyWeek,
     refreshAll,
+    refreshReminderSources,
     refreshMembers,
   }
 

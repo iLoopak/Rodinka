@@ -292,15 +292,57 @@ deployment variables are required for the current in-app implementation.
 
 There is currently no documents entity/module in Rodinka. Document-expiry rule
 contracts (30/7/1 days and overdue) are implemented and tested, but no reminders
-are generated until a real family-scoped document source is added. The fallback
-destination is `/more`, so a stale or unavailable document never opens a fake
-or unauthorized detail route.
+are generated until a real family-scoped document source is added. Document
+drafts deliberately have no deep link until a real authorized detail route
+exists.
 
 Migration `20260714110000_notifications_reminder_center.sql` adds
 `notification_preferences`, `reminders`, the idempotent
 `sync_member_reminders` RPC, RLS policies, and activity payment occurrence
 tracking. Apply it through the normal Supabase CLI migration flow before
 deploying the matching frontend.
+
+Migration `20260714120000_notifications_hardening.sql` narrows client-side state
+changes to a read/dismiss RPC, serializes syncs per member, validates reminder
+payloads and deep links, avoids rewriting unchanged rows, and adds the indexes
+used by active-reminder and 90-day retention queries. Its cleanup deletes only
+resolved or dismissed history older than 90 days; actionable reminders are not
+expired by age.
+
+Migration `20260714121000_reminder_source_guards.sql` adds a database trigger
+that rejects nonexistent and cross-family source IDs. Document reminders remain
+blocked at this boundary until a real family-scoped document table exists.
+
+Reminder generation runs after the authenticated family data has loaded, not
+only when `/reminders` is open. Relevant same-tab mutations regenerate from the
+refreshed source hooks. Visible tabs refresh reminder sources every 15 minutes,
+when connectivity returns, and after returning from the background for at least
+two minutes. A family-scoped local-storage signal asks other open tabs to refresh;
+read, dismissed and preference changes are additionally scoped to the member.
+The database unique key and serialized sync remain the final duplicate guard.
+
+This is still a foreground lifecycle: while every Rodinka tab/device is closed,
+there is no worker or trusted scheduler and no new reminder rows are generated.
+The next app open/foreground refresh catches up from current source data. Digest
+settings therefore enable an in-app preview only; scheduled delivery, push and
+quiet-hours enforcement remain worker responsibilities.
+
+| Source mutation | Foreground refresh path | Deep link |
+| --- | --- | --- |
+| Chores and approvals | chore/completion refresh | `/chores?chore=...` or pending approvals |
+| Activities and payments | activity refresh | `/activities?activity=...` or payments |
+| Medical and vaccinations | medical refresh | `/health?record=...` |
+| Voting and meal plan | vote/plan refresh | `/meals?round=...#vote` or dated plan |
+| Shopping assignment/state | shopping refresh | `/shopping?filter=assigned-to-me` |
+| Documents | no source module yet | none |
+
+For disaster recovery, include `notification_preferences` and `reminders` in
+the normal Supabase/Postgres backup schedule and test a point-in-time or logical
+restore in a separate project. Restoring these tables is safe but optional for
+correctness: after source tables are restored, an authenticated foreground sync
+can reconstruct active reminder content; read/dismissed history is recoverable
+only from backup. Keep migration history with the backup and never restore these
+two tables without their referenced `families` and `members` rows.
 
 Auth (email/password + Google) needs a few settings changed in the Supabase
 dashboard and a Google Cloud OAuth client — see `supabase-auth-setup.md` for

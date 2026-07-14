@@ -76,6 +76,7 @@ export interface NotificationPreferences {
   quietHoursStart: string
   quietHoursEnd: string
   timezone: string
+  timezoneMode: 'auto' | 'explicit'
   categories: ReminderCategoryPreferences
 }
 
@@ -103,6 +104,7 @@ export function defaultNotificationPreferences(memberId: string, familyId: strin
     quietHoursStart: '21:00',
     quietHoursEnd: '07:00',
     timezone,
+    timezoneMode: 'auto',
     categories: { ...DEFAULT_CATEGORY_PREFERENCES },
   }
 }
@@ -110,6 +112,15 @@ export function defaultNotificationPreferences(memberId: string, familyId: strin
 export function browserTimezone(): string {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' }
   catch { return 'UTC' }
+}
+
+export function isValidTimeZone(timezone: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: timezone }).format()
+    return true
+  } catch {
+    return false
+  }
 }
 
 export function todayInTimeZone(now: Date, timezone: string): string {
@@ -205,8 +216,8 @@ function canActForMember(current: FamilyMember, isParentOrAdmin: boolean, member
   return isParentOrAdmin && target?.role === 'child'
 }
 
-function canHandleResponsibleRecord(current: FamilyMember, isParentOrAdmin: boolean, members: FamilyMember[], responsibleId: string | null, subjectId: string | null): boolean {
-  if (responsibleId) return responsibleId === current.id || (isParentOrAdmin && members.find((member) => member.id === subjectId)?.role === 'child')
+function canHandleResponsibleRecord(current: FamilyMember, isParentOrAdmin: boolean, responsibleId: string | null, subjectId: string | null): boolean {
+  if (responsibleId) return responsibleId === current.id
   return isParentOrAdmin || subjectId === current.id
 }
 
@@ -250,7 +261,7 @@ function pushActivities(reminders: ReminderDraft[], input: GenerateReminderInput
   const paymentGroups = new Map<string, Activity[]>()
   for (const activity of input.activities) {
     const subjectId = activity.participant_ids[0] ?? activity.child_id
-    const canHandle = canHandleResponsibleRecord(input.currentMember, input.isParentOrAdmin, input.members, activity.responsible_member_id, subjectId)
+    const canHandle = canHandleResponsibleRecord(input.currentMember, input.isParentOrAdmin, activity.responsible_member_id, subjectId)
     if (!canHandle || activity.status !== 'active') continue
 
     if (activity.reminder_enabled) {
@@ -304,7 +315,7 @@ function pushMedical(reminders: ReminderDraft[], input: GenerateReminderInput, t
   const tomorrow = addDays(today, 1)
   for (const record of input.medicalRecords) {
     if (record.status === 'cancelled') continue
-    if (!canHandleResponsibleRecord(input.currentMember, input.isParentOrAdmin, input.members, record.responsible_member_id, record.patient_id)) continue
+    if (!canHandleResponsibleRecord(input.currentMember, input.isParentOrAdmin, record.responsible_member_id, record.patient_id)) continue
     if (record.status === 'planned' && record.record_date === tomorrow) reminders.push({
       dedupeKey: `medical-tomorrow:${record.id}:${record.record_date}:${input.currentMember.id}`,
       source: 'medical-appointment',
@@ -427,7 +438,7 @@ function pushDocuments(reminders: ReminderDraft[], input: GenerateReminderInput,
       eventAt: dateEventAt(earliest.expires_on),
       generatedAt,
       expiresAt: null,
-      deepLink: '/more',
+      deepLink: null,
       groupingKey: `document-expiry:${threshold}`,
       metadata: { sourceIds: matching.map((document) => document.id), eventDate: earliest.expires_on, count: matching.length, thresholdDays: threshold, overdue: threshold === 0 },
     })
