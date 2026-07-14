@@ -7,11 +7,11 @@ import { Modal } from './ui/Modal'
 import { SetPasswordForm } from './SetPasswordForm'
 import { Link } from '../router'
 import { FamilyMark } from './FamilyMark'
+import { useActiveFamilyMark } from '../hooks/useActiveFamilyMark'
 
 export function MoreScreen() {
-  const { familyId, currentMember, userEmail, familyName, members, membersLoading } = useFamilyData()
-  const scopedFamilyMembers = members.filter((member) => member.family_id === familyId)
-  const activeFamilyMembers = scopedFamilyMembers.length > 0 ? scopedFamilyMembers : [currentMember]
+  const { currentMember, userEmail, familyName } = useFamilyData()
+  const familyMark = useActiveFamilyMark()
   const [showSetPassword, setShowSetPassword] = useState(false)
   const { canPrompt, showIOSInstructions, isStandalone, isNative, promptInstall } = useInstallPrompt()
 
@@ -32,7 +32,7 @@ export function MoreScreen() {
             <span className="row-meta">{userEmail}</span>
           </li>
           <li className="family-settings-brand-row">
-            <FamilyMark members={activeFamilyMembers} size={30} loading={membersLoading} />
+            <FamilyMark variant="dynamic" members={familyMark.members} size={32} loading={familyMark.loading} />
             <span className="row-meta">{t.more.familyLabel}</span>
             <span className="row-spacer" />
             <span className="row-title">{familyName ?? '—'}</span>

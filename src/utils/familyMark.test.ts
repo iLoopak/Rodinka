@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { createFamilyMarkModel, orderedFamilyMarkMembers } from './familyMark'
+import {
+  createFamilyMarkModel,
+  createFamilyMarkSlots,
+  familyMarkPetalBounds,
+  FAMILY_MARK_VIEW_BOX_SIZE,
+  orderedFamilyMarkMembers,
+} from './familyMark'
 
 const members = Array.from({ length: 8 }, (_, index) => ({
   id: `member-${String.fromCharCode(104 - index)}`,
@@ -33,5 +39,31 @@ describe('family mark geometry', () => {
     const before = input.map((member) => member.id)
     orderedFamilyMarkMembers(input)
     expect(input.map((member) => member.id)).toEqual(before)
+  })
+
+  it.each([1, 2, 3, 4, 5, 6])('centers and contains the %i-member geometry without overlap', (count) => {
+    const slots = createFamilyMarkSlots(count)
+    const centerX = slots.reduce((sum, slot) => sum + slot.cx, 0) / slots.length
+    const centerY = slots.reduce((sum, slot) => sum + slot.cy, 0) / slots.length
+    expect(centerX).toBeCloseTo(FAMILY_MARK_VIEW_BOX_SIZE / 2, 3)
+    expect(centerY).toBeCloseTo(FAMILY_MARK_VIEW_BOX_SIZE / 2, 3)
+
+    for (const slot of slots) {
+      const bounds = familyMarkPetalBounds(slot)
+      expect(bounds.left).toBeGreaterThanOrEqual(0)
+      expect(bounds.top).toBeGreaterThanOrEqual(0)
+      expect(bounds.right).toBeLessThanOrEqual(FAMILY_MARK_VIEW_BOX_SIZE)
+      expect(bounds.bottom).toBeLessThanOrEqual(FAMILY_MARK_VIEW_BOX_SIZE)
+    }
+
+    for (let left = 0; left < slots.length; left++) {
+      for (let right = left + 1; right < slots.length; right++) {
+        const dx = slots[left].cx - slots[right].cx
+        const dy = slots[left].cy - slots[right].cy
+        const distance = Math.hypot(dx, dy)
+        const requiredGap = (slots[left].size + slots[right].size) / Math.sqrt(2)
+        expect(distance).toBeGreaterThanOrEqual(requiredGap)
+      }
+    }
   })
 })

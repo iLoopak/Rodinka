@@ -8,13 +8,18 @@ import { FamilyDataProvider } from './context/FamilyDataContext'
 import { ReminderProvider } from './context/ReminderContext'
 import { PushProvider } from './context/PushContext'
 import { t } from './strings'
+import { FamilyMark } from './components/FamilyMark'
+
+function AppLoading({ label }: { label: string }) {
+  return <div className="loading app-loading"><FamilyMark variant="static" size={32} />{label}</div>
+}
 
 export default function App() {
   const { session, loading: sessionLoading } = useSession()
   const { member, loading: familyLoading, refresh } = useFamily(session?.user.id)
 
   if (sessionLoading) {
-    return <div className="loading">{t.loading.session}</div>
+    return <AppLoading label={t.loading.session} />
   }
 
   if (!session) {
@@ -22,7 +27,7 @@ export default function App() {
   }
 
   if (familyLoading) {
-    return <div className="loading">{t.loading.family}</div>
+    return <AppLoading label={t.loading.family} />
   }
 
   if (!member) {

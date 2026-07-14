@@ -15,22 +15,21 @@ import { ReminderBell } from './reminders/ReminderBell'
 import { ReminderCenter } from './reminders/ReminderCenter'
 import { useFamilyData } from '../context/FamilyDataContext'
 import { FamilyBrand } from './FamilyBrand'
+import { useActiveFamilyMark } from '../hooks/useActiveFamilyMark'
 
 export function AppShell() {
   const { path } = useRouter()
-  const { familyId, familyName, familyNameLoading, currentMember, members, membersLoading } = useFamilyData()
-  const scopedFamilyMembers = members.filter((member) => member.family_id === familyId)
-  const activeFamilyMembers = scopedFamilyMembers.length > 0 ? scopedFamilyMembers : [currentMember]
-  const familyMarkLoading = familyNameLoading || membersLoading
+  const { familyName, familyNameLoading } = useFamilyData()
+  const familyMark = useActiveFamilyMark()
 
   return (
     <div className="app-shell">
       <header className="app-header">
         <FamilyBrand
           familyName={familyName}
-          members={activeFamilyMembers}
+          members={familyMark.members}
           loading={familyNameLoading}
-          markLoading={familyMarkLoading}
+          markLoading={familyMark.loading}
         />
         <ReminderBell />
       </header>

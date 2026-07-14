@@ -1,5 +1,14 @@
 import type { FamilyMember } from '../hooks/useFamilyMembers'
 
+export const FAMILY_MARK_VIEW_BOX_SIZE = 64
+
+export const STATIC_FAMILY_MARK_COLORS = [
+  '#B94742',
+  '#E96C62',
+  '#97302B',
+  '#F2A99F',
+] as const
+
 export interface FamilyMarkSlot {
   cx: number
   cy: number
@@ -13,38 +22,39 @@ export interface FamilyMarkModel {
   slots: FamilyMarkSlot[]
 }
 
-const LAYOUTS: Record<number, FamilyMarkSlot[]> = {
-  1: [{ cx: 32, cy: 32, size: 27, rotation: 45 }],
-  2: [
-    { cx: 23, cy: 24, size: 23, rotation: 38 },
-    { cx: 41, cy: 40, size: 23, rotation: 38 },
-  ],
-  3: [
-    { cx: 32, cy: 18, size: 20, rotation: 42 },
-    { cx: 45, cy: 40, size: 20, rotation: 48 },
-    { cx: 19, cy: 40, size: 20, rotation: 38 },
-  ],
-  4: [
-    { cx: 32, cy: 18, size: 20, rotation: 39 },
-    { cx: 46, cy: 32, size: 20, rotation: 51 },
-    { cx: 32, cy: 46, size: 20, rotation: 39 },
-    { cx: 18, cy: 32, size: 20, rotation: 51 },
-  ],
-  5: [
-    { cx: 32, cy: 15, size: 17, rotation: 42 },
-    { cx: 48, cy: 27, size: 17, rotation: 51 },
-    { cx: 42, cy: 46, size: 17, rotation: 40 },
-    { cx: 22, cy: 46, size: 17, rotation: 50 },
-    { cx: 16, cy: 27, size: 17, rotation: 39 },
-  ],
-  6: [
-    { cx: 32, cy: 14, size: 15.5, rotation: 42 },
-    { cx: 47.5, cy: 23, size: 15.5, rotation: 50 },
-    { cx: 47.5, cy: 41, size: 15.5, rotation: 40 },
-    { cx: 32, cy: 50, size: 15.5, rotation: 50 },
-    { cx: 16.5, cy: 41, size: 15.5, rotation: 39 },
-    { cx: 16.5, cy: 23, size: 15.5, rotation: 48 },
-  ],
+interface LayoutConfig {
+  radius: number
+  petalSize: number
+  angleOffset: number
+}
+
+const LAYOUT_CONFIG: Record<number, LayoutConfig> = {
+  1: { radius: 0, petalSize: 24, angleOffset: -90 },
+  2: { radius: 12, petalSize: 16, angleOffset: 180 },
+  3: { radius: 17, petalSize: 18, angleOffset: -90 },
+  4: { radius: 17, petalSize: 16, angleOffset: -90 },
+  5: { radius: 19, petalSize: 15, angleOffset: -90 },
+  6: { radius: 20, petalSize: 13.5, angleOffset: -90 },
+}
+
+function cleanCoordinate(value: number): number {
+  return Number(value.toFixed(4))
+}
+
+export function createFamilyMarkSlots(count: number): FamilyMarkSlot[] {
+  const normalizedCount = Math.min(6, Math.max(1, Math.round(count)))
+  const config = LAYOUT_CONFIG[normalizedCount]
+
+  return Array.from({ length: normalizedCount }, (_, index) => {
+    const angle = config.angleOffset + (360 / normalizedCount) * index
+    const radians = angle * Math.PI / 180
+    return {
+      cx: cleanCoordinate(32 + Math.cos(radians) * config.radius),
+      cy: cleanCoordinate(32 + Math.sin(radians) * config.radius),
+      size: config.petalSize,
+      rotation: 45,
+    }
+  })
 }
 
 export function orderedFamilyMarkMembers<T extends Pick<FamilyMember, 'id' | 'color_key'>>(members: T[]): T[] {
@@ -63,6 +73,16 @@ export function createFamilyMarkModel(
   return {
     visibleMembers,
     overflowMembers,
-    slots: LAYOUTS[slotCount],
+    slots: createFamilyMarkSlots(slotCount),
+  }
+}
+
+export function familyMarkPetalBounds(slot: FamilyMarkSlot) {
+  const halfDiagonal = slot.size / Math.sqrt(2)
+  return {
+    left: slot.cx - halfDiagonal,
+    right: slot.cx + halfDiagonal,
+    top: slot.cy - halfDiagonal,
+    bottom: slot.cy + halfDiagonal,
   }
 }
