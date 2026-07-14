@@ -9,6 +9,7 @@ import type { ActivityInput } from '../context/FamilyDataContext'
 import { Modal } from './ui/Modal'
 import { MemberAvatar } from './ui/MemberAvatar'
 import { AddActivityForm } from './AddActivityForm'
+import { ShareLinkButton } from './ui/ShareLinkButton'
 
 interface Props {
   activity: Activity
@@ -103,9 +104,12 @@ export function ActivityDetailModal({
 
         {activity.notes && <p className="row-description">{activity.notes}</p>}
       </div>
-      <button className="btn-secondary" onClick={() => setEditing(true)}>
-        {t.activities.edit}
-      </button>
+      <div className="family-actions">
+        <button className="btn-secondary" onClick={() => setEditing(true)}>
+          {t.activities.edit}
+        </button>
+        <ShareLinkButton route="/activities" param="activity" id={activity.id} title={activity.title} />
+      </div>
     </Modal>
   )
 }

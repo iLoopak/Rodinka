@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { t } from '../strings'
 import { useFamilyData } from '../context/FamilyDataContext'
 import { AddActivityForm } from './AddActivityForm'
@@ -14,6 +14,8 @@ import { formatFullDate } from '../utils/dueDate'
 import { onActivateKey } from '../utils/a11y'
 import type { Activity } from '../hooks/useActivities'
 import type { ActivityInput } from '../context/FamilyDataContext'
+import { useRouter } from '../router'
+import { resolveDeepLinkedItem } from '../utils/deepLinks'
 
 type Tab = 'upcoming' | 'payments' | 'archived'
 
@@ -24,6 +26,9 @@ export function ActivitiesScreen() {
   const [filterChild, setFilterChild] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
   const [filterKind, setFilterKind] = useState('')
+  const [deepLinkError, setDeepLinkError] = useState(false)
+  const { searchParams, setQueryParam, removeQueryParam } = useRouter()
+  const activityParam = searchParams.get('activity')
 
   const {
     activities,
@@ -39,6 +44,22 @@ export function ActivitiesScreen() {
     error,
     refreshAll,
   } = useFamilyData()
+
+  useEffect(() => {
+    if (loading) return
+    const resolution = resolveDeepLinkedItem(activities, activityParam)
+    if (resolution.status === 'found') {
+      setSelectedActivity(resolution.item)
+      setTab(resolution.item.status === 'active' ? 'upcoming' : 'archived')
+      setDeepLinkError(false)
+    } else if (resolution.status === 'invalid' || resolution.status === 'not_found') {
+      setSelectedActivity(null)
+      setDeepLinkError(true)
+    } else {
+      setSelectedActivity(null)
+      setDeepLinkError(false)
+    }
+  }, [activities, activityParam, loading])
 
   if (loading) {
     return <p className="loading">{t.loading.generic}</p>
@@ -71,6 +92,17 @@ export function ActivitiesScreen() {
     setFilterKind('')
   }
 
+  function openActivity(activity: Activity) {
+    setSelectedActivity(activity)
+    setDeepLinkError(false)
+    setQueryParam('activity', activity.id)
+  }
+
+  function closeActivity() {
+    setSelectedActivity(null)
+    if (activityParam !== null) removeQueryParam('activity')
+  }
+
   const filtered = activities.filter((a) => {
     if (filterChild && !a.participant_ids.includes(filterChild) && a.responsible_member_id !== filterChild && a.secondary_responsible_member_id !== filterChild) return false
     if (filterCategory && a.category !== filterCategory) return false
@@ -91,6 +123,8 @@ export function ActivitiesScreen() {
   return (
     <>
       {header}
+
+      {deepLinkError && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
 
       <div className="filter-row">
         <select value={filterChild} onChange={(e) => setFilterChild(e.target.value)} aria-label={t.activities.filterChildLabel}>
@@ -155,7 +189,7 @@ export function ActivitiesScreen() {
                   key={activity.id}
                   activity={activity}
                   memberById={memberById}
-                  onClick={() => setSelectedActivity(activity)}
+                  onClick={() => openActivity(activity)}
                 />
               ))}
             </ul>
@@ -177,8 +211,8 @@ export function ActivitiesScreen() {
                     className="clickable-row"
                     role="button"
                     tabIndex={0}
-                    onClick={() => setSelectedActivity(activity)}
-                    onKeyDown={onActivateKey(() => setSelectedActivity(activity))}
+                    onClick={() => openActivity(activity)}
+                    onKeyDown={onActivateKey(() => openActivity(activity))}
                   >
                     <MemberAvatar member={child} />
                     <span className="row-title">{activity.title}</span>
@@ -207,7 +241,7 @@ export function ActivitiesScreen() {
                   key={activity.id}
                   activity={activity}
                   memberById={memberById}
-                  onClick={() => setSelectedActivity(activity)}
+                  onClick={() => openActivity(activity)}
                 />
               ))}
             </ul>
@@ -230,7 +264,7 @@ export function ActivitiesScreen() {
           memberName={memberName}
           memberById={memberById}
           onUpdate={updateActivity}
-          onClose={() => setSelectedActivity(null)}
+          onClose={closeActivity}
         />
       )}
     </>

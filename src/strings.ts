@@ -190,6 +190,14 @@ export const strings = {
       loadFailed: 'Data se nepodařilo načíst.',
       retry: 'Zkusit znovu',
     },
+    deepLinks: {
+      shareLink: 'Sdílet odkaz',
+      linkCopied: 'Odkaz zkopírován',
+      linkShared: 'Odkaz sdílen',
+      shareFailed: 'Odkaz se nepodařilo sdílet.',
+      notFound: 'Položka nebyla nalezena nebo k ní nemáte přístup.',
+      openDetail: 'Detail',
+    },
     due: {
       overdue: 'Po termínu',
       today: 'Dnes',
@@ -950,6 +958,14 @@ export const strings = {
       generic: 'Something went wrong. Please try again.',
       loadFailed: 'Could not load data.',
       retry: 'Try again',
+    },
+    deepLinks: {
+      shareLink: 'Share link',
+      linkCopied: 'Link copied',
+      linkShared: 'Link shared',
+      shareFailed: 'The link could not be shared.',
+      notFound: 'The item was not found or you do not have access to it.',
+      openDetail: 'Details',
     },
     due: {
       overdue: 'Overdue',

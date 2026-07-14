@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { t } from '../strings'
 import { useFamilyData } from '../context/FamilyDataContext'
 import { ChoreList } from './ChoreList'
@@ -7,6 +7,10 @@ import { AllowanceBalances } from './AllowanceBalances'
 import { AddChoreForm } from './AddChoreForm'
 import { ErrorState } from './ui/ErrorState'
 import { Modal } from './ui/Modal'
+import { ChoreDetailModal } from './ChoreDetailModal'
+import { useRouter } from '../router'
+import { resolveDeepLinkedItem } from '../utils/deepLinks'
+import type { Chore } from '../hooks/useChores'
 
 type Tab = 'active' | 'pending' | 'allowance' | 'manage'
 
@@ -19,6 +23,10 @@ function initialTab(): Tab {
 export function ChoresScreen() {
   const [tab, setTab] = useState<Tab>(initialTab)
   const [showAddChore, setShowAddChore] = useState(false)
+  const [selectedChore, setSelectedChore] = useState<Chore | null>(null)
+  const [deepLinkError, setDeepLinkError] = useState(false)
+  const { searchParams, setQueryParam, removeQueryParam } = useRouter()
+  const choreParam = searchParams.get('chore')
   const {
     chores,
     completions,
@@ -45,6 +53,21 @@ export function ChoresScreen() {
     refreshAll,
   } = useFamilyData()
 
+  useEffect(() => {
+    if (loading) return
+    const resolution = resolveDeepLinkedItem(chores, choreParam)
+    if (resolution.status === 'found') {
+      setSelectedChore(resolution.item)
+      setDeepLinkError(false)
+    } else if (resolution.status === 'invalid' || resolution.status === 'not_found') {
+      setSelectedChore(null)
+      setDeepLinkError(true)
+    } else {
+      setSelectedChore(null)
+      setDeepLinkError(false)
+    }
+  }, [choreParam, chores, loading])
+
   if (loading) {
     return <p className="loading">{t.loading.generic}</p>
   }
@@ -63,6 +86,17 @@ export function ChoresScreen() {
   }) {
     await addChore(input)
     setShowAddChore(false)
+  }
+
+  function openChore(chore: Chore) {
+    setSelectedChore(chore)
+    setDeepLinkError(false)
+    setQueryParam('chore', chore.id)
+  }
+
+  function closeChore() {
+    setSelectedChore(null)
+    if (choreParam !== null) removeQueryParam('chore')
   }
 
   const tabs: { id: Tab; label: string; count?: number }[] = [
@@ -103,6 +137,8 @@ export function ChoresScreen() {
         ))}
       </div>
 
+      {deepLinkError && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
+
       {tab === 'active' && (
         <section className="section">
           <ChoreList
@@ -110,6 +146,7 @@ export function ChoresScreen() {
             memberById={memberById}
             latestCompletionFor={latestCompletionFor}
             onMarkDone={markDone}
+            onSelect={openChore}
           />
         </section>
       )}
@@ -149,6 +186,14 @@ export function ChoresScreen() {
           <AddChoreForm members={members} currentMemberId={currentMember.id} onSubmit={handleAddChore} />
         </Modal>
       )}
+
+      {selectedChore && <ChoreDetailModal
+        chore={selectedChore}
+        assignee={memberById(selectedChore.assigned_to)}
+        latestCompletion={latestCompletionFor(selectedChore.id)}
+        onMarkDone={markDone}
+        onClose={closeChore}
+      />}
     </>
   )
 }
