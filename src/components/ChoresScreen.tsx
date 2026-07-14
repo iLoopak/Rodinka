@@ -26,7 +26,7 @@ export function ChoresScreen() {
     currentMember,
     pendingCompletions,
     balances,
-    memberName,
+    memberById,
     latestCompletionFor,
     markDone,
     approve,
@@ -101,7 +101,7 @@ export function ChoresScreen() {
         <section className="section">
           <ChoreList
             chores={chores}
-            memberName={memberName}
+            memberById={memberById}
             latestCompletionFor={latestCompletionFor}
             onMarkDone={markDone}
           />
@@ -116,7 +116,7 @@ export function ChoresScreen() {
             <PendingApprovals
               completions={pendingCompletions}
               chores={chores}
-              memberName={memberName}
+              memberById={memberById}
               onApprove={approve}
               onReject={reject}
             />

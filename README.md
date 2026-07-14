@@ -27,7 +27,11 @@ optional responsibility assignment — see `supabase/` for the DB schema and
 - **families** — the top-level shared tenant. All data belongs to a family.
 - **members** — a person in a family. Has a `role` (`admin`, `parent`,
   `child`). Children may have no linked `auth.users` row — a parent manages
-  their data on their behalf.
+  their data on their behalf. Editable profiles add an optional birth date,
+  stable member color (`brick`, `coral`, `sky`, `sage`, `honey`, `lavender`,
+  or `berry`), private avatar object path, and wording preference
+  (`masculine`, `feminine`, or `neutral`). A missing color keeps the existing
+  deterministic ID-based fallback; missing wording uses neutral sentences.
 - **invites** — short codes that let a second parent join an existing
   family.
 - **chores** — a task belonging to a family, assigned to exactly one family
@@ -106,6 +110,18 @@ plus the `open_vote_round` / `close_vote_round` RPC functions (opening a
 round atomically checks it's still a draft, that no other round is
 already open, and that it has at least one candidate).
 
+`supabase/007_member_profiles.sql` adds editable member profiles and the
+private `member-avatars` Storage bucket. Profile writes go exclusively
+through `update_member_profile`: an admin/parent can update themself and
+children in the same family, while a linked child account can only update
+its own color, avatar, and wording preference. Other adults, siblings,
+cross-family members, and unauthenticated callers are denied. Direct member
+updates are intentionally unavailable, and direct inserts are limited to an
+admin/parent adding a child; the existing security-definer family/invite RPCs
+continue to create adult memberships. Avatar read/write policies apply the
+same family/profile permission logic, and signed URLs are derived temporarily
+in the frontend rather than stored in `members`.
+
 ### App flow (implemented so far)
 
 1. Not logged in → `AuthScreen` (email + password sign in/sign up, or
@@ -162,8 +178,13 @@ npm run dev
 In Supabase, run `supabase/001_schema.sql`, `supabase/002_functions.sql`,
 `supabase/003_chores.sql`, `supabase/004_chore_due_date.sql`,
 `supabase/005_activities_medical.sql`, then `supabase/006_meal_planning.sql`
-in the SQL Editor (in that order — later files depend on earlier
+and `supabase/007_member_profiles.sql` in the SQL Editor (in that order — later files depend on earlier
 tables/functions existing).
+
+Migration `007_member_profiles.sql` creates and configures the private
+`member-avatars` bucket, its 5 MB JPEG/PNG/WebP restrictions, and all Storage
+policies idempotently. No manual bucket or policy setup is needed in the
+Supabase Dashboard.
 
 Run `npm test` for the unit tests (pure date/recurrence/calendar-projection/
 vote-ranking/weekly-planning logic — see `src/utils/*.test.ts`). There's no

@@ -2,16 +2,18 @@ import { useState } from 'react'
 import { t } from '../strings'
 import type { Chore } from '../hooks/useChores'
 import type { ChoreCompletion } from '../hooks/useChoreCompletions'
+import type { FamilyMember } from '../hooks/useFamilyMembers'
 import { DueBadge } from './ui/DueBadge'
+import { MemberAvatar } from './ui/MemberAvatar'
 
 interface Props {
   chores: Chore[]
-  memberName: (id: string) => string
+  memberById: (id: string) => FamilyMember | undefined
   latestCompletionFor: (choreId: string) => ChoreCompletion | null
   onMarkDone: (choreId: string, assignedTo: string) => Promise<void>
 }
 
-export function ChoreList({ chores, memberName, latestCompletionFor, onMarkDone }: Props) {
+export function ChoreList({ chores, memberById, latestCompletionFor, onMarkDone }: Props) {
   const [markingId, setMarkingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -36,14 +38,16 @@ export function ChoreList({ chores, memberName, latestCompletionFor, onMarkDone 
       {error && <p className="error">{error}</p>}
       <ul className="section-list">
         {chores.map((chore) => {
+          const assignee = memberById(chore.assigned_to)
           const latest = latestCompletionFor(chore.id)
           const isPending = latest?.status === 'pending_approval'
           const isDone = !chore.recurring && latest?.status === 'approved'
 
           return (
             <li key={chore.id}>
+              <MemberAvatar member={assignee} />
               <span className="row-title">{chore.title}</span>
-              <span className="row-meta">{memberName(chore.assigned_to)}</span>
+              <span className="row-meta">{assignee?.display_name ?? '?'}</span>
               {chore.description && <p className="row-description">{chore.description}</p>}
               <span className="row-spacer" />
               <DueBadge dueDate={chore.due_date} completed={isDone} />

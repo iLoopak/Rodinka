@@ -16,6 +16,7 @@ interface Props {
   kids: FamilyMember[]
   currentMemberId: string
   memberName: (id: string) => string
+  memberById: (id: string) => FamilyMember | undefined
   onUpdate: (id: string, input: ActivityInput) => Promise<void>
   onClose: () => void
 }
@@ -26,6 +27,7 @@ export function ActivityDetailModal({
   kids,
   currentMemberId,
   memberName,
+  memberById,
   onUpdate,
   onClose,
 }: Props) {
@@ -56,6 +58,10 @@ export function ActivityDetailModal({
   ].filter(Boolean)
 
   const coachParts = [activity.coach_name, activity.coach_phone, activity.coach_email].filter(Boolean)
+  const child = memberById(activity.child_id)
+  const responsible = activity.responsible_member_id
+    ? memberById(activity.responsible_member_id)
+    : undefined
 
   return (
     <Modal title={activity.title} onClose={onClose}>
@@ -64,15 +70,13 @@ export function ActivityDetailModal({
 
         <div className="detail-people">
           <div className="detail-person">
-            <MemberAvatar member={{ id: activity.child_id, display_name: memberName(activity.child_id) }} />
-            <span>{memberName(activity.child_id)}</span>
+            <MemberAvatar member={child} />
+            <span>{child?.display_name ?? memberName(activity.child_id)}</span>
           </div>
           {activity.responsible_member_id ? (
             <div className="detail-person">
-              <MemberAvatar
-                member={{ id: activity.responsible_member_id, display_name: memberName(activity.responsible_member_id) }}
-              />
-              <span>{memberName(activity.responsible_member_id)}</span>
+              <MemberAvatar member={responsible} />
+              <span>{responsible?.display_name ?? memberName(activity.responsible_member_id)}</span>
             </div>
           ) : (
             <p className="row-meta">{t.activities.detailNoResponsible}</p>

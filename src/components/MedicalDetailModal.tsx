@@ -14,6 +14,7 @@ interface Props {
   members: FamilyMember[]
   currentMemberId: string
   memberName: (id: string) => string
+  memberById: (id: string) => FamilyMember | undefined
   onUpdate: (id: string, input: MedicalRecordInput) => Promise<void>
   onClose: () => void
 }
@@ -43,7 +44,7 @@ export function recordToInput(record: MedicalRecord): MedicalRecordInput {
   }
 }
 
-export function MedicalDetailModal({ record, members, currentMemberId, memberName, onUpdate, onClose }: Props) {
+export function MedicalDetailModal({ record, members, currentMemberId, memberName, memberById, onUpdate, onClose }: Props) {
   const [editing, setEditing] = useState(false)
   const [markingComplete, setMarkingComplete] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -85,6 +86,10 @@ export function MedicalDetailModal({ record, members, currentMemberId, memberNam
   ]
     .filter(Boolean)
     .join(' · ')
+  const patient = memberById(record.patient_id)
+  const responsible = record.responsible_member_id
+    ? memberById(record.responsible_member_id)
+    : undefined
 
   return (
     <Modal title={record.title} onClose={onClose}>
@@ -95,15 +100,13 @@ export function MedicalDetailModal({ record, members, currentMemberId, memberNam
 
         <div className="detail-people">
           <div className="detail-person">
-            <MemberAvatar member={{ id: record.patient_id, display_name: memberName(record.patient_id) }} />
-            <span>{memberName(record.patient_id)}</span>
+            <MemberAvatar member={patient} />
+            <span>{patient?.display_name ?? memberName(record.patient_id)}</span>
           </div>
           {record.responsible_member_id && (
             <div className="detail-person">
-              <MemberAvatar
-                member={{ id: record.responsible_member_id, display_name: memberName(record.responsible_member_id) }}
-              />
-              <span>{memberName(record.responsible_member_id)}</span>
+              <MemberAvatar member={responsible} />
+              <span>{responsible?.display_name ?? memberName(record.responsible_member_id)}</span>
             </div>
           )}
         </div>

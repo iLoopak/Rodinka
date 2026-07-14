@@ -160,6 +160,18 @@ label.checkbox-label {
   color: var(--ink);
 }
 
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
 input,
 select,
 textarea {
@@ -607,14 +619,31 @@ main {
 /* ------------------------------------------------------------------ */
 
 .member-avatar {
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
   border-radius: 999px;
+  box-sizing: border-box;
+  border: 2px solid transparent;
   color: #fff;
   font-weight: 700;
   line-height: 1;
+}
+
+.member-avatar.has-photo {
+  border-color: inherit;
+}
+
+.member-avatar-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1099,6 +1128,222 @@ details.manage .add-child-form + .add-chore-form {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.family-member-row {
+  min-width: 0;
+}
+
+.family-member-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.family-member-copy .row-title {
+  overflow-wrap: anywhere;
+}
+
+button.member-edit-button {
+  min-height: 44px;
+  padding: 8px 12px;
+}
+
+.member-profile-form {
+  min-width: 0;
+}
+
+.profile-photo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.profile-photo-section h4 {
+  align-self: stretch;
+  text-align: left;
+}
+
+.profile-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+label.profile-photo-picker {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin: 0;
+  padding: 12px 18px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-button);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+label.profile-photo-picker:hover,
+label.profile-photo-picker:focus-within {
+  background: var(--canvas);
+  border-color: var(--brick);
+  outline: 2px solid transparent;
+}
+
+.field-hint {
+  margin: -6px 0 12px;
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+}
+
+input[readonly] {
+  background: var(--canvas);
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
+
+.profile-readonly-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 4px 0 0;
+}
+
+.profile-readonly-grid div {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+  background: var(--canvas);
+}
+
+.profile-readonly-grid dt {
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+}
+
+.profile-readonly-grid dd {
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.profile-fieldset {
+  min-width: 0;
+  margin-inline: 0;
+  padding-inline: 0;
+  border: 0;
+}
+
+.profile-fieldset legend {
+  margin-bottom: 12px;
+  color: var(--ink);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.member-color-picker {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(40px, 1fr));
+  gap: 6px;
+}
+
+label.member-color-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 48px;
+  margin: 0;
+  border: 2px solid transparent;
+  border-radius: var(--radius-input);
+  cursor: pointer;
+}
+
+label.member-color-option.selected {
+  border-color: var(--ink);
+}
+
+label.member-color-option:focus-within {
+  outline: 3px solid var(--coral-light);
+  outline-offset: 2px;
+}
+
+.member-color-swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 2px solid var(--paper);
+  border-radius: 999px;
+  color: #fff;
+  box-shadow: 0 0 0 1px var(--border);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.member-gender-options {
+  display: grid;
+  gap: 8px;
+}
+
+label.member-gender-option {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  min-height: 48px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-input);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.member-gender-option:has(input:checked) {
+  border-color: var(--brick);
+  background: var(--canvas);
+}
+
+.member-gender-option:focus-within {
+  outline: 2px solid var(--brick);
+  outline-offset: 2px;
+}
+
+.member-gender-option input {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  accent-color: var(--brick);
+}
+
+@media (max-width: 390px) {
+  .member-color-picker {
+    grid-template-columns: repeat(4, minmax(44px, 1fr));
+  }
+
+  .profile-readonly-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .family-member-row .badge {
+    order: 4;
+  }
+
+  button.member-edit-button {
+    order: 5;
+    flex: 1 1 100%;
+  }
 }
 
 .invite-result {

@@ -4,10 +4,27 @@ import type { MedicalRecord } from '../hooks/useMedicalRecords'
 import type { MealVote, MealVoteCandidate, VoteValue } from '../hooks/useMealVoteRounds'
 import type { Meal } from '../hooks/useMeals'
 import type { MealPlanEntry } from '../hooks/useMealPlanEntries'
+import type { FamilyMember } from '../hooks/useFamilyMembers'
 
 // Small factories for the pure-logic tests — only the fields a given test
 // cares about need to be overridden, everything else gets a harmless
 // default so fixtures stay short and intention-revealing at call sites.
+
+export function makeFamilyMember(overrides: Partial<FamilyMember> = {}): FamilyMember {
+  return {
+    id: 'member-1',
+    family_id: 'family-1',
+    display_name: 'Alex',
+    role: 'child',
+    user_id: null,
+    birth_date: null,
+    color_key: null,
+    avatar_path: null,
+    avatar_url: null,
+    grammatical_gender: null,
+    ...overrides,
+  }
+}
 
 export function makeChore(overrides: Partial<Chore> = {}): Chore {
   return {

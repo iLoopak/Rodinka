@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { t } from '../strings'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
+import { MemberAvatar } from './ui/MemberAvatar'
 
 interface Props {
   kids: FamilyMember[]
@@ -44,6 +45,7 @@ export function AllowanceBalances({ kids, balances, onPayout }: Props) {
     <ul className="section-list">
       {kids.map((kid) => (
         <li key={kid.id}>
+          <MemberAvatar member={kid} />
           <span className="row-title">{kid.display_name}</span>
           <span className="row-spacer" />
           <span className="row-amount">{t.chores.formatAmount(balances.get(kid.id) ?? 0)}</span>

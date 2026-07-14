@@ -1,29 +1,42 @@
+import { useState } from 'react'
 import { memberColorVar, memberInitials } from '../../utils/memberColor'
+import type { FamilyMember } from '../../hooks/useFamilyMembers'
 
 interface Props {
-  member: { id: string; display_name: string } | null | undefined
+  member: Pick<FamilyMember, 'id' | 'display_name' | 'color_key' | 'avatar_url'> | null | undefined
   size?: number
+  decorative?: boolean
 }
 
-// Initials-in-a-circle avatar, colored deterministically per member id
-// (see memberColor.ts) — no photo upload, keeps the identity-at-a-glance
-// promise from the calendar spec without adding image handling.
-export function MemberAvatar({ member, size = 26 }: Props) {
+export function MemberAvatar({ member, size = 26, decorative = true }: Props) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
   if (!member) return null
+  const showPhoto = Boolean(member.avatar_url && failedUrl !== member.avatar_url)
 
   return (
     <span
-      className="member-avatar"
+      className={`member-avatar${showPhoto ? ' has-photo' : ''}`}
       style={{
         width: size,
         height: size,
         fontSize: Math.round(size * 0.42),
-        backgroundColor: `var(${memberColorVar(member.id)})`,
+        backgroundColor: `var(${memberColorVar(member)})`,
+        borderColor: `var(${memberColorVar(member)})`,
       }}
       title={member.display_name}
-      aria-label={member.display_name}
+      role={decorative ? undefined : 'img'}
+      aria-label={decorative ? undefined : member.display_name}
+      aria-hidden={decorative || undefined}
     >
-      {memberInitials(member.display_name)}
+      {showPhoto && (
+        <img
+          className="member-avatar-image"
+          src={member.avatar_url ?? undefined}
+          alt=""
+          onError={() => setFailedUrl(member.avatar_url)}
+        />
+      )}
+      {!showPhoto && memberInitials(member.display_name)}
     </span>
   )
 }

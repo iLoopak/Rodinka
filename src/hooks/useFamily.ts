@@ -1,12 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../supabaseClient'
+import type { FamilyMember } from './useFamilyMembers'
 
-export interface Member {
-  id: string
-  family_id: string
-  display_name: string
-  role: 'admin' | 'parent' | 'child'
-}
+export type Member = FamilyMember
 
 export function useFamily(userId: string | undefined) {
   const [member, setMember] = useState<Member | null>(null)
@@ -23,7 +19,7 @@ export function useFamily(userId: string | undefined) {
     // RLS ensures this only ever returns rows the current user is allowed to see
     const { data, error } = await supabase
       .from('members')
-      .select('id, family_id, display_name, role')
+      .select('id, family_id, display_name, role, user_id, birth_date, color_key, avatar_path, grammatical_gender')
       .eq('user_id', userId)
       .maybeSingle()
 
@@ -31,7 +27,7 @@ export function useFamily(userId: string | undefined) {
       console.error('Failed to load family membership:', error.message)
       setMember(null)
     } else {
-      setMember(data)
+      setMember(data ? ({ ...data, avatar_url: null } as Member) : null)
     }
     setLoading(false)
   }, [userId])
