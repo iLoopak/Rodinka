@@ -82,7 +82,7 @@ function joinWeekdayNames(names: string[]): string {
 export function choreRecurrenceSummary(chore: Pick<Chore,
   'recurrence_type' | 'recurrence_weekdays' | 'preferred_day_of_month' | 'due_date'
 >): string {
-  if (chore.recurrence_type === 'none') return t.chores.recurrenceSummaryNone
+  if (!chore.due_date || chore.recurrence_type === 'none') return t.chores.recurrenceSummaryNone
   if (chore.recurrence_type === 'weekly') {
     return t.chores.recurrenceSummaryWeeklyByDay[isoWeekday(chore.due_date) - 1]
   }

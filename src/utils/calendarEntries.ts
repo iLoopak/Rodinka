@@ -9,6 +9,7 @@ import { classifyDueDate, compareISODates, todayISODate, type DueUrgency } from 
 import { nextPayoutDate } from './allowanceCycles'
 import { expandActivitiesOccurrences } from './recurrence'
 import { displayTitle } from './mealPlanGrouping'
+import { getEffectiveActivityParticipants, getEffectiveOccurrenceMember, type ActivityParticipantHistory, type OccurrenceOverride, type SeriesAssignmentHistory } from './occurrenceAssignments'
 
 export interface CalendarEntry {
   id: string
@@ -25,6 +26,9 @@ export interface CalendarEntry {
   childOrPatientId: string | null
   /** The accompanying/responsible adult, or the chore assignee. */
   responsibleMemberId: string | null
+  defaultResponsibleMemberId?: string | null
+  assignmentSeriesType?: 'activity' | 'task'
+  assignmentOverridden?: boolean
   participantMemberIds?: string[]
   responsibleMemberIds?: string[]
   rangeStart?: string
@@ -56,6 +60,9 @@ interface BuildCalendarEntriesInput {
   allowancePlans?: AllowancePlan[]
   rangeStart: string
   rangeEnd: string
+  occurrenceOverrides?: OccurrenceOverride[]
+  assignmentHistory?: SeriesAssignmentHistory[]
+  participantHistory?: ActivityParticipantHistory[]
 }
 
 // Projects the source records (chores/activities/medical records/meal
@@ -73,11 +80,19 @@ export function buildCalendarEntries({
   allowancePlans = [],
   rangeStart,
   rangeEnd,
+  occurrenceOverrides = [],
+  assignmentHistory = [],
+  participantHistory = [],
 }: BuildCalendarEntriesInput): CalendarEntry[] {
   const entries: CalendarEntry[] = []
 
   for (const chore of chores) {
+    if (!chore.due_date) continue
     if (!withinRange(chore.due_date, rangeStart, rangeEnd)) continue
+    const assignment = getEffectiveOccurrenceMember({
+      seriesType: 'task', seriesId: chore.id, occurrenceDate: chore.due_date,
+      defaultMemberId: chore.assigned_to, overrides: occurrenceOverrides, assignmentHistory,
+    })
     entries.push({
       id: `chore:${chore.id}`,
       type: 'chore',
@@ -86,10 +101,13 @@ export function buildCalendarEntries({
       allDay: false,
       title: chore.title,
       subtitle: null,
-      childOrPatientId: chore.assigned_to,
-      responsibleMemberId: chore.assigned_to,
-      participantMemberIds: [chore.assigned_to],
-      responsibleMemberIds: [chore.assigned_to],
+      childOrPatientId: assignment.memberId,
+      responsibleMemberId: assignment.memberId,
+      defaultResponsibleMemberId: chore.assigned_to,
+      assignmentSeriesType: 'task',
+      assignmentOverridden: assignment.isOverride,
+      participantMemberIds: assignment.memberId ? [assignment.memberId] : [],
+      responsibleMemberIds: assignment.memberId ? [assignment.memberId] : [],
       recurring: chore.recurring,
       sourceType: 'chore',
       sourceId: chore.id,
@@ -100,6 +118,11 @@ export function buildCalendarEntries({
   for (const occurrence of expandActivitiesOccurrences(activities, rangeStart, rangeEnd)) {
     const activity = activityById.get(occurrence.activityId)
     if (!activity) continue
+    const assignment = getEffectiveOccurrenceMember({
+      seriesType: 'activity', seriesId: activity.id, occurrenceDate: occurrence.date,
+      defaultMemberId: activity.responsible_member_id, overrides: occurrenceOverrides, assignmentHistory,
+    })
+    const participantIds = getEffectiveActivityParticipants(activity.id, occurrence.date, activity.participant_ids, participantHistory)
     entries.push({
       id: `activity:${occurrence.id}`,
       type: 'activity',
@@ -110,10 +133,13 @@ export function buildCalendarEntries({
       title: activity.title,
       subtitle: activity.location,
       location: activity.location,
-      childOrPatientId: activity.participant_ids[0] ?? activity.child_id,
-      responsibleMemberId: activity.responsible_member_id,
-      participantMemberIds: activity.participant_ids,
-      responsibleMemberIds: [activity.responsible_member_id, activity.secondary_responsible_member_id].filter((id): id is string => !!id),
+      childOrPatientId: participantIds[0] ?? null,
+      responsibleMemberId: assignment.memberId,
+      defaultResponsibleMemberId: activity.responsible_member_id,
+      assignmentSeriesType: 'activity',
+      assignmentOverridden: assignment.isOverride,
+      participantMemberIds: participantIds,
+      responsibleMemberIds: [assignment.memberId, activity.secondary_responsible_member_id].filter((id): id is string => !!id),
       rangeStart: activity.start_date,
       rangeEnd: activity.end_date ?? activity.start_date,
       isMultiDay: activity.recurrence_type === 'one_off' && !!activity.end_date && activity.end_date > activity.start_date,

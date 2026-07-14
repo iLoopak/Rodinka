@@ -15,6 +15,8 @@ interface Props {
   currentMember: FamilyMember
   refreshMembers: () => Promise<void>
   onClose: () => void
+  onRequestRemove?: () => void
+  onRequestLeave?: () => void
 }
 
 function colorLabel(key: MemberColorKey) {
@@ -46,7 +48,7 @@ function mutationErrorMessage(error: unknown): string {
   return t.family.errors.profileSaveFailed
 }
 
-export function MemberProfileModal({ member, currentMember, refreshMembers, onClose }: Props) {
+export function MemberProfileModal({ member, currentMember, refreshMembers, onClose, onRequestRemove, onRequestLeave }: Props) {
   const fields = editableMemberProfileFields(currentMember, member)
   const { saveMemberProfile } = useMemberProfiles(refreshMembers)
   const [displayName, setDisplayName] = useState(member.display_name)
@@ -231,6 +233,11 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
         <button type="submit" disabled={saving}>
           {saving ? t.family.savingProfile : t.family.saveProfile}
         </button>
+        {(onRequestRemove || onRequestLeave) && <section className="member-danger-zone" aria-labelledby="member-danger-zone-title">
+          <h4 id="member-danger-zone-title">{t.family.dangerZone}</h4>
+          {onRequestRemove && <button type="button" className="btn-danger" disabled={saving} onClick={onRequestRemove}>{t.family.removeMemberAction}</button>}
+          {onRequestLeave && <button type="button" className="btn-danger" disabled={saving} onClick={onRequestLeave}>{t.family.leaveHouseholdAction}</button>}
+        </section>}
       </form>
     </Modal>
   )

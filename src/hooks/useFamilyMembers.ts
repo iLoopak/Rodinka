@@ -13,6 +13,7 @@ export type MemberColorKey =
 
 export type GrammaticalGender = 'masculine' | 'feminine' | 'neutral'
 export type MemberRole = 'admin' | 'parent' | 'child'
+export type FamilyMemberStatus = 'active' | 'inactive' | 'removed'
 
 export interface FamilyMember {
   id: string
@@ -26,6 +27,14 @@ export interface FamilyMember {
   avatar_url: string | null
   grammatical_gender: GrammaticalGender | null
   vocative_name: string | null
+  status?: FamilyMemberStatus
+  removed_at?: string | null
+  removed_by_member_id?: string | null
+  removal_reason?: string | null
+}
+
+export function isActiveFamilyMember(member: FamilyMember) {
+  return (member.status ?? 'active') === 'active'
 }
 
 const AVATAR_SIGNED_URL_SECONDS = 12 * 60 * 60
@@ -45,7 +54,7 @@ export function useFamilyMembers(familyId: string | undefined) {
     setLoading(true)
     const { data, error } = await supabase
       .from('members')
-      .select('id, family_id, display_name, role, user_id, birth_date, color_key, avatar_path, grammatical_gender, vocative_name')
+      .select('id, family_id, display_name, role, user_id, birth_date, color_key, avatar_path, grammatical_gender, vocative_name, status, removed_at, removed_by_member_id, removal_reason')
       .eq('family_id', familyId)
       .order('display_name')
 
@@ -54,7 +63,7 @@ export function useFamilyMembers(familyId: string | undefined) {
       setMembers([])
       setError(t.errors.loadFailed)
     } else {
-      const loadedMembers = (data ?? []).map((member) => ({ ...member, avatar_url: null })) as FamilyMember[]
+      const loadedMembers = (data ?? []).map((member) => ({ ...member, status: member.status ?? 'active', avatar_url: null })) as FamilyMember[]
       const avatarPaths = [...new Set(loadedMembers.flatMap((member) => member.avatar_path ?? []))]
 
       if (avatarPaths.length > 0) {

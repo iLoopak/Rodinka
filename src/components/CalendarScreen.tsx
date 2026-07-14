@@ -41,6 +41,7 @@ export function CalendarScreen() {
   const [filterType, setFilterType] = useState<CalendarItemType | ''>('')
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
   const [selectedEntry, setSelectedEntry] = useState<CalendarEntry | null>(null)
+  const [openAssignmentInitially, setOpenAssignmentInitially] = useState(false)
   const [createConfig, setCreateConfig] = useState<{ initialDate?: string } | null>(null)
   const [deepLinkError, setDeepLinkError] = useState(false)
   const { searchParams, setQueryParam, removeQueryParam } = useRouter()
@@ -54,6 +55,9 @@ export function CalendarScreen() {
     medicalRecords,
     planEntries,
     allowancePlans,
+    occurrenceOverrides,
+    assignmentHistory,
+    participantHistory,
     members,
     memberById,
     latestCompletionFor,
@@ -109,6 +113,9 @@ export function CalendarScreen() {
               medicalRecords,
               mealPlanEntries: planEntries,
               allowancePlans,
+              occurrenceOverrides,
+              assignmentHistory,
+              participantHistory,
               rangeStart: sourceDate,
               rangeEnd: addDays(sourceDate, 31),
             }).find((candidate) => candidate.sourceId === eventParam)
@@ -129,7 +136,7 @@ export function CalendarScreen() {
     }
 
     setDeepLinkError(invalid)
-  }, [activities, allowancePlans, chores, dateParam, error, eventParam, loading, medicalRecords, planEntries])
+  }, [activities, allowancePlans, assignmentHistory, chores, dateParam, error, eventParam, loading, medicalRecords, occurrenceOverrides, participantHistory, planEntries])
 
   const today = todayISODate()
   const range =
@@ -151,11 +158,13 @@ export function CalendarScreen() {
     let projected = buildCalendarEntries({
       chores: visibleChores, activities, medicalRecords: visibleMedical, mealPlanEntries: planEntries,
       allowancePlans, rangeStart: range.start, rangeEnd: range.end,
+      occurrenceOverrides, assignmentHistory,
+      participantHistory,
     })
     if (filterPerson) projected = projected.filter((entry) => entryMatchesMember(entry, filterPerson))
     if (filterType) projected = projected.filter((entry) => entry.type === filterType)
     return projected
-  }, [activities, allowancePlans, chores, filterPerson, filterType, latestCompletionFor, medicalRecords, planEntries, range.end, range.start])
+  }, [activities, allowancePlans, assignmentHistory, chores, filterPerson, filterType, latestCompletionFor, medicalRecords, occurrenceOverrides, participantHistory, planEntries, range.end, range.start])
 
   if (loading) return <p className="loading">{t.loading.generic}</p>
   if (error) return <ErrorState message={error} onRetry={refreshAll} />
@@ -176,12 +185,22 @@ export function CalendarScreen() {
   }
 
   function openEntry(entry: CalendarEntry) {
+    setOpenAssignmentInitially(false)
     setSelectedEntry(entry)
     setSelectedDay(null)
     setDeepLinkError(false)
     // The current view already has the resolved entry. Mark this URL state as
     // handled so the deep-link bootstrap does not switch an in-app click back
     // to the month view; direct/reloaded links still use the bootstrap above.
+    processedDeepLinkRef.current = `${dateParam ?? ''}|${entry.sourceId}`
+    setQueryParam('event', entry.sourceId)
+  }
+
+  function openAssignment(entry: CalendarEntry) {
+    setOpenAssignmentInitially(true)
+    setSelectedEntry(entry)
+    setSelectedDay(null)
+    setDeepLinkError(false)
     processedDeepLinkRef.current = `${dateParam ?? ''}|${entry.sourceId}`
     setQueryParam('event', entry.sourceId)
   }
@@ -209,6 +228,7 @@ export function CalendarScreen() {
 
   function closeEntry() {
     setSelectedEntry(null)
+    setOpenAssignmentInitially(false)
     if (eventParam !== null) removeQueryParam('event')
   }
 
@@ -334,7 +354,7 @@ export function CalendarScreen() {
               ) : (
                 <ul className="section-list calendar-day-list">
                   {dayEntries.map((entry) => (
-                    <CalendarEntryRow key={entry.id} entry={entry} memberById={memberById} onClick={() => openEntry(entry)} />
+                    <CalendarEntryRow key={entry.id} entry={entry} memberById={memberById} onClick={() => openEntry(entry)} onAssignmentClick={() => openAssignment(entry)} />
                   ))}
                 </ul>
               )}
@@ -361,6 +381,7 @@ export function CalendarScreen() {
           }}
           onSelectDay={setSelectedWeekDay}
           onSelectEntry={openEntry}
+          onChangeAssignment={openAssignment}
           onAddDay={(date) => setCreateConfig({ initialDate: date })}
         />
       )}
@@ -384,6 +405,7 @@ export function CalendarScreen() {
       {selectedEntry && (
         <CalendarEntryDetailModal
           entry={selectedEntry}
+          openAssignmentInitially={openAssignmentInitially}
           onClose={closeEntry}
         />
       )}

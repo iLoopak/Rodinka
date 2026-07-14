@@ -1,6 +1,5 @@
 import { t } from '../../strings'
 import { getItemTypeStyle } from '../../utils/itemTypeStyle'
-import { onActivateKey } from '../../utils/a11y'
 import { DueBadge } from '../ui/DueBadge'
 import { MemberAvatar } from '../ui/MemberAvatar'
 import type { CalendarEntry } from '../../utils/calendarEntries'
@@ -10,13 +9,14 @@ interface Props {
   entry: CalendarEntry
   memberById: (id: string) => FamilyMember | undefined
   onClick: () => void
+  onAssignmentClick?: () => void
 }
 
 // Shared row rendering reused by the agenda view and the month view's
 // per-day detail list — one place for "how a calendar item looks",
 // combining icon + color + text label + person marker so type is never
 // conveyed by color alone.
-export function CalendarEntryRow({ entry, memberById, onClick }: Props) {
+export function CalendarEntryRow({ entry, memberById, onClick, onAssignmentClick }: Props) {
   const style = getItemTypeStyle(entry.type)
   const personId = entry.childOrPatientId ?? entry.responsibleMemberId
   const person = personId ? memberById(personId) : undefined
@@ -24,13 +24,8 @@ export function CalendarEntryRow({ entry, memberById, onClick }: Props) {
     entry.responsibleMemberId && entry.responsibleMemberId !== entry.childOrPatientId
 
   return (
-    <li
-      className="clickable-row calendar-entry-row"
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={onActivateKey(onClick)}
-    >
+    <li className="calendar-entry-row-shell">
+      <button type="button" className="clickable-row calendar-entry-row" onClick={onClick}>
       <span className="calendar-entry-icon" style={{ color: `var(${style.colorVar})` }}>
         {style.icon}
       </span>
@@ -49,6 +44,16 @@ export function CalendarEntryRow({ entry, memberById, onClick }: Props) {
       {entry.time && <span className="row-meta font-tabular">{entry.time.slice(0, 5)}</span>}
       {entry.isMultiDay && <span className="row-meta">{entry.rangeStart} – {entry.rangeEnd}</span>}
       <DueBadge dueDate={entry.date} />
+      </button>
+      {entry.assignmentSeriesType && onAssignmentClick && <button
+        type="button"
+        className="calendar-entry-assignment"
+        aria-label={`${entry.assignmentSeriesType === 'activity' ? t.calendar.changeCompanion : t.calendar.changeAssignee}${entry.assignmentOverridden ? `. ${t.calendar.occurrenceOverrideBadge}` : ''}`}
+        onClick={onAssignmentClick}
+      >
+        <MemberAvatar member={entry.responsibleMemberId ? memberById(entry.responsibleMemberId) : undefined} size={24} />
+        {entry.assignmentOverridden && <span aria-hidden="true">↔</span>}
+      </button>}
     </li>
   )
 }

@@ -6,6 +6,7 @@ import type { MedicalRecord } from '../hooks/useMedicalRecords'
 import type { Chore } from '../utils/choreModel'
 import type { ShoppingItem } from '../utils/shopping'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
+import type { OccurrenceOverride, SeriesAssignmentHistory } from '../utils/occurrenceAssignments'
 
 export const REMINDER_FOREGROUND_REFRESH_MS = 15 * 60 * 1000
 export const REMINDER_BACKGROUND_REFRESH_MS = 2 * 60 * 1000
@@ -20,6 +21,8 @@ export interface ReminderSourceSnapshot {
   voteRounds: MealVoteRound[]
   planEntries: MealPlanEntry[]
   shoppingItems: ShoppingItem[]
+  occurrenceOverrides?: OccurrenceOverride[]
+  assignmentHistory?: SeriesAssignmentHistory[]
 }
 
 function stableHash(value: string) {
@@ -41,6 +44,8 @@ export function buildReminderSourceFingerprint(snapshot: ReminderSourceSnapshot)
     ...snapshot.voteRounds.map((round) => `v:${round.id}:${round.created_at}:${round.closed_at ?? ''}:${round.status}:${round.deadline_at ?? ''}:${round.candidates.flatMap((candidate) => candidate.votes.map((vote) => `${vote.member_id}:${vote.value}:${vote.updated_at}`)).sort().join(',')}`),
     ...snapshot.planEntries.map((item) => `p:${item.id}:${item.updated_at}:${item.entry_date}:${item.meal_slot}:${item.status}`),
     ...snapshot.shoppingItems.map((item) => `s:${item.id}:${item.updated_at}:${item.responsible_member_id ?? ''}:${item.purchased}:${item.archived_at ?? ''}`),
+    ...(snapshot.occurrenceOverrides ?? []).map((item) => `o:${item.id}:${item.series_type}:${item.series_id}:${item.occurrence_date}:${item.companion_member_id ?? ''}:${item.assignee_member_id ?? ''}:${item.updated_at}`),
+    ...(snapshot.assignmentHistory ?? []).map((item) => `h:${item.id}:${item.series_type}:${item.series_id}:${item.effective_from}:${item.member_id ?? ''}`),
   ]
   return stableHash(tokens.sort().join('|'))
 }

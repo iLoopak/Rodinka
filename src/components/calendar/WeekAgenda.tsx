@@ -30,10 +30,11 @@ interface Props {
   onChangeWeek: (weekStart: string) => void
   onSelectDay: (date: string) => void
   onSelectEntry: (entry: CalendarEntry) => void
+  onChangeAssignment: (entry: CalendarEntry) => void
   onAddDay: (date: string) => void
 }
 
-export function WeekAgenda({ weekStart, entries, today, selectedDay, scrollVersion, memberById, onChangeWeek, onSelectDay, onSelectEntry, onAddDay }: Props) {
+export function WeekAgenda({ weekStart, entries, today, selectedDay, scrollVersion, memberById, onChangeWeek, onSelectDay, onSelectEntry, onChangeAssignment, onAddDay }: Props) {
   const locale = getCurrentLanguage()
   const days = useMemo(() => groupEntriesForWeek(entries, weekStart), [entries, weekStart])
   const sectionRefs = useRef(new Map<string, HTMLElement>())
@@ -109,8 +110,8 @@ export function WeekAgenda({ weekStart, entries, today, selectedDay, scrollVersi
 
           {day.entries.length === 0 ? <div className="week-day-empty"><span>{t.calendar.nothingPlanned}</span><button type="button" className="week-day-add-small" onClick={() => onAddDay(day.date)} aria-label={`${t.create.addThisDayAction}: ${formatShortDate(day.date)}`}>+</button></div>
             : <div className="week-day-groups">
-              {day.untimed.length > 0 && <div className="week-day-group"><h3>{t.calendar.untimedGroup}</h3><ul>{day.untimed.map((entry) => <WeekCalendarEntryRow key={entry.id} entry={entry} memberById={memberById} onClick={() => onSelectEntry(entry)} />)}</ul></div>}
-              {day.timed.length > 0 && <div className="week-day-group"><h3>{t.calendar.timedGroup}</h3><ul>{day.timed.map((entry) => <WeekCalendarEntryRow key={entry.id} entry={entry} memberById={memberById} onClick={() => onSelectEntry(entry)} />)}</ul></div>}
+              {day.untimed.length > 0 && <div className="week-day-group"><h3>{t.calendar.untimedGroup}</h3><ul>{day.untimed.map((entry) => <WeekCalendarEntryRow key={entry.id} entry={entry} memberById={memberById} onClick={() => onSelectEntry(entry)} onAssignmentClick={() => onChangeAssignment(entry)} />)}</ul></div>}
+              {day.timed.length > 0 && <div className="week-day-group"><h3>{t.calendar.timedGroup}</h3><ul>{day.timed.map((entry) => <WeekCalendarEntryRow key={entry.id} entry={entry} memberById={memberById} onClick={() => onSelectEntry(entry)} onAssignmentClick={() => onChangeAssignment(entry)} />)}</ul></div>}
               <button type="button" className="link week-day-add" onClick={() => onAddDay(day.date)}>+ {t.create.addThisDayAction}</button>
             </div>}
         </section>

@@ -18,6 +18,9 @@ describe('AddChoreForm', () => {
     expect(html).toContain('Týdně')
     expect(html).toContain('Měsíčně')
     expect(html).toContain('Neopakuje se')
+    expect(html).toContain('Bez přiřazení')
+    expect(html).toContain('Další možnosti')
+    expect(html).not.toContain('Přidat odměnu')
   })
 
   it('prefills edit values and exposes selected daily weekdays accessibly', () => {

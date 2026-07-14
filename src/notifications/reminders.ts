@@ -9,6 +9,7 @@ import type { Chore } from '../utils/choreModel'
 import { getChoreState } from '../utils/choreState'
 import { addDays, compareISODates, daysBetweenISO } from '../utils/dueDate'
 import { expandActivityOccurrences } from '../utils/recurrence'
+import { getEffectiveOccurrenceMember, type OccurrenceOverride, type SeriesAssignmentHistory } from '../utils/occurrenceAssignments'
 
 export const REMINDER_CATEGORIES = ['chores', 'activities', 'medical', 'voting', 'meals', 'allowance', 'documents', 'shopping'] as const
 export type ReminderCategory = (typeof REMINDER_CATEGORIES)[number]
@@ -172,6 +173,8 @@ export interface GenerateReminderInput {
   chores: Chore[]
   latestCompletionFor: (choreId: string) => ChoreCompletion | null
   activities: Activity[]
+  occurrenceOverrides?: OccurrenceOverride[]
+  assignmentHistory?: SeriesAssignmentHistory[]
   medicalRecords: MedicalRecord[]
   voteRounds: MealVoteRound[]
   planEntries: MealPlanEntry[]
@@ -224,14 +227,23 @@ function canHandleResponsibleRecord(current: FamilyMember, isParentOrAdmin: bool
 }
 
 function pushGroupedChores(reminders: ReminderDraft[], input: GenerateReminderInput, today: string, generatedAt: string) {
-  const actionable = input.chores.filter((chore) =>
+  const resolvedChores = input.chores.map((chore) => chore.due_date ? {
+    ...chore,
+    assigned_to: getEffectiveOccurrenceMember({
+      seriesType: 'task', seriesId: chore.id, occurrenceDate: chore.due_date, defaultMemberId: chore.assigned_to,
+      overrides: input.occurrenceOverrides ?? [], assignmentHistory: input.assignmentHistory,
+    }).memberId,
+  } : chore)
+  const actionable = resolvedChores
+    .filter((chore): chore is Chore & { due_date: string; assigned_to: string } => Boolean(chore.due_date && chore.assigned_to))
+    .filter((chore) =>
     chore.status === 'active' &&
     compareISODates(chore.due_date, today) <= 0 &&
     getChoreState(chore, input.latestCompletionFor(chore.id)) === 'actionable' &&
     canActForMember(input.currentMember, input.isParentOrAdmin, input.members, chore.assigned_to)
-  )
+    )
   for (const overdue of [false, true]) {
-    const byAssignee = new Map<string, Chore[]>()
+    const byAssignee = new Map<string, Array<Chore & { due_date: string; assigned_to: string }>>()
     for (const chore of actionable.filter((item) => (compareISODates(item.due_date, today) < 0) === overdue)) {
       const existing = byAssignee.get(chore.assigned_to)
       if (existing) existing.push(chore)
@@ -263,13 +275,17 @@ function pushActivities(reminders: ReminderDraft[], input: GenerateReminderInput
   const paymentGroups = new Map<string, Activity[]>()
   for (const activity of input.activities) {
     const subjectId = activity.participant_ids[0] ?? activity.child_id
-    const canHandle = canHandleResponsibleRecord(input.currentMember, input.isParentOrAdmin, activity.responsible_member_id, subjectId)
-    if (!canHandle || activity.status !== 'active') continue
+    if (activity.status !== 'active') continue
 
     if (activity.reminder_enabled) {
       const lead = activity.reminder_days_before ?? 1
       const occurrence = expandActivityOccurrences(activity, today, addDays(today, lead))[0]
-      if (occurrence) reminders.push({
+      const effectiveCompanion = occurrence ? getEffectiveOccurrenceMember({
+        seriesType: 'activity', seriesId: activity.id, occurrenceDate: occurrence.date,
+        defaultMemberId: activity.responsible_member_id, overrides: input.occurrenceOverrides ?? [], assignmentHistory: input.assignmentHistory,
+      }).memberId : activity.responsible_member_id
+      const canHandle = canHandleResponsibleRecord(input.currentMember, input.isParentOrAdmin, effectiveCompanion, subjectId)
+      if (occurrence && canHandle) reminders.push({
         dedupeKey: `activity-soon:${occurrence.id}:${input.currentMember.id}`,
         source: 'activity',
         type: 'activity-starts-soon',
@@ -286,6 +302,7 @@ function pushActivities(reminders: ReminderDraft[], input: GenerateReminderInput
     }
 
     if (activity.next_payment_due_date && compareISODates(activity.next_payment_due_date, addDays(today, ACTIVITY_PAYMENT_LEAD_DAYS)) <= 0) {
+      if (!canHandleResponsibleRecord(input.currentMember, input.isParentOrAdmin, activity.responsible_member_id, subjectId)) continue
       if (activity.payment_paid_for_date === activity.next_payment_due_date) continue
       const groupId = activity.responsible_member_id ?? input.currentMember.id
       const existing = paymentGroups.get(groupId)

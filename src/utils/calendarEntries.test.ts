@@ -65,6 +65,20 @@ describe('buildCalendarEntries — activities', () => {
     expect(paymentEntries[0]).toMatchObject({ type: 'payment', date: '2026-07-20', title: 'Platba – Swimming' })
   })
 
+  it('shows an occurrence companion override only on its matching date', () => {
+    const activity = makeActivity({ id: 'act-override', recurrence_type: 'weekly', start_date: '2026-07-01', responsible_member_id: 'parent-1' })
+    const entries = buildCalendarEntries({
+      chores: [], activities: [activity], medicalRecords: [], rangeStart: RANGE_START, rangeEnd: RANGE_END,
+      occurrenceOverrides: [{
+        id: 'override-1', family_id: activity.family_id, series_type: 'activity', series_id: activity.id,
+        occurrence_date: '2026-07-15', companion_member_id: 'parent-2', assignee_member_id: null,
+        cancelled: false, updated_at: '2026-07-14T10:00:00Z',
+      }],
+    }).filter((entry) => entry.sourceType === 'activity')
+    expect(entries.find((entry) => entry.date === '2026-07-15')).toMatchObject({ responsibleMemberId: 'parent-2', assignmentOverridden: true })
+    expect(entries.find((entry) => entry.date === '2026-07-22')).toMatchObject({ responsibleMemberId: 'parent-1', assignmentOverridden: false })
+  })
+
   it('omits occurrences for paused activities', () => {
     const activity = makeActivity({ recurrence_type: 'weekly', status: 'paused', start_date: '2026-07-01' })
     const entries = buildCalendarEntries({

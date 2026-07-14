@@ -98,7 +98,12 @@ export function formatDueDateLabel(dueDate: string, today: string = todayISODate
 // Ascending due date first (so overdue, then today, then upcoming dates
 // fall out in order automatically), then a stable tie-breaker.
 export function compareChoresByDueDate(a: Chore, b: Chore): number {
-  const dateCompare = compareISODates(a.due_date, b.due_date)
+  const aDue = a.due_date
+  const bDue = b.due_date
+  if (!aDue && bDue) return 1
+  if (aDue && !bDue) return -1
+  if (!aDue || !bDue) return a.title.localeCompare(b.title)
+  const dateCompare = compareISODates(aDue, bDue)
   if (dateCompare !== 0) return dateCompare
   if (a.created_at !== b.created_at) return a.created_at < b.created_at ? -1 : 1
   return a.title.localeCompare(b.title)

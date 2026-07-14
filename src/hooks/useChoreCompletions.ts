@@ -13,6 +13,11 @@ export interface ChoreCompletion {
   occurrence_due_date: string
   chore_title: string
   reward_amount: number
+  assigned_member_id?: string | null
+  assignment_was_override?: boolean
+  requires_approval?: boolean
+  reward_enabled?: boolean
+  task_category?: string | null
 }
 
 export function useChoreCompletions(familyId: string | undefined) {
@@ -32,7 +37,7 @@ export function useChoreCompletions(familyId: string | undefined) {
     // carry family_id directly (see RLS policy in 003_chores.sql).
     const { data, error } = await supabase
       .from('chore_completions')
-      .select('id, chore_id, completed_by, completed_at, status, approved_by, approved_at, occurrence_due_date, chore_title, reward_amount, chores!inner(family_id)')
+      .select('id, chore_id, completed_by, completed_at, status, approved_by, approved_at, occurrence_due_date, chore_title, reward_amount, assigned_member_id, assignment_was_override, requires_approval, reward_enabled, task_category, chores!inner(family_id)')
       .eq('chores.family_id', familyId)
       .order('completed_at', { ascending: false })
 

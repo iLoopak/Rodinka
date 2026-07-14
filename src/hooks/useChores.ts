@@ -20,7 +20,7 @@ export function useChores(familyId: string | undefined) {
     setLoading(true)
     const { data, error } = await supabase
       .from('chores')
-      .select('id, family_id, title, description, assigned_to, due_date, reward_amount, recurring, recurrence_type, recurrence_weekdays, preferred_day_of_month, status, created_at, updated_at')
+      .select('id, family_id, title, description, assigned_to, due_date, reward_amount, reward_enabled, reward_currency, requires_approval, category, priority, recurring, recurrence_type, recurrence_weekdays, preferred_day_of_month, status, created_at, updated_at')
       .eq('family_id', familyId)
       .order('created_at')
 

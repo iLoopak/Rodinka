@@ -154,6 +154,7 @@ export function buildTodayAttentionItems({
   }
 
   for (const chore of chores) {
+    if (!chore.due_date) continue
     if (chore.due_date >= today) continue
     if (getChoreState(chore, latestCompletionFor(chore.id)) !== 'actionable') continue
     items.push({

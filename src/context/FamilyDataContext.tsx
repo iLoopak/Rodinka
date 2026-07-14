@@ -11,7 +11,7 @@ import {
 import { supabase } from '../supabaseClient'
 import { t } from '../strings'
 import type { Member } from '../hooks/useFamily'
-import { useFamilyMembers, type FamilyMember } from '../hooks/useFamilyMembers'
+import { isActiveFamilyMember, useFamilyMembers, type FamilyMember } from '../hooks/useFamilyMembers'
 import { useChores, type Chore } from '../hooks/useChores'
 import { useChoreCompletions, type ChoreCompletion } from '../hooks/useChoreCompletions'
 import { useAllowanceLedger } from '../hooks/useAllowanceLedger'
@@ -41,6 +41,8 @@ import { createMemberLookup, resolveCurrentMember } from '../utils/memberLookup'
 import { useMemberProfiles } from '../hooks/useMemberProfiles'
 import { choreInputToRow, type ChoreInput } from '../utils/choreModel'
 import { todayISODate } from '../utils/dueDate'
+import { useOccurrenceAssignments } from '../hooks/useOccurrenceAssignments'
+import type { ActivityParticipantHistory, OccurrenceOverride, OccurrenceSeriesType, SeriesAssignmentHistory } from '../utils/occurrenceAssignments'
 
 export type { ChoreInput } from '../utils/choreModel'
 
@@ -168,11 +170,15 @@ interface FamilyDataContextValue extends ReturnType<typeof useShoppingData> {
   familyNameLoading: boolean
   membersLoading: boolean
   members: FamilyMember[]
+  allMembers: FamilyMember[]
   kids: FamilyMember[]
   chores: Chore[]
   completions: ChoreCompletion[]
   pendingCompletions: ChoreCompletion[]
   activities: Activity[]
+  occurrenceOverrides: OccurrenceOverride[]
+  assignmentHistory: SeriesAssignmentHistory[]
+  participantHistory: ActivityParticipantHistory[]
   allowancePlans: AllowancePlan[]
   allowanceCycles: AllowanceCycle[]
   medicalRecords: MedicalRecord[]
@@ -189,7 +195,7 @@ interface FamilyDataContextValue extends ReturnType<typeof useShoppingData> {
   addChore: (input: ChoreInput) => Promise<void>
   updateChore: (id: string, input: ChoreInput) => Promise<void>
   setChoreArchived: (id: string, archived: boolean) => Promise<void>
-  markDone: (choreId: string, assignedTo: string) => Promise<void>
+  markDone: (choreId: string, assignedTo?: string, occurrenceDate?: string) => Promise<void>
   approve: (completionId: string) => Promise<ChoreApprovalResult>
   reject: (completionId: string) => Promise<void>
   payout: (memberId: string, amount: number, reason: string) => Promise<void>
@@ -199,6 +205,10 @@ interface FamilyDataContextValue extends ReturnType<typeof useShoppingData> {
   createInvite: () => Promise<{ code: string; expiresAt: string | null }>
   addActivity: (input: ActivityInput) => Promise<void>
   updateActivity: (id: string, input: ActivityInput) => Promise<void>
+  setOccurrenceMember: (seriesType: OccurrenceSeriesType, seriesId: string, occurrenceDate: string, memberId: string | null, restoreDefault?: boolean) => Promise<void>
+  removeMember: (memberId: string, replacementMemberId: string | null, taskStrategy: 'unassign' | 'reassign', activityStrategy: 'clear' | 'reassign', reason?: string) => Promise<void>
+  leaveHousehold: (replacementMemberId: string | null, taskStrategy: 'unassign' | 'reassign', activityStrategy: 'clear' | 'reassign') => Promise<void>
+  restoreMember: (memberId: string) => Promise<void>
   markActivityPaymentPaid: (id: string) => Promise<void>
   addMedicalRecord: (input: MedicalRecordInput) => Promise<void>
   updateMedicalRecord: (id: string, input: MedicalRecordInput) => Promise<void>
@@ -241,7 +251,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
   activeFamilyIdRef.current = familyId
 
   const {
-    members,
+    members: allMembers,
     loading: membersLoading,
     error: membersError,
     refresh: refreshMembers,
@@ -278,6 +288,15 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     error: activitiesError,
     refresh: refreshActivities,
   } = useActivities(familyId)
+  const {
+    overrides: occurrenceOverrides,
+    assignmentHistory,
+    participantHistory,
+    loading: occurrenceAssignmentsLoading,
+    error: occurrenceAssignmentsError,
+    refresh: refreshOccurrenceAssignments,
+    setMemberOverride,
+  } = useOccurrenceAssignments(familyId)
   const {
     medicalRecords,
     loading: medicalLoading,
@@ -347,11 +366,12 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
   // reads `chores` from context gets consistent ordering for free.
   const chores = useMemo(() => [...rawChores].sort(compareChoresByDueDate), [rawChores])
 
+  const members = useMemo(() => allMembers.filter(isActiveFamilyMember), [allMembers])
   const kids = useMemo(() => members.filter((m) => m.role === 'child'), [members])
 
   const memberById = useMemo(() => {
-    return createMemberLookup(members)
-  }, [members])
+    return createMemberLookup(allMembers)
+  }, [allMembers])
 
   const currentMember = resolveCurrentMember(member, memberById)
   const isParentOrAdmin = currentMember.role === 'admin' || currentMember.role === 'parent'
@@ -388,7 +408,8 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     activitiesLoading ||
     medicalLoading ||
     mealsDataLoading ||
-    shoppingData.shoppingLoading
+    shoppingData.shoppingLoading ||
+    occurrenceAssignmentsLoading
   const error =
     membersError ||
     choresError ||
@@ -399,7 +420,8 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     activitiesError ||
     medicalError ||
     mealsDataError ||
-    shoppingData.shoppingError
+    shoppingData.shoppingError ||
+    occurrenceAssignmentsError
 
   const refreshAll = useCallback(async () => {
     await Promise.all([
@@ -413,6 +435,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
       refreshMedicalRecords(),
       refreshMealsData(),
       refreshShopping(),
+      refreshOccurrenceAssignments(),
     ])
   }, [
     refreshMembers,
@@ -425,6 +448,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     refreshMedicalRecords,
     refreshMealsData,
     refreshShopping,
+    refreshOccurrenceAssignments,
   ])
 
   const refreshReminderSources = useCallback(async () => {
@@ -433,6 +457,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
       refreshChores(),
       refreshCompletions(),
       refreshActivities(),
+      refreshOccurrenceAssignments(),
       refreshMedicalRecords(),
       refreshMealsData(),
       refreshShopping(),
@@ -442,6 +467,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     refreshChores,
     refreshCompletions,
     refreshActivities,
+    refreshOccurrenceAssignments,
     refreshMedicalRecords,
     refreshMealsData,
     refreshShopping,
@@ -488,12 +514,13 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
       const { error } = await supabase.from('chores').insert({
         family_id: familyId,
         created_by: userId,
+        created_by_member_id: currentMember.id,
         ...choreInputToRow(input),
       })
       if (error) throw friendly(error)
       await refreshChores()
     },
-    [familyId, userId, refreshChores]
+    [currentMember.id, familyId, userId, refreshChores]
   )
 
   const updateChore = useCallback(
@@ -523,14 +550,15 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
   )
 
   const markDone = useCallback(
-    async (choreId: string, assignedTo: string) => {
-      const { error } = await supabase
-        .from('chore_completions')
-        .insert({ chore_id: choreId, completed_by: assignedTo })
+    async (choreId: string, _assignedTo?: string, occurrenceDate?: string) => {
+      const { error } = await supabase.rpc('complete_household_task', {
+        p_task_id: choreId,
+        p_occurrence_date: occurrenceDate ?? null,
+      })
       if (error) throw friendly(error)
-      await refreshCompletions()
+      await Promise.all([refreshChores(), refreshCompletions(), refreshLedger()])
     },
-    [refreshCompletions]
+    [refreshChores, refreshCompletions, refreshLedger]
   )
 
   const approve = useCallback(
@@ -648,6 +676,43 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     await refreshActivities()
   }, [activities, familyId, refreshActivities])
 
+  const setOccurrenceMember = useCallback(async (seriesType: OccurrenceSeriesType, seriesId: string, occurrenceDate: string, memberId: string | null, restoreDefault = false) => {
+    await setMemberOverride(seriesType, seriesId, occurrenceDate, memberId, restoreDefault)
+    await (seriesType === 'activity' ? refreshActivities() : refreshChores())
+  }, [setMemberOverride, refreshActivities, refreshChores])
+
+  const removeMember = useCallback(async (memberId: string, replacementMemberId: string | null, taskStrategy: 'unassign' | 'reassign', activityStrategy: 'clear' | 'reassign', reason = '') => {
+    const { error: removalError } = await supabase.rpc('remove_household_member', {
+      p_member_id: memberId,
+      p_replacement_member_id: replacementMemberId,
+      p_task_strategy: taskStrategy,
+      p_activity_strategy: activityStrategy,
+      p_reason: reason || null,
+      p_allow_self: false,
+    })
+    if (removalError) throw friendly(removalError)
+    await refreshAll()
+  }, [refreshAll])
+
+  const leaveHousehold = useCallback(async (replacementMemberId: string | null, taskStrategy: 'unassign' | 'reassign', activityStrategy: 'clear' | 'reassign') => {
+    const { error: leaveError } = await supabase.rpc('remove_household_member', {
+      p_member_id: currentMember.id,
+      p_replacement_member_id: replacementMemberId,
+      p_task_strategy: taskStrategy,
+      p_activity_strategy: activityStrategy,
+      p_reason: 'self_leave',
+      p_allow_self: true,
+    })
+    if (leaveError) throw friendly(leaveError)
+    window.location.assign('/')
+  }, [currentMember.id])
+
+  const restoreMember = useCallback(async (memberId: string) => {
+    const { error: restoreError } = await supabase.rpc('restore_household_member', { p_member_id: memberId })
+    if (restoreError) throw friendly(restoreError)
+    await refreshAll()
+  }, [refreshAll])
+
   const addMedicalRecord = useCallback(
     async (input: MedicalRecordInput) => {
       const { error } = await supabase
@@ -681,11 +746,15 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     familyNameLoading,
     membersLoading,
     members,
+    allMembers,
     kids,
     chores,
     completions,
     pendingCompletions,
     activities,
+    occurrenceOverrides,
+    assignmentHistory,
+    participantHistory,
     allowancePlans,
     allowanceCycles,
     medicalRecords,
@@ -713,6 +782,10 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     createInvite,
     addActivity,
     updateActivity,
+    setOccurrenceMember,
+    removeMember,
+    leaveHousehold,
+    restoreMember,
     markActivityPaymentPaid,
     addMedicalRecord,
     updateMedicalRecord,
