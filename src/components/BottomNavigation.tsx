@@ -34,7 +34,7 @@ const items: NavigationItem[] = [
   {
     to: '/plan',
     label: t.nav.plan,
-    activeRoutes: ['/plan', '/chores', '/activities', '/health', '/meals'],
+    activeRoutes: ['/plan', '/chores', '/activities', '/health', '/meals', '/shopping'],
     icon: () => (
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" strokeLinejoin="round" />

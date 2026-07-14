@@ -12,6 +12,7 @@ import { ActivitiesScreen } from './ActivitiesScreen'
 import { HealthScreen } from './HealthScreen'
 import { MealPlanScreen } from './meals/MealPlanScreen'
 import { InstallAppBanner } from './InstallAppBanner'
+import { ShoppingScreen } from './ShoppingScreen'
 
 export function AppShell() {
   const { path } = useRouter()
@@ -33,6 +34,7 @@ export function AppShell() {
         {path === '/activities' && <ActivitiesScreen />}
         {path === '/health' && <HealthScreen />}
         {path === '/meals' && <MealPlanScreen />}
+        {path === '/shopping' && <ShoppingScreen />}
         {path === '/family' && <FamilyScreen />}
         {path === '/more' && <MoreScreen />}
       </main>

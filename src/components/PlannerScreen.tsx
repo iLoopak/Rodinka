@@ -11,6 +11,7 @@ import type { PlannerItemType } from '../utils/plannerCreate'
 import { ErrorState } from './ui/ErrorState'
 import { PlannerAreaCard } from './planner/PlannerAreaCard'
 import { UniversalCreateModal } from './planner/UniversalCreateModal'
+import { ShoppingCategoryIcon } from './shopping/ShoppingCategoryIcon'
 
 interface QuickAction {
   label: string
@@ -30,6 +31,7 @@ export function PlannerScreen() {
     loading,
     error,
     refreshAll,
+    activeShoppingItems,
   } = useFamilyData()
 
   if (loading) return <p className="loading">{t.loading.generic}</p>
@@ -188,6 +190,17 @@ export function PlannerScreen() {
             }
             details={openVotes.length > 0 ? [t.planner.mealsVoting(openVotes.length)] : []}
             ariaLabel={t.planner.openArea(t.planner.mealsTitle)}
+          />
+          <PlannerAreaCard
+            to="/shopping"
+            icon={<ShoppingCategoryIcon category="household" />}
+            colorVar="--category-family"
+            surfaceVar="--category-family-soft"
+            borderVar="--category-family-border"
+            title={t.shopping.title}
+            summary={t.shopping.activeCount(activeShoppingItems.length)}
+            details={[]}
+            ariaLabel={t.planner.openArea(t.shopping.title)}
           />
         </div>
       </section>

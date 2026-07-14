@@ -96,24 +96,24 @@ entries stay out to avoid flooding it with every rough idea; see the
 Phase 3 PR description for the full reasoning.
 
 Row Level Security enforces that a logged-in user can only ever see data
-belonging to families they're a member of. See `supabase/001_schema.sql` for
-the Phase 0 tables/policies, `supabase/002_functions.sql` for the
+belonging to families they're a member of. See `supabase/migrations/20260714000100_schema.sql` for
+the Phase 0 tables/policies, `supabase/migrations/20260714000200_functions.sql` for the
 `create_family` / `create_invite` / `redeem_invite` RPC functions,
-`supabase/003_chores.sql` for the Phase 1 tables/policies plus the
+`supabase/migrations/20260714000300_chores.sql` for the Phase 1 tables/policies plus the
 `approve_chore_completion` / `reject_chore_completion` / `record_payout` RPC
 functions (approving a completion and crediting the ledger happens
-atomically inside `approve_chore_completion`), `supabase/004_chore_due_date.sql`
+atomically inside `approve_chore_completion`), `supabase/migrations/20260714000400_chore_due_date.sql`
 for the `chores.due_date` column plus a tightened insert policy that
 verifies a chore's `assigned_to` belongs to the same family,
-`supabase/005_activities_medical.sql` for the `activities` and
+`supabase/migrations/20260714000500_activities_medical.sql` for the `activities` and
 `medical_records` tables (same same-family-reference check applied to their
 child/patient/responsible-adult columns from the start), and
-`supabase/006_meal_planning.sql` for the meal library/voting/plan tables
+`supabase/migrations/20260714000600_meal_planning.sql` for the meal library/voting/plan tables
 plus the `open_vote_round` / `close_vote_round` RPC functions (opening a
 round atomically checks it's still a draft, that no other round is
 already open, and that it has at least one candidate).
 
-`supabase/007_member_profiles.sql` adds editable member profiles and the
+`supabase/migrations/20260714000700_member_profiles.sql` adds editable member profiles and the
 private `member-avatars` Storage bucket. Profile writes go exclusively
 through `update_member_profile`: an admin/parent can update themself and
 children in the same family, while a linked child account can only update
@@ -125,7 +125,7 @@ continue to create adult memberships. Avatar read/write policies apply the
 same family/profile permission logic, and signed URLs are derived temporarily
 in the frontend rather than stored in `members`.
 
-`supabase/009_chore_recurrence_lifecycle.sql` upgrades the former boolean
+`supabase/migrations/20260714000900_chore_recurrence_lifecycle.sql` upgrades the former boolean
 chore recurrence to `none`/`daily`/`weekly`/`monthly`, backfilling legacy
 `recurring=true` rows as weekly because the old schema stored no cadence. It
 also snapshots every completion occurrence and replaces chore approval with
@@ -137,6 +137,15 @@ status changes are blocked while a completion is pending approval; the UI
 uses the simpler rule of disabling all editing until that completion is
 approved or rejected.
 
+`supabase/migrations/20260714001000_shared_shopping_list.sql` adds the family-scoped shopping list,
+bounded purchase history, safe normalized duplicate handling, actor snapshots,
+and reusable meal ingredients. Shopping creation, purchase toggles, batch
+imports, previous-list copies, and ingredient replacement use validated RPCs;
+RLS and triggers reject cross-family member, meal, and plan-entry references.
+Purchased rows are archived rather than deleted when the visible list is
+cleared, so common-item suggestions and previous shopping sessions remain
+available without introducing a separate inventory model.
+
 ### App flow (implemented so far)
 
 1. Not logged in → `AuthScreen` (email + password sign in/sign up, or
@@ -145,7 +154,8 @@ approved or rejected.
    via invite code)
 3. Logged in, has a family → `AppShell` with bottom navigation across
    `TodayDashboard`, `CalendarScreen`, `ChoresScreen`, `FamilyScreen`, and
-   `MoreScreen`. `ActivitiesScreen`, `HealthScreen`, and `MealPlanScreen`
+   `MoreScreen`. `ActivitiesScreen`, `HealthScreen`, `MealPlanScreen`, and
+   `ShoppingScreen`
    are reachable from More and from Today's summary links (kept out of the
    bottom nav to avoid overcrowding it — see the Phase 2/3 PR descriptions
    for the reasoning). `MealPlanScreen` itself has three internal tabs —
@@ -223,13 +233,18 @@ cp .env.example .env
 npm run dev
 ```
 
-In Supabase, run `supabase/001_schema.sql`, `supabase/002_functions.sql`,
-`supabase/003_chores.sql`, `supabase/004_chore_due_date.sql`,
-`supabase/005_activities_medical.sql`, then `supabase/006_meal_planning.sql`,
-`supabase/007_member_profiles.sql`, and
-`supabase/008_allowance_plans_family_events.sql`, then
-`supabase/009_chore_recurrence_lifecycle.sql` in the SQL Editor (in that order — later files depend on earlier
-tables/functions existing).
+Database changes are versioned in `supabase/migrations`. Link the CLI once with
+`npx supabase login` and `npx supabase link --project-ref <project-ref>`, then
+review and deploy pending migrations with:
+
+```bash
+npx supabase migration list
+npx supabase db push --dry-run
+npx supabase db push
+```
+
+Do not re-run migrations through the SQL Editor. The CLI records applied
+versions and skips them on later pushes.
 
 Migration `008_allowance_plans_family_events.sql` adds allowance plans,
 requirements, settled cycles, ledger provenance, activity kinds/all-day

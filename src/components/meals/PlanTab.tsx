@@ -11,6 +11,7 @@ import { MemberAvatar } from '../ui/MemberAvatar'
 import { AddPlanEntryForm } from './AddPlanEntryForm'
 import type { MealPlanEntry, MealSlot } from '../../hooks/useMealPlanEntries'
 import type { PlanEntryInput } from '../../context/useMealsData'
+import { MealIngredientsSection } from './MealIngredientsSection'
 
 const WEEKDAY_LABELS = [
   t.calendar.weekdayShortMon,
@@ -209,6 +210,7 @@ export function PlanTab({ prefill, onPrefillConsumed }: Props) {
       {editingEntry && (
         <Modal title={t.mealPlan.editEntryTitle} onClose={() => setEditingEntry(null)}>
           <AddPlanEntryForm meals={meals} members={members} planEntries={planEntries} initial={editingEntry} onSubmit={handleUpdate} />
+          {editingEntry.meal_id && <MealIngredientsSection mealId={editingEntry.meal_id} sourcePlanEntryId={editingEntry.id} allowEdit={false} />}
           <button type="button" className="btn-secondary" onClick={handleRemove}>
             {t.mealPlan.removeEntryAction}
           </button>

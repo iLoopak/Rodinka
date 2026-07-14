@@ -35,6 +35,7 @@ import { useMealsData, type MealInput, type PlanEntryInput, type VoteRoundInput 
 import type { Meal } from '../hooks/useMeals'
 import type { MealVoteRound, VoteValue } from '../hooks/useMealVoteRounds'
 import type { MealPlanEntry } from '../hooks/useMealPlanEntries'
+import { useShoppingData } from './useShoppingData'
 import { createMemberLookup, resolveCurrentMember } from '../utils/memberLookup'
 import { useMemberProfiles } from '../hooks/useMemberProfiles'
 import { choreInputToRow, type ChoreInput } from '../utils/choreModel'
@@ -156,7 +157,7 @@ function medicalInputToRow(input: MedicalRecordInput) {
 // independently re-fetch members/chores/completions/ledger, and so a
 // mutation in one screen (e.g. approving on Today) is reflected everywhere.
 
-interface FamilyDataContextValue {
+interface FamilyDataContextValue extends ReturnType<typeof useShoppingData> {
   familyId: string
   userId: string
   userEmail: string
@@ -294,6 +295,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     deletePlanEntry,
     copyWeek,
   } = useMealsData(familyId, userId)
+  const shoppingData = useShoppingData(familyId)
 
   const [familyName, setFamilyName] = useState<string | null>(null)
   const [familyNameError, setFamilyNameError] = useState<string | null>(null)
@@ -356,7 +358,8 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     allowancePlansLoading ||
     activitiesLoading ||
     medicalLoading ||
-    mealsDataLoading
+    mealsDataLoading ||
+    shoppingData.shoppingLoading
   const error =
     membersError ||
     choresError ||
@@ -366,7 +369,8 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     familyNameError ||
     activitiesError ||
     medicalError ||
-    mealsDataError
+    mealsDataError ||
+    shoppingData.shoppingError
 
   const refreshAll = useCallback(async () => {
     await Promise.all([
@@ -379,6 +383,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
       refreshActivities(),
       refreshMedicalRecords(),
       refreshMealsData(),
+      shoppingData.refreshShopping(),
     ])
   }, [
     refreshMembers,
@@ -390,6 +395,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     refreshActivities,
     refreshMedicalRecords,
     refreshMealsData,
+    shoppingData,
   ])
 
   const addChild = useCallback(
@@ -626,6 +632,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     meals,
     voteRounds,
     planEntries,
+    ...shoppingData,
     balances,
     memberName,
     memberById,

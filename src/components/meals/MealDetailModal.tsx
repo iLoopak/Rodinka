@@ -5,6 +5,7 @@ import type { Meal } from '../../hooks/useMeals'
 import type { MealInput } from '../../context/useMealsData'
 import { Modal } from '../ui/Modal'
 import { AddMealForm } from './AddMealForm'
+import { MealIngredientsSection } from './MealIngredientsSection'
 
 interface Props {
   meal: Meal
@@ -87,6 +88,8 @@ export function MealDetailModal({ meal, onUpdate, onAddToPlan, onAddToVote, onCl
           </p>
         )}
       </div>
+
+      <MealIngredientsSection mealId={meal.id} />
 
       <div className="family-actions">
         {onAddToPlan && meal.status === 'active' && (
