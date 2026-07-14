@@ -85,8 +85,8 @@ export function FamilyScreen() {
       {showAddChild && (
         <Modal title={t.chores.addChildTitle} onClose={() => setShowAddChild(false)}>
           <AddChildForm
-            onSubmit={async (displayName) => {
-              await addChild(displayName)
+            onSubmit={async (displayName, avatarFile) => {
+              await addChild(displayName, avatarFile)
               setShowAddChild(false)
             }}
           />

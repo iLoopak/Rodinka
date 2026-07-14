@@ -36,6 +36,7 @@ import type { Meal } from '../hooks/useMeals'
 import type { MealVoteRound, VoteValue } from '../hooks/useMealVoteRounds'
 import type { MealPlanEntry } from '../hooks/useMealPlanEntries'
 import { createMemberLookup, resolveCurrentMember } from '../utils/memberLookup'
+import { useMemberProfiles } from '../hooks/useMemberProfiles'
 
 export interface ActivityInput {
   title: string
@@ -171,7 +172,7 @@ interface FamilyDataContextValue {
   latestCompletionFor: (choreId: string) => ChoreCompletion | null
   loading: boolean
   error: string | null
-  addChild: (displayName: string) => Promise<void>
+  addChild: (displayName: string, avatarFile?: File | null) => Promise<void>
   addChore: (input: {
     title: string
     description: string
@@ -232,6 +233,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     error: membersError,
     refresh: refreshMembers,
   } = useFamilyMembers(familyId)
+  const { saveMemberProfile } = useMemberProfiles(refreshMembers)
   const {
     chores: rawChores,
     loading: choresLoading,
@@ -387,14 +389,38 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
   ])
 
   const addChild = useCallback(
-    async (displayName: string) => {
-      const { error } = await supabase
+    async (displayName: string, avatarFile: File | null = null) => {
+      const { data, error } = await supabase
         .from('members')
         .insert({ family_id: familyId, display_name: displayName, role: 'child' })
+        .select('id, family_id, display_name, role, user_id, birth_date, color_key, avatar_path, grammatical_gender')
+        .single()
       if (error) throw friendly(error)
-      await refreshMembers()
+      if (avatarFile) {
+        try {
+          await saveMemberProfile({ ...data, avatar_url: null } as FamilyMember, {
+            displayName,
+            birthDate: null,
+            colorKey: null,
+            grammaticalGender: null,
+            avatarFile,
+            removeAvatar: false,
+          })
+        } catch (profileError) {
+          const { error: rollbackError } = await supabase
+            .from('members')
+            .delete()
+            .eq('id', data.id)
+            .eq('family_id', familyId)
+          if (rollbackError) console.error('Failed to roll back member after avatar upload failure:', rollbackError.message)
+          await refreshMembers()
+          throw profileError
+        }
+      } else {
+        await refreshMembers()
+      }
     },
-    [familyId, refreshMembers]
+    [familyId, refreshMembers, saveMemberProfile]
   )
 
   const addChore = useCallback(

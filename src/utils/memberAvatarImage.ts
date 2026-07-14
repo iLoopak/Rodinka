@@ -2,6 +2,25 @@ export const MEMBER_AVATAR_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/we
 export const MEMBER_AVATAR_MAX_INPUT_BYTES = 10 * 1024 * 1024
 export const MEMBER_AVATAR_MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 export const MEMBER_AVATAR_MAX_DIMENSION = 1024
+export const MEMBER_AVATAR_CROP_SIZE = 512
+export const MEMBER_AVATAR_CROP_QUALITY = 0.86
+export const MEMBER_AVATAR_CROPPED_FILENAME = 'member-avatar-cropped.webp'
+export const MEMBER_AVATAR_CROPPED_PREFIX = 'member-avatar-cropped.'
+export const MEMBER_AVATAR_MAX_ZOOM = 4
+
+export interface AvatarCropTransform {
+  zoom: number
+  offsetX: number
+  offsetY: number
+}
+
+export interface AvatarCropGeometry {
+  scale: number
+  renderedWidth: number
+  renderedHeight: number
+  x: number
+  y: number
+}
 
 export type AvatarValidationError = 'empty' | 'unsupported' | 'too_large'
 
@@ -31,24 +50,28 @@ export function buildMemberAvatarPath(
   return `${familyId}/${memberId}/${uniqueId}.${extension}`
 }
 
-async function canvasBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+async function canvasBlob(
+  canvas: HTMLCanvasElement,
+  mimeType = 'image/webp',
+  quality = 0.82
+): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error('Image encoding failed'))),
-      'image/webp',
-      0.82
+      mimeType,
+      quality
     )
   })
 }
 
-interface LoadedImage {
+export interface LoadedMemberAvatarImage {
   source: CanvasImageSource
   width: number
   height: number
   cleanup: () => void
 }
 
-async function loadImage(file: File): Promise<LoadedImage> {
+export async function loadMemberAvatarImage(file: File): Promise<LoadedMemberAvatarImage> {
   if (typeof createImageBitmap === 'function') {
     try {
       const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
@@ -83,8 +106,87 @@ async function loadImage(file: File): Promise<LoadedImage> {
   }
 }
 
+export function initialAvatarCropTransform(): AvatarCropTransform {
+  return { zoom: 1, offsetX: 0, offsetY: 0 }
+}
+
+export function avatarCropGeometry(
+  imageWidth: number,
+  imageHeight: number,
+  viewportSize: number,
+  transform: AvatarCropTransform
+): AvatarCropGeometry {
+  const baseScale = Math.max(viewportSize / imageWidth, viewportSize / imageHeight)
+  const scale = baseScale * transform.zoom
+  const renderedWidth = imageWidth * scale
+  const renderedHeight = imageHeight * scale
+  return {
+    scale,
+    renderedWidth,
+    renderedHeight,
+    x: (viewportSize - renderedWidth) / 2 + transform.offsetX,
+    y: (viewportSize - renderedHeight) / 2 + transform.offsetY,
+  }
+}
+
+export function clampAvatarCropTransform(
+  imageWidth: number,
+  imageHeight: number,
+  viewportSize: number,
+  transform: AvatarCropTransform
+): AvatarCropTransform {
+  const zoom = Math.min(MEMBER_AVATAR_MAX_ZOOM, Math.max(1, transform.zoom))
+  const geometry = avatarCropGeometry(imageWidth, imageHeight, viewportSize, { ...transform, zoom })
+  const maxOffsetX = Math.max(0, (geometry.renderedWidth - viewportSize) / 2)
+  const maxOffsetY = Math.max(0, (geometry.renderedHeight - viewportSize) / 2)
+  return {
+    zoom,
+    offsetX: Math.min(maxOffsetX, Math.max(-maxOffsetX, transform.offsetX)),
+    offsetY: Math.min(maxOffsetY, Math.max(-maxOffsetY, transform.offsetY)),
+  }
+}
+
+export async function createCroppedMemberAvatar(
+  image: Pick<LoadedMemberAvatarImage, 'source' | 'width' | 'height'>,
+  viewportSize: number,
+  transform: AvatarCropTransform
+): Promise<File> {
+  const safeTransform = clampAvatarCropTransform(
+    image.width,
+    image.height,
+    viewportSize,
+    transform
+  )
+  const geometry = avatarCropGeometry(image.width, image.height, viewportSize, safeTransform)
+  const canvas = document.createElement('canvas')
+  canvas.width = MEMBER_AVATAR_CROP_SIZE
+  canvas.height = MEMBER_AVATAR_CROP_SIZE
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('Canvas is unavailable')
+  const outputScale = MEMBER_AVATAR_CROP_SIZE / viewportSize
+  context.drawImage(
+    image.source,
+    geometry.x * outputScale,
+    geometry.y * outputScale,
+    geometry.renderedWidth * outputScale,
+    geometry.renderedHeight * outputScale
+  )
+  let blob = await canvasBlob(canvas, 'image/webp', MEMBER_AVATAR_CROP_QUALITY)
+  if (blob.type !== 'image/webp') {
+    blob = await canvasBlob(canvas, 'image/jpeg', 0.9)
+  }
+  if (blob.size === 0 || blob.size > MEMBER_AVATAR_MAX_UPLOAD_BYTES) {
+    throw new Error('Cropped image exceeds the upload limit')
+  }
+  const isWebp = blob.type === 'image/webp'
+  return new File([blob], isWebp ? MEMBER_AVATAR_CROPPED_FILENAME : 'member-avatar-cropped.jpg', {
+    type: isWebp ? 'image/webp' : 'image/jpeg',
+    lastModified: Date.now(),
+  })
+}
+
 export async function optimizeMemberAvatar(file: File): Promise<File> {
-  const image = await loadImage(file)
+  const image = await loadMemberAvatarImage(file)
   try {
     const scale = Math.min(1, MEMBER_AVATAR_MAX_DIMENSION / Math.max(image.width, image.height))
     const width = Math.max(1, Math.round(image.width * scale))
