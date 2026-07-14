@@ -68,7 +68,11 @@ export function UniversalCreateModal({ initialType, initialDate, onClose }: Prop
   }
 
   return (
-    <Modal title={selectedOption?.title ?? t.create.title} onClose={onClose}>
+    <Modal
+      title={selectedOption?.title ?? t.create.title}
+      onClose={onClose}
+      className={selectedType === 'activity' ? 'activity-form-modal' : undefined}
+    >
       {selectedType ? (
         <>
           <button type="button" className="modal-back-action" onClick={() => setSelectedType(null)}>
@@ -86,7 +90,6 @@ export function UniversalCreateModal({ initialType, initialDate, onClose }: Prop
             <AddActivityForm
               members={members}
               kids={kids}
-              currentMemberId={currentMember.id}
               initialStartDate={datePrefill?.field === 'startDate' ? datePrefill.value : undefined}
               onSubmit={submitActivity}
             />

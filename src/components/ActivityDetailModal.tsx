@@ -15,7 +15,6 @@ interface Props {
   activity: Activity
   members: FamilyMember[]
   kids: FamilyMember[]
-  currentMemberId: string
   memberName: (id: string) => string
   memberById: (id: string) => FamilyMember | undefined
   onUpdate: (id: string, input: ActivityInput) => Promise<void>
@@ -27,7 +26,6 @@ export function ActivityDetailModal({
   activity,
   members,
   kids,
-  currentMemberId,
   memberName,
   memberById,
   onUpdate,
@@ -39,11 +37,10 @@ export function ActivityDetailModal({
 
   if (editing) {
     return (
-      <Modal title={t.activities.editTitle} onClose={onClose}>
+      <Modal title={t.activities.editTitle} onClose={onClose} className="activity-form-modal">
         <AddActivityForm
           members={members}
           kids={kids}
-          currentMemberId={currentMemberId}
           initial={activity}
           onSubmit={async (input) => {
             await onUpdate(activity.id, input)
