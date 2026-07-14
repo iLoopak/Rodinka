@@ -284,7 +284,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
     const normalized = next.timezoneMode === 'auto' ? { ...next, timezone: browserTimezone() } : next
     const { error: saveError } = await supabase.from('notification_preferences').upsert({
       member_id: data.currentMember.id, family_id: data.familyId, in_app_enabled: normalized.inAppEnabled,
-      push_enabled: false, daily_digest_enabled: normalized.dailyDigestEnabled, weekly_digest_enabled: normalized.weeklyDigestEnabled,
+      push_enabled: normalized.pushEnabled, daily_digest_enabled: normalized.dailyDigestEnabled, weekly_digest_enabled: normalized.weeklyDigestEnabled,
       quiet_push_enabled: normalized.quietPushEnabled, quiet_hours_enabled: normalized.quietHoursEnabled,
       quiet_hours_start: normalized.quietHoursStart, quiet_hours_end: normalized.quietHoursEnd,
       timezone: normalized.timezone, timezone_mode: normalized.timezoneMode,
@@ -292,7 +292,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       category_preferences: normalized.categories, updated_at: new Date().toISOString(),
     })
     if (saveError) throw new Error('Nastavení se nepodařilo uložit.')
-    setPreferences({ ...normalized, pushEnabled: false })
+    setPreferences(normalized)
     broadcastInvalidation('preferences')
   }, [broadcastInvalidation, data.currentMember.id, data.familyId])
 
