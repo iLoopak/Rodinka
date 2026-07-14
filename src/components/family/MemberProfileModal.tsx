@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import { t } from '../../strings'
 import type { FamilyMember, GrammaticalGender, MemberColorKey } from '../../hooks/useFamilyMembers'
 import { MemberProfileError, useMemberProfiles } from '../../hooks/useMemberProfiles'
 import { editableMemberProfileFields } from '../../utils/memberProfilePermissions'
 import { MEMBER_COLOR_KEYS, MEMBER_COLOR_VAR_BY_KEY, memberColorKey } from '../../utils/memberColor'
-import { validateMemberAvatarFile, type AvatarValidationError } from '../../utils/memberAvatarImage'
+import type { AvatarValidationError } from '../../utils/memberAvatarImage'
 import { Modal } from '../ui/Modal'
-import { MemberAvatar } from '../ui/MemberAvatar'
+import { MemberAvatarPhotoField } from './MemberAvatarPhotoField'
 
 interface Props {
   member: FamilyMember
@@ -32,9 +32,10 @@ const GENDER_OPTIONS: Array<{ value: GrammaticalGender | null; label: string }> 
   { value: null, label: t.family.grammarUnspecified },
 ]
 
-function avatarValidationMessage(error: AvatarValidationError): string {
+function avatarValidationMessage(error: AvatarValidationError | 'corrupt'): string {
   if (error === 'empty') return t.family.errors.avatarEmpty
   if (error === 'too_large') return t.family.errors.avatarTooLarge
+  if (error === 'corrupt') return t.family.errors.avatarCorrupt
   return t.family.errors.avatarUnsupported
 }
 
@@ -58,43 +59,12 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
     member.grammatical_gender
   )
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
-  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
   const [removeAvatar, setRemoveAvatar] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    return () => {
-      if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl)
-    }
-  }, [avatarPreviewUrl])
-
-  const previewMember = useMemo<FamilyMember>(
-    () => ({
-      ...member,
-      display_name: displayName || member.display_name,
-      color_key: colorKey,
-      avatar_url: avatarPreviewUrl ?? (removeAvatar ? null : member.avatar_url),
-    }),
-    [avatarPreviewUrl, colorKey, displayName, member, removeAvatar]
-  )
-
-  function handleAvatarSelection(file: File | undefined) {
-    if (!file) return
-    const validationError = validateMemberAvatarFile(file)
-    if (validationError) {
-      setError(avatarValidationMessage(validationError))
-      return
-    }
-    setError(null)
-    setAvatarFile(file)
-    setAvatarPreviewUrl(URL.createObjectURL(file))
-    setRemoveAvatar(false)
-  }
-
   function handleRemoveAvatar() {
     setAvatarFile(null)
-    setAvatarPreviewUrl(null)
     setRemoveAvatar(true)
     setError(null)
   }
@@ -128,31 +98,22 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
   return (
     <Modal title={t.family.profileTitle} onClose={saving ? () => undefined : onClose}>
       <form className="member-profile-form sectioned-form" onSubmit={handleSubmit}>
-        <section className="form-section profile-photo-section" aria-labelledby="profile-photo-heading">
-          <h4 id="profile-photo-heading">{t.family.profilePhoto}</h4>
-          <MemberAvatar member={previewMember} size={96} decorative={false} />
-          <div className="profile-photo-actions">
-            <label className="btn-secondary profile-photo-picker">
-              {member.avatar_path || avatarFile ? t.family.changePhoto : t.family.uploadPhoto}
-              <input
-                className="visually-hidden"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                disabled={saving}
-                onChange={(event) => {
-                  handleAvatarSelection(event.target.files?.[0])
-                  event.target.value = ''
-                }}
-              />
-            </label>
-            {(member.avatar_path || avatarFile) && !removeAvatar && (
-              <button type="button" className="btn-secondary" onClick={handleRemoveAvatar} disabled={saving}>
-                {t.family.removePhoto}
-              </button>
-            )}
-          </div>
-          {avatarFile && <p className="field-hint">{t.family.photoPending}</p>}
-        </section>
+        <MemberAvatarPhotoField
+          displayName={displayName}
+          colorKey={colorKey}
+          existingAvatarUrl={member.avatar_url}
+          hasExistingPhoto={!!member.avatar_path}
+          value={avatarFile}
+          removed={removeAvatar}
+          disabled={saving}
+          onChange={(file) => {
+            setAvatarFile(file)
+            setRemoveAvatar(false)
+            setError(null)
+          }}
+          onRemove={handleRemoveAvatar}
+          onError={(validationError) => setError(avatarValidationMessage(validationError))}
+        />
 
         <section className="form-section">
           <label>

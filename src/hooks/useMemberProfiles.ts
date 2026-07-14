@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient'
 import type { FamilyMember, GrammaticalGender, MemberColorKey } from './useFamilyMembers'
 import {
   buildMemberAvatarPath,
+  MEMBER_AVATAR_CROPPED_PREFIX,
   memberAvatarExtension,
   optimizeMemberAvatar,
   validateMemberAvatarFile,
@@ -46,7 +47,9 @@ export function useMemberProfiles(refreshMembers: () => Promise<void>) {
 
         let optimized: File
         try {
-          optimized = await optimizeMemberAvatar(input.avatarFile)
+          optimized = input.avatarFile.name.startsWith(MEMBER_AVATAR_CROPPED_PREFIX)
+            ? input.avatarFile
+            : await optimizeMemberAvatar(input.avatarFile)
         } catch (error) {
           console.error('Failed to optimize member avatar:', error)
           throw new MemberProfileError('upload_failed')
