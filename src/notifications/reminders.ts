@@ -77,6 +77,7 @@ export interface NotificationPreferences {
   quietHoursEnd: string
   timezone: string
   timezoneMode: 'auto' | 'explicit'
+  locale: 'cs' | 'en'
   categories: ReminderCategoryPreferences
 }
 
@@ -91,7 +92,7 @@ export const DEFAULT_CATEGORY_PREFERENCES: ReminderCategoryPreferences = {
   shopping: true,
 }
 
-export function defaultNotificationPreferences(memberId: string, familyId: string, timezone = browserTimezone()): NotificationPreferences {
+export function defaultNotificationPreferences(memberId: string, familyId: string, timezone = browserTimezone(), locale: 'cs' | 'en' = 'cs'): NotificationPreferences {
   return {
     memberId,
     familyId,
@@ -105,6 +106,7 @@ export function defaultNotificationPreferences(memberId: string, familyId: strin
     quietHoursEnd: '07:00',
     timezone,
     timezoneMode: 'auto',
+    locale,
     categories: { ...DEFAULT_CATEGORY_PREFERENCES },
   }
 }
