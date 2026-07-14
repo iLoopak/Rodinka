@@ -2189,3 +2189,16 @@ label.member-gender-option {
 }
 
 .compact-list { margin: 0; padding-left: 1.2rem; }
+
+.share-link-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.share-link-feedback {
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+  min-height: 1.2em;
+}

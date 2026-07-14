@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { t } from '../strings'
 import { useFamilyData } from '../context/FamilyDataContext'
 import { buildCalendarEntries, deduplicateAgendaRanges, entryMatchesMember, type CalendarEntry } from '../utils/calendarEntries'
@@ -13,6 +13,8 @@ import { Modal } from './ui/Modal'
 import { ErrorState } from './ui/ErrorState'
 import { UniversalCreateModal } from './planner/UniversalCreateModal'
 import { CalendarEntryDetailModal } from './calendar/CalendarEntryDetailModal'
+import { useRouter } from '../router'
+import { isValidISODate, isValidUuid } from '../utils/deepLinks'
 
 type ViewMode = 'month' | 'agenda'
 
@@ -28,6 +30,11 @@ export function CalendarScreen() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
   const [selectedEntry, setSelectedEntry] = useState<CalendarEntry | null>(null)
   const [createConfig, setCreateConfig] = useState<{ initialDate?: string } | null>(null)
+  const [deepLinkError, setDeepLinkError] = useState(false)
+  const { searchParams, setQueryParam, removeQueryParam } = useRouter()
+  const dateParam = searchParams.get('date')
+  const eventParam = searchParams.get('event')
+  const processedDeepLinkRef = useRef<string | null>(null)
 
   const {
     chores,
@@ -42,6 +49,72 @@ export function CalendarScreen() {
     error,
     refreshAll,
   } = useFamilyData()
+
+  useEffect(() => {
+    if (loading || error) return
+    const deepLinkKey = `${dateParam ?? ''}|${eventParam ?? ''}`
+    if (processedDeepLinkRef.current === deepLinkKey) return
+    processedDeepLinkRef.current = deepLinkKey
+    let invalid = false
+
+    if (dateParam !== null) {
+      if (isValidISODate(dateParam)) {
+        setViewMode('month')
+        setMonthAnchor(dateParam)
+        setSelectedDay(dateParam)
+      } else {
+        invalid = true
+        setSelectedDay(null)
+      }
+    } else {
+      setSelectedDay(null)
+    }
+
+    if (eventParam !== null) {
+      if (!isValidUuid(eventParam)) {
+        invalid = true
+        setSelectedEntry(null)
+      } else {
+        const sourceActivity = activities.find((item) => item.id === eventParam)
+        const sourceDate =
+          chores.find((item) => item.id === eventParam)?.due_date ??
+          (sourceActivity
+            ? sourceActivity.recurrence_type === 'one_off' ? sourceActivity.start_date : todayISODate()
+            : null) ??
+          medicalRecords.find((item) => item.id === eventParam)?.record_date ??
+          planEntries.find((item) => item.id === eventParam)?.entry_date ??
+          allowancePlans.find((item) => item.id === eventParam)?.starts_on ??
+          null
+
+        const entry = sourceDate
+          ? buildCalendarEntries({
+              chores,
+              activities,
+              medicalRecords,
+              mealPlanEntries: planEntries,
+              allowancePlans,
+              rangeStart: sourceDate,
+              rangeEnd: addDays(sourceDate, 31),
+            }).find((candidate) => candidate.sourceId === eventParam)
+          : undefined
+
+        if (entry) {
+          setViewMode('month')
+          setMonthAnchor(entry.date)
+          setSelectedDay(null)
+          setSelectedEntry(entry)
+        } else {
+          invalid = true
+          setSelectedEntry(null)
+        }
+      }
+    } else {
+      setSelectedEntry(null)
+    }
+
+    setDeepLinkError(invalid)
+  }, [activities, allowancePlans, chores, dateParam, error, eventParam, loading, medicalRecords, planEntries])
+
   if (loading) {
     return <p className="loading">{t.loading.generic}</p>
   }
@@ -83,6 +156,27 @@ export function CalendarScreen() {
   function clearFilters() {
     setFilterPerson('')
     setFilterType('')
+  }
+
+  function openDay(date: string) {
+    setViewMode('month')
+    setMonthAnchor(date)
+    setSelectedDay(date)
+    setSelectedEntry(null)
+    setDeepLinkError(false)
+    setQueryParam('date', date)
+  }
+
+  function openEntry(entry: CalendarEntry) {
+    setSelectedEntry(entry)
+    setSelectedDay(null)
+    setDeepLinkError(false)
+    setQueryParam('event', entry.sourceId)
+  }
+
+  function closeEntry() {
+    setSelectedEntry(null)
+    if (eventParam !== null) removeQueryParam('event')
   }
 
   const dayEntries = selectedDay ? entries.filter((e) => e.date === selectedDay) : []
@@ -127,6 +221,8 @@ export function CalendarScreen() {
         </button>
       </div>
 
+      {deepLinkError && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
+
       <div className="filter-row">
         <select value={filterPerson} onChange={(e) => setFilterPerson(e.target.value)} aria-label={t.calendar.filterPersonLabel}>
           <option value="">
@@ -168,7 +264,7 @@ export function CalendarScreen() {
           {entries.length === 0 && hasFilters ? (
             <p className="empty-state">{t.calendar.filtersNoResults}</p>
           ) : (
-            <MonthGrid monthAnchor={monthAnchor} entries={entries} today={today} onSelectDay={setSelectedDay} />
+            <MonthGrid monthAnchor={monthAnchor} entries={entries} today={today} onSelectDay={openDay} />
           )}
         </>
       )}
@@ -178,7 +274,7 @@ export function CalendarScreen() {
           {entries.length === 0 && hasFilters ? (
             <p className="empty-state">{t.calendar.filtersNoResults}</p>
           ) : (
-            <AgendaList entries={deduplicateAgendaRanges(entries)} today={today} memberById={memberById} onSelectEntry={setSelectedEntry} />
+            <AgendaList entries={deduplicateAgendaRanges(entries)} today={today} memberById={memberById} onSelectEntry={openEntry} />
           )}
         </section>
       )}
@@ -201,8 +297,7 @@ export function CalendarScreen() {
                   entry={entry}
                   memberById={memberById}
                   onClick={() => {
-                    setSelectedEntry(entry)
-                    setSelectedDay(null)
+                    openEntry(entry)
                   }}
                 />
               ))}
@@ -224,7 +319,7 @@ export function CalendarScreen() {
       {selectedEntry && (
         <CalendarEntryDetailModal
           entry={selectedEntry}
-          onClose={() => setSelectedEntry(null)}
+          onClose={closeEntry}
         />
       )}
 

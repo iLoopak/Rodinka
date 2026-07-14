@@ -46,8 +46,9 @@ Add every origin the app is served from to **Redirect URLs** (this is what
 lets `supabase.auth.signInWithOAuth({ redirectTo: ... })` actually land back
 in the app instead of being rejected):
 
-- [ ] `http://localhost:5173/` — local dev (`npm run dev`)
-- [ ] Your production Vercel domain, e.g. `https://<your-prod-domain>/` —
+- [ ] `http://localhost:5173/**` — local dev (`npm run dev`), including
+      authenticated deep links.
+- [ ] Your production Vercel domain, e.g. `https://<your-prod-domain>/**` —
       replace with the actual domain from the Vercel project's
       Settings → Domains tab.
 - [ ] Vercel preview deployments. Vercel preview URLs look like
@@ -62,9 +63,9 @@ in the app instead of being rejected):
 Also set **Site URL** to your production domain (used as the default
 redirect target in some flows).
 
-This project has no `vercel.json` and isn't linked in this environment, so
-the exact production/team domain couldn't be confirmed here — fill in the
-real value from your Vercel dashboard.
+The repository includes a `vercel.json` SPA fallback. The exact
+production/team domain still needs to match the value from your Vercel
+dashboard.
 
 ## 4. Google Cloud Console
 

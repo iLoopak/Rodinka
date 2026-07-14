@@ -11,9 +11,10 @@ interface Props {
   memberById: (id: string) => FamilyMember | undefined
   latestCompletionFor: (choreId: string) => ChoreCompletion | null
   onMarkDone: (choreId: string, assignedTo: string) => Promise<void>
+  onSelect: (chore: Chore) => void
 }
 
-export function ChoreList({ chores, memberById, latestCompletionFor, onMarkDone }: Props) {
+export function ChoreList({ chores, memberById, latestCompletionFor, onMarkDone, onSelect }: Props) {
   const [markingId, setMarkingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -53,6 +54,9 @@ export function ChoreList({ chores, memberById, latestCompletionFor, onMarkDone 
               <DueBadge dueDate={chore.due_date} completed={isDone} />
               <span className="row-amount">{t.chores.formatAmount(chore.reward_amount)}</span>
               {isPending && <span className="badge badge-pending">{t.chores.pendingBadge}</span>}
+              <button type="button" className="btn-secondary" onClick={() => onSelect(chore)}>
+                {t.deepLinks.openDetail}
+              </button>
               {!isPending && !isDone && (
                 <button onClick={() => handleMarkDone(chore)} disabled={markingId === chore.id}>
                   {markingId === chore.id ? t.chores.markingDone : t.chores.markDone}

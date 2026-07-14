@@ -8,6 +8,7 @@ import type { MedicalRecordInput } from '../context/FamilyDataContext'
 import { Modal } from './ui/Modal'
 import { MemberAvatar } from './ui/MemberAvatar'
 import { AddMedicalRecordForm } from './AddMedicalRecordForm'
+import { ShareLinkButton } from './ui/ShareLinkButton'
 
 interface Props {
   record: MedicalRecord
@@ -134,6 +135,7 @@ export function MedicalDetailModal({ record, members, currentMemberId, memberNam
         <button className="btn-secondary" onClick={() => setEditing(true)}>
           {t.medical.edit}
         </button>
+        <ShareLinkButton route="/health" param="record" id={record.id} title={record.title} />
       </div>
       {error && <p className="error">{error}</p>}
     </Modal>

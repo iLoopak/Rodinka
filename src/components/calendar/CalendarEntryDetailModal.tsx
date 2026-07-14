@@ -9,6 +9,7 @@ import { getItemTypeStyle } from '../../utils/itemTypeStyle'
 import { recordToInput } from '../MedicalDetailModal'
 import { Modal } from '../ui/Modal'
 import { MemberAvatar } from '../ui/MemberAvatar'
+import { ShareLinkButton } from '../ui/ShareLinkButton'
 
 interface Props {
   entry: CalendarEntry
@@ -131,6 +132,7 @@ export function CalendarEntryDetailModal({ entry, onClose }: Props) {
         >
           {t.calendar.openRecord}
         </button>
+        <ShareLinkButton route="/calendar" param="event" id={entry.sourceId} title={entry.title} />
       </div>
       {error && <p className="error">{error}</p>}
     </Modal>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { t } from '../strings'
 import { useFamilyData } from '../context/FamilyDataContext'
 import { AddMedicalRecordForm } from './AddMedicalRecordForm'
@@ -14,6 +14,8 @@ import { isMedicalRecordOverdue } from '../utils/medicalDueState'
 import { onActivateKey } from '../utils/a11y'
 import type { MedicalRecord } from '../hooks/useMedicalRecords'
 import type { MedicalRecordInput } from '../context/FamilyDataContext'
+import { useRouter } from '../router'
+import { resolveDeepLinkedItem } from '../utils/deepLinks'
 
 type Tab = 'upcoming' | 'history' | 'vaccinations' | 'overdue'
 
@@ -23,9 +25,28 @@ export function HealthScreen() {
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null)
   const [filterMember, setFilterMember] = useState('')
   const [filterType, setFilterType] = useState('')
+  const [deepLinkError, setDeepLinkError] = useState(false)
+  const { searchParams, setQueryParam, removeQueryParam } = useRouter()
+  const recordParam = searchParams.get('record')
 
   const { medicalRecords, members, currentMember, memberName, memberById, isParentOrAdmin, addMedicalRecord, updateMedicalRecord, loading, error, refreshAll } =
     useFamilyData()
+
+  useEffect(() => {
+    if (loading) return
+    const resolution = resolveDeepLinkedItem(medicalRecords, recordParam)
+    if (resolution.status === 'found') {
+      setSelectedRecord(resolution.item)
+      setTab(resolution.item.status === 'planned' ? 'upcoming' : 'history')
+      setDeepLinkError(false)
+    } else if (resolution.status === 'invalid' || resolution.status === 'not_found') {
+      setSelectedRecord(null)
+      setDeepLinkError(true)
+    } else {
+      setSelectedRecord(null)
+      setDeepLinkError(false)
+    }
+  }, [loading, medicalRecords, recordParam])
 
   if (loading) {
     return <p className="loading">{t.loading.generic}</p>
@@ -44,6 +65,17 @@ export function HealthScreen() {
   function clearFilters() {
     setFilterMember('')
     setFilterType('')
+  }
+
+  function openRecord(record: MedicalRecord) {
+    setSelectedRecord(record)
+    setDeepLinkError(false)
+    setQueryParam('record', record.id)
+  }
+
+  function closeRecord() {
+    setSelectedRecord(null)
+    if (recordParam !== null) removeQueryParam('record')
   }
 
   const filtered = medicalRecords.filter((r) => {
@@ -84,6 +116,8 @@ export function HealthScreen() {
           </button>
         )}
       </div>
+
+      {deepLinkError && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
 
       <div className="filter-row">
         <select value={filterMember} onChange={(e) => setFilterMember(e.target.value)} aria-label={t.medical.filterMemberLabel}>
@@ -134,7 +168,7 @@ export function HealthScreen() {
         ) : (
           <ul className="section-list">
             {currentList.map((record) => (
-              <MedicalRow key={record.id} record={record} memberById={memberById} onClick={() => setSelectedRecord(record)} />
+              <MedicalRow key={record.id} record={record} memberById={memberById} onClick={() => openRecord(record)} />
             ))}
           </ul>
         )}
@@ -154,7 +188,7 @@ export function HealthScreen() {
           memberName={memberName}
           memberById={memberById}
           onUpdate={updateMedicalRecord}
-          onClose={() => setSelectedRecord(null)}
+          onClose={closeRecord}
         />
       )}
     </>

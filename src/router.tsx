@@ -3,10 +3,12 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type AnchorHTMLAttributes,
   type ReactNode,
 } from 'react'
+import { updateUrlQuery, type QueryHistoryMode } from './utils/deepLinks'
 
 // Minimal client-side router for a fixed set of top-level destinations.
 // No dependency needed: pushState/popstate covers back/forward, no-reload
@@ -21,30 +23,54 @@ function normalize(pathname: string): Route {
 
 interface RouterContextValue {
   path: Route
-  navigate: (to: Route) => void
+  searchParams: URLSearchParams
+  navigate: (to: Route, hash?: string) => void
+  setQueryParam: (name: string, value: string, mode?: QueryHistoryMode) => void
+  removeQueryParam: (name: string, mode?: QueryHistoryMode) => void
 }
 
 const RouterContext = createContext<RouterContextValue | null>(null)
 
 export function RouterProvider({ children }: { children: ReactNode }) {
   const [path, setPath] = useState<Route>(() => normalize(window.location.pathname))
+  const [search, setSearch] = useState(() => window.location.search)
+
+  const syncLocation = useCallback(() => {
+    setPath(normalize(window.location.pathname))
+    setSearch(window.location.search)
+  }, [])
 
   useEffect(() => {
-    function onPopState() {
-      setPath(normalize(window.location.pathname))
-    }
+    function onPopState() { syncLocation() }
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
-  }, [])
+  }, [syncLocation])
 
-  const navigate = useCallback((to: Route) => {
-    if (window.location.pathname !== to) {
-      window.history.pushState(null, '', to)
+  const navigate = useCallback((to: Route, hash?: string) => {
+    const target = hash ? `${to}${hash}` : to
+    if (`${window.location.pathname}${window.location.search}${window.location.hash}` !== target) {
+      window.history.pushState(null, '', target)
     }
-    setPath(to)
-  }, [])
+    syncLocation()
+  }, [syncLocation])
 
-  return <RouterContext.Provider value={{ path, navigate }}>{children}</RouterContext.Provider>
+  const changeQueryParam = useCallback((name: string, value: string | null, mode: QueryHistoryMode) => {
+    const target = updateUrlQuery(window.location.href, name, value)
+    window.history[mode === 'push' ? 'pushState' : 'replaceState'](null, '', target)
+    syncLocation()
+  }, [syncLocation])
+
+  const setQueryParam = useCallback((name: string, value: string, mode: QueryHistoryMode = 'push') => {
+    changeQueryParam(name, value, mode)
+  }, [changeQueryParam])
+
+  const removeQueryParam = useCallback((name: string, mode: QueryHistoryMode = 'replace') => {
+    changeQueryParam(name, null, mode)
+  }, [changeQueryParam])
+
+  const searchParams = useMemo(() => new URLSearchParams(search), [search])
+
+  return <RouterContext.Provider value={{ path, searchParams, navigate, setQueryParam, removeQueryParam }}>{children}</RouterContext.Provider>
 }
 
 export function useRouter() {
@@ -70,10 +96,7 @@ export function Link({ to, hash, children, onClick, ...rest }: LinkProps) {
         onClick?.(e)
         if (e.defaultPrevented) return
         e.preventDefault()
-        if (hash && (window.location.pathname !== to || window.location.hash !== hash)) {
-          window.history.pushState(null, '', href)
-        }
-        navigate(to)
+        navigate(to, hash)
       }}
       {...rest}
     >
