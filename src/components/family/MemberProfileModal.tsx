@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { t } from '../../strings'
+import { currentLang, t } from '../../strings'
 import type { FamilyMember, GrammaticalGender, MemberColorKey } from '../../hooks/useFamilyMembers'
 import { MemberProfileError, useMemberProfiles } from '../../hooks/useMemberProfiles'
 import { editableMemberProfileFields } from '../../utils/memberProfilePermissions'
@@ -7,6 +7,7 @@ import { MEMBER_COLOR_KEYS, MEMBER_COLOR_VAR_BY_KEY, memberColorKey } from '../.
 import type { AvatarValidationError } from '../../utils/memberAvatarImage'
 import { Modal } from '../ui/Modal'
 import { MemberAvatarPhotoField } from './MemberAvatarPhotoField'
+import { getLocalizedAddressName } from '../../utils/personalizedName'
 
 interface Props {
   member: FamilyMember
@@ -58,10 +59,16 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
   const [grammaticalGender, setGrammaticalGender] = useState<GrammaticalGender | null>(
     member.grammatical_gender
   )
+  const [vocativeName, setVocativeName] = useState(member.vocative_name ?? '')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [removeAvatar, setRemoveAvatar] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const vocativePreview = getLocalizedAddressName({
+    firstName: displayName,
+    manualVocative: vocativeName,
+    locale: currentLang,
+  })
 
   function handleRemoveAvatar() {
     setAvatarFile(null)
@@ -84,6 +91,7 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
         birthDate: fields.birthDate ? birthDate || null : member.birth_date,
         colorKey: colorTouched ? colorKey : member.color_key,
         grammaticalGender,
+        vocativeName: vocativeName || null,
         avatarFile,
         removeAvatar,
       })
@@ -127,6 +135,23 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
             />
           </label>
           {!fields.displayName && <p className="field-hint">{t.family.parentManagedField}</p>}
+
+          <label>
+            {t.family.vocativeNameLabel}
+            <input
+              value={vocativeName}
+              onChange={(event) => setVocativeName(event.target.value)}
+              readOnly={!fields.vocativeName}
+              disabled={saving}
+              maxLength={120}
+            />
+          </label>
+          <p className="field-hint">{fields.vocativeName ? t.family.vocativeNameHelp : t.family.parentManagedField}</p>
+          {vocativePreview && (
+            <p className="vocative-preview" aria-live="polite">
+              {t.family.vocativePreview(vocativePreview)}
+            </p>
+          )}
 
           <label>
             {t.family.birthDateLabel}

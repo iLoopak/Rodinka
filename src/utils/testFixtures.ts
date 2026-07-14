@@ -22,6 +22,7 @@ export function makeFamilyMember(overrides: Partial<FamilyMember> = {}): FamilyM
     avatar_path: null,
     avatar_url: null,
     grammatical_gender: null,
+    vocative_name: null,
     ...overrides,
   }
 }

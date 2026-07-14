@@ -8,6 +8,7 @@ export interface EditableMemberProfileFields {
   color: boolean
   avatar: boolean
   grammaticalGender: boolean
+  vocativeName: boolean
 }
 
 const NO_FIELDS: EditableMemberProfileFields = {
@@ -16,6 +17,7 @@ const NO_FIELDS: EditableMemberProfileFields = {
   color: false,
   avatar: false,
   grammaticalGender: false,
+  vocativeName: false,
 }
 
 export function memberProfileAccess(
@@ -51,5 +53,6 @@ export function editableMemberProfileFields(
     color: true,
     avatar: true,
     grammaticalGender: true,
+    vocativeName: true,
   }
 }

@@ -10,7 +10,7 @@ import { ShoppingScreen } from './ShoppingScreen'
 
 const member = {
   id: 'member-1', family_id: 'family-1', display_name: 'Alex', role: 'parent' as const,
-  user_id: 'user-1', birth_date: null, color_key: null, avatar_path: null, avatar_url: null, grammatical_gender: null,
+  user_id: 'user-1', birth_date: null, color_key: null, avatar_path: null, avatar_url: null, grammatical_gender: null, vocative_name: null,
 }
 const responsible = { ...member, id: 'member-2', display_name: 'Sam', user_id: 'user-2' }
 const baseItem: ShoppingItem = {

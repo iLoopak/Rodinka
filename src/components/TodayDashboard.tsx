@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useFamilyData } from '../context/FamilyDataContext'
 import { useRouter } from '../router'
-import { t } from '../strings'
+import { currentLang, t } from '../strings'
 import type { CalendarEntry } from '../utils/calendarEntries'
 import { formatFullDate, todayISODate } from '../utils/dueDate'
 import { buildTodayAttentionItems, buildTodayEntries } from '../utils/todayAgenda'
@@ -12,6 +12,7 @@ import { TodayAgendaList } from './today/TodayAgendaList'
 import { TodayAttentionList } from './today/TodayAttentionList'
 import { EmptyState } from './ui/EmptyState'
 import { ErrorState } from './ui/ErrorState'
+import { getLocalizedAddressName } from '../utils/personalizedName'
 
 export function TodayDashboard() {
   const [showCreate, setShowCreate] = useState(false)
@@ -65,6 +66,11 @@ export function TodayDashboard() {
     today,
   })
   const needsAttention = pendingCompletions.length > 0 || attentionItems.length > 0
+  const addressName = getLocalizedAddressName({
+    firstName: currentMember.display_name,
+    manualVocative: currentMember.vocative_name,
+    locale: currentLang,
+  })
 
   async function handleApprove(completionId: string) {
     const result = await approve(completionId)
@@ -77,7 +83,7 @@ export function TodayDashboard() {
   return (
     <>
       <TodayHeader
-        name={currentMember.display_name}
+        name={addressName || null}
         date={today}
         itemCount={entries.length}
         onAdd={() => setShowCreate(true)}
@@ -146,7 +152,7 @@ export function TodayDashboard() {
 }
 
 interface HeaderProps {
-  name: string
+  name: string | null
   date: string
   itemCount: number
   onAdd: () => void

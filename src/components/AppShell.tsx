@@ -1,6 +1,4 @@
 import { useRouter } from '../router'
-import { t } from '../strings'
-import { Logo } from './Logo'
 import { BottomNavigation } from './BottomNavigation'
 import { TodayDashboard } from './TodayDashboard'
 import { ChoresScreen } from './ChoresScreen'
@@ -15,17 +13,17 @@ import { InstallAppBanner } from './InstallAppBanner'
 import { ShoppingScreen } from './ShoppingScreen'
 import { ReminderBell } from './reminders/ReminderBell'
 import { ReminderCenter } from './reminders/ReminderCenter'
+import { useFamilyData } from '../context/FamilyDataContext'
+import { FamilyBrand } from './FamilyBrand'
 
 export function AppShell() {
   const { path } = useRouter()
+  const { familyName, familyNameLoading } = useFamilyData()
 
   return (
     <div className="app-shell">
       <header className="app-header">
-        <div className="brand">
-          <Logo size={28} />
-          <span className="wordmark">{t.appName}</span>
-        </div>
+        <FamilyBrand familyName={familyName} loading={familyNameLoading} />
         <ReminderBell />
       </header>
       <InstallAppBanner />
