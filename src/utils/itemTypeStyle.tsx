@@ -5,6 +5,9 @@ export type CalendarItemType = 'chore' | 'activity' | 'payment' | 'medical' | 'v
 
 interface ItemTypeStyle {
   colorVar: string
+  surfaceVar: string
+  borderVar: string
+  category: 'tasks' | 'activities' | 'health' | 'meals' | 'family'
   label: string
   icon: ReactNode
 }
@@ -63,18 +66,18 @@ function MealIcon() {
 export function getItemTypeStyle(type: CalendarItemType): ItemTypeStyle {
   switch (type) {
     case 'chore':
-      return { colorVar: '--accent-sage', label: t.calendar.typeChore, icon: <ChoreIcon /> }
+      return { colorVar: '--category-tasks', surfaceVar: '--category-tasks-soft', borderVar: '--category-tasks-border', category: 'tasks', label: t.calendar.typeChore, icon: <ChoreIcon /> }
     case 'activity':
-      return { colorVar: '--accent-lavender', label: t.calendar.typeActivity, icon: <ActivityIcon /> }
+      return { colorVar: '--category-activities', surfaceVar: '--category-activities-soft', borderVar: '--category-activities-border', category: 'activities', label: t.calendar.typeActivity, icon: <ActivityIcon /> }
     case 'payment':
-      return { colorVar: '--accent-honey', label: t.calendar.typePayment, icon: <PaymentIcon /> }
+      return { colorVar: '--category-family', surfaceVar: '--category-family-soft', borderVar: '--category-family-border', category: 'family', label: t.calendar.typePayment, icon: <PaymentIcon /> }
     case 'medical':
-      return { colorVar: '--accent-sky', label: t.calendar.typeMedical, icon: <MedicalIcon /> }
+      return { colorVar: '--category-health', surfaceVar: '--category-health-soft', borderVar: '--category-health-border', category: 'health', label: t.calendar.typeMedical, icon: <MedicalIcon /> }
     case 'vaccination':
-      return { colorVar: '--accent-berry', label: t.calendar.typeVaccination, icon: <VaccinationIcon /> }
+      return { colorVar: '--category-health-strong', surfaceVar: '--category-health-soft', borderVar: '--category-health-border', category: 'health', label: t.calendar.typeVaccination, icon: <VaccinationIcon /> }
     case 'meal':
-      return { colorVar: '--brick', label: t.calendar.typeMeal, icon: <MealIcon /> }
+      return { colorVar: '--category-meals', surfaceVar: '--category-meals-soft', borderVar: '--category-meals-border', category: 'meals', label: t.calendar.typeMeal, icon: <MealIcon /> }
     case 'allowance':
-      return { colorVar: '--accent-honey', label: t.calendar.typeAllowance, icon: <PaymentIcon /> }
+      return { colorVar: '--category-family', surfaceVar: '--category-family-soft', borderVar: '--category-family-border', category: 'family', label: t.calendar.typeAllowance, icon: <PaymentIcon /> }
   }
 }

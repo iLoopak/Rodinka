@@ -1,8 +1,10 @@
 import { useMemo } from 'react'
+import type { FamilyMember } from '../../hooks/useFamilyMembers'
 import { t } from '../../strings'
-import { buildMonthWeeks } from '../../utils/monthGrid'
-import { getItemTypeStyle } from '../../utils/itemTypeStyle'
 import type { CalendarEntry } from '../../utils/calendarEntries'
+import { getItemTypeStyle } from '../../utils/itemTypeStyle'
+import { buildMonthWeeks } from '../../utils/monthGrid'
+import { MemberAvatar } from '../ui/MemberAvatar'
 
 const WEEKDAY_LABELS = [
   t.calendar.weekdayShortMon,
@@ -14,16 +16,18 @@ const WEEKDAY_LABELS = [
   t.calendar.weekdayShortSun,
 ]
 
-const MAX_DOTS_PER_DAY = 3
+const MAX_INDICATORS_PER_DAY = 3
 
 interface Props {
   monthAnchor: string
   entries: CalendarEntry[]
   today: string
+  selectedDay?: string | null
+  memberById: (id: string) => FamilyMember | undefined
   onSelectDay: (day: string) => void
 }
 
-export function MonthGrid({ monthAnchor, entries, today, onSelectDay }: Props) {
+export function MonthGrid({ monthAnchor, entries, today, selectedDay, memberById, onSelectDay }: Props) {
   const weeks = useMemo(() => buildMonthWeeks(monthAnchor), [monthAnchor])
   const currentMonth = monthAnchor.slice(0, 7)
 
@@ -40,11 +44,7 @@ export function MonthGrid({ monthAnchor, entries, today, onSelectDay }: Props) {
   return (
     <div className="month-grid">
       <div className="month-grid-row month-grid-header">
-        {WEEKDAY_LABELS.map((label) => (
-          <div key={label} className="month-grid-weekday">
-            {label}
-          </div>
-        ))}
+        {WEEKDAY_LABELS.map((label) => <div key={label} className="month-grid-weekday">{label}</div>)}
       </div>
       {weeks.map((week) => (
         <div className="month-grid-row" key={week[0]}>
@@ -52,15 +52,17 @@ export function MonthGrid({ monthAnchor, entries, today, onSelectDay }: Props) {
             const dayEntries = entriesByDay.get(day) ?? []
             const inMonth = day.slice(0, 7) === currentMonth
             const isToday = day === today
-            const visible = dayEntries.slice(0, MAX_DOTS_PER_DAY)
+            const isSelected = day === selectedDay
+            const visible = dayEntries.slice(0, MAX_INDICATORS_PER_DAY)
             const overflow = dayEntries.length - visible.length
 
             return (
               <button
                 type="button"
                 key={day}
-                className={`month-grid-day${inMonth ? '' : ' outside'}${isToday ? ' today' : ''}`}
+                className={`month-grid-day${inMonth ? '' : ' outside'}${isToday ? ' today' : ''}${isSelected ? ' selected' : ''}`}
                 onClick={() => onSelectDay(day)}
+                aria-pressed={isSelected}
                 aria-label={`${day}${dayEntries.length > 0 ? ` — ${dayEntries.length}` : ''}`}
               >
                 <span className="month-grid-day-number">{Number(day.slice(8, 10))}</span>
@@ -68,16 +70,22 @@ export function MonthGrid({ monthAnchor, entries, today, onSelectDay }: Props) {
                   <span className="month-grid-day-dots">
                     {visible.map((entry) => {
                       const style = getItemTypeStyle(entry.type)
-                      const rangePosition = entry.isMultiDay
-                        ? entry.date === entry.rangeStart ? 'start' : entry.date === entry.rangeEnd ? 'end' : 'continuation'
-                        : null
+                      const personId = entry.childOrPatientId ?? entry.responsibleMemberId
                       return (
                         <span
                           key={entry.id}
-                          className={`month-grid-dot${rangePosition ? ' multi-day' : ''}`}
-                          style={{ backgroundColor: `var(${style.colorVar})` }}
-                          aria-label={rangePosition ? t.calendar[`range${rangePosition[0].toUpperCase()}${rangePosition.slice(1)}` as 'rangeStart' | 'rangeEnd' | 'rangeContinuation'] : undefined}
-                        >{rangePosition === 'start' ? '▶' : rangePosition === 'end' ? '■' : rangePosition ? '—' : ''}</span>
+                          className="month-grid-indicator"
+                          style={{
+                            backgroundColor: `var(${style.surfaceVar})`,
+                            borderColor: `var(${style.colorVar})`,
+                            color: `var(${style.colorVar})`,
+                          }}
+                          title={`${style.label}: ${entry.title}`}
+                        >
+                          {personId
+                            ? <MemberAvatar member={memberById(personId)} size={13} />
+                            : <span className="month-grid-indicator-dot" />}
+                        </span>
                       )
                     })}
                     {overflow > 0 && <span className="month-grid-more">+{overflow}</span>}

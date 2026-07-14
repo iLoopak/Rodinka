@@ -86,7 +86,7 @@ export function PlannerScreen() {
           <h1 className="home-title">{t.planner.title}</h1>
           <p className="home-subtitle">{t.planner.subtitle}</p>
         </div>
-        <button type="button" className="header-action-button" onClick={() => setCreateConfig({})}>
+        <button type="button" className="header-action-button planner-create-button" onClick={() => setCreateConfig({})}>
           <span aria-hidden="true">+</span> {t.create.addAction}
         </button>
       </div>
@@ -101,6 +101,7 @@ export function PlannerScreen() {
                 key={action.type}
                 type="button"
                 className="planner-quick-action"
+                data-category={style.category}
                 onClick={() => setCreateConfig({ type: action.type })}
               >
                 <span className="planner-quick-icon" style={{ color: `var(${style.colorVar})` }}>
@@ -120,11 +121,13 @@ export function PlannerScreen() {
             to="/chores"
             icon={choreStyle.icon}
             colorVar={choreStyle.colorVar}
+            surfaceVar={choreStyle.surfaceVar}
+            borderVar={choreStyle.borderVar}
             title={t.planner.choresTitle}
             summary={t.planner.choresActive(activeChores.length)}
             details={[
-              t.planner.choresPending(pendingCompletions.length),
-              t.planner.choresOverdue(overdueChores.length),
+              ...(pendingCompletions.length > 0 ? [t.planner.choresPending(pendingCompletions.length)] : []),
+              ...(overdueChores.length > 0 ? [t.planner.choresOverdue(overdueChores.length)] : []),
             ]}
             ariaLabel={t.planner.openArea(t.planner.choresTitle)}
           />
@@ -132,6 +135,8 @@ export function PlannerScreen() {
             to="/activities"
             icon={activityStyle.icon}
             colorVar={activityStyle.colorVar}
+            surfaceVar={activityStyle.surfaceVar}
+            borderVar={activityStyle.borderVar}
             title={t.planner.activitiesTitle}
             summary={t.planner.activitiesActive(activeActivities.length)}
             details={[
@@ -144,7 +149,7 @@ export function PlannerScreen() {
                     formatDueDateLabel(nextActivity.date, today)
                   )
                 : t.planner.activitiesNone,
-              t.planner.paymentsOverdue(overduePayments.length),
+              ...(overduePayments.length > 0 ? [t.planner.paymentsOverdue(overduePayments.length)] : []),
             ]}
             ariaLabel={t.planner.openArea(t.planner.activitiesTitle)}
           />
@@ -152,6 +157,8 @@ export function PlannerScreen() {
             to="/health"
             icon={medicalStyle.icon}
             colorVar={medicalStyle.colorVar}
+            surfaceVar={medicalStyle.surfaceVar}
+            borderVar={medicalStyle.borderVar}
             title={t.planner.healthTitle}
             summary={
               nextMedical
@@ -161,13 +168,15 @@ export function PlannerScreen() {
                   )
                 : t.planner.healthNone
             }
-            details={[t.planner.healthOverdue(overdueMedical.length)]}
+            details={overdueMedical.length > 0 ? [t.planner.healthOverdue(overdueMedical.length)] : []}
             ariaLabel={t.planner.openArea(t.planner.healthTitle)}
           />
           <PlannerAreaCard
             to="/meals"
             icon={mealStyle.icon}
             colorVar={mealStyle.colorVar}
+            surfaceVar={mealStyle.surfaceVar}
+            borderVar={mealStyle.borderVar}
             title={t.planner.mealsTitle}
             summary={
               nextMeal
@@ -177,7 +186,7 @@ export function PlannerScreen() {
                   )
                 : t.planner.mealsNone
             }
-            details={[t.planner.mealsVoting(openVotes.length)]}
+            details={openVotes.length > 0 ? [t.planner.mealsVoting(openVotes.length)] : []}
             ariaLabel={t.planner.openArea(t.planner.mealsTitle)}
           />
         </div>

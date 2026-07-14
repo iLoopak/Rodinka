@@ -9,7 +9,6 @@ import { getItemTypeStyle, type CalendarItemType } from '../utils/itemTypeStyle'
 import { MonthGrid } from './calendar/MonthGrid'
 import { AgendaList } from './calendar/AgendaList'
 import { CalendarEntryRow } from './calendar/CalendarEntryRow'
-import { Modal } from './ui/Modal'
 import { ErrorState } from './ui/ErrorState'
 import { UniversalCreateModal } from './planner/UniversalCreateModal'
 import { CalendarEntryDetailModal } from './calendar/CalendarEntryDetailModal'
@@ -182,6 +181,11 @@ export function CalendarScreen() {
     if (eventParam !== null) removeQueryParam('event')
   }
 
+  function closeDay() {
+    setSelectedDay(null)
+    if (dateParam !== null) removeQueryParam('date')
+  }
+
   const dayEntries = selectedDay ? entries.filter((e) => e.date === selectedDay) : []
 
   return (
@@ -267,7 +271,37 @@ export function CalendarScreen() {
           {entries.length === 0 && hasFilters ? (
             <p className="empty-state">{t.calendar.filtersNoResults}</p>
           ) : (
-            <MonthGrid monthAnchor={monthAnchor} entries={entries} today={today} onSelectDay={openDay} />
+            <MonthGrid
+              monthAnchor={monthAnchor}
+              entries={entries}
+              today={today}
+              selectedDay={selectedDay}
+              memberById={memberById}
+              onSelectDay={openDay}
+            />
+          )}
+          {selectedDay && (
+            <section className="calendar-day-agenda" aria-labelledby="selected-day-title">
+              <div className="calendar-day-agenda-header">
+                <div>
+                  <span className="page-eyebrow">{t.calendar.viewAgenda}</span>
+                  <h2 id="selected-day-title">{formatFullDate(selectedDay)}</h2>
+                </div>
+                <button type="button" className="calendar-day-close" onClick={closeDay} aria-label={t.calendar.close}>×</button>
+              </div>
+              {dayEntries.length === 0 ? (
+                <p className="empty-state">{t.calendar.noEntries}</p>
+              ) : (
+                <ul className="section-list calendar-day-list">
+                  {dayEntries.map((entry) => (
+                    <CalendarEntryRow key={entry.id} entry={entry} memberById={memberById} onClick={() => openEntry(entry)} />
+                  ))}
+                </ul>
+              )}
+              <button type="button" className="btn-secondary calendar-day-add" onClick={() => setCreateConfig({ initialDate: selectedDay })}>
+                <span aria-hidden="true">+</span> {t.create.addThisDayAction}
+              </button>
+            </section>
           )}
         </>
       )}
@@ -286,37 +320,6 @@ export function CalendarScreen() {
         <button type="button" className="link section-footer-link" onClick={clearFilters}>
           {t.calendar.clearFilters}
         </button>
-      )}
-
-      {selectedDay && (
-        <Modal title={formatFullDate(selectedDay)} onClose={() => setSelectedDay(null)}>
-          {dayEntries.length === 0 ? (
-            <p className="empty-state">{t.calendar.noEntries}</p>
-          ) : (
-            <ul className="section-list">
-              {dayEntries.map((entry) => (
-                <CalendarEntryRow
-                  key={entry.id}
-                  entry={entry}
-                  memberById={memberById}
-                  onClick={() => {
-                    openEntry(entry)
-                  }}
-                />
-              ))}
-            </ul>
-          )}
-          <button
-            type="button"
-            className="btn-secondary modal-primary-action"
-            onClick={() => {
-              setCreateConfig({ initialDate: selectedDay })
-              setSelectedDay(null)
-            }}
-          >
-            <span aria-hidden="true">+</span> {t.create.addThisDayAction}
-          </button>
-        </Modal>
       )}
 
       {selectedEntry && (

@@ -623,6 +623,7 @@ export const strings = {
       noEntries: 'V tomto období nic není naplánováno.',
       filtersNoResults: 'Filtrům neodpovídá žádná položka.',
       clearFilters: 'Zrušit filtry',
+      close: 'Zavřít',
 
       typeChore: 'Úkol',
       typeActivity: 'Aktivita',
@@ -1440,6 +1441,7 @@ export const strings = {
       noEntries: 'Nothing scheduled for this period.',
       filtersNoResults: 'No entry matches the filters.',
       clearFilters: 'Clear filters',
+      close: 'Close',
 
       typeChore: 'Chore',
       typeActivity: 'Activity',
