@@ -36,7 +36,12 @@ export function makeChore(overrides: Partial<Chore> = {}): Chore {
     due_date: '2026-07-13',
     reward_amount: 10,
     recurring: false,
+    recurrence_type: 'none',
+    recurrence_weekdays: null,
+    preferred_day_of_month: null,
+    status: 'active',
     created_at: '2026-07-01T10:00:00Z',
+    updated_at: '2026-07-01T10:00:00Z',
     ...overrides,
   }
 }

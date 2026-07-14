@@ -11,6 +11,10 @@ import { ChoreDetailModal } from './ChoreDetailModal'
 import { useRouter } from '../router'
 import { resolveDeepLinkedItem } from '../utils/deepLinks'
 import type { Chore } from '../hooks/useChores'
+import type { ChoreInput } from '../utils/choreModel'
+import { getChoreState } from '../utils/choreState'
+import { choreRecurrenceSummary } from '../utils/choreRecurrence'
+import { formatFullDate } from '../utils/dueDate'
 
 type Tab = 'active' | 'pending' | 'allowance' | 'manage'
 
@@ -25,6 +29,7 @@ export function ChoresScreen() {
   const [showAddChore, setShowAddChore] = useState(false)
   const [selectedChore, setSelectedChore] = useState<Chore | null>(null)
   const [deepLinkError, setDeepLinkError] = useState(false)
+  const [approvalFeedback, setApprovalFeedback] = useState<string | null>(null)
   const { searchParams, setQueryParam, removeQueryParam } = useRouter()
   const choreParam = searchParams.get('chore')
   const {
@@ -47,6 +52,8 @@ export function ChoresScreen() {
     creditAllowance,
     skipAllowance,
     addChore,
+    updateChore,
+    setChoreArchived,
     isParentOrAdmin,
     loading,
     error,
@@ -58,6 +65,7 @@ export function ChoresScreen() {
     const resolution = resolveDeepLinkedItem(chores, choreParam)
     if (resolution.status === 'found') {
       setSelectedChore(resolution.item)
+      if (resolution.item.status === 'archived') setTab('manage')
       setDeepLinkError(false)
     } else if (resolution.status === 'invalid' || resolution.status === 'not_found') {
       setSelectedChore(null)
@@ -76,16 +84,17 @@ export function ChoresScreen() {
     return <ErrorState message={error} onRetry={refreshAll} />
   }
 
-  async function handleAddChore(input: {
-    title: string
-    description: string
-    assignedTo: string
-    dueDate: string
-    rewardAmount: number
-    recurring: boolean
-  }) {
+  async function handleAddChore(input: ChoreInput) {
     await addChore(input)
     setShowAddChore(false)
+  }
+
+  async function handleApprove(completionId: string) {
+    const result = await approve(completionId)
+    setApprovalFeedback(result.nextDueDate
+      ? t.chores.approvedNextDue(formatFullDate(result.nextDueDate))
+      : t.chores.approvedOneOff)
+    return result
   }
 
   function openChore(chore: Chore) {
@@ -105,6 +114,10 @@ export function ChoresScreen() {
     { id: 'allowance', label: t.chores.tabAllowance },
     { id: 'manage', label: t.chores.tabManage },
   ]
+  const activeChores = chores.filter((chore) => {
+    const state = getChoreState(chore, latestCompletionFor(chore.id))
+    return chore.status === 'active' && state !== 'done' && state !== 'archived'
+  })
 
   return (
     <>
@@ -138,11 +151,12 @@ export function ChoresScreen() {
       </div>
 
       {deepLinkError && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
+      {approvalFeedback && <p className="success approval-feedback" role="status">{approvalFeedback}</p>}
 
       {tab === 'active' && (
         <section className="section">
           <ChoreList
-            chores={chores}
+            chores={activeChores}
             memberById={memberById}
             latestCompletionFor={latestCompletionFor}
             onMarkDone={markDone}
@@ -160,7 +174,7 @@ export function ChoresScreen() {
               completions={pendingCompletions}
               chores={chores}
               memberById={memberById}
-              onApprove={approve}
+              onApprove={handleApprove}
               onReject={reject}
             />
           )}
@@ -178,6 +192,18 @@ export function ChoresScreen() {
       {tab === 'manage' && (
         <section className="section">
           <p>{t.chores.manageIntro}</p>
+          {chores.length === 0 ? <p className="empty-state">{t.chores.managementEmpty}</p> : (
+            <ul className="section-list">
+              {chores.map((chore) => <li key={chore.id}>
+                <span className="row-title">{chore.title}</span>
+                <span className="row-meta">{memberById(chore.assigned_to)?.display_name ?? '?'}</span>
+                <span className="row-description">{choreRecurrenceSummary(chore)}</span>
+                <span className="row-spacer" />
+                {chore.status === 'archived' && <span className="badge">{t.chores.archivedBadge}</span>}
+                <button type="button" className="btn-secondary" onClick={() => openChore(chore)}>{t.deepLinks.openDetail}</button>
+              </li>)}
+            </ul>
+          )}
         </section>
       )}
 
@@ -190,8 +216,14 @@ export function ChoresScreen() {
       {selectedChore && <ChoreDetailModal
         chore={selectedChore}
         assignee={memberById(selectedChore.assigned_to)}
+        members={members}
+        currentMemberId={currentMember.id}
+        completions={completions.filter((completion) => completion.chore_id === selectedChore.id)}
         latestCompletion={latestCompletionFor(selectedChore.id)}
+        canManage={isParentOrAdmin}
         onMarkDone={markDone}
+        onUpdate={updateChore}
+        onSetArchived={setChoreArchived}
         onClose={closeChore}
       />}
     </>

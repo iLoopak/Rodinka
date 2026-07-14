@@ -112,6 +112,9 @@ describe('buildTodayEntries', () => {
       status: 'pending_approval',
       approved_by: null,
       approved_at: null,
+      occurrence_due_date: TODAY,
+      chore_title: 'Chore',
+      reward_amount: 10,
     }
 
     expect(

@@ -37,6 +37,15 @@ import type { MealVoteRound, VoteValue } from '../hooks/useMealVoteRounds'
 import type { MealPlanEntry } from '../hooks/useMealPlanEntries'
 import { createMemberLookup, resolveCurrentMember } from '../utils/memberLookup'
 import { useMemberProfiles } from '../hooks/useMemberProfiles'
+import { choreInputToRow, type ChoreInput } from '../utils/choreModel'
+import { todayISODate } from '../utils/dueDate'
+
+export type { ChoreInput } from '../utils/choreModel'
+
+export interface ChoreApprovalResult {
+  choreId: string
+  nextDueDate: string | null
+}
 
 export interface ActivityInput {
   title: string
@@ -173,16 +182,11 @@ interface FamilyDataContextValue {
   loading: boolean
   error: string | null
   addChild: (displayName: string, avatarFile?: File | null) => Promise<void>
-  addChore: (input: {
-    title: string
-    description: string
-    assignedTo: string
-    dueDate: string
-    rewardAmount: number
-    recurring: boolean
-  }) => Promise<void>
+  addChore: (input: ChoreInput) => Promise<void>
+  updateChore: (id: string, input: ChoreInput) => Promise<void>
+  setChoreArchived: (id: string, archived: boolean) => Promise<void>
   markDone: (choreId: string, assignedTo: string) => Promise<void>
-  approve: (completionId: string) => Promise<void>
+  approve: (completionId: string) => Promise<ChoreApprovalResult>
   reject: (completionId: string) => Promise<void>
   payout: (memberId: string, amount: number, reason: string) => Promise<void>
   saveAllowancePlan: (input: AllowancePlanInput, planId?: string) => Promise<void>
@@ -424,28 +428,42 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
   )
 
   const addChore = useCallback(
-    async (input: {
-      title: string
-      description: string
-      assignedTo: string
-      dueDate: string
-      rewardAmount: number
-      recurring: boolean
-    }) => {
+    async (input: ChoreInput) => {
       const { error } = await supabase.from('chores').insert({
         family_id: familyId,
-        title: input.title,
-        description: input.description || null,
-        assigned_to: input.assignedTo,
-        due_date: input.dueDate,
-        reward_amount: input.rewardAmount,
-        recurring: input.recurring,
         created_by: userId,
+        ...choreInputToRow(input),
       })
       if (error) throw friendly(error)
       await refreshChores()
     },
     [familyId, userId, refreshChores]
+  )
+
+  const updateChore = useCallback(
+    async (id: string, input: ChoreInput) => {
+      const { error } = await supabase
+        .from('chores')
+        .update(choreInputToRow(input))
+        .eq('id', id)
+        .eq('family_id', familyId)
+      if (error) throw friendly(error)
+      await refreshChores()
+    },
+    [familyId, refreshChores]
+  )
+
+  const setChoreArchived = useCallback(
+    async (id: string, archived: boolean) => {
+      const { error } = await supabase
+        .from('chores')
+        .update({ status: archived ? 'archived' : 'active' })
+        .eq('id', id)
+        .eq('family_id', familyId)
+      if (error) throw friendly(error)
+      await refreshChores()
+    },
+    [familyId, refreshChores]
   )
 
   const markDone = useCallback(
@@ -461,11 +479,19 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
 
   const approve = useCallback(
     async (completionId: string) => {
-      const { error } = await supabase.rpc('approve_chore_completion', { completion_id: completionId })
+      const { data, error } = await supabase.rpc('approve_chore_completion', {
+        completion_id: completionId,
+        approval_date: todayISODate(),
+      })
       if (error) throw friendly(error)
-      await Promise.all([refreshCompletions(), refreshLedger()])
+      await Promise.all([refreshChores(), refreshCompletions(), refreshLedger()])
+      const result = data as { chore_id?: string; next_due_date?: string | null } | null
+      return {
+        choreId: result?.chore_id ?? '',
+        nextDueDate: result?.next_due_date ?? null,
+      }
     },
-    [refreshCompletions, refreshLedger]
+    [refreshChores, refreshCompletions, refreshLedger]
   )
 
   const reject = useCallback(
@@ -608,6 +634,8 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     error,
     addChild,
     addChore,
+    updateChore,
+    setChoreArchived,
     markDone,
     approve,
     reject,

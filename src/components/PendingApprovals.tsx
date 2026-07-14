@@ -4,12 +4,13 @@ import type { Chore } from '../hooks/useChores'
 import type { ChoreCompletion } from '../hooks/useChoreCompletions'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
 import { MemberAvatar } from './ui/MemberAvatar'
+import type { ChoreApprovalResult } from '../context/FamilyDataContext'
 
 interface Props {
   completions: ChoreCompletion[]
   chores: Chore[]
   memberById: (id: string) => FamilyMember | undefined
-  onApprove: (completionId: string) => Promise<void>
+  onApprove: (completionId: string) => Promise<ChoreApprovalResult>
   onReject: (completionId: string) => Promise<void>
 }
 
