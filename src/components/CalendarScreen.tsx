@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { t } from '../strings'
 import { useFamilyData } from '../context/FamilyDataContext'
 import { buildCalendarEntries, deduplicateAgendaRanges, entryMatchesMember, type CalendarEntry } from '../utils/calendarEntries'
@@ -12,18 +12,31 @@ import { CalendarEntryRow } from './calendar/CalendarEntryRow'
 import { ErrorState } from './ui/ErrorState'
 import { UniversalCreateModal } from './planner/UniversalCreateModal'
 import { CalendarEntryDetailModal } from './calendar/CalendarEntryDetailModal'
+import { WeekAgenda } from './calendar/WeekAgenda'
 import { useRouter } from '../router'
 import { isValidISODate, isValidUuid } from '../utils/deepLinks'
+import { getWeekDates, getWeekStart } from '../utils/weekCalendar'
 
-type ViewMode = 'month' | 'agenda'
+type ViewMode = 'month' | 'week' | 'agenda'
 
 const ITEM_TYPES: CalendarItemType[] = ['chore', 'activity', 'payment', 'allowance', 'medical', 'vaccination', 'meal']
 const AGENDA_PAST_DAYS = 180
 const AGENDA_FUTURE_DAYS = 60
+const CALENDAR_VIEW_KEY = 'rodinka:calendar:view'
+
+function storedCalendarView(): ViewMode {
+  try {
+    const stored = localStorage.getItem(CALENDAR_VIEW_KEY)
+    return stored === 'week' || stored === 'agenda' || stored === 'month' ? stored : 'month'
+  } catch { return 'month' }
+}
 
 export function CalendarScreen() {
-  const [viewMode, setViewMode] = useState<ViewMode>('month')
+  const [viewMode, setViewMode] = useState<ViewMode>(storedCalendarView)
   const [monthAnchor, setMonthAnchor] = useState(todayISODate())
+  const [weekStart, setWeekStart] = useState(() => getWeekStart(todayISODate()))
+  const [selectedWeekDay, setSelectedWeekDay] = useState(todayISODate())
+  const [weekScrollVersion, setWeekScrollVersion] = useState(0)
   const [filterPerson, setFilterPerson] = useState('')
   const [filterType, setFilterType] = useState<CalendarItemType | ''>('')
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
@@ -48,6 +61,10 @@ export function CalendarScreen() {
     error,
     refreshAll,
   } = useFamilyData()
+
+  useEffect(() => {
+    try { localStorage.setItem(CALENDAR_VIEW_KEY, viewMode) } catch { /* Private browsing can deny storage. */ }
+  }, [viewMode])
 
   useEffect(() => {
     if (loading || error) return
@@ -114,45 +131,34 @@ export function CalendarScreen() {
     setDeepLinkError(invalid)
   }, [activities, allowancePlans, chores, dateParam, error, eventParam, loading, medicalRecords, planEntries])
 
-  if (loading) {
-    return <p className="loading">{t.loading.generic}</p>
-  }
-
-  if (error) {
-    return <ErrorState message={error} onRetry={refreshAll} />
-  }
-
   const today = todayISODate()
   const range =
     viewMode === 'month'
       ? getMonthGridRange(monthAnchor)
+      : viewMode === 'week'
+        ? { start: weekStart, end: addDays(weekStart, 6) }
       : { start: addDays(today, -AGENDA_PAST_DAYS), end: addDays(today, AGENDA_FUTURE_DAYS) }
 
   // Calendar shows what's still relevant: leave out chores already done
   // (non-recurring, approved) and cancelled medical records — everything
   // else is projected as-is from the source records.
-  const visibleChores = chores.filter((chore) => {
-    const state = getChoreState(chore, latestCompletionFor(chore.id))
-    return state !== 'done' && state !== 'archived'
-  })
-  const visibleMedical = medicalRecords.filter((r) => r.status !== 'cancelled')
+  const entries = useMemo(() => {
+    const visibleChores = chores.filter((chore) => {
+      const state = getChoreState(chore, latestCompletionFor(chore.id))
+      return state !== 'done' && state !== 'archived'
+    })
+    const visibleMedical = medicalRecords.filter((record) => record.status !== 'cancelled')
+    let projected = buildCalendarEntries({
+      chores: visibleChores, activities, medicalRecords: visibleMedical, mealPlanEntries: planEntries,
+      allowancePlans, rangeStart: range.start, rangeEnd: range.end,
+    })
+    if (filterPerson) projected = projected.filter((entry) => entryMatchesMember(entry, filterPerson))
+    if (filterType) projected = projected.filter((entry) => entry.type === filterType)
+    return projected
+  }, [activities, allowancePlans, chores, filterPerson, filterType, latestCompletionFor, medicalRecords, planEntries, range.end, range.start])
 
-  let entries = buildCalendarEntries({
-    chores: visibleChores,
-    activities,
-    medicalRecords: visibleMedical,
-    mealPlanEntries: planEntries,
-    allowancePlans,
-    rangeStart: range.start,
-    rangeEnd: range.end,
-  })
-
-  if (filterPerson) {
-    entries = entries.filter((entry) => entryMatchesMember(entry, filterPerson))
-  }
-  if (filterType) {
-    entries = entries.filter((e) => e.type === filterType)
-  }
+  if (loading) return <p className="loading">{t.loading.generic}</p>
+  if (error) return <ErrorState message={error} onRetry={refreshAll} />
 
   const hasFilters = filterPerson !== '' || filterType !== ''
   function clearFilters() {
@@ -173,7 +179,32 @@ export function CalendarScreen() {
     setSelectedEntry(entry)
     setSelectedDay(null)
     setDeepLinkError(false)
+    // The current view already has the resolved entry. Mark this URL state as
+    // handled so the deep-link bootstrap does not switch an in-app click back
+    // to the month view; direct/reloaded links still use the bootstrap above.
+    processedDeepLinkRef.current = `${dateParam ?? ''}|${entry.sourceId}`
     setQueryParam('event', entry.sourceId)
+  }
+
+  function openWeek() {
+    const selectedDayIsVisible = selectedDay?.slice(0, 7) === monthAnchor.slice(0, 7)
+    const anchor = selectedDayIsVisible
+      ? selectedDay
+      : monthAnchor.slice(0, 7) === today.slice(0, 7) ? today : monthAnchor
+    const start = getWeekStart(anchor)
+    setWeekStart(start)
+    setSelectedWeekDay(anchor)
+    setViewMode('week')
+  }
+
+  function goToday() {
+    if (viewMode === 'week') {
+      setWeekStart(getWeekStart(today))
+      setSelectedWeekDay(today)
+      setWeekScrollVersion((version) => version + 1)
+      return
+    }
+    setMonthAnchor(today)
   }
 
   function closeEntry() {
@@ -201,7 +232,7 @@ export function CalendarScreen() {
           >
             +
           </button>
-          <button type="button" className="header-action-button" onClick={() => setMonthAnchor(today)}>
+          <button type="button" className="header-action-button" onClick={goToday}>
             {t.calendar.today}
           </button>
         </div>
@@ -216,6 +247,15 @@ export function CalendarScreen() {
           onClick={() => setViewMode('month')}
         >
           {t.calendar.viewMonth}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={viewMode === 'week'}
+          className={`tab-button${viewMode === 'week' ? ' active' : ''}`}
+          onClick={openWeek}
+        >
+          {t.calendar.viewWeek}
         </button>
         <button
           type="button"
@@ -304,6 +344,25 @@ export function CalendarScreen() {
             </section>
           )}
         </>
+      )}
+
+      {viewMode === 'week' && (
+        <WeekAgenda
+          weekStart={weekStart}
+          entries={entries}
+          today={today}
+          selectedDay={selectedWeekDay}
+          scrollVersion={weekScrollVersion}
+          memberById={memberById}
+          onChangeWeek={(nextWeek) => {
+            setWeekStart(nextWeek)
+            const nextDates = getWeekDates(nextWeek)
+            setSelectedWeekDay(nextDates.includes(today) ? today : nextWeek)
+          }}
+          onSelectDay={setSelectedWeekDay}
+          onSelectEntry={openEntry}
+          onAddDay={(date) => setCreateConfig({ initialDate: date })}
+        />
       )}
 
       {viewMode === 'agenda' && (
