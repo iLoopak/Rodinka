@@ -1,5 +1,5 @@
-import type { ReminderCopy } from './reminders'
-import type { Lang } from '../strings'
+import type { ReminderCopy } from './reminders.ts'
+import type { ReminderLocale } from './reminderSourceTypes.ts'
 
 const czechReminderCopy: ReminderCopy = {
   choreDueToday: (count, name) => count === 1 ? `Dnes čeká úkol pro ${name}` : `${count} úkoly jsou dnes na řadě pro ${name}`,
@@ -35,6 +35,6 @@ const englishReminderCopy: ReminderCopy = {
   forMember: (name) => `For: ${name}`,
 }
 
-export function reminderCopyFor(language: Lang): ReminderCopy {
+export function reminderCopyFor(language: ReminderLocale): ReminderCopy {
   return language === 'cs' ? czechReminderCopy : englishReminderCopy
 }

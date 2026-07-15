@@ -1,5 +1,5 @@
-import type { Activity } from '../hooks/useActivities'
-import { addDays, compareISODates, daysBetweenISO, todayISODate, toUTCDate } from './dueDate'
+import type { ReminderActivity as Activity } from '../notifications/reminderSourceTypes.ts'
+import { addDays, compareISODates, daysBetweenISO, todayISODate, toUTCDate } from './isoDate.ts'
 
 export interface ActivityOccurrence {
   id: string

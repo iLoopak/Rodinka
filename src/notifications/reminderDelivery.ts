@@ -1,5 +1,5 @@
-import { addDays } from '../utils/dueDate'
-import { isValidTimeZone, type NotificationPreferences, type ReminderDraft } from './reminders'
+import { addDays } from '../utils/isoDate.ts'
+import { isValidTimeZone, type NotificationPreferences, type ReminderDraft } from './reminders.ts'
 
 export type DeliveryType = 'immediate' | 'daily_digest' | 'weekly_digest'
 export type DeliveryChannel = 'planned'
