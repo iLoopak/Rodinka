@@ -13,37 +13,46 @@ interface Props {
 }
 
 // Shared row rendering reused by the agenda view and the month view's
-// per-day detail list — one place for "how a calendar item looks",
-// combining icon + color + text label + person marker so type is never
-// conveyed by color alone.
+// per-day detail list. Urgency stays in the due badge rather than tinting
+// the whole interactive row, so title and metadata retain clear contrast.
 export function CalendarEntryRow({ entry, memberById, onClick, onAssignmentClick }: Props) {
   const style = getItemTypeStyle(entry.type)
-  const personId = entry.childOrPatientId ?? entry.responsibleMemberId
-  const person = personId ? memberById(personId) : undefined
-  const showResponsible =
-    entry.responsibleMemberId && entry.responsibleMemberId !== entry.childOrPatientId
+  const participantIds = [...new Set([
+    ...(entry.participantMemberIds ?? []),
+    ...(entry.childOrPatientId ? [entry.childOrPatientId] : []),
+  ])]
+  const participantNames = participantIds.map((id) => memberById(id)?.display_name).filter(Boolean).join(', ')
+  const responsible = entry.responsibleMemberId ? memberById(entry.responsibleMemberId) : undefined
+  const showResponsible = responsible && !participantIds.includes(responsible.id)
 
   return (
     <li className="calendar-entry-row-shell">
       <button type="button" className="clickable-row calendar-entry-row" onClick={onClick}>
-      <span className="calendar-entry-icon" style={{ color: `var(${style.colorVar})` }}>
-        {style.icon}
-      </span>
-      {(entry.participantMemberIds?.length ?? 0) > 1 ? <span className="avatar-stack">
-        {entry.participantMemberIds!.slice(0, 3).map((id) => <MemberAvatar key={id} member={memberById(id)} size={22} />)}
-        {entry.participantMemberIds!.length > 3 && <span className="avatar-more">+{entry.participantMemberIds!.length - 3}</span>}
-      </span> : personId && <MemberAvatar member={person} size={22} />}
-      <span className="row-title">{entry.title}</span>
-      <span className="row-meta">{style.label}</span>
-      {showResponsible && entry.responsibleMemberId && (
-        <span className="row-meta">
-          {t.calendar.responsibleLabel(memberById(entry.responsibleMemberId)?.display_name ?? '?')}
+        <span className="calendar-entry-icon" style={{ color: `var(${style.colorVar})`, backgroundColor: `var(${style.surfaceVar})` }}>
+          {style.icon}
         </span>
-      )}
-      <span className="row-spacer" />
-      {entry.time && <span className="row-meta font-tabular">{entry.time.slice(0, 5)}</span>}
-      {entry.isMultiDay && <span className="row-meta">{entry.rangeStart} – {entry.rangeEnd}</span>}
-      <DueBadge dueDate={entry.date} />
+        <span className="calendar-entry-content">
+          <strong className="row-title">{entry.title}</strong>
+          <span className="calendar-entry-meta-line">
+            <span>{style.label}</span>
+            {participantNames && <>
+              <span aria-hidden="true">·</span>
+              <span className="calendar-entry-people">
+                <span className="avatar-stack" aria-hidden="true">
+                  {participantIds.slice(0, 2).map((id) => <MemberAvatar key={id} member={memberById(id)} size={18} />)}
+                  {participantIds.length > 2 && <span className="avatar-more">+{participantIds.length - 2}</span>}
+                </span>
+                <span>{participantNames}</span>
+              </span>
+            </>}
+          </span>
+          {showResponsible && <span className="calendar-entry-meta-line">{t.calendar.responsibleLabel(responsible.display_name)}</span>}
+        </span>
+        <span className="calendar-entry-side">
+          {entry.time && <span className="row-meta font-tabular">{entry.time.slice(0, 5)}</span>}
+          {entry.isMultiDay && <span className="row-meta">{entry.rangeStart} – {entry.rangeEnd}</span>}
+          <DueBadge dueDate={entry.date} completed={entry.completed} />
+        </span>
       </button>
       {entry.assignmentSeriesType && onAssignmentClick && <button
         type="button"
@@ -51,7 +60,7 @@ export function CalendarEntryRow({ entry, memberById, onClick, onAssignmentClick
         aria-label={`${entry.assignmentSeriesType === 'activity' ? t.calendar.changeCompanion : t.calendar.changeAssignee}${entry.assignmentOverridden ? `. ${t.calendar.occurrenceOverrideBadge}` : ''}`}
         onClick={onAssignmentClick}
       >
-        <MemberAvatar member={entry.responsibleMemberId ? memberById(entry.responsibleMemberId) : undefined} size={24} />
+        <MemberAvatar member={responsible} size={24} />
         {entry.assignmentOverridden && <span aria-hidden="true">↔</span>}
       </button>}
     </li>

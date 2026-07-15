@@ -50,11 +50,12 @@ describe('WeekAgenda', () => {
     expect(html.match(/class="week-strip-day/g)).toHaveLength(7)
   })
 
-  it('keeps empty days compact and stacks multiple events inside their day', () => {
+  it('uses the same footer action for empty and populated days while stacking events', () => {
     const html = renderWeek([calendarEntry('first', '09:30'), calendarEntry('second', null)])
 
     expect(html.match(/class="week-day-empty"/g)).toHaveLength(6)
-    expect(html.match(/class="week-day-add-small"/g)).toHaveLength(6)
+    expect(html).not.toContain('week-day-add-small')
+    expect(html.match(/class="link week-day-add"/g)).toHaveLength(7)
     expect(html.match(/<li class="week-entry(?:\s|completed|")/g)).toHaveLength(2)
     expect(html).toContain('Swimming')
     expect(html).toContain('Family lunch')

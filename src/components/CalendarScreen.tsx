@@ -3,16 +3,16 @@ import { t } from '../strings'
 import { useFamilyData } from '../context/FamilyDataContext'
 import { buildCalendarEntries, deduplicateAgendaRanges, entryMatchesMember, type CalendarEntry } from '../utils/calendarEntries'
 import { getChoreState } from '../utils/choreState'
-import { addDays, formatFullDate, formatMonthYear, todayISODate } from '../utils/dueDate'
+import { addDays, formatMonthYear, todayISODate } from '../utils/dueDate'
 import { getMonthGridRange, shiftMonth } from '../utils/monthGrid'
 import { getItemTypeStyle, type CalendarItemType } from '../utils/itemTypeStyle'
 import { MonthGrid } from './calendar/MonthGrid'
 import { AgendaList } from './calendar/AgendaList'
-import { CalendarEntryRow } from './calendar/CalendarEntryRow'
 import { ErrorState } from './ui/ErrorState'
 import { UniversalCreateModal } from './planner/UniversalCreateModal'
 import { CalendarEntryDetailModal } from './calendar/CalendarEntryDetailModal'
 import { WeekAgenda } from './calendar/WeekAgenda'
+import { CalendarDayAgendaCard } from './calendar/CalendarDayAgendaCard'
 import { useRouter } from '../router'
 import { isValidISODate, isValidUuid } from '../utils/deepLinks'
 import { getWeekDates, getWeekStart } from '../utils/weekCalendar'
@@ -39,6 +39,7 @@ export function CalendarScreen() {
   const [weekScrollVersion, setWeekScrollVersion] = useState(0)
   const [filterPerson, setFilterPerson] = useState('')
   const [filterType, setFilterType] = useState<CalendarItemType | ''>('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
   const [selectedEntry, setSelectedEntry] = useState<CalendarEntry | null>(null)
   const [openAssignmentInitially, setOpenAssignmentInitially] = useState(false)
@@ -48,6 +49,7 @@ export function CalendarScreen() {
   const dateParam = searchParams.get('date')
   const eventParam = searchParams.get('event')
   const processedDeepLinkRef = useRef<string | null>(null)
+  const filterButtonRef = useRef<HTMLButtonElement>(null)
 
   const {
     chores,
@@ -238,6 +240,7 @@ export function CalendarScreen() {
   }
 
   const dayEntries = selectedDay ? entries.filter((e) => e.date === selectedDay) : []
+  const activeFilterCount = Number(Boolean(filterPerson)) + Number(Boolean(filterType))
 
   return (
     <>
@@ -254,6 +257,21 @@ export function CalendarScreen() {
           </button>
           <button type="button" className="header-action-button" onClick={goToday}>
             {t.calendar.today}
+          </button>
+          <button
+            ref={filterButtonRef}
+            type="button"
+            className={`header-icon-button btn-secondary calendar-filter-button${hasFilters ? ' active' : ''}`}
+            aria-label={`${filtersOpen ? t.calendar.hideFilters : t.calendar.showFilters}${activeFilterCount ? ` (${activeFilterCount})` : ''}`}
+            aria-expanded={filtersOpen}
+            aria-controls="calendar-filter-panel"
+            title={t.calendar.filtersLabel}
+            onClick={() => setFiltersOpen((open) => !open)}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <path d="M4 6h16M7 12h10M10 18h4" />
+            </svg>
+            {activeFilterCount > 0 && <span className="calendar-filter-count" aria-hidden="true">{activeFilterCount}</span>}
           </button>
         </div>
       </div>
@@ -290,31 +308,32 @@ export function CalendarScreen() {
 
       {deepLinkError && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
 
-      <div className="filter-row">
-        <select value={filterPerson} onChange={(e) => setFilterPerson(e.target.value)} aria-label={t.calendar.filterPersonLabel}>
-          <option value="">
-            {t.calendar.filterPersonLabel}: {t.calendar.filterAll}
-          </option>
-          {members.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.display_name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value as CalendarItemType | '')}
-          aria-label={t.calendar.filterTypeLabel}
-        >
-          <option value="">
-            {t.calendar.filterTypeLabel}: {t.calendar.filterAll}
-          </option>
-          {ITEM_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {getItemTypeStyle(type).label}
-            </option>
-          ))}
-        </select>
+      <div
+        id="calendar-filter-panel"
+        className="calendar-filter-panel"
+        role="region"
+        aria-label={t.calendar.filtersLabel}
+        hidden={!filtersOpen}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            setFiltersOpen(false)
+            filterButtonRef.current?.focus()
+          }
+        }}
+      >
+        {hasFilters && <div className="calendar-filter-panel-header">
+          <button type="button" className="link" onClick={clearFilters}>{t.calendar.clearFilters}</button>
+        </div>}
+        <div className="filter-row">
+          <select value={filterPerson} onChange={(e) => setFilterPerson(e.target.value)} aria-label={t.calendar.filterPersonLabel}>
+            <option value="">{t.calendar.filterPersonLabel}: {t.calendar.filterAll}</option>
+            {members.map((m) => <option key={m.id} value={m.id}>{m.display_name}</option>)}
+          </select>
+          <select value={filterType} onChange={(e) => setFilterType(e.target.value as CalendarItemType | '')} aria-label={t.calendar.filterTypeLabel}>
+            <option value="">{t.calendar.filterTypeLabel}: {t.calendar.filterAll}</option>
+            {ITEM_TYPES.map((type) => <option key={type} value={type}>{getItemTypeStyle(type).label}</option>)}
+          </select>
+        </div>
       </div>
 
       {viewMode === 'month' && (
@@ -341,27 +360,16 @@ export function CalendarScreen() {
             />
           )}
           {selectedDay && (
-            <section className="calendar-day-agenda" aria-labelledby="selected-day-title">
-              <div className="calendar-day-agenda-header">
-                <div>
-                  <span className="page-eyebrow">{t.calendar.viewAgenda}</span>
-                  <h2 id="selected-day-title">{formatFullDate(selectedDay)}</h2>
-                </div>
-                <button type="button" className="calendar-day-close" onClick={closeDay} aria-label={t.calendar.close}>×</button>
-              </div>
-              {dayEntries.length === 0 ? (
-                <p className="empty-state">{t.calendar.noEntries}</p>
-              ) : (
-                <ul className="section-list calendar-day-list">
-                  {dayEntries.map((entry) => (
-                    <CalendarEntryRow key={entry.id} entry={entry} memberById={memberById} onClick={() => openEntry(entry)} onAssignmentClick={() => openAssignment(entry)} />
-                  ))}
-                </ul>
-              )}
-              <button type="button" className="btn-secondary calendar-day-add" onClick={() => setCreateConfig({ initialDate: selectedDay })}>
-                <span aria-hidden="true">+</span> {t.create.addThisDayAction}
-              </button>
-            </section>
+            <CalendarDayAgendaCard
+              date={selectedDay}
+              entries={dayEntries}
+              today={today}
+              memberById={memberById}
+              onSelectEntry={openEntry}
+              onChangeAssignment={openAssignment}
+              onAddDay={(date) => setCreateConfig({ initialDate: date })}
+              onClose={closeDay}
+            />
           )}
         </>
       )}
@@ -394,12 +402,6 @@ export function CalendarScreen() {
             <AgendaList entries={deduplicateAgendaRanges(entries)} today={today} memberById={memberById} onSelectEntry={openEntry} />
           )}
         </section>
-      )}
-
-      {hasFilters && (
-        <button type="button" className="link section-footer-link" onClick={clearFilters}>
-          {t.calendar.clearFilters}
-        </button>
       )}
 
       {selectedEntry && (

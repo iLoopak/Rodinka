@@ -25,6 +25,7 @@ export function WeekCalendarEntryRow({ entry, memberById, onClick, onAssignmentC
   const participantNames = participantIds.map((id) => memberById(id)?.display_name).filter(Boolean).join(', ')
   const responsible = entry.responsibleMemberId ? memberById(entry.responsibleMemberId) : undefined
   const showResponsible = responsible && !participantIds.includes(responsible.id)
+  const hasAssignmentControl = Boolean(entry.assignmentSeriesType && onAssignmentClick)
   const timeLabel = entry.time
     ? `${shortTime(entry.time)}${entry.endTime ? `–${shortTime(entry.endTime)}` : ''}`
     : entry.allDay ? t.calendar.allDay : t.calendar.noTime
@@ -44,14 +45,14 @@ export function WeekCalendarEntryRow({ entry, memberById, onClick, onAssignmentC
         {entry.location && <span className="week-entry-meta"><span aria-hidden="true">⌖</span> {entry.location}</span>}
       </span>
       <span className="week-entry-side">
-        {participantIds.length > 0 && <span className="avatar-stack">
+        {!hasAssignmentControl && participantIds.length > 0 && <span className="avatar-stack">
           {participantIds.slice(0, 2).map((id) => <MemberAvatar key={id} member={memberById(id)} size={24} />)}
           {participantIds.length > 2 && <span className="avatar-more">+{participantIds.length - 2}</span>}
         </span>}
         {!entry.completed && <DueBadge dueDate={entry.date} />}
       </span>
     </button>
-    {entry.assignmentSeriesType && onAssignmentClick && <button
+    {hasAssignmentControl && <button
       type="button"
       className="week-entry-assignment"
       aria-label={`${entry.assignmentSeriesType === 'activity' ? t.calendar.changeCompanion : t.calendar.changeAssignee}${entry.assignmentOverridden ? `. ${t.calendar.occurrenceOverrideBadge}` : ''}`}

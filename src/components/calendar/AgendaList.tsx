@@ -24,7 +24,7 @@ export function AgendaList({ entries, today, memberById, onSelectEntry }: Props)
       {groups.map((group) => (
         <div key={group.bucket} className="agenda-group">
           <h3 className="agenda-group-label">{group.label}</h3>
-          <ul className="section-list">
+          <ul className="section-list agenda-group-list">
             {group.entries.map((entry) => (
               <CalendarEntryRow
                 key={entry.id}
