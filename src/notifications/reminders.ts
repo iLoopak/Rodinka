@@ -1,15 +1,18 @@
-import type { Activity } from '../hooks/useActivities'
-import type { ChoreCompletion } from '../hooks/useChoreCompletions'
-import type { FamilyMember } from '../hooks/useFamilyMembers'
-import type { MealPlanEntry } from '../hooks/useMealPlanEntries'
-import type { MealVoteRound } from '../hooks/useMealVoteRounds'
-import type { MedicalRecord } from '../hooks/useMedicalRecords'
-import type { ShoppingItem } from '../utils/shopping'
-import type { Chore } from '../utils/choreModel'
-import { getChoreState } from '../utils/choreState'
-import { addDays, compareISODates, daysBetweenISO } from '../utils/dueDate'
-import { expandActivityOccurrences } from '../utils/recurrence'
-import { getEffectiveOccurrenceMember, type OccurrenceOverride, type SeriesAssignmentHistory } from '../utils/occurrenceAssignments'
+import type {
+  ReminderActivity as Activity,
+  ReminderChoreCompletion as ChoreCompletion,
+  ReminderFamilyMember as FamilyMember,
+  ReminderLocale,
+  ReminderMealPlanEntry as MealPlanEntry,
+  ReminderMealVoteRound as MealVoteRound,
+  ReminderMedicalRecord as MedicalRecord,
+} from './reminderSourceTypes.ts'
+import type { ShoppingItem } from '../utils/shopping.ts'
+import type { Chore } from '../utils/choreModel.ts'
+import { getChoreState } from '../utils/choreState.ts'
+import { addDays, compareISODates, daysBetweenISO } from '../utils/isoDate.ts'
+import { expandActivityOccurrences } from '../utils/recurrence.ts'
+import { getEffectiveOccurrenceMember, type OccurrenceOverride, type SeriesAssignmentHistory } from '../utils/occurrenceAssignments.ts'
 
 export const REMINDER_CATEGORIES = ['chores', 'activities', 'medical', 'voting', 'meals', 'allowance', 'documents', 'shopping'] as const
 export type ReminderCategory = (typeof REMINDER_CATEGORIES)[number]
@@ -78,7 +81,7 @@ export interface NotificationPreferences {
   quietHoursEnd: string
   timezone: string
   timezoneMode: 'auto' | 'explicit'
-  locale: 'cs' | 'en'
+  locale: ReminderLocale
   categories: ReminderCategoryPreferences
 }
 
@@ -93,7 +96,7 @@ export const DEFAULT_CATEGORY_PREFERENCES: ReminderCategoryPreferences = {
   shopping: true,
 }
 
-export function defaultNotificationPreferences(memberId: string, familyId: string, timezone = browserTimezone(), locale: 'cs' | 'en' = 'cs'): NotificationPreferences {
+export function defaultNotificationPreferences(memberId: string, familyId: string, timezone = browserTimezone(), locale: ReminderLocale = 'cs'): NotificationPreferences {
   return {
     memberId,
     familyId,
