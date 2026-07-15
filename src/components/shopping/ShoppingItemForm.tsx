@@ -3,15 +3,17 @@ import { t } from '../../strings'
 import { SHOPPING_CATEGORIES, SHOPPING_UNITS, validateShoppingInput, type ShoppingItem, type ShoppingItemInput, type ShoppingCategory, type ShoppingUnit } from '../../utils/shopping'
 import { shoppingCategoryLabel, shoppingUnitLabel } from '../../utils/shoppingLabels'
 import type { FamilyMember } from '../../hooks/useFamilyMembers'
+import type { ShoppingCategorySettings } from '../../utils/shoppingCategorySettings'
 
 interface Props {
   initial?: ShoppingItem
   members: FamilyMember[]
+  categorySettings?: ShoppingCategorySettings
   onSubmit: (input: ShoppingItemInput) => Promise<void>
   onDelete?: () => Promise<void>
 }
 
-export function ShoppingItemForm({ initial, members, onSubmit, onDelete }: Props) {
+export function ShoppingItemForm({ initial, members, categorySettings, onSubmit, onDelete }: Props) {
   const [name, setName] = useState(initial?.name ?? '')
   const [quantity, setQuantity] = useState(initial?.quantity === null || initial?.quantity === undefined ? '' : String(initial.quantity))
   const [unit, setUnit] = useState<ShoppingUnit | ''>(initial?.unit ?? '')
@@ -54,7 +56,7 @@ export function ShoppingItemForm({ initial, members, onSubmit, onDelete }: Props
         </select></label>
       </div>
       <label>{t.shopping.categoryLabel}<select value={category} onChange={(event) => setCategory(event.target.value as ShoppingCategory)}>
-        {SHOPPING_CATEGORIES.map((value) => <option key={value} value={value}>{shoppingCategoryLabel(value)}</option>)}
+        {SHOPPING_CATEGORIES.map((value) => <option key={value} value={value}>{categorySettings?.[value].label ?? shoppingCategoryLabel(value)}</option>)}
       </select></label>
       <label>{t.shopping.noteLabel}<textarea rows={2} maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} /></label>
       <label>{t.shopping.responsibleLabel}<select value={responsibleMemberId} onChange={(event) => setResponsibleMemberId(event.target.value)}>

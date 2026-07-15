@@ -39,7 +39,7 @@ describe('personalization persistence and UI contracts', () => {
   it('updates the shared source immediately after an admin family rename', () => {
     expect(familyScreen).toContain('await updateFamilyName(familyNameDraft)')
     expect(familyContext).toContain("supabase.from('families').update({ name: normalized })")
-    expect(familyContext).toContain('setFamilyNameState({ familyId, name: normalized, loading: false })')
+    expect(familyContext).toContain('setFamilyNameState((current) => ({ ...current, familyId, name: normalized, loading: false }))')
     expect(familyContext).toContain('familyNameState.familyId === familyId')
   })
 

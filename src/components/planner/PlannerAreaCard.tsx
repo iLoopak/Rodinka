@@ -11,35 +11,31 @@ interface Props {
   summary: string
   details: string[]
   ariaLabel: string
+  createLabel: string
+  onCreate: () => void
 }
 
-export function PlannerAreaCard({ to, icon, colorVar, surfaceVar, borderVar, title, summary, details, ariaLabel }: Props) {
+export function PlannerAreaCard({ to, icon, colorVar, surfaceVar, borderVar, title, summary, details, ariaLabel, createLabel, onCreate }: Props) {
   return (
-    <Link
-      to={to}
+    <article
       className="planner-area-card"
-      aria-label={ariaLabel}
       style={{
         '--area-accent': `var(${colorVar})`,
         '--area-surface': `var(${surfaceVar})`,
         '--area-border': `var(${borderVar})`,
       } as CSSProperties}
     >
-      <span className="planner-area-icon" style={{ color: `var(${colorVar})` }}>
-        {icon}
-      </span>
-      <span className="planner-area-copy">
-        <span className="planner-area-heading">{title}</span>
-        <span className="planner-area-summary">{summary}</span>
-        {details.map((detail) => (
-          <span key={detail} className="planner-area-detail">
-            {detail}
-          </span>
-        ))}
-      </span>
-      <span className="planner-area-chevron" aria-hidden="true">
-        ›
-      </span>
-    </Link>
+      <Link to={to} className="planner-area-link" aria-label={ariaLabel}>
+        <span className="planner-area-icon" style={{ color: `var(${colorVar})` }}>{icon}</span>
+        <span className="planner-area-copy">
+          <span className="planner-area-heading">{title}</span>
+          <span className="planner-area-summary">{summary}</span>
+          {details.map((detail) => <span key={detail} className="planner-area-detail">{detail}</span>)}
+        </span>
+      </Link>
+      <button type="button" className="planner-area-create" onClick={onCreate} aria-label={`${createLabel}: ${title}`}>
+        <span aria-hidden="true">+</span> {createLabel}
+      </button>
+    </article>
   )
 }

@@ -25,7 +25,7 @@ export function AddChoreForm({ members, currentMemberId, initial, initialDueDate
 
   const [title, setTitle] = useState(initial?.title ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
-  const [assignedTo, setAssignedTo] = useState(initial?.assigned_to ?? defaultAssignee)
+  const [assignedTo, setAssignedTo] = useState(initial ? initial.assigned_to ?? '' : defaultAssignee)
   const [hasDueDate, setHasDueDate] = useState(initial ? Boolean(initial.due_date) : true)
   const [dueDate, setDueDate] = useState(initial?.due_date ?? initialDueDate ?? todayISODate())
   const [rewardAmount, setRewardAmount] = useState(initial ? String(initial.reward_amount) : '')

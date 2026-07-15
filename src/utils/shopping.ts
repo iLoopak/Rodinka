@@ -19,6 +19,7 @@ export interface ShoppingItem {
   purchased_by_member_id: string | null
   purchased_at: string | null
   archived_at: string | null
+  sort_order: number
   source_meal_id: string | null
   source_meal_plan_entry_id: string | null
   created_at: string
@@ -110,12 +111,14 @@ export function mergeCompatibleQuantity(existing: ShoppingItem, input: ShoppingI
   return Number((existing.quantity + input.quantity).toFixed(3))
 }
 
-export function groupShoppingItems(items: ShoppingItem[]) {
+export function groupShoppingItems(items: ShoppingItem[], includeEmpty = false) {
   const groups = new Map<ShoppingCategory, ShoppingItem[]>()
   for (const category of SHOPPING_CATEGORIES) groups.set(category, [])
   for (const item of items) groups.get(item.category)?.push(item)
-  return SHOPPING_CATEGORIES.map((category) => ({ category, items: groups.get(category) ?? [] }))
-    .filter((group) => group.items.length > 0)
+  return SHOPPING_CATEGORIES.map((category) => ({
+    category,
+    items: (groups.get(category) ?? []).sort((a, b) => a.sort_order - b.sort_order || b.created_at.localeCompare(a.created_at)),
+  })).filter((group) => includeEmpty || group.items.length > 0)
 }
 
 export function buildCommonShoppingTemplates(items: ShoppingItem[], activeItems: ShoppingItem[], limit = 8): ShoppingTemplate[] {

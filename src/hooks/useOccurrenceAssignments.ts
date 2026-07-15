@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { t } from '../strings'
 import type { ActivityParticipantHistory, OccurrenceOverride, OccurrenceSeriesType, SeriesAssignmentHistory } from '../utils/occurrenceAssignments'
+import { isInitialFamilyDataLoad } from '../utils/familyDataLoading'
 
 export function useOccurrenceAssignments(familyId: string | undefined) {
   const [overrides, setOverrides] = useState<OccurrenceOverride[]>([])
@@ -9,10 +10,18 @@ export function useOccurrenceAssignments(familyId: string | undefined) {
   const [participantHistory, setParticipantHistory] = useState<ActivityParticipantHistory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const loadedFamilyIdRef = useRef<string | undefined>(undefined)
 
   const refresh = useCallback(async () => {
-    if (!familyId) { setOverrides([]); setAssignmentHistory([]); setParticipantHistory([]); setLoading(false); return }
-    setLoading(true)
+    if (!familyId) {
+      loadedFamilyIdRef.current = undefined
+      setOverrides([]); setAssignmentHistory([]); setParticipantHistory([]); setLoading(false)
+      return
+    }
+    // An override save refreshes the canonical rows after its optimistic update.
+    // Keep that synchronization in the background so FamilyDataContext does not
+    // replace the entire calendar with its global loading state.
+    if (isInitialFamilyDataLoad(loadedFamilyIdRef.current, familyId)) setLoading(true)
     const [overrideResult, historyResult, participantResult] = await Promise.all([
       supabase.from('occurrence_overrides').select('id,family_id,series_type,series_id,occurrence_date,companion_member_id,assignee_member_id,cancelled,updated_at').eq('family_id', familyId),
       supabase.from('series_assignment_history').select('id,family_id,series_type,series_id,effective_from,member_id').eq('family_id', familyId),
@@ -26,6 +35,7 @@ export function useOccurrenceAssignments(familyId: string | undefined) {
       setAssignmentHistory((historyResult.data ?? []) as SeriesAssignmentHistory[])
       setParticipantHistory((participantResult.data ?? []) as ActivityParticipantHistory[])
       setError(null)
+      loadedFamilyIdRef.current = familyId
     }
     setLoading(false)
   }, [familyId])

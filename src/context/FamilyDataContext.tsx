@@ -43,6 +43,8 @@ import { choreInputToRow, type ChoreInput } from '../utils/choreModel'
 import { todayISODate } from '../utils/dueDate'
 import { useOccurrenceAssignments } from '../hooks/useOccurrenceAssignments'
 import type { ActivityParticipantHistory, OccurrenceOverride, OccurrenceSeriesType, SeriesAssignmentHistory } from '../utils/occurrenceAssignments'
+import { defaultShoppingCategorySettings, normalizeShoppingCategorySettings, type ShoppingCategorySettings } from '../utils/shoppingCategorySettings'
+import { buildFamilyHeroPath, validateFamilyHeroFile } from '../utils/familyHeroImage'
 
 export type { ChoreInput } from '../utils/choreModel'
 
@@ -168,6 +170,9 @@ interface FamilyDataContextValue extends ReturnType<typeof useShoppingData> {
   isParentOrAdmin: boolean
   familyName: string | null
   familyNameLoading: boolean
+  familyHeroImagePath: string | null
+  familyHeroImageUrl: string | null
+  shoppingCategorySettings: ShoppingCategorySettings
   membersLoading: boolean
   members: FamilyMember[]
   allMembers: FamilyMember[]
@@ -195,6 +200,7 @@ interface FamilyDataContextValue extends ReturnType<typeof useShoppingData> {
   addChore: (input: ChoreInput) => Promise<void>
   updateChore: (id: string, input: ChoreInput) => Promise<void>
   setChoreArchived: (id: string, archived: boolean) => Promise<void>
+  reorderQuickTodos: (orderedIds: string[]) => Promise<void>
   markDone: (choreId: string, assignedTo?: string, occurrenceDate?: string) => Promise<void>
   approve: (completionId: string) => Promise<ChoreApprovalResult>
   reject: (completionId: string) => Promise<void>
@@ -227,6 +233,8 @@ interface FamilyDataContextValue extends ReturnType<typeof useShoppingData> {
   refreshReminderSources: () => Promise<void>
   refreshMembers: () => Promise<void>
   updateFamilyName: (name: string) => Promise<void>
+  updateFamilyHeroImage: (file: File | null) => Promise<void>
+  updateShoppingCategorySettings: (settings: ShoppingCategorySettings) => Promise<void>
 }
 
 const FamilyDataContext = createContext<FamilyDataContextValue | null>(null)
@@ -262,6 +270,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     loading: choresLoading,
     error: choresError,
     refresh: refreshChores,
+    reorder: reorderQuickTodos,
   } = useChores(familyId)
   const {
     completions,
@@ -328,24 +337,38 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
   const [familyNameState, setFamilyNameState] = useState<{
     familyId: string | null
     name: string | null
+    heroImagePath: string | null
+    heroImageUrl: string | null
+    shoppingCategorySettings: ShoppingCategorySettings
     loading: boolean
-  }>({ familyId: null, name: null, loading: true })
+  }>({ familyId: null, name: null, heroImagePath: null, heroImageUrl: null, shoppingCategorySettings: defaultShoppingCategorySettings(), loading: true })
   const [familyNameError, setFamilyNameError] = useState<string | null>(null)
   const familyName = familyNameState.familyId === familyId ? familyNameState.name : null
+  const familyHeroImagePath = familyNameState.familyId === familyId ? familyNameState.heroImagePath : null
+  const familyHeroImageUrl = familyNameState.familyId === familyId ? familyNameState.heroImageUrl : null
+  const shoppingCategorySettings = familyNameState.familyId === familyId
+    ? familyNameState.shoppingCategorySettings
+    : defaultShoppingCategorySettings()
   const familyNameLoading = familyNameState.familyId !== familyId || familyNameState.loading
 
   const refreshFamilyName = useCallback(async () => {
-    setFamilyNameState({ familyId, name: null, loading: true })
-    const { data, error } = await supabase.from('families').select('name').eq('id', familyId).single()
+    setFamilyNameState({ familyId, name: null, heroImagePath: null, heroImageUrl: null, shoppingCategorySettings: defaultShoppingCategorySettings(), loading: true })
+    const { data, error } = await supabase.from('families').select('name, hero_image_path, shopping_category_settings').eq('id', familyId).single()
     if (activeFamilyIdRef.current !== familyId) return
     if (error) {
       console.error('Failed to load family name:', error.message)
       setFamilyNameError(t.errors.loadFailed)
     } else {
-      setFamilyNameState({ familyId, name: data.name, loading: false })
+      let heroImageUrl: string | null = null
+      if (data.hero_image_path) {
+        const { data: signedUrl, error: signedUrlError } = await supabase.storage.from('family-hero-images').createSignedUrl(data.hero_image_path, 12 * 60 * 60)
+        if (signedUrlError) console.error('Failed to create family hero signed URL:', signedUrlError.message)
+        else heroImageUrl = signedUrl.signedUrl
+      }
+      setFamilyNameState({ familyId, name: data.name, heroImagePath: data.hero_image_path, heroImageUrl, shoppingCategorySettings: normalizeShoppingCategorySettings(data.shopping_category_settings), loading: false })
       setFamilyNameError(null)
     }
-    if (error) setFamilyNameState({ familyId, name: null, loading: false })
+    if (error) setFamilyNameState({ familyId, name: null, heroImagePath: null, heroImageUrl: null, shoppingCategorySettings: defaultShoppingCategorySettings(), loading: false })
   }, [familyId])
 
   const updateFamilyName = useCallback(async (name: string) => {
@@ -354,9 +377,54 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     const { error } = await supabase.from('families').update({ name: normalized }).eq('id', familyId)
     if (error) throw friendly(error)
     if (activeFamilyIdRef.current !== familyId) return
-    setFamilyNameState({ familyId, name: normalized, loading: false })
+    setFamilyNameState((current) => ({ ...current, familyId, name: normalized, loading: false }))
     setFamilyNameError(null)
   }, [familyId])
+
+  const updateShoppingCategorySettings = useCallback(async (settings: ShoppingCategorySettings) => {
+    const normalized = normalizeShoppingCategorySettings(settings)
+    const { error } = await supabase.from('families').update({ shopping_category_settings: normalized }).eq('id', familyId)
+    if (error) throw friendly(error)
+    if (activeFamilyIdRef.current !== familyId) return
+    setFamilyNameState((current) => ({ ...current, familyId, shoppingCategorySettings: normalized, loading: false }))
+  }, [familyId])
+
+  const updateFamilyHeroImage = useCallback(async (file: File | null) => {
+    const previousPath = familyNameState.familyId === familyId ? familyNameState.heroImagePath : null
+    let uploadedPath: string | null = null
+    let nextUrl: string | null = null
+
+    if (file) {
+      if (validateFamilyHeroFile(file)) throw new Error(t.errors.generic)
+      const extension = file.type === 'image/webp' ? 'webp' : 'jpg'
+      uploadedPath = buildFamilyHeroPath(familyId, extension)
+      const { error: uploadError } = await supabase.storage.from('family-hero-images').upload(uploadedPath, file, {
+        cacheControl: '3600',
+        contentType: file.type,
+        upsert: false,
+      })
+      if (uploadError) throw friendly(uploadError)
+      const { data: signedUrl, error: signedUrlError } = await supabase.storage.from('family-hero-images').createSignedUrl(uploadedPath, 12 * 60 * 60)
+      if (signedUrlError) {
+        await supabase.storage.from('family-hero-images').remove([uploadedPath])
+        throw friendly(signedUrlError)
+      }
+      nextUrl = signedUrl.signedUrl
+    }
+
+    const nextPath = uploadedPath
+    const { error: saveError } = await supabase.from('families').update({ hero_image_path: nextPath }).eq('id', familyId)
+    if (saveError) {
+      if (uploadedPath) await supabase.storage.from('family-hero-images').remove([uploadedPath])
+      throw friendly(saveError)
+    }
+    if (activeFamilyIdRef.current !== familyId) return
+    setFamilyNameState((current) => ({ ...current, familyId, heroImagePath: nextPath, heroImageUrl: nextUrl, loading: false }))
+    if (previousPath && previousPath !== nextPath) {
+      const { error: removeError } = await supabase.storage.from('family-hero-images').remove([previousPath])
+      if (removeError) console.error('Failed to remove previous family hero image:', removeError.message)
+    }
+  }, [familyId, familyNameState])
 
   useEffect(() => {
     refreshFamilyName()
@@ -744,6 +812,9 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     isParentOrAdmin,
     familyName,
     familyNameLoading,
+    familyHeroImagePath,
+    familyHeroImageUrl,
+    shoppingCategorySettings,
     membersLoading,
     members,
     allMembers,
@@ -772,6 +843,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     addChore,
     updateChore,
     setChoreArchived,
+    reorderQuickTodos,
     markDone,
     approve,
     reject,
@@ -804,6 +876,8 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     refreshReminderSources,
     refreshMembers,
     updateFamilyName,
+    updateFamilyHeroImage,
+    updateShoppingCategorySettings,
   }
 
   return <FamilyDataContext.Provider value={value}>{children}</FamilyDataContext.Provider>

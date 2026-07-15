@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { t } from '../strings'
+import { isInitialFamilyDataLoad } from '../utils/familyDataLoading'
 import {
   buildCommonShoppingTemplates,
   buildShoppingSessions,
@@ -34,27 +35,33 @@ export function useShoppingData(familyId: string | undefined) {
   const [mealIngredients, setMealIngredients] = useState<MealIngredient[]>([])
   const [shoppingLoading, setShoppingLoading] = useState(true)
   const [shoppingError, setShoppingError] = useState<string | null>(null)
+  const loadedFamilyIdRef = useRef<string | undefined>(undefined)
 
   const refreshShopping = useCallback(async () => {
     if (!familyId) {
+      loadedFamilyIdRef.current = undefined
       setShoppingItems([])
       setMealIngredients([])
       setShoppingLoading(false)
       return
     }
 
-    setShoppingLoading(true)
+    // Writes already update the visible list optimistically. Reconcile with
+    // Supabase in the background instead of replacing the whole app with the
+    // FamilyDataContext loading screen after every shopping action.
+    if (isInitialFamilyDataLoad(loadedFamilyIdRef.current, familyId)) setShoppingLoading(true)
     const [visibleItemsResult, historyResult, ingredientsResult] = await Promise.all([
       supabase
         .from('shopping_items')
-        .select('id, family_id, name, normalized_name, quantity, unit, note, category, created_by_member_id, responsible_member_id, purchased, purchased_by_member_id, purchased_at, archived_at, source_meal_id, source_meal_plan_entry_id, created_at, updated_at')
+        .select('id, family_id, name, normalized_name, quantity, unit, note, category, created_by_member_id, responsible_member_id, purchased, purchased_by_member_id, purchased_at, archived_at, source_meal_id, source_meal_plan_entry_id, sort_order, created_at, updated_at')
         .eq('family_id', familyId)
         .is('archived_at', null)
+        .order('sort_order')
         .order('created_at', { ascending: false })
         .limit(500),
       supabase
         .from('shopping_items')
-        .select('id, family_id, name, normalized_name, quantity, unit, note, category, created_by_member_id, responsible_member_id, purchased, purchased_by_member_id, purchased_at, archived_at, source_meal_id, source_meal_plan_entry_id, created_at, updated_at')
+        .select('id, family_id, name, normalized_name, quantity, unit, note, category, created_by_member_id, responsible_member_id, purchased, purchased_by_member_id, purchased_at, archived_at, source_meal_id, source_meal_plan_entry_id, sort_order, created_at, updated_at')
         .eq('family_id', familyId)
         .eq('purchased', true)
         .order('purchased_at', { ascending: false })
@@ -75,6 +82,7 @@ export function useShoppingData(familyId: string | undefined) {
       setShoppingItems([...byId.values()])
       setMealIngredients((ingredientsResult.data ?? []) as MealIngredient[])
       setShoppingError(null)
+      loadedFamilyIdRef.current = familyId
     }
     setShoppingLoading(false)
   }, [familyId])
@@ -159,8 +167,29 @@ export function useShoppingData(familyId: string | undefined) {
     await refreshShopping()
   }, [refreshShopping])
 
+  const reorderShoppingItems = useCallback(async (movedItemId: string, targetCategory: ShoppingItem['category'], orderedTargetIds: string[]) => {
+    if (!familyId) return
+    const previous = shoppingItems
+    const positions = new Map(orderedTargetIds.map((id, index) => [id, (index + 1) * 1024]))
+    setShoppingItems((current) => current.map((item) => item.id === movedItemId
+      ? { ...item, category: targetCategory, sort_order: positions.get(item.id) ?? item.sort_order }
+      : positions.has(item.id) ? { ...item, sort_order: positions.get(item.id)! } : item))
+    const { error } = await supabase.rpc('reorder_shopping_items', {
+      p_family_id: familyId,
+      p_moved_item_id: movedItemId,
+      p_target_category: targetCategory,
+      p_ordered_target_ids: orderedTargetIds,
+    })
+    if (error) {
+      setShoppingItems(previous)
+      throw friendly(error)
+    }
+    await refreshShopping()
+  }, [familyId, refreshShopping, shoppingItems])
+
   const activeShoppingItems = useMemo(
-    () => shoppingItems.filter((item) => !item.purchased && item.archived_at === null),
+    () => shoppingItems.filter((item) => !item.purchased && item.archived_at === null)
+      .sort((a, b) => a.sort_order - b.sort_order || b.created_at.localeCompare(a.created_at)),
     [shoppingItems]
   )
   const purchasedShoppingItems = useMemo(
@@ -200,5 +229,6 @@ export function useShoppingData(familyId: string | undefined) {
     archivePurchasedShoppingItems,
     importShoppingItems,
     replaceMealIngredients,
+    reorderShoppingItems,
   }
 }

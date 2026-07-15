@@ -76,7 +76,7 @@ export function WeekAgenda({ weekStart, entries, today, selectedDay, scrollVersi
           <span className="week-strip-weekday">{weekdayLabels()[index]}</span>
           <span className="week-strip-number">{Number(day.date.slice(8, 10))}</span>
           <span className="week-strip-indicators" aria-hidden="true">
-            {memberIds.slice(0, 2).map((id) => <MemberAvatar key={id} member={memberById(id)} size={14} />)}
+            {memberIds.slice(0, 2).map((id) => <MemberAvatar key={id} member={memberById(id)} size={14} forceInitials />)}
             {memberIds.length > 2 && <span className="week-strip-more">+{memberIds.length - 2}</span>}
             {memberIds.length === 0 && day.entries.length > 0 && <span className="week-strip-dot" />}
           </span>

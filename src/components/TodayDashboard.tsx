@@ -11,10 +11,14 @@ import { PendingApprovals } from './PendingApprovals'
 import { UniversalCreateModal } from './planner/UniversalCreateModal'
 import { TodayAgendaList } from './today/TodayAgendaList'
 import { TodayAttentionList } from './today/TodayAttentionList'
-import { EmptyState } from './ui/EmptyState'
+import { TodayProgramEmpty } from './today/TodayProgramEmpty'
+import { TodayQuickTodoWidget } from './today/TodayQuickTodoWidget'
+import { TodayShoppingWidget } from './today/TodayShoppingWidget'
 import { ErrorState } from './ui/ErrorState'
 import { getLocalizedAddressName } from '../utils/personalizedName'
 import { FamilyMark, type FamilyMarkMember } from './FamilyMark'
+import { createQuickShoppingItemInput, createQuickTaskInput, isQuickTodo } from '../utils/todayQuickAdd'
+import { getChoreState } from '../utils/choreState'
 
 export function TodayDashboard() {
   const [showCreate, setShowCreate] = useState(false)
@@ -22,6 +26,7 @@ export function TodayDashboard() {
   const [approvalFeedback, setApprovalFeedback] = useState<string | null>(null)
   const {
     currentMember,
+    isParentOrAdmin,
     members,
     kids,
     chores,
@@ -33,15 +38,20 @@ export function TodayDashboard() {
     completions,
     voteRounds,
     pendingCompletions,
+    activeShoppingItems,
+    familyHeroImageUrl,
+    addChore,
+    addShoppingItem,
     memberById,
     latestCompletionFor,
+    markDone,
     approve,
     reject,
     loading,
     error,
     refreshAll,
   } = useFamilyData()
-  const { navigate } = useRouter()
+  const { navigate, navigateHref } = useRouter()
 
   if (loading) return <p className="loading">{t.loading.generic}</p>
   if (error) return <ErrorState message={error} onRetry={refreshAll} />
@@ -69,6 +79,7 @@ export function TodayDashboard() {
     today,
   })
   const needsAttention = pendingCompletions.length > 0 || attentionItems.length > 0
+  const quickTodos = chores.filter((chore) => isQuickTodo(chore) && getChoreState(chore, latestCompletionFor(chore.id)) === 'actionable')
   const addressName = getLocalizedAddressName({
     firstName: currentMember.display_name,
     manualVocative: currentMember.vocative_name,
@@ -90,10 +101,19 @@ export function TodayDashboard() {
         date={today}
         itemCount={entries.length}
         members={members}
+        familyHeroImageUrl={familyHeroImageUrl}
         onAdd={() => setShowCreate(true)}
       />
 
       {approvalFeedback && <p className="success approval-feedback" role="status">{approvalFeedback}</p>}
+
+      {isParentOrAdmin && <TodayQuickTodoWidget
+        tasks={quickTodos}
+        onAdd={(title) => addChore(createQuickTaskInput(title))}
+        onComplete={(taskId) => markDone(taskId)}
+        onPromote={(taskId) => navigateHref(`/chores?chore=${taskId}&edit=1`)}
+        onOpenAll={() => navigate('/chores')}
+      />}
 
       {needsAttention && (
         <section className="section today-attention-section">
@@ -124,15 +144,17 @@ export function TodayDashboard() {
       <section className="section today-program-section">
         <h2>{t.today.programTitle}</h2>
         {entries.length === 0 ? (
-          <EmptyState
-            title={t.today.programEmpty}
-            body={t.today.programEmptyBody}
-            action={{ label: t.create.addAction, onClick: () => setShowCreate(true) }}
-          />
+          <TodayProgramEmpty onAdd={() => setShowCreate(true)} />
         ) : (
           <TodayAgendaList entries={entries} memberById={memberById} onSelectEntry={setSelectedEntry} />
         )}
       </section>
+
+      <TodayShoppingWidget
+        items={activeShoppingItems}
+        onOpen={() => navigate('/shopping')}
+        onAddItem={(name) => addShoppingItem(createQuickShoppingItemInput(name))}
+      />
 
       {kids.length === 0 && (
         <section className="section today-setup-card">
@@ -160,13 +182,15 @@ interface HeaderProps {
   date: string
   itemCount: number
   members: FamilyMarkMember[]
+  familyHeroImageUrl: string | null
   onAdd: () => void
 }
 
-function TodayHeader({ name, date, itemCount, members, onAdd }: HeaderProps) {
+function TodayHeader({ name, date, itemCount, members, familyHeroImageUrl, onAdd }: HeaderProps) {
   return (
-    <div className="today-hero">
-      <FamilyMark variant="dynamic" members={members} size={96} className="today-family-mark" />
+    <div className={`today-hero${familyHeroImageUrl ? ' has-family-photo' : ''}`}>
+      {familyHeroImageUrl && <img className="today-hero-photo" src={familyHeroImageUrl} alt="" aria-hidden="true" />}
+      {!familyHeroImageUrl && <FamilyMark variant="dynamic" members={members} size={96} className="today-family-mark" />}
       <div className="today-hero-copy">
         <span className="page-eyebrow">{t.home.title}</span>
         <h1 className="home-title">{t.home.welcome(name)}</h1>

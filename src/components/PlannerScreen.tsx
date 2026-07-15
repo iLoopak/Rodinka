@@ -12,14 +12,11 @@ import { ErrorState } from './ui/ErrorState'
 import { PlannerAreaCard } from './planner/PlannerAreaCard'
 import { UniversalCreateModal } from './planner/UniversalCreateModal'
 import { ShoppingCategoryIcon } from './shopping/ShoppingCategoryIcon'
-
-interface QuickAction {
-  label: string
-  type: PlannerItemType
-}
+import { useRouter } from '../router'
 
 export function PlannerScreen() {
   const [createConfig, setCreateConfig] = useState<{ type?: PlannerItemType } | null>(null)
+  const { navigate } = useRouter()
   const {
     chores,
     pendingCompletions,
@@ -69,13 +66,6 @@ export function PlannerScreen() {
     .sort((a, b) => a.entry_date.localeCompare(b.entry_date))[0]
   const openVotes = voteRounds.filter((round) => round.status === 'open')
 
-  const quickActions: QuickAction[] = [
-    { label: t.planner.addChore, type: 'chore' },
-    { label: t.planner.addActivity, type: 'activity' },
-    { label: t.planner.addMedical, type: 'medical' },
-    { label: t.planner.addMeal, type: 'meal' },
-  ]
-
   const choreStyle = getItemTypeStyle('chore')
   const activityStyle = getItemTypeStyle('activity')
   const medicalStyle = getItemTypeStyle('medical')
@@ -94,29 +84,6 @@ export function PlannerScreen() {
       </div>
 
       <section className="section planner-section">
-        <h2>{t.planner.quickActionsTitle}</h2>
-        <div className="planner-quick-actions">
-          {quickActions.map((action) => {
-            const style = getItemTypeStyle(action.type)
-            return (
-              <button
-                key={action.type}
-                type="button"
-                className="planner-quick-action"
-                data-category={style.category}
-                onClick={() => setCreateConfig({ type: action.type })}
-              >
-                <span className="planner-quick-icon" style={{ color: `var(${style.colorVar})` }}>
-                  {style.icon}
-                </span>
-                <span>{action.label}</span>
-              </button>
-            )
-          })}
-        </div>
-      </section>
-
-      <section className="section planner-section">
         <h2>{t.planner.overviewTitle}</h2>
         <div className="planner-area-grid">
           <PlannerAreaCard
@@ -132,6 +99,8 @@ export function PlannerScreen() {
               ...(overdueChores.length > 0 ? [t.planner.choresOverdue(overdueChores.length)] : []),
             ]}
             ariaLabel={t.planner.openArea(t.planner.choresTitle)}
+            createLabel={t.create.addAction}
+            onCreate={() => setCreateConfig({ type: 'chore' })}
           />
           <PlannerAreaCard
             to="/activities"
@@ -154,6 +123,8 @@ export function PlannerScreen() {
               ...(overduePayments.length > 0 ? [t.planner.paymentsOverdue(overduePayments.length)] : []),
             ]}
             ariaLabel={t.planner.openArea(t.planner.activitiesTitle)}
+            createLabel={t.create.addAction}
+            onCreate={() => setCreateConfig({ type: 'activity' })}
           />
           <PlannerAreaCard
             to="/health"
@@ -172,6 +143,8 @@ export function PlannerScreen() {
             }
             details={overdueMedical.length > 0 ? [t.planner.healthOverdue(overdueMedical.length)] : []}
             ariaLabel={t.planner.openArea(t.planner.healthTitle)}
+            createLabel={t.create.addAction}
+            onCreate={() => setCreateConfig({ type: 'medical' })}
           />
           <PlannerAreaCard
             to="/meals"
@@ -190,6 +163,8 @@ export function PlannerScreen() {
             }
             details={openVotes.length > 0 ? [t.planner.mealsVoting(openVotes.length)] : []}
             ariaLabel={t.planner.openArea(t.planner.mealsTitle)}
+            createLabel={t.create.addAction}
+            onCreate={() => setCreateConfig({ type: 'meal' })}
           />
           <PlannerAreaCard
             to="/shopping"
@@ -201,6 +176,8 @@ export function PlannerScreen() {
             summary={t.shopping.activeCount(activeShoppingItems.length)}
             details={[]}
             ariaLabel={t.planner.openArea(t.shopping.title)}
+            createLabel={t.planner.openShopping}
+            onCreate={() => navigate('/shopping')}
           />
         </div>
       </section>

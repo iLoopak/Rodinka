@@ -1,8 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState, type CSSProperties } from 'react'
+import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useDroppable, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import { useFamilyData } from '../context/FamilyDataContext'
 import { t } from '../strings'
 import { formatShortDate } from '../utils/dueDate'
-import { groupShoppingItems, shoppingItemsForCopy, type ShoppingItem, type ShoppingSession, type ShoppingTemplate } from '../utils/shopping'
+import { SHOPPING_CATEGORIES, groupShoppingItems, shoppingItemsForCopy, type ShoppingCategory, type ShoppingItem, type ShoppingSession, type ShoppingTemplate } from '../utils/shopping'
+import { insertIdBefore } from '../utils/listReorder'
 import { formatLocalizedShoppingQuantity, shoppingCategoryLabel } from '../utils/shoppingLabels'
 import { ShoppingCategoryIcon } from './shopping/ShoppingCategoryIcon'
 import { EmptyState } from './ui/EmptyState'
@@ -10,25 +15,63 @@ import { ErrorState } from './ui/ErrorState'
 import { MemberAvatar } from './ui/MemberAvatar'
 import { Modal } from './ui/Modal'
 import { ShoppingItemForm } from './shopping/ShoppingItemForm'
+import { CompletionCheckbox } from './ui/CompletionCheckbox'
+import { defaultShoppingCategorySettings, type ShoppingCategorySettings } from '../utils/shoppingCategorySettings'
 
 export function ShoppingScreen() {
   const {
     members, memberById, currentMember, activeShoppingItems, purchasedShoppingItems, commonShoppingItems, shoppingSessions,
     shoppingLoading, shoppingError, refreshShopping, addShoppingItem, updateShoppingItem, deleteShoppingItem,
     toggleShoppingPurchased, archivePurchasedShoppingItems, importShoppingItems,
+    reorderShoppingItems, shoppingCategorySettings, updateShoppingCategorySettings, isParentOrAdmin,
   } = useFamilyData()
   const [quickName, setQuickName] = useState('')
   const [filterResponsible, setFilterResponsible] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('assignedTo') === 'me' ? currentMember.id : '')
   const [selectedItem, setSelectedItem] = useState<ShoppingItem | null>(null)
   const [showCommon, setShowCommon] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [showCategorySettings, setShowCategorySettings] = useState(false)
+  const [toolsOpen, setToolsOpen] = useState(false)
+  const toolsButtonRef = useRef<HTMLButtonElement>(null)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 140, tolerance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
 
   const filteredActive = useMemo(() => filterResponsible
     ? activeShoppingItems.filter((item) => item.responsible_member_id === filterResponsible)
     : activeShoppingItems, [activeShoppingItems, filterResponsible])
-  const groups = useMemo(() => groupShoppingItems(filteredActive), [filteredActive])
+  const groups = useMemo(() => groupShoppingItems(filteredActive, draggedItemId !== null), [draggedItemId, filteredActive])
+
+  async function saveShoppingOrder(movedId: string, category: ShoppingCategory, orderedIds: string[]) {
+    setFeedback(null)
+    try {
+      await reorderShoppingItems(movedId, category, orderedIds)
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : t.errors.generic)
+    }
+  }
+
+  function handleShoppingDragEnd(event: DragEndEvent) {
+    setDraggedItemId(null)
+    const movedId = String(event.active.id)
+    const movedItem = activeShoppingItems.find((item) => item.id === movedId)
+    if (!movedItem || !event.over) return
+    const overData = event.over.data.current as { type?: string; category?: ShoppingCategory } | undefined
+    const targetCategory = overData?.category
+    if (!targetCategory) return
+    const targetId = overData.type === 'item' ? String(event.over.id) : null
+    if (movedItem.category === targetCategory && targetId === movedId) return
+    const targetIds = activeShoppingItems.filter((item) => item.category === targetCategory).map((item) => item.id)
+    const orderedIds = movedItem.category === targetCategory && targetId
+      ? arrayMove(targetIds, targetIds.indexOf(movedId), targetIds.indexOf(targetId))
+      : insertIdBefore(targetIds, movedId, targetId)
+    void saveShoppingOrder(movedId, targetCategory, orderedIds)
+  }
 
   async function quickAdd(event: React.FormEvent) {
     event.preventDefault()
@@ -66,6 +109,23 @@ export function ShoppingScreen() {
     <>
       <div className="screen-header shopping-header">
         <div><h1 className="home-title">{t.shopping.title}</h1><p className="home-subtitle">{t.shopping.activeCount(activeShoppingItems.length)}</p></div>
+        <div className="header-actions">
+          <button
+            ref={toolsButtonRef}
+            type="button"
+            className={`header-icon-button btn-secondary calendar-filter-button shopping-tools-button${filterResponsible ? ' active' : ''}`}
+            aria-label={toolsOpen ? t.shopping.hideTools : t.shopping.showTools}
+            aria-expanded={toolsOpen}
+            aria-controls="shopping-tools-panel"
+            title={t.shopping.toolsLabel}
+            onClick={() => setToolsOpen((open) => !open)}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <path d="M4 6h16M7 12h10M10 18h4" />
+            </svg>
+            {filterResponsible && <span className="calendar-filter-count" aria-hidden="true">1</span>}
+          </button>
+        </div>
       </div>
 
       <form className="shopping-quick-add" onSubmit={quickAdd}>
@@ -74,27 +134,65 @@ export function ShoppingScreen() {
       </form>
       {feedback && <p className="shopping-feedback" role="status">{feedback}</p>}
 
-      <div className="shopping-toolbar">
-        <button type="button" className="btn-secondary" onClick={() => setShowCommon(true)}>{t.shopping.commonAction}</button>
-        <button type="button" className="btn-secondary" onClick={() => setShowHistory(true)}>{t.shopping.historyAction}</button>
+      <div
+        id="shopping-tools-panel"
+        className="calendar-filter-panel shopping-tools-panel"
+        role="region"
+        aria-label={t.shopping.toolsLabel}
+        hidden={!toolsOpen}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            setToolsOpen(false)
+            toolsButtonRef.current?.focus()
+          }
+        }}
+      >
+        <div className="shopping-toolbar">
+          <button type="button" className="btn-secondary" onClick={() => setShowCommon(true)}>{t.shopping.commonAction}</button>
+          <button type="button" className="btn-secondary" onClick={() => setShowHistory(true)}>{t.shopping.historyAction}</button>
+          {isParentOrAdmin && <button type="button" className="btn-secondary" onClick={() => setShowCategorySettings(true)}>{t.shopping.sectionsAction}</button>}
+        </div>
+        {members.length > 0 && <div className="filter-row shopping-filter">
+          <select value={filterResponsible} onChange={(event) => setFilterResponsible(event.target.value)} aria-label={t.shopping.filterResponsible}>
+            <option value="">{t.shopping.filterResponsible}: {t.shopping.filterAll}</option>
+            {members.map((member) => <option key={member.id} value={member.id}>{member.display_name}</option>)}
+          </select>
+          {filterResponsible && <button type="button" className="link shopping-filter-clear" onClick={() => setFilterResponsible('')}>{t.shopping.clearFilter}</button>}
+        </div>}
       </div>
-
-      {members.length > 0 && <div className="filter-row shopping-filter"><select value={filterResponsible} onChange={(event) => setFilterResponsible(event.target.value)} aria-label={t.shopping.filterResponsible}>
-        <option value="">{t.shopping.filterAll}</option>
-        {members.map((member) => <option key={member.id} value={member.id}>{member.display_name}</option>)}
-      </select></div>}
 
       {activeShoppingItems.length === 0 && purchasedShoppingItems.length === 0 ? (
         <EmptyState title={t.shopping.emptyTitle} body={t.shopping.emptyBody} />
       ) : filteredActive.length === 0 ? (
         <EmptyState title={filterResponsible ? t.shopping.filterEmpty : t.shopping.activeEmpty} />
       ) : (
-        <div className="shopping-category-groups">
-          {groups.map((group) => <section key={group.category} className={`shopping-category shopping-category-${group.category}`}>
-            <h2><ShoppingCategoryIcon category={group.category} />{shoppingCategoryLabel(group.category)}<span>{group.items.length}</span></h2>
-            <ul className="shopping-list">{group.items.map((item) => <ShoppingRow key={item.id} item={item} memberById={memberById} onToggle={() => toggleShoppingPurchased(item.id, true)} onEdit={() => setSelectedItem(item)} />)}</ul>
-          </section>)}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={(event) => setDraggedItemId(String(event.active.id))}
+          onDragCancel={() => setDraggedItemId(null)}
+          onDragEnd={handleShoppingDragEnd}
+        >
+          <div className="shopping-category-groups">
+            {groups.map((group) => <ShoppingSortableGroup
+              key={group.category}
+              group={group}
+              appearance={shoppingCategorySettings[group.category]}
+              memberById={memberById}
+              onToggle={toggleShoppingPurchased}
+              onEdit={setSelectedItem}
+            />)}
+          </div>
+          <DragOverlay modifiers={[snapCenterToCursor]}>
+            {draggedItemId && activeShoppingItems.find((item) => item.id === draggedItemId) && (() => {
+              const item = activeShoppingItems.find((candidate) => candidate.id === draggedItemId)!
+              return <div className="list-drag-preview quick-todo-drag-overlay">
+                <span className="list-drag-preview-handle" aria-hidden="true">⠿</span>
+                <span className="list-drag-preview-copy"><strong>{item.name}</strong><small>{formatLocalizedShoppingQuantity(item.quantity, item.unit)}</small></span>
+              </div>
+            })()}
+          </DragOverlay>
+        </DndContext>
       )}
 
       {purchasedShoppingItems.length > 0 && <details className="shopping-purchased">
@@ -104,27 +202,95 @@ export function ShoppingScreen() {
       </details>}
 
       {selectedItem && <Modal title={t.shopping.editTitle} onClose={() => setSelectedItem(null)}><ShoppingItemForm
-        initial={selectedItem} members={members}
+        initial={selectedItem} members={members} categorySettings={shoppingCategorySettings}
         onSubmit={async (input) => { await updateShoppingItem(selectedItem.id, input); setSelectedItem(null) }}
         onDelete={async () => { if (window.confirm(t.shopping.deleteConfirm)) { await deleteShoppingItem(selectedItem.id); setSelectedItem(null) } }}
       /></Modal>}
       {showCommon && <CommonItemsModal items={commonShoppingItems} onAdd={addTemplate} onClose={() => setShowCommon(false)} />}
       {showHistory && <HistoryModal sessions={shoppingSessions} onCopy={copySession} onClose={() => setShowHistory(false)} />}
+      {showCategorySettings && <ShoppingCategorySettingsModal
+        settings={shoppingCategorySettings}
+        onSave={async (settings) => {
+          await updateShoppingCategorySettings(settings)
+          setFeedback(t.shopping.sectionsSaved)
+          setShowCategorySettings(false)
+        }}
+        onClose={() => setShowCategorySettings(false)}
+      />}
     </>
   )
 }
 
-function ShoppingRow({ item, memberById, onToggle, onEdit }: {
+function ShoppingSortableGroup({ group, appearance, memberById, onToggle, onEdit }: {
+  group: ReturnType<typeof groupShoppingItems>[number]
+  appearance: ShoppingCategorySettings[ShoppingCategory]
+  memberById: ReturnType<typeof useFamilyData>['memberById']
+  onToggle: (itemId: string, purchased: boolean) => Promise<void>
+  onEdit: (item: ShoppingItem) => void
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `shopping-category:${group.category}`,
+    data: { type: 'category', category: group.category },
+  })
+  return <section
+    ref={setNodeRef}
+    data-shopping-category={group.category}
+    className={`shopping-category shopping-category-${group.category}${isOver ? ' drop-enabled' : ''}`}
+    style={{
+      '--shopping-accent': appearance.color,
+      '--shopping-soft': `color-mix(in srgb, ${appearance.color} 11%, white)`,
+      '--shopping-border': `color-mix(in srgb, ${appearance.color} 34%, white)`,
+    } as CSSProperties}
+  >
+    <h2><ShoppingCategoryIcon category={group.category} />{appearance.label ?? shoppingCategoryLabel(group.category)}<span>{group.items.length}</span></h2>
+    <SortableContext items={group.items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+      <ul className="shopping-list">{group.items.map((item) => <SortableShoppingRow
+        key={item.id}
+        item={item}
+        memberById={memberById}
+        onToggle={() => onToggle(item.id, true)}
+        onEdit={() => onEdit(item)}
+      />)}</ul>
+    </SortableContext>
+    {group.items.length === 0 && <p className="shopping-drop-empty">{t.shopping.dropHere}</p>}
+  </section>
+}
+
+function SortableShoppingRow(props: Omit<ShoppingRowProps, 'sortable'>) {
+  const sortable = useSortable({ id: props.item.id, data: { type: 'item', category: props.item.category } })
+  return <ShoppingRow {...props} sortable={sortable} />
+}
+
+interface ShoppingRowProps {
   item: ShoppingItem
   memberById: ReturnType<typeof useFamilyData>['memberById']
   onToggle: () => Promise<void>
   onEdit: () => void
-}) {
+  sortable?: ReturnType<typeof useSortable>
+}
+
+function ShoppingRow({ item, memberById, onToggle, onEdit, sortable }: ShoppingRowProps) {
   const creator = item.created_by_member_id ? memberById(item.created_by_member_id) : undefined
   const responsible = item.responsible_member_id ? memberById(item.responsible_member_id) : undefined
   const purchaser = item.purchased_by_member_id ? memberById(item.purchased_by_member_id) : undefined
-  return <li className={`shopping-item${item.purchased ? ' purchased' : ''}`}>
-    <button type="button" className="shopping-check" aria-pressed={item.purchased} aria-label={`${item.purchased ? t.shopping.purchasedTitle : t.shopping.activeTitle}: ${item.name}`} onClick={onToggle}><span aria-hidden="true">✓</span></button>
+  const rowStyle: CSSProperties | undefined = sortable ? {
+    transform: sortable.isDragging ? undefined : CSS.Transform.toString(sortable.transform),
+    transition: sortable.transition,
+  } : undefined
+  return <li
+    ref={sortable?.setNodeRef}
+    className={`shopping-item${item.purchased ? ' purchased' : ''}${sortable?.isDragging ? ' dragging' : ''}`}
+    data-shopping-item-id={item.id}
+    style={rowStyle}
+  >
+    {!item.purchased && sortable && <button
+      type="button"
+      className="list-drag-handle"
+      aria-label={t.shopping.dragItem(item.name)}
+      {...sortable.attributes}
+      {...sortable.listeners}
+    ><span aria-hidden="true">⠿</span></button>}
+    <CompletionCheckbox checked={item.purchased} label={`${item.purchased ? t.shopping.purchasedTitle : t.shopping.activeTitle}: ${item.name}`} onClick={onToggle} />
     <button type="button" className="shopping-item-main" onClick={onEdit}>
       <span className="shopping-item-top"><strong>{item.name}</strong>{(item.quantity !== null || item.unit) && <b>{formatLocalizedShoppingQuantity(item.quantity, item.unit)}</b>}</span>
       {item.note && <span className="shopping-item-note">{item.note}</span>}
@@ -136,6 +302,68 @@ function ShoppingRow({ item, memberById, onToggle, onEdit }: {
       </span>
     </button>
   </li>
+}
+
+function ShoppingCategorySettingsModal({ settings, onSave, onClose }: {
+  settings: ShoppingCategorySettings
+  onSave: (settings: ShoppingCategorySettings) => Promise<void>
+  onClose: () => void
+}) {
+  const [draft, setDraft] = useState<ShoppingCategorySettings>(() => structuredClone(settings))
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault()
+    setSaving(true)
+    setError(null)
+    try {
+      await onSave(draft)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : t.errors.generic)
+      setSaving(false)
+    }
+  }
+
+  return <Modal title={t.shopping.sectionsTitle} onClose={onClose}>
+    <form className="shopping-category-settings" onSubmit={submit}>
+      <p className="form-hint">{t.shopping.sectionsBody}</p>
+      <div className="shopping-category-settings-list">
+        {SHOPPING_CATEGORIES.map((category) => <div className="shopping-category-setting" key={category}>
+          <span className="shopping-category-color-preview" style={{ backgroundColor: draft[category].color }} aria-hidden="true" />
+          <label>
+            <span>{t.shopping.sectionNameLabel}</span>
+            <input
+              value={draft[category].label ?? ''}
+              placeholder={shoppingCategoryLabel(category)}
+              maxLength={40}
+              onChange={(event) => setDraft((current) => ({
+                ...current,
+                [category]: { ...current[category], label: event.target.value || null },
+              }))}
+            />
+          </label>
+          <label className="shopping-category-color-field">
+            <span>{t.shopping.sectionColorLabel}</span>
+            <input
+              type="color"
+              value={draft[category].color}
+              aria-label={`${t.shopping.sectionColorLabel}: ${draft[category].label ?? shoppingCategoryLabel(category)}`}
+              onChange={(event) => setDraft((current) => ({
+                ...current,
+                [category]: { ...current[category], color: event.target.value.toUpperCase() },
+              }))}
+            />
+          </label>
+        </div>)}
+      </div>
+      <div className="form-actions shopping-category-settings-actions">
+        <button type="submit" disabled={saving}>{saving ? t.shopping.sectionsSaving : t.shopping.sectionsSave}</button>
+        <button type="button" className="btn-secondary" disabled={saving} onClick={() => setDraft(defaultShoppingCategorySettings())}>{t.shopping.sectionsReset}</button>
+      </div>
+      {error && <p className="error" role="alert">{error}</p>}
+    </form>
+  </Modal>
 }
 
 function CommonItemsModal({ items, onAdd, onClose }: { items: ShoppingTemplate[]; onAdd: (item: ShoppingTemplate) => Promise<void>; onClose: () => void }) {

@@ -16,6 +16,10 @@ describe('chore occurrence state', () => {
     expect(getChoreState(makeChore({ status: 'archived', due_date: '2026-07-14' }), completion('approved'))).toBe('done')
   })
 
+  it('keeps an approved one-off task without a due date done', () => {
+    expect(getChoreState(makeChore({ status: 'archived', due_date: null }), completion('approved'))).toBe('done')
+  })
+
   it('makes the next recurring occurrence actionable after approval', () => {
     expect(getChoreState(makeChore({ recurrence_type: 'weekly', recurring: true, due_date: '2026-07-21' }), completion('approved'))).toBe('actionable')
   })

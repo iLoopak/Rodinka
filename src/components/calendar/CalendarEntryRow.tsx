@@ -60,8 +60,8 @@ export function CalendarEntryRow({ entry, memberById, onClick, onAssignmentClick
         aria-label={`${entry.assignmentSeriesType === 'activity' ? t.calendar.changeCompanion : t.calendar.changeAssignee}${entry.assignmentOverridden ? `. ${t.calendar.occurrenceOverrideBadge}` : ''}`}
         onClick={onAssignmentClick}
       >
-        <MemberAvatar member={responsible} size={24} />
-        {entry.assignmentOverridden && <span aria-hidden="true">↔</span>}
+        <MemberAvatar member={responsible} size={36} />
+        {entry.assignmentOverridden && <span className="assignment-override-indicator" aria-hidden="true">↔</span>}
       </button>}
     </li>
   )
