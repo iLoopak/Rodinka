@@ -86,7 +86,7 @@ export function WeekAgenda({ weekStart, entries, today, selectedDay, scrollVersi
       })}
     </div>
 
-    <div className="week-day-list">
+    <div className="week-day-list" data-layout="vertical-agenda">
       {days.map((day) => {
         const memberIds = memberIdsForCalendarEntries(day.entries)
         const isToday = day.date === today

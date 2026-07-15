@@ -54,6 +54,10 @@ describe('groupEntriesForWeek', () => {
     ], '2026-07-13')
 
     expect(groups).toHaveLength(7)
+    expect(groups.map((day) => day.date)).toEqual([
+      '2026-07-13', '2026-07-14', '2026-07-15', '2026-07-16',
+      '2026-07-17', '2026-07-18', '2026-07-19',
+    ])
     expect(groups[2].entries).toHaveLength(1)
     expect(groups.filter((day) => day.entries.length === 0)).toHaveLength(6)
   })
