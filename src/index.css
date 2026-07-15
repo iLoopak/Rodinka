@@ -1049,6 +1049,41 @@ details.manage .add-child-form + .add-chore-form {
 .shopping-quick-add input { min-height: 48px; border-color: transparent; background: var(--paper-raised); }
 .shopping-quick-add button { min-width: 94px; padding-inline: 15px; }
 .shopping-feedback { margin: 8px 4px 12px; color: var(--category-tasks); font-size: 0.84rem; font-weight: 700; }
+.shopping-sync-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 8px 4px 12px;
+  color: var(--ink-muted);
+  font-size: var(--font-size-meta);
+  line-height: var(--line-height-meta);
+}
+.shopping-sync-status > span:nth-child(2) { min-width: 0; overflow-wrap: anywhere; }
+.shopping-sync-status .link { margin-left: auto; flex: 0 0 auto; }
+.shopping-sync-status-dot,
+.shopping-item-pending {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--ink-muted);
+}
+.shopping-sync-status.syncing .shopping-sync-status-dot,
+.shopping-item-pending {
+  background: var(--category-health);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--category-health) 18%, transparent);
+  animation: shopping-sync-pulse 1.35s ease-in-out infinite;
+}
+.shopping-sync-status.offline .shopping-sync-status-dot { background: var(--category-meals); }
+.shopping-sync-status.error .shopping-sync-status-dot { background: var(--danger); }
+.shopping-sync-status.synced .shopping-sync-status-dot { background: var(--category-tasks); }
+.shopping-item-pending { width: 7px; height: 7px; margin-inline: 2px; }
+@keyframes shopping-sync-pulse { 50% { opacity: .42; transform: scale(.84); } }
+@media (prefers-reduced-motion: reduce) {
+  .shopping-sync-status-dot,
+  .shopping-item-pending { animation: none; }
+}
 
 .shopping-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
 .shopping-toolbar button { flex: 0 0 auto; min-height: 42px; padding: 8px 14px; border-radius: 999px; font-size: 0.84rem; }

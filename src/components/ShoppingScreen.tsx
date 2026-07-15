@@ -24,6 +24,7 @@ export function ShoppingScreen() {
     shoppingLoading, shoppingError, refreshShopping, addShoppingItem, updateShoppingItem, deleteShoppingItem,
     toggleShoppingPurchased, archivePurchasedShoppingItems, importShoppingItems,
     reorderShoppingItems, shoppingCategorySettings, updateShoppingCategorySettings, isParentOrAdmin,
+    shoppingSyncStatus, shoppingSyncError, pendingShoppingChanges, pendingShoppingItemIds, shoppingLastSyncedAt,
   } = useFamilyData()
   const [quickName, setQuickName] = useState('')
   const [filterResponsible, setFilterResponsible] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('assignedTo') === 'me' ? currentMember.id : '')
@@ -133,6 +134,21 @@ export function ShoppingScreen() {
         <button type="submit" disabled={busy || !quickName.trim()}><span aria-hidden="true">+</span> {t.shopping.quickAddAction}</button>
       </form>
       {feedback && <p className="shopping-feedback" role="status">{feedback}</p>}
+      {(shoppingSyncStatus !== 'synced' || shoppingLastSyncedAt) && <div
+        className={`shopping-sync-status ${shoppingSyncStatus}`}
+        role="status"
+        aria-live="polite"
+      >
+        <span className="shopping-sync-status-dot" aria-hidden="true" />
+        <span>{shoppingSyncStatus === 'offline'
+          ? t.shopping.syncOffline
+          : shoppingSyncStatus === 'syncing'
+            ? t.shopping.syncing(pendingShoppingChanges)
+            : shoppingSyncStatus === 'error'
+              ? t.shopping.syncFailed
+              : t.shopping.syncComplete}</span>
+        {shoppingSyncStatus === 'error' && <button type="button" className="link" onClick={() => void refreshShopping()} title={shoppingSyncError ?? undefined}>{t.shopping.syncRetry}</button>}
+      </div>}
 
       <div
         id="shopping-tools-panel"
@@ -179,6 +195,7 @@ export function ShoppingScreen() {
               group={group}
               appearance={shoppingCategorySettings[group.category]}
               memberById={memberById}
+              pendingItemIds={pendingShoppingItemIds}
               onToggle={toggleShoppingPurchased}
               onEdit={setSelectedItem}
             />)}
@@ -197,7 +214,7 @@ export function ShoppingScreen() {
 
       {purchasedShoppingItems.length > 0 && <details className="shopping-purchased">
         <summary>{t.shopping.purchasedCount(purchasedShoppingItems.length)}</summary>
-        <ul className="shopping-list purchased">{purchasedShoppingItems.map((item) => <ShoppingRow key={item.id} item={item} memberById={memberById} onToggle={() => toggleShoppingPurchased(item.id, false)} onEdit={() => setSelectedItem(item)} />)}</ul>
+        <ul className="shopping-list purchased">{purchasedShoppingItems.map((item) => <ShoppingRow key={item.id} item={item} memberById={memberById} pending={pendingShoppingItemIds.has(item.id)} onToggle={() => toggleShoppingPurchased(item.id, false)} onEdit={() => setSelectedItem(item)} />)}</ul>
         <button type="button" className="link" onClick={async () => { if (window.confirm(t.shopping.clearPurchasedConfirm)) await archivePurchasedShoppingItems() }}>{t.shopping.clearPurchased}</button>
       </details>}
 
@@ -221,10 +238,11 @@ export function ShoppingScreen() {
   )
 }
 
-function ShoppingSortableGroup({ group, appearance, memberById, onToggle, onEdit }: {
+function ShoppingSortableGroup({ group, appearance, memberById, pendingItemIds, onToggle, onEdit }: {
   group: ReturnType<typeof groupShoppingItems>[number]
   appearance: ShoppingCategorySettings[ShoppingCategory]
   memberById: ReturnType<typeof useFamilyData>['memberById']
+  pendingItemIds: Set<string>
   onToggle: (itemId: string, purchased: boolean) => Promise<void>
   onEdit: (item: ShoppingItem) => void
 }) {
@@ -248,6 +266,7 @@ function ShoppingSortableGroup({ group, appearance, memberById, onToggle, onEdit
         key={item.id}
         item={item}
         memberById={memberById}
+        pending={pendingItemIds.has(item.id)}
         onToggle={() => onToggle(item.id, true)}
         onEdit={() => onEdit(item)}
       />)}</ul>
@@ -264,12 +283,13 @@ function SortableShoppingRow(props: Omit<ShoppingRowProps, 'sortable'>) {
 interface ShoppingRowProps {
   item: ShoppingItem
   memberById: ReturnType<typeof useFamilyData>['memberById']
+  pending: boolean
   onToggle: () => Promise<void>
   onEdit: () => void
   sortable?: ReturnType<typeof useSortable>
 }
 
-function ShoppingRow({ item, memberById, onToggle, onEdit, sortable }: ShoppingRowProps) {
+function ShoppingRow({ item, memberById, pending, onToggle, onEdit, sortable }: ShoppingRowProps) {
   const creator = item.created_by_member_id ? memberById(item.created_by_member_id) : undefined
   const responsible = item.responsible_member_id ? memberById(item.responsible_member_id) : undefined
   const purchaser = item.purchased_by_member_id ? memberById(item.purchased_by_member_id) : undefined
@@ -292,7 +312,7 @@ function ShoppingRow({ item, memberById, onToggle, onEdit, sortable }: ShoppingR
     ><span aria-hidden="true">⠿</span></button>}
     <CompletionCheckbox checked={item.purchased} label={`${item.purchased ? t.shopping.purchasedTitle : t.shopping.activeTitle}: ${item.name}`} onClick={onToggle} />
     <button type="button" className="shopping-item-main" onClick={onEdit}>
-      <span className="shopping-item-top"><strong>{item.name}</strong>{(item.quantity !== null || item.unit) && <b>{formatLocalizedShoppingQuantity(item.quantity, item.unit)}</b>}</span>
+      <span className="shopping-item-top"><strong>{item.name}</strong>{pending && <span className="shopping-item-pending" title={t.shopping.pendingSync}><span className="sr-only">{t.shopping.pendingSync}</span></span>}{(item.quantity !== null || item.unit) && <b>{formatLocalizedShoppingQuantity(item.quantity, item.unit)}</b>}</span>
       {item.note && <span className="shopping-item-note">{item.note}</span>}
       <span className="shopping-item-meta">
         {creator && <><MemberAvatar member={creator} size={20} /><span>{t.shopping.createdBy(creator.display_name)}</span></>}
