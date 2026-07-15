@@ -37,6 +37,7 @@ import type { Meal } from '../hooks/useMeals'
 import type { MealVoteRound, VoteValue } from '../hooks/useMealVoteRounds'
 import type { MealPlanEntry } from '../hooks/useMealPlanEntries'
 import { useShoppingData } from './useShoppingData'
+import { getShoppingLocalStore } from '../shopping/shoppingIndexedDb'
 import { createMemberLookup, resolveCurrentMember } from '../utils/memberLookup'
 import { useMemberProfiles } from '../hooks/useMemberProfiles'
 import { choreInputToRow, type ChoreInput } from '../utils/choreModel'
@@ -331,7 +332,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     deletePlanEntry,
     copyWeek,
   } = useMealsData(familyId, userId)
-  const shoppingData = useShoppingData(familyId)
+  const shoppingData = useShoppingData(familyId, member.id)
   const refreshShopping = shoppingData.refreshShopping
 
   const [familyNameState, setFamilyNameState] = useState<{
@@ -352,7 +353,8 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
   const familyNameLoading = familyNameState.familyId !== familyId || familyNameState.loading
 
   const refreshFamilyName = useCallback(async () => {
-    setFamilyNameState({ familyId, name: null, heroImagePath: null, heroImageUrl: null, shoppingCategorySettings: defaultShoppingCategorySettings(), loading: true })
+    const cachedCategorySettings = await getShoppingLocalStore().loadCategorySettings(familyId)
+    setFamilyNameState({ familyId, name: null, heroImagePath: null, heroImageUrl: null, shoppingCategorySettings: cachedCategorySettings ?? defaultShoppingCategorySettings(), loading: true })
     const { data, error } = await supabase.from('families').select('name, hero_image_path, shopping_category_settings').eq('id', familyId).single()
     if (activeFamilyIdRef.current !== familyId) return
     if (error) {
@@ -365,10 +367,12 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
         if (signedUrlError) console.error('Failed to create family hero signed URL:', signedUrlError.message)
         else heroImageUrl = signedUrl.signedUrl
       }
-      setFamilyNameState({ familyId, name: data.name, heroImagePath: data.hero_image_path, heroImageUrl, shoppingCategorySettings: normalizeShoppingCategorySettings(data.shopping_category_settings), loading: false })
+      const shoppingCategorySettings = normalizeShoppingCategorySettings(data.shopping_category_settings)
+      await getShoppingLocalStore().saveCategorySettings(familyId, shoppingCategorySettings)
+      setFamilyNameState({ familyId, name: data.name, heroImagePath: data.hero_image_path, heroImageUrl, shoppingCategorySettings, loading: false })
       setFamilyNameError(null)
     }
-    if (error) setFamilyNameState({ familyId, name: null, heroImagePath: null, heroImageUrl: null, shoppingCategorySettings: defaultShoppingCategorySettings(), loading: false })
+    if (error) setFamilyNameState({ familyId, name: null, heroImagePath: null, heroImageUrl: null, shoppingCategorySettings: cachedCategorySettings ?? defaultShoppingCategorySettings(), loading: false })
   }, [familyId])
 
   const updateFamilyName = useCallback(async (name: string) => {
@@ -385,6 +389,7 @@ export function FamilyDataProvider({ member, userId, userEmail, children }: Prov
     const normalized = normalizeShoppingCategorySettings(settings)
     const { error } = await supabase.from('families').update({ shopping_category_settings: normalized }).eq('id', familyId)
     if (error) throw friendly(error)
+    await getShoppingLocalStore().saveCategorySettings(familyId, normalized)
     if (activeFamilyIdRef.current !== familyId) return
     setFamilyNameState((current) => ({ ...current, familyId, shoppingCategorySettings: normalized, loading: false }))
   }, [familyId])
