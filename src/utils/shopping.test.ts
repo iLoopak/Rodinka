@@ -19,7 +19,7 @@ const item: ShoppingItem = {
   id: 'item-1', family_id: 'family-1', name: 'Milk', normalized_name: 'milk', quantity: 1, unit: 'l', note: null,
   category: 'dairy', created_by_member_id: 'member-1', responsible_member_id: null, purchased: false,
   purchased_by_member_id: null, purchased_at: null, archived_at: null, source_meal_id: null,
-  source_meal_plan_entry_id: null, created_at: '2026-07-01T10:00:00Z', updated_at: '2026-07-01T10:00:00Z',
+  source_meal_plan_entry_id: null, sort_order: 0, created_at: '2026-07-01T10:00:00Z', updated_at: '2026-07-01T10:00:00Z',
 }
 
 describe('shopping domain', () => {
@@ -59,6 +59,14 @@ describe('shopping domain', () => {
   it('groups active items in stable store order', () => {
     const groups = groupShoppingItems([{ ...item, category: 'dairy' }, { ...item, id: '2', category: 'produce' }])
     expect(groups.map((group) => group.category)).toEqual(['produce', 'dairy'])
+  })
+
+  it('sorts items inside a category by their manual order', () => {
+    const groups = groupShoppingItems([
+      { ...item, id: 'later', sort_order: 2048 },
+      { ...item, id: 'first', sort_order: 1024 },
+    ])
+    expect(groups[0].items.map((entry) => entry.id)).toEqual(['first', 'later'])
   })
 
   it('builds common templates while excluding active duplicates', () => {

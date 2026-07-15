@@ -2,6 +2,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ShoppingItem } from '../utils/shopping'
+import { defaultShoppingCategorySettings } from '../utils/shoppingCategorySettings'
 
 const useFamilyDataMock = vi.hoisted(() => vi.fn())
 vi.mock('../context/FamilyDataContext', () => ({ useFamilyData: useFamilyDataMock }))
@@ -17,7 +18,7 @@ const baseItem: ShoppingItem = {
   id: 'item-1', family_id: 'family-1', name: 'Milk', normalized_name: 'milk', quantity: 2, unit: 'l', note: 'whole',
   category: 'dairy', created_by_member_id: member.id, responsible_member_id: responsible.id, purchased: false,
   purchased_by_member_id: null, purchased_at: null, archived_at: null, source_meal_id: null,
-  source_meal_plan_entry_id: null, created_at: '2026-07-01T10:00:00Z', updated_at: '2026-07-01T10:00:00Z',
+  source_meal_plan_entry_id: null, sort_order: 0, created_at: '2026-07-01T10:00:00Z', updated_at: '2026-07-01T10:00:00Z',
 }
 
 function context(active: ShoppingItem[], purchased: ShoppingItem[] = []) {
@@ -34,6 +35,10 @@ function context(active: ShoppingItem[], purchased: ShoppingItem[] = []) {
     refreshShopping: vi.fn(),
     addShoppingItem: vi.fn(), updateShoppingItem: vi.fn(), deleteShoppingItem: vi.fn(),
     toggleShoppingPurchased: vi.fn(), archivePurchasedShoppingItems: vi.fn(), importShoppingItems: vi.fn(),
+    reorderShoppingItems: vi.fn(),
+    shoppingCategorySettings: defaultShoppingCategorySettings(),
+    updateShoppingCategorySettings: vi.fn(),
+    isParentOrAdmin: true,
   }
 }
 
@@ -48,6 +53,14 @@ describe('ShoppingScreen', () => {
     expect(html).toContain('Přidal/a Alex')
     expect(html).toContain('Nakoupí Sam')
     expect(html).toContain('2 l')
+    expect(html).toContain('list-drag-handle')
+    expect(html).toContain('aria-roledescription="sortable"')
+    expect(html).toContain('--shopping-accent:#5E83B5')
+    expect(html).toContain('aria-controls="shopping-tools-panel"')
+    expect(html).toContain('id="shopping-tools-panel"')
+    expect(html).toContain('hidden=""')
+    expect(html).toContain('Přesunout položku Milk')
+    expect(html).toMatch(/class="completion-checkbox"[^>]*><span aria-hidden="true"><\/span><\/button>/)
   })
 
   it('separates purchased items into the secondary section', () => {

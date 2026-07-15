@@ -15,6 +15,8 @@ import type { ChoreInput } from '../utils/choreModel'
 import { getChoreState } from '../utils/choreState'
 import { choreRecurrenceSummary } from '../utils/choreRecurrence'
 import { formatFullDate } from '../utils/dueDate'
+import { isQuickTodo } from '../utils/todayQuickAdd'
+import { QuickTodoPriorityList } from './chores/QuickTodoPriorityList'
 
 type Tab = 'active' | 'pending' | 'allowance' | 'manage'
 
@@ -32,6 +34,7 @@ export function ChoresScreen() {
   const [approvalFeedback, setApprovalFeedback] = useState<string | null>(null)
   const { searchParams, setQueryParam, removeQueryParam } = useRouter()
   const choreParam = searchParams.get('chore')
+  const editParam = searchParams.get('edit') === '1'
   const {
     chores,
     completions,
@@ -54,6 +57,7 @@ export function ChoresScreen() {
     addChore,
     updateChore,
     setChoreArchived,
+    reorderQuickTodos,
     isParentOrAdmin,
     loading,
     error,
@@ -101,11 +105,20 @@ export function ChoresScreen() {
     setSelectedChore(chore)
     setDeepLinkError(false)
     setQueryParam('chore', chore.id)
+    if (editParam) removeQueryParam('edit')
   }
 
   function closeChore() {
     setSelectedChore(null)
     if (choreParam !== null) removeQueryParam('chore')
+    if (editParam) removeQueryParam('edit')
+  }
+
+  function promoteQuickTodo(chore: Chore) {
+    setSelectedChore(chore)
+    setDeepLinkError(false)
+    setQueryParam('chore', chore.id)
+    setQueryParam('edit', '1', 'replace')
   }
 
   const tabs: { id: Tab; label: string; count?: number }[] = [
@@ -118,6 +131,8 @@ export function ChoresScreen() {
     const state = getChoreState(chore, latestCompletionFor(chore.id))
     return chore.status === 'active' && state !== 'done' && state !== 'archived'
   })
+  const quickTodos = isParentOrAdmin ? activeChores.filter(isQuickTodo) : []
+  const fullTasks = isParentOrAdmin ? activeChores.filter((chore) => !isQuickTodo(chore)) : activeChores
 
   return (
     <>
@@ -154,15 +169,30 @@ export function ChoresScreen() {
       {approvalFeedback && <p className="success approval-feedback" role="status">{approvalFeedback}</p>}
 
       {tab === 'active' && (
-        <section className="section">
+        <>
+        {quickTodos.length > 0 && <section className="section quick-todo-priority-section">
+          <div className="quick-todo-priority-heading">
+            <h2>{t.chores.quickTasksTitle}</h2>
+            <p>{t.chores.quickTasksBody}</p>
+          </div>
+          <QuickTodoPriorityList
+            tasks={quickTodos}
+            onComplete={(taskId) => markDone(taskId)}
+            onPromote={promoteQuickTodo}
+            onReorder={reorderQuickTodos}
+          />
+        </section>}
+        <section className="section full-task-list-section">
+          {quickTodos.length > 0 && <h2>{t.chores.fullTasksTitle}</h2>}
           <ChoreList
-            chores={activeChores}
+            chores={fullTasks}
             memberById={memberById}
             latestCompletionFor={latestCompletionFor}
             onMarkDone={markDone}
             onSelect={openChore}
           />
         </section>
+        </>
       )}
 
       {tab === 'pending' && (
@@ -214,6 +244,7 @@ export function ChoresScreen() {
       )}
 
       {selectedChore && <ChoreDetailModal
+        key={`${selectedChore.id}:${editParam ? 'edit' : 'detail'}`}
         chore={selectedChore}
         assignee={selectedChore.assigned_to ? memberById(selectedChore.assigned_to) : undefined}
         members={members}
@@ -221,6 +252,7 @@ export function ChoresScreen() {
         completions={completions.filter((completion) => completion.chore_id === selectedChore.id)}
         latestCompletion={latestCompletionFor(selectedChore.id)}
         canManage={isParentOrAdmin}
+        initialEditing={editParam && isParentOrAdmin}
         onMarkDone={markDone}
         onUpdate={updateChore}
         onSetArchived={setChoreArchived}

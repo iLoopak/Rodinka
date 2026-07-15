@@ -6,12 +6,13 @@ interface Props {
   member: Pick<FamilyMember, 'id' | 'display_name' | 'color_key' | 'avatar_url'> | null | undefined
   size?: number
   decorative?: boolean
+  forceInitials?: boolean
 }
 
-export function MemberAvatar({ member, size = 26, decorative = true }: Props) {
+export function MemberAvatar({ member, size = 26, decorative = true, forceInitials = false }: Props) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null)
   if (!member) return null
-  const showPhoto = Boolean(member.avatar_url && failedUrl !== member.avatar_url)
+  const showPhoto = Boolean(!forceInitials && member.avatar_url && failedUrl !== member.avatar_url)
 
   return (
     <span

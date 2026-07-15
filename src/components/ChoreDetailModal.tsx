@@ -19,6 +19,7 @@ interface Props {
   completions: ChoreCompletion[]
   latestCompletion: ChoreCompletion | null
   canManage: boolean
+  initialEditing?: boolean
   onMarkDone: (choreId: string, assignedTo?: string) => Promise<void>
   onUpdate: (choreId: string, input: ChoreInput) => Promise<void>
   onSetArchived: (choreId: string, archived: boolean) => Promise<void>
@@ -46,12 +47,13 @@ export function ChoreDetailModal({
   completions,
   latestCompletion,
   canManage,
+  initialEditing = false,
   onMarkDone,
   onUpdate,
   onSetArchived,
   onClose,
 }: Props) {
-  const [editing, setEditing] = useState(false)
+  const [editing, setEditing] = useState(initialEditing)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const state = getChoreState(chore, latestCompletion)

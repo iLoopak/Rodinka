@@ -32,8 +32,21 @@ describe('WeekCalendarEntryRow', () => {
     }))
 
     expect(html.match(/class="member-avatar/g)).toHaveLength(1)
+    expect(html).toContain('width:36px;height:36px')
     expect(html).toContain('class="week-entry-assignment"')
     expect(html).not.toContain('class="avatar-stack"')
+  })
+
+  it('overlays the occurrence indicator without moving the assignment photo', () => {
+    const html = renderToStaticMarkup(createElement(WeekCalendarEntryRow, {
+      entry: { ...entry, assignmentOverridden: true },
+      memberById: (id) => id === member.id ? member : undefined,
+      onClick: vi.fn(),
+      onAssignmentClick: vi.fn(),
+    }))
+
+    expect(html).toContain('class="assignment-override-indicator"')
+    expect(html).toContain('width:36px;height:36px')
   })
 
   it('keeps participant avatars when there is no assignment control', () => {

@@ -25,6 +25,7 @@ export interface Chore {
   recurrence_weekdays: number[] | null
   preferred_day_of_month: number | null
   status: ChoreStatus
+  sort_order: number
   created_at: string
   updated_at: string
 }
@@ -63,6 +64,7 @@ interface ChoreRow {
   recurrence_weekdays?: number[] | null
   preferred_day_of_month?: number | null
   status?: string | null
+  sort_order?: number | null
   created_at: string
   updated_at?: string | null
 }
@@ -115,6 +117,7 @@ export function normalizeChore(row: ChoreRow): Chore {
     recurrence_weekdays: weekdays,
     preferred_day_of_month: preferredDay,
     status: row.status === 'archived' ? 'archived' : 'active',
+    sort_order: Number(row.sort_order ?? 0),
     updated_at: row.updated_at ?? row.created_at,
   }
 }

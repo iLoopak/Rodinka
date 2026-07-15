@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { supabase } from '../supabaseClient'
 import { t } from '../strings'
+import { isInitialFamilyDataLoad } from '../utils/familyDataLoading'
 
 export interface ChoreCompletion {
   id: string
@@ -24,15 +25,18 @@ export function useChoreCompletions(familyId: string | undefined) {
   const [completions, setCompletions] = useState<ChoreCompletion[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const loadedFamilyIdRef = useRef<string | undefined>(undefined)
 
   const refresh = useCallback(async () => {
     if (!familyId) {
+      loadedFamilyIdRef.current = undefined
       setCompletions([])
       setLoading(false)
       return
     }
 
-    setLoading(true)
+    const initialLoad = isInitialFamilyDataLoad(loadedFamilyIdRef.current, familyId)
+    if (initialLoad) setLoading(true)
     // Filter via the embedded `chores` relation since completions don't
     // carry family_id directly (see RLS policy in 003_chores.sql).
     const { data, error } = await supabase
@@ -43,11 +47,12 @@ export function useChoreCompletions(familyId: string | undefined) {
 
     if (error) {
       console.error('Failed to load chore completions:', error.message)
-      setCompletions([])
+      if (initialLoad) setCompletions([])
       setError(t.errors.loadFailed)
     } else {
       setCompletions((data ?? []).map((row) => ({ ...row, reward_amount: Number(row.reward_amount) })))
       setError(null)
+      loadedFamilyIdRef.current = familyId
     }
     setLoading(false)
   }, [familyId])

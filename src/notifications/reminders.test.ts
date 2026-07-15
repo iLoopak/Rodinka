@@ -76,7 +76,7 @@ function shoppingItem(overrides: Partial<ShoppingItem> = {}): ShoppingItem {
     unit: 'l', note: null, category: 'dairy', created_by_member_id: child.id,
     responsible_member_id: parent.id, purchased: false, purchased_by_member_id: null,
     purchased_at: null, archived_at: null, source_meal_id: null, source_meal_plan_entry_id: null,
-    created_at: NOW.toISOString(), updated_at: NOW.toISOString(), ...overrides,
+    sort_order: 0, created_at: NOW.toISOString(), updated_at: NOW.toISOString(), ...overrides,
   }
 }
 

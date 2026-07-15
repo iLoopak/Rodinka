@@ -74,7 +74,7 @@ export function MonthGrid({ monthAnchor, entries, today, selectedDay, memberById
                       return (
                         <span
                           key={entry.id}
-                          className="month-grid-indicator"
+                          className={`month-grid-indicator${personId ? ' has-member' : ''}`}
                           style={{
                             backgroundColor: `var(${style.surfaceVar})`,
                             borderColor: `var(${style.colorVar})`,
@@ -83,7 +83,7 @@ export function MonthGrid({ monthAnchor, entries, today, selectedDay, memberById
                           title={`${style.label}: ${entry.title}`}
                         >
                           {personId
-                            ? <MemberAvatar member={memberById(personId)} size={13} />
+                            ? <MemberAvatar member={memberById(personId)} size={15} forceInitials />
                             : <span className="month-grid-indicator-dot" />}
                         </span>
                       )
