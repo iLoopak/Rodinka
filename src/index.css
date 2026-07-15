@@ -319,7 +319,6 @@ main {
 .app-main {
   padding-bottom: calc(96px + env(safe-area-inset-bottom));
   width: 100%;
-  overflow-x: hidden;
 }
 
 /* ------------------------------------------------------------------ */
@@ -957,20 +956,22 @@ details.manage .add-child-form + .add-chore-form {
   }
 }
 
-.push-settings { display: grid; gap: 12px; padding-top: 4px; }
-.push-summary { padding-inline: 0; }
-.status-pill { padding: 5px 9px; border-radius: 999px; background: var(--neutral-soft); color: var(--ink-muted); font-size: 0.78rem; font-weight: 800; }
+.push-settings { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 12px; padding-top: 4px; }
+.push-summary { flex-wrap: wrap; min-width: 0; padding-inline: 0; }
+.status-pill { flex: 0 0 auto; padding: 5px 9px; border-radius: 999px; background: var(--neutral-soft); color: var(--ink-muted); font-size: 0.78rem; font-weight: 800; }
 .status-pill.active { background: var(--category-chores-soft); color: var(--category-chores); }
-.push-actions, .modal-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.push-actions, .modal-actions { display: flex; align-items: center; flex-wrap: wrap; min-width: 0; gap: 10px; }
+.push-actions button, .modal-actions button { max-width: 100%; white-space: normal; }
 .push-consent, .push-guidance { padding: 16px; border: 1px solid var(--border-soft); border-radius: 16px; background: var(--paper); }
 .push-consent p, .push-guidance ol { margin: 8px 0 14px; color: var(--ink-muted); line-height: 1.5; }
 .push-guidance ol { padding-left: 22px; }
 .push-warning { padding: 10px 12px; border-radius: 12px; background: var(--category-meals-soft); }
-.push-devices { display: grid; gap: 8px; padding-top: 6px; border-top: 1px solid var(--border-soft); }
+.push-devices { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 8px; padding-top: 6px; border-top: 1px solid var(--border-soft); }
 .push-devices h3 { margin: 0; font-size: 0.9rem; }
-.push-device { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 13px; background: var(--neutral-soft); }
-.push-device span { display: grid; gap: 2px; }
+.push-device { display: flex; align-items: center; justify-content: space-between; min-width: 0; gap: 12px; padding: 10px 12px; border-radius: 13px; background: var(--neutral-soft); }
+.push-device span { display: grid; flex: 1 1 auto; min-width: 0; gap: 2px; overflow-wrap: anywhere; }
 .push-device small { color: var(--ink-muted); }
+.push-device button { flex: 0 0 auto; }
 .danger-link { color: var(--brick-dark); justify-self: start; }
 
 /* Reminder Center */
@@ -978,6 +979,9 @@ details.manage .add-child-form + .add-chore-form {
 .reminder-bell svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .reminder-bell.important { color: var(--brick-dark); border-color: rgba(185, 71, 66, .25); background: var(--coral-soft); }
 .reminder-badge { position: absolute; top: -4px; right: -5px; display: grid; place-items: center; min-width: 19px; height: 19px; padding: 0 4px; border: 2px solid var(--paper); border-radius: 999px; background: var(--brick-dark); color: white; font-size: .68rem; font-weight: 800; }
+.reminder-center { width: 100%; min-width: 0; }
+.reminder-center .tabs { width: 100%; overflow-x: visible; }
+.reminder-center .tab-button { flex: 1 1 0; min-width: 0; padding-inline: 12px; white-space: normal; }
 .reminder-center-header { align-items: flex-start; }
 .reminder-center-header .home-subtitle { max-width: 430px; }
 .reminder-sections { display: grid; gap: 24px; margin-top: 20px; }
@@ -993,7 +997,7 @@ details.manage .add-child-form + .add-chore-form {
 .reminder-card.read { opacity: .76; }
 .reminder-open { display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 15px; background: transparent; color: inherit; text-align: left; }
 .reminder-icon { display: grid; place-items: center; flex: 0 0 38px; height: 38px; border-radius: 13px; background: var(--neutral-soft); color: var(--brick-dark); font-weight: 800; }
-.reminder-copy { display: grid; flex: 1; gap: 4px; }
+.reminder-copy { display: grid; flex: 1; min-width: 0; gap: 4px; overflow-wrap: anywhere; }
 .reminder-card-title { color: var(--ink); font-size: var(--font-size-item-title); font-weight: var(--font-weight-strong); line-height: var(--line-height-tight); }
 .reminder-description { color: var(--ink-muted); font-size: var(--font-size-body); line-height: var(--line-height-body); }
 .reminder-meta { color: var(--ink-faint); font-size: var(--font-size-caption); line-height: var(--line-height-meta); text-transform: capitalize; }
@@ -1004,23 +1008,25 @@ details.manage .add-child-form + .add-chore-form {
 .reminder-empty > span { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--green-soft); color: var(--green); font-size: 1.5rem; }
 .reminder-empty h2 { margin: 8px 0 0; font-size: 1.12rem; }
 .reminder-empty p { margin: 0; color: var(--ink-muted); }
-.reminder-settings { display: grid; gap: 14px; margin-top: 18px; }
-.reminder-settings .section { margin: 0; }
-.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 0; border-bottom: 1px solid var(--border-soft); }
+.reminder-settings { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 14px; margin-top: 18px; }
+.reminder-settings .section { width: 100%; min-width: 0; margin: 0; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; min-width: 0; gap: 18px; padding: 12px 0; border-bottom: 1px solid var(--border-soft); }
 .setting-row:last-child { border-bottom: 0; }
-.setting-row > span { display: grid; gap: 3px; }
+.setting-row > span { display: grid; flex: 1 1 auto; min-width: 0; gap: 3px; overflow-wrap: anywhere; }
 .setting-row small { color: var(--ink-muted); line-height: 1.35; }
-.setting-row input[type='checkbox'] { width: 22px; height: 22px; accent-color: var(--brick-dark); }
+.setting-row input[type='checkbox'] { flex: 0 0 22px; width: 22px; height: 22px; accent-color: var(--brick-dark); }
+.setting-row select { min-width: 0; }
 .setting-row.disabled { opacity: .62; }
 .category-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; }
-.digest-preview { display: flex; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 13px; border-radius: 14px; background: var(--blue-soft); color: var(--ink-muted); font-size: .86rem; }
+.digest-preview { display: flex; justify-content: space-between; min-width: 0; gap: 12px; margin-top: 12px; padding: 13px; border-radius: 14px; background: var(--blue-soft); color: var(--ink-muted); font-size: .86rem; }
+.digest-preview > * { min-width: 0; overflow-wrap: anywhere; }
 .reminder-digest { align-items: center; margin: 18px 0 0; }
 .reminder-digest > span { display: grid; gap: 3px; }
-.quiet-hours { display: flex; gap: 16px; margin: 12px 0; }
-.quiet-hours label { display: grid; gap: 5px; color: var(--ink-muted); font-size: .82rem; }
-.quiet-hours input { padding: 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--paper-raised); }
+.quiet-hours { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); min-width: 0; gap: 16px; margin: 12px 0; }
+.quiet-hours label { display: grid; min-width: 0; gap: 5px; color: var(--ink-muted); font-size: .82rem; }
+.quiet-hours input { min-width: 0; padding: 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--paper-raised); }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-@media (max-width: 480px) { .category-settings { grid-template-columns: 1fr; } .reminder-center-header { gap: 10px; } .reminder-center-header .btn-secondary { padding-inline: 11px; } }
+@media (max-width: 480px) { .category-settings { grid-template-columns: 1fr; } .reminder-center-header { gap: 10px; } .reminder-center-header .btn-secondary { padding-inline: 11px; } .reminder-settings .section { padding: 16px; } }
 
 /* ------------------------------------------------------------------ */
 /* Shared shopping list                                                */
@@ -4176,7 +4182,7 @@ button.today-shopping-open {
 
 .bottom-nav {
   max-width: 720px;
-  padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
+  padding: 7px calc(8px + env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));
   border-top-color: rgba(225, 211, 199, 0.78);
   background: rgba(255, 253, 249, 0.94);
   box-shadow: 0 -10px 30px rgba(76, 56, 42, 0.08);
