@@ -3,7 +3,6 @@ import type { FamilyMember } from '../../hooks/useFamilyMembers'
 import { t } from '../../strings'
 import { getCurrentLanguage } from '../../i18n'
 import type { CalendarEntry } from '../../utils/calendarEntries'
-import { formatShortDate } from '../../utils/dueDate'
 import {
   formatCalendarWeekLabel,
   formatWeekDayHeading,
@@ -12,7 +11,7 @@ import {
   shiftWeek,
 } from '../../utils/weekCalendar'
 import { MemberAvatar } from '../ui/MemberAvatar'
-import { WeekCalendarEntryRow } from './WeekCalendarEntryRow'
+import { CalendarDayAgendaCard } from './CalendarDayAgendaCard'
 
 function weekdayLabels() { return [
   t.calendar.weekdayShortMon, t.calendar.weekdayShortTue, t.calendar.weekdayShortWed,
@@ -87,35 +86,19 @@ export function WeekAgenda({ weekStart, entries, today, selectedDay, scrollVersi
     </div>
 
     <div className="week-day-list" data-layout="vertical-agenda">
-      {days.map((day) => {
-        const memberIds = memberIdsForCalendarEntries(day.entries)
-        const isToday = day.date === today
-        return <section
+      {days.map((day) => <CalendarDayAgendaCard
           key={day.date}
-          ref={(node) => { if (node) sectionRefs.current.set(day.date, node); else sectionRefs.current.delete(day.date) }}
-          className={`week-day-card${isToday ? ' today' : ''}${selectedDay === day.date ? ' selected' : ''}`}
-          data-week-date={day.date}
-          aria-labelledby={`week-day-${day.date}`}
-        >
-          <header className="week-day-header">
-            <div>
-              <h2 id={`week-day-${day.date}`} tabIndex={-1}>{formatWeekDayHeading(day.date, locale)}</h2>
-              <p>{isToday && <span className="today-badge">{t.calendar.todayBadge}</span>}{t.calendar.itemCount(day.entries.length)}</p>
-            </div>
-            {memberIds.length > 0 && <span className="avatar-stack week-day-avatars" aria-label={memberIds.map((id) => memberById(id)?.display_name).filter(Boolean).join(', ')}>
-              {memberIds.slice(0, 3).map((id) => <MemberAvatar key={id} member={memberById(id)} size={26} />)}
-              {memberIds.length > 3 && <span className="avatar-more">+{memberIds.length - 3}</span>}
-            </span>}
-          </header>
-
-          {day.entries.length === 0 ? <div className="week-day-empty"><span>{t.calendar.nothingPlanned}</span><button type="button" className="week-day-add-small" onClick={() => onAddDay(day.date)} aria-label={`${t.create.addThisDayAction}: ${formatShortDate(day.date)}`}>+</button></div>
-            : <div className="week-day-groups">
-              {day.untimed.length > 0 && <div className="week-day-group"><h3>{t.calendar.untimedGroup}</h3><ul>{day.untimed.map((entry) => <WeekCalendarEntryRow key={entry.id} entry={entry} memberById={memberById} onClick={() => onSelectEntry(entry)} onAssignmentClick={() => onChangeAssignment(entry)} />)}</ul></div>}
-              {day.timed.length > 0 && <div className="week-day-group"><h3>{t.calendar.timedGroup}</h3><ul>{day.timed.map((entry) => <WeekCalendarEntryRow key={entry.id} entry={entry} memberById={memberById} onClick={() => onSelectEntry(entry)} onAssignmentClick={() => onChangeAssignment(entry)} />)}</ul></div>}
-              <button type="button" className="link week-day-add" onClick={() => onAddDay(day.date)}>+ {t.create.addThisDayAction}</button>
-            </div>}
-        </section>
-      })}
+          date={day.date}
+          entries={day.entries}
+          today={today}
+          selected={selectedDay === day.date}
+          exposeWeekDate
+          sectionRef={(node) => { if (node) sectionRefs.current.set(day.date, node); else sectionRefs.current.delete(day.date) }}
+          memberById={memberById}
+          onSelectEntry={onSelectEntry}
+          onChangeAssignment={onChangeAssignment}
+          onAddDay={onAddDay}
+        />)}
     </div>
   </div>
 }

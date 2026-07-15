@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 const root = process.cwd()
 const screen = readFileSync(join(root, 'src/components/CalendarScreen.tsx'), 'utf8')
 const week = readFileSync(join(root, 'src/components/calendar/WeekAgenda.tsx'), 'utf8')
+const dayCard = readFileSync(join(root, 'src/components/calendar/CalendarDayAgendaCard.tsx'), 'utf8')
 const styles = readFileSync(join(root, 'src/index.css'), 'utf8')
 
 describe('weekly calendar integration contracts', () => {
@@ -31,7 +32,7 @@ describe('weekly calendar integration contracts', () => {
     expect(week).toContain('aria-pressed={selected}')
     expect(week).toContain('onSelectDay(date)')
     expect(week).toContain("scrollIntoView({ behavior: 'smooth', block: 'start' })")
-    expect(week).toContain('data-week-date={day.date}')
+    expect(dayCard).toContain('data-week-date={exposeWeekDate ? date : undefined}')
   })
 
   it('keeps every week width in one full-width vertical agenda', () => {
@@ -44,12 +45,25 @@ describe('weekly calendar integration contracts', () => {
     expect(styles).not.toMatch(/\.week-day-list[^}]*repeat\(2/s)
   })
 
-  it('keeps compact empty-day creation and stacked event rows', () => {
-    expect(week).toContain('className="week-day-empty"')
-    expect(week).toContain('className="week-day-add-small"')
-    expect(week).toContain('day.untimed.map')
-    expect(week).toContain('day.timed.map')
+  it('keeps lightweight empty content, one shared footer action, and stacked event rows', () => {
+    expect(dayCard).toContain('className="week-day-empty"')
+    expect(dayCard).not.toContain('week-day-add-small')
+    expect(dayCard.match(/className="link week-day-add"/g)).toHaveLength(1)
+    expect(dayCard.match(/onClick=\{\(\) => onAddDay\(date\)\}/g)).toHaveLength(1)
+    expect(dayCard).toContain('untimed.map')
+    expect(dayCard).toContain('timed.map')
     expect(styles).toContain('.week-day-group ul { display: grid;')
+    expect(styles).not.toContain('.week-day-add-small')
+  })
+
+  it('does not repeat participant avatars in day headers', () => {
+    expect(dayCard).not.toContain('week-day-avatars')
+  })
+
+  it('shares the same day agenda card between month and week views', () => {
+    expect(screen).toContain('<CalendarDayAgendaCard')
+    expect(week).toContain('<CalendarDayAgendaCard')
+    expect(screen).not.toContain('calendar-day-agenda')
   })
 
   it('uses the same filtered entry collection as the other calendar views', () => {
