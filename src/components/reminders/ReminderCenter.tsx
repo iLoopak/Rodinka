@@ -66,7 +66,7 @@ export function ReminderCenter() {
   if (loading) return <p className="loading">{t.reminders.loading}</p>
 
   const tabs: { id: Tab; label: string }[] = [{ id: 'active', label: t.reminders.tabActive(unreadCount) }, { id: 'history', label: t.reminders.tabHistory }, { id: 'settings', label: t.reminders.tabSettings }]
-  return <>
+  return <div className="reminder-center">
     <div className="screen-header reminder-center-header"><div><h1 className="home-title" tabIndex={-1}>{t.reminders.title}</h1><p className="home-subtitle">{t.reminders.subtitle}</p></div>{tab === 'active' && unreadCount > 0 && <button className="btn-secondary" onClick={() => markAllRead()}>{t.reminders.markAllRead}</button>}</div>
     <div className="tabs" role="tablist">{tabs.map((item) => <button key={item.id} className={`tab-button${tab === item.id ? ' active' : ''}`} role="tab" aria-selected={tab === item.id} onClick={() => setTab(item.id)}>{item.label}</button>)}</div>
     {error && <p className="form-error" role="alert">{error}</p>}
@@ -76,7 +76,7 @@ export function ReminderCenter() {
     })}</div>}</>}
     {tab === 'history' && (history.length === 0 ? <div className="reminder-empty"><h2>{t.reminders.historyEmpty}</h2></div> : <div className="reminder-list reminder-history">{history.map((item) => <ReminderCard key={item.id} item={item} onOpen={() => open(item)} onRead={() => markRead(item.id)} onDismiss={() => dismiss(item.id)} />)}</div>)}
     {tab === 'settings' && <ReminderSettings preferences={preferences} reminders={active} saving={saving} feedback={feedback} onChange={changePreferences} />}
-  </>
+  </div>
 }
 
 function ReminderCard({ item, onOpen, onRead, onDismiss }: { item: ReminderRecord; onOpen: () => void; onRead: () => void; onDismiss: () => void }) {
