@@ -21,6 +21,7 @@ import { choreRecurrenceSummary } from '../utils/choreRecurrence'
 import { formatFullDate } from '../utils/dueDate'
 import { isQuickTodo } from '../utils/todayQuickAdd'
 import { QuickTodoPriorityList } from './chores/QuickTodoPriorityList'
+import { ScrollableTabs } from './ui/ScrollableTabs'
 
 type Tab = 'active' | 'pending' | 'allowance' | 'manage'
 
@@ -162,21 +163,7 @@ export function ChoresScreen() {
         )}
       </div>
 
-      <div className="tabs" role="tablist">
-        {tabs.map((tabItem) => (
-          <button
-            key={tabItem.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === tabItem.id}
-            className={`tab-button${tab === tabItem.id ? ' active' : ''}`}
-            onClick={() => setTab(tabItem.id)}
-          >
-            {tabItem.label}
-            {!!tabItem.count && <span className="tab-count">{tabItem.count}</span>}
-          </button>
-        ))}
-      </div>
+      <ScrollableTabs tabs={tabs} activeTab={tab} onChange={setTab} />
 
       {deepLinkError && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
       {approvalFeedback && <p className="success approval-feedback" role="status">{approvalFeedback}</p>}

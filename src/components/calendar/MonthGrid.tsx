@@ -5,6 +5,7 @@ import type { CalendarEntry } from '../../utils/calendarEntries'
 import { getItemTypeStyle } from '../../utils/itemTypeStyle'
 import { buildMonthWeeks } from '../../utils/monthGrid'
 import { MemberAvatar } from '../ui/MemberAvatar'
+import { calendarDayAriaLabel } from '../../utils/calendarDayLabel'
 
 function weekdayLabels() { return [
   t.calendar.weekdayShortMon,
@@ -63,7 +64,7 @@ export function MonthGrid({ monthAnchor, entries, today, selectedDay, memberById
                 className={`month-grid-day${inMonth ? '' : ' outside'}${isToday ? ' today' : ''}${isSelected ? ' selected' : ''}`}
                 onClick={() => onSelectDay(day)}
                 aria-pressed={isSelected}
-                aria-label={`${day}${dayEntries.length > 0 ? ` — ${dayEntries.length}` : ''}`}
+                aria-label={calendarDayAriaLabel(day, dayEntries.length, { today: isToday, selected: isSelected })}
               >
                 <span className="month-grid-day-number">{Number(day.slice(8, 10))}</span>
                 {dayEntries.length > 0 && (

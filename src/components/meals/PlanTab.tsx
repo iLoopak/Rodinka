@@ -112,6 +112,11 @@ export function PlanTab({ prefill, onPrefillConsumed }: Props) {
       </div>
 
       <div className="tab-toolbar">
+        {isParentOrAdmin && (
+          <button type="button" className="header-action-button" onClick={() => setPendingAdd({ date: today, slot: 'dinner' })}>
+            <span aria-hidden="true">+</span> {t.mealPlan.addEntryAction}
+          </button>
+        )}
         {!isCurrentWeek(weekStart) && (
           <button type="button" className="btn-secondary" onClick={() => setWeekStart(getCurrentWeekStart())}>
             {t.mealPlan.thisWeekAction}

@@ -33,7 +33,8 @@ export function WeekCalendarEntryRow({ entry, memberById, onClick, onAssignmentC
   const responsible = entry.responsibleMemberId ? memberById(entry.responsibleMemberId) : undefined
   const showResponsible = responsible && !participantIds.includes(responsible.id)
   const hasAssignmentControl = Boolean(entry.assignmentSeriesType && onAssignmentClick)
-  const showParticipants = Boolean(participantNames) && !(entry.assignmentSeriesType === 'task' && hasAssignmentControl)
+  const responsibleIsOnlyParticipant = Boolean(responsible && participantIds.length === 1 && participantIds[0] === responsible.id)
+  const showParticipants = Boolean(participantNames) && !(hasAssignmentControl && responsibleIsOnlyParticipant)
   const timeLabel = entry.time
     ? `${shortTime(entry.time)}${entry.endTime ? `–${shortTime(entry.endTime)}` : ''}`
     : entry.allDay ? t.calendar.allDay : t.calendar.noTime
@@ -55,7 +56,7 @@ export function WeekCalendarEntryRow({ entry, memberById, onClick, onAssignmentC
         {hasAssignmentControl && <button
           type="button"
           className="week-entry-assignment"
-          aria-label={`${entry.assignmentSeriesType === 'activity' ? t.calendar.changeCompanion : t.calendar.changeAssignee}${entry.assignmentOverridden ? `. ${t.calendar.occurrenceOverrideBadge}` : ''}`}
+          aria-label={`${entry.assignmentSeriesType === 'activity' ? t.calendar.changeCompanion : t.calendar.changeAssignee}: ${assignmentName}${entry.assignmentOverridden ? `. ${t.calendar.occurrenceOverrideBadge}` : ''}`}
           onClick={onAssignmentClick}
         >
           <MemberAvatar member={responsible} size={30} />

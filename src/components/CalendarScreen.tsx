@@ -16,6 +16,8 @@ import { CalendarDayAgendaCard } from './calendar/CalendarDayAgendaCard'
 import { useRouter } from '../router'
 import { isValidISODate, isValidUuid } from '../utils/deepLinks'
 import { getWeekDates, getWeekStart } from '../utils/weekCalendar'
+import { ScrollableTabs } from './ui/ScrollableTabs'
+import { FilterDisclosure } from './ui/FilterDisclosure'
 
 type ViewMode = 'month' | 'week' | 'agenda'
 
@@ -49,7 +51,6 @@ export function CalendarScreen() {
   const dateParam = searchParams.get('date')
   const eventParam = searchParams.get('event')
   const processedDeepLinkRef = useRef<string | null>(null)
-  const filterButtonRef = useRef<HTMLButtonElement>(null)
 
   const {
     chores,
@@ -241,6 +242,16 @@ export function CalendarScreen() {
 
   const dayEntries = selectedDay ? entries.filter((e) => e.date === selectedDay) : []
   const activeFilterCount = Number(Boolean(filterPerson)) + Number(Boolean(filterType))
+  const viewTabs: { id: ViewMode; label: string }[] = [
+    { id: 'month', label: t.calendar.viewMonth },
+    { id: 'week', label: t.calendar.viewWeek },
+    { id: 'agenda', label: t.calendar.viewAgenda },
+  ]
+
+  function changeView(next: ViewMode) {
+    if (next === 'week') openWeek()
+    else setViewMode(next)
+  }
 
   return (
     <>
@@ -258,72 +269,15 @@ export function CalendarScreen() {
           <button type="button" className="header-action-button" onClick={goToday}>
             {t.calendar.today}
           </button>
-          <button
-            ref={filterButtonRef}
-            type="button"
-            className={`header-icon-button btn-secondary calendar-filter-button${hasFilters ? ' active' : ''}`}
-            aria-label={`${filtersOpen ? t.calendar.hideFilters : t.calendar.showFilters}${activeFilterCount ? ` (${activeFilterCount})` : ''}`}
-            aria-expanded={filtersOpen}
-            aria-controls="calendar-filter-panel"
-            title={t.calendar.filtersLabel}
-            onClick={() => setFiltersOpen((open) => !open)}
-          >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M4 6h16M7 12h10M10 18h4" />
-            </svg>
-            {activeFilterCount > 0 && <span className="calendar-filter-count" aria-hidden="true">{activeFilterCount}</span>}
-          </button>
         </div>
       </div>
 
-      <div className="tabs" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={viewMode === 'month'}
-          className={`tab-button${viewMode === 'month' ? ' active' : ''}`}
-          onClick={() => setViewMode('month')}
-        >
-          {t.calendar.viewMonth}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={viewMode === 'week'}
-          className={`tab-button${viewMode === 'week' ? ' active' : ''}`}
-          onClick={openWeek}
-        >
-          {t.calendar.viewWeek}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={viewMode === 'agenda'}
-          className={`tab-button${viewMode === 'agenda' ? ' active' : ''}`}
-          onClick={() => setViewMode('agenda')}
-        >
-          {t.calendar.viewAgenda}
-        </button>
-      </div>
+      <ScrollableTabs tabs={viewTabs} activeTab={viewMode} onChange={changeView} />
 
       {deepLinkError && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
 
-      <div
-        id="calendar-filter-panel"
-        className="calendar-filter-panel"
-        role="region"
-        aria-label={t.calendar.filtersLabel}
-        hidden={!filtersOpen}
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') {
-            setFiltersOpen(false)
-            filterButtonRef.current?.focus()
-          }
-        }}
-      >
-        {hasFilters && <div className="calendar-filter-panel-header">
-          <button type="button" className="link" onClick={clearFilters}>{t.calendar.clearFilters}</button>
-        </div>}
+      <FilterDisclosure id="calendar-filter-panel" open={filtersOpen} onOpenChange={setFiltersOpen}
+        activeCount={activeFilterCount} onClear={clearFilters}>
         <div className="filter-row">
           <select value={filterPerson} onChange={(e) => setFilterPerson(e.target.value)} aria-label={t.calendar.filterPersonLabel}>
             <option value="">{t.calendar.filterPersonLabel}: {t.calendar.filterAll}</option>
@@ -334,16 +288,16 @@ export function CalendarScreen() {
             {ITEM_TYPES.map((type) => <option key={type} value={type}>{getItemTypeStyle(type).label}</option>)}
           </select>
         </div>
-      </div>
+      </FilterDisclosure>
 
       {viewMode === 'month' && (
         <>
           <div className="month-nav">
-            <button type="button" className="btn-secondary" onClick={() => setMonthAnchor(shiftMonth(monthAnchor, -1))} aria-label="Previous month">
+            <button type="button" className="btn-secondary" onClick={() => setMonthAnchor(shiftMonth(monthAnchor, -1))} aria-label={t.calendar.previousMonth}>
               ‹
             </button>
             <span className="month-nav-label">{formatMonthYear(monthAnchor)}</span>
-            <button type="button" className="btn-secondary" onClick={() => setMonthAnchor(shiftMonth(monthAnchor, 1))} aria-label="Next month">
+            <button type="button" className="btn-secondary" onClick={() => setMonthAnchor(shiftMonth(monthAnchor, 1))} aria-label={t.calendar.nextMonth}>
               ›
             </button>
           </div>

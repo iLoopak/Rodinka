@@ -18,6 +18,8 @@ import type { Activity } from '../hooks/useActivities'
 import type { ActivityInput } from '../domain/activities/types'
 import { useRouter } from '../router'
 import { resolveDeepLinkedItem } from '../utils/deepLinks'
+import { ScrollableTabs } from './ui/ScrollableTabs'
+import { FilterDisclosure } from './ui/FilterDisclosure'
 
 type Tab = 'upcoming' | 'payments' | 'archived'
 
@@ -28,6 +30,7 @@ export function ActivitiesScreen() {
   const [filterChild, setFilterChild] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
   const [filterKind, setFilterKind] = useState('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [deepLinkError, setDeepLinkError] = useState(false)
   const { searchParams, setQueryParam, removeQueryParam } = useRouter()
   const activityParam = searchParams.get('activity')
@@ -125,6 +128,8 @@ export function ActivitiesScreen() {
 
       {deepLinkError && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
 
+      <FilterDisclosure id="activities-filter-panel" open={filtersOpen} onOpenChange={setFiltersOpen}
+        activeCount={Number(Boolean(filterChild)) + Number(Boolean(filterCategory)) + Number(Boolean(filterKind))} onClear={clearFilters}>
       <div className="filter-row">
         <select value={filterChild} onChange={(e) => setFilterChild(e.target.value)} aria-label={t.activities.filterChildLabel}>
           <option value="">
@@ -156,22 +161,9 @@ export function ActivitiesScreen() {
           ))}
         </select>
       </div>
+      </FilterDisclosure>
 
-      <div className="tabs" role="tablist">
-        {tabs.map((tabItem) => (
-          <button
-            key={tabItem.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === tabItem.id}
-            className={`tab-button${tab === tabItem.id ? ' active' : ''}`}
-            onClick={() => setTab(tabItem.id)}
-          >
-            {tabItem.label}
-            {!!tabItem.count && <span className="tab-count">{tabItem.count}</span>}
-          </button>
-        ))}
-      </div>
+      <ScrollableTabs tabs={tabs} activeTab={tab} onChange={setTab} />
 
       {tab === 'upcoming' && (
         <section className="section">
