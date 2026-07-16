@@ -7,9 +7,15 @@ import { usePush } from '../../context/PushContext'
 import { t } from '../../strings'
 import { localeFor } from '../../i18n/language'
 import { getCurrentLanguage } from '../../i18n'
+import { ScrollableTabs } from '../ui/ScrollableTabs'
+import { ScreenHeader } from '../ui/ScreenHeader'
+import { CheckCircle, Coins, Dumbbell, FileText, ShoppingCart, Stethoscope, Syringe, Utensils, Vote } from 'lucide-react'
 
 type Tab = 'active' | 'history' | 'settings'
-const sourceIcons: Record<ReminderRecord['source'], string> = { chore: '✓', activity: '◷', 'activity-payment': 'Kč', 'medical-appointment': '+', vaccination: '+', voting: '☝', 'meal-plan': '♨', allowance: '★', document: '▤', shopping: '⌑' }
+const sourceIcons = {
+  chore: CheckCircle, activity: Dumbbell, 'activity-payment': Coins, 'medical-appointment': Stethoscope,
+  vaccination: Syringe, voting: Vote, 'meal-plan': Utensils, allowance: Coins, document: FileText, shopping: ShoppingCart,
+} satisfies Record<ReminderRecord['source'], typeof CheckCircle>
 
 function sectionLabel(section: ReminderSection) {
   return { overdue: t.reminders.sectionOverdue, today: t.reminders.sectionToday, upcoming: t.reminders.sectionUpcoming, earlier: t.reminders.sectionEarlier }[section]
@@ -59,7 +65,7 @@ export function ReminderCenter() {
   async function changePreferences(next: NotificationPreferences) {
     setSaving(true); setFeedback(null)
     try { await savePreferences({ ...next, locale: getCurrentLanguage() }); setFeedback(t.reminders.settingsSaved) }
-    catch (caught) { setFeedback(caught instanceof Error ? caught.message : t.reminders.settingsSaveFailed); throw caught }
+    catch { setFeedback(t.reminders.settingsSaveFailed) }
     finally { setSaving(false) }
   }
 
@@ -67,9 +73,10 @@ export function ReminderCenter() {
 
   const tabs: { id: Tab; label: string }[] = [{ id: 'active', label: t.reminders.tabActive(unreadCount) }, { id: 'history', label: t.reminders.tabHistory }, { id: 'settings', label: t.reminders.tabSettings }]
   return <div className="reminder-center">
-    <div className="screen-header reminder-center-header"><div><h1 className="home-title" tabIndex={-1}>{t.reminders.title}</h1><p className="home-subtitle">{t.reminders.subtitle}</p></div>{tab === 'active' && unreadCount > 0 && <button className="btn-secondary" onClick={() => markAllRead()}>{t.reminders.markAllRead}</button>}</div>
-    <div className="tabs" role="tablist">{tabs.map((item) => <button key={item.id} className={`tab-button${tab === item.id ? ' active' : ''}`} role="tab" aria-selected={tab === item.id} onClick={() => setTab(item.id)}>{item.label}</button>)}</div>
-    {error && <p className="form-error" role="alert">{error}</p>}
+    <ScreenHeader className="reminder-center-header" title={t.reminders.title} subtitle={t.reminders.subtitle} titleTabIndex={-1}
+      actions={tab === 'active' && unreadCount > 0 ? <button className="btn-secondary" onClick={() => markAllRead()}>{t.reminders.markAllRead}</button> : undefined} />
+    <ScrollableTabs tabs={tabs} activeTab={tab} onChange={setTab} />
+    {error && <p className="form-error" role="alert">{t.errors.generic}</p>}
     {tab === 'active' && <>{(preferences.dailyDigestEnabled || preferences.weeklyDigestEnabled) && <section className="digest-preview reminder-digest"><span><strong>{preferences.dailyDigestEnabled ? t.reminders.dailyDigest : t.reminders.weeklyDigest}</strong><small>{t.reminders.digestCounts(digest.items.length, digest.important)}</small></span><button className="link" onClick={() => setTab('settings')}>{t.reminders.tabSettings}</button></section>}{active.length === 0 ? <div className="reminder-empty"><span aria-hidden="true">✓</span><h2>{t.reminders.allDoneTitle}</h2><p>{t.reminders.allDoneBody}</p><button className="link" onClick={() => setTab('settings')}>{t.reminders.reminderSettings}</button></div> : <div className="reminder-sections">{(['overdue', 'today', 'upcoming', 'earlier'] as ReminderSection[]).map((section) => {
       const items = sections.get(section); if (!items?.length) return null
       return <section key={section} className="reminder-section"><h2>{sectionLabel(section)} <span>{items.length}</span></h2><div className="reminder-list">{items.map((item) => <ReminderCard key={item.id} item={item} onOpen={() => open(item)} onRead={() => markRead(item.id)} onDismiss={() => dismiss(item.id)} />)}</div></section>
@@ -81,8 +88,9 @@ export function ReminderCenter() {
 
 function ReminderCard({ item, onOpen, onRead, onDismiss }: { item: ReminderRecord; onOpen: () => void; onRead: () => void; onDismiss: () => void }) {
   const state = item.resolvedAt ? t.reminders.stateResolved : item.dismissedAt ? t.reminders.stateDismissed : item.readAt ? t.reminders.stateRead : t.reminders.stateUnread
+  const SourceIcon = sourceIcons[item.source]
   return <article className={`reminder-card ${item.importance}${item.readAt ? ' read' : ' unread'}`} aria-label={`${item.title}, ${state}`}>
-    <button className="reminder-open" onClick={onOpen}><span className="reminder-icon" aria-hidden="true">{sourceIcons[item.source]}</span><span className="reminder-copy"><span className="reminder-card-title">{item.title}</span>{item.description && <span className="reminder-description">{item.description}</span>}<span className="reminder-meta">{item.importance === 'important' ? `${t.reminders.important} · ` : ''}{reminderSourceLabel(item.source)}</span></span>{!item.readAt && <span className="unread-dot"><span className="sr-only">{t.reminders.stateUnread}</span></span>}</button>
+    <button className="reminder-open" onClick={onOpen}><span className="reminder-icon" aria-hidden="true"><SourceIcon size={20} /></span><span className="reminder-copy"><span className="reminder-card-title">{item.title}</span>{item.description && <span className="reminder-description">{item.description}</span>}<span className="reminder-meta">{item.importance === 'important' ? `${t.reminders.important} · ` : ''}{reminderSourceLabel(item.source)}</span></span>{!item.readAt && <span className="unread-dot"><span className="sr-only">{t.reminders.stateUnread}</span></span>}</button>
     <div className="reminder-actions">{!item.readAt && <button className="link" onClick={onRead}>{t.reminders.markRead}</button>}{!item.resolvedAt && !item.dismissedAt && canDismiss(item) && <button className="link" onClick={onDismiss}>{t.reminders.dismiss}</button>}</div>
   </article>
 }
@@ -125,13 +133,13 @@ function PushSettings({ preferences, saving, onChange }: { preferences: Notifica
       if (!preferences.pushEnabled) await onChange({ ...preferences, pushEnabled: true })
       setShowIntro(false)
       setMessage(t.reminders.deviceRegistered)
-    } catch (caught) { setMessage(caught instanceof Error ? caught.message : t.reminders.enableFailed) }
+    } catch { setMessage(t.reminders.enableFailed) }
   }
 
   async function disableCurrent() {
     setMessage(null)
     try { await push.disableCurrentDevice(); setMessage(t.reminders.deviceDisabled) }
-    catch (caught) { setMessage(caught instanceof Error ? caught.message : t.reminders.deviceRemoveFailed) }
+    catch { setMessage(t.reminders.deviceRemoveFailed) }
   }
 
   async function disableAccount() {
@@ -142,7 +150,7 @@ function PushSettings({ preferences, saving, onChange }: { preferences: Notifica
   async function test() {
     setMessage(t.reminders.testSending)
     try { await push.sendTest(); setMessage(t.reminders.testSent) }
-    catch (caught) { setMessage(caught instanceof Error ? caught.message : t.reminders.testFailed) }
+    catch { setMessage(t.reminders.testFailed) }
   }
 
   return <div className="push-settings">

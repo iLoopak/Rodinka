@@ -7,6 +7,7 @@ import { VoteTab } from './VoteTab'
 import { PlanTab, type PlanPrefill } from './PlanTab'
 import type { Meal } from '../../hooks/useMeals'
 import { ScrollableTabs } from '../ui/ScrollableTabs'
+import { ScreenHeader } from '../ui/ScreenHeader'
 
 type Tab = 'plan' | 'vote' | 'meals'
 
@@ -53,9 +54,7 @@ export function MealPlanScreen() {
 
   return (
     <>
-      <div className="home-header">
-        <h1 className="home-title">{t.meals.title}</h1>
-      </div>
+      <ScreenHeader title={t.meals.title} />
 
       <ScrollableTabs tabs={tabs} activeTab={tab} onChange={setTab} />
 

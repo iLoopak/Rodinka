@@ -22,6 +22,7 @@ import { formatFullDate } from '../utils/dueDate'
 import { isQuickTodo } from '../utils/todayQuickAdd'
 import { QuickTodoPriorityList } from './chores/QuickTodoPriorityList'
 import { ScrollableTabs } from './ui/ScrollableTabs'
+import { ScreenHeader } from './ui/ScreenHeader'
 
 type Tab = 'active' | 'pending' | 'allowance' | 'manage'
 
@@ -150,9 +151,7 @@ export function ChoresScreen() {
 
   return (
     <>
-      <div className="screen-header">
-        <h1 className="home-title">{t.nav.chores}</h1>
-        {isParentOrAdmin && (
+      <ScreenHeader title={t.nav.chores} actions={isParentOrAdmin ? (
           <button
             type="button"
             className="header-action-button"
@@ -160,8 +159,7 @@ export function ChoresScreen() {
           >
             <span aria-hidden="true">+</span> {t.chores.addChoreAction}
           </button>
-        )}
-      </div>
+        ) : undefined} />
 
       <ScrollableTabs tabs={tabs} activeTab={tab} onChange={setTab} />
 

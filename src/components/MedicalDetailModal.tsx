@@ -6,9 +6,9 @@ import type { MedicalRecord } from '../hooks/useMedicalRecords'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
 import type { MedicalRecordInput } from '../domain/medical/types'
 import { Modal } from './ui/Modal'
-import { MemberAvatar } from './ui/MemberAvatar'
 import { AddMedicalRecordForm } from './AddMedicalRecordForm'
 import { ShareLinkButton } from './ui/ShareLinkButton'
+import { PersonRoleGroup, type PersonRole } from './ui/PersonRoleGroup'
 
 interface Props {
   record: MedicalRecord
@@ -72,8 +72,8 @@ export function MedicalDetailModal({ record, members, currentMemberId, memberNam
     try {
       await onUpdate(record.id, { ...recordToInput(record), status: 'completed' })
       onClose()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+    } catch {
+      setError(t.errors.generic)
     } finally {
       setMarkingComplete(false)
     }
@@ -91,6 +91,10 @@ export function MedicalDetailModal({ record, members, currentMemberId, memberNam
   const responsible = record.responsible_member_id
     ? memberById(record.responsible_member_id)
     : undefined
+  const peopleRoles: PersonRole[] = [
+    { member: patient, fallbackName: memberName(record.patient_id), label: t.common.patient },
+    ...(record.responsible_member_id ? [{ member: responsible, fallbackName: memberName(record.responsible_member_id), label: t.common.responsibleAdult }] : []),
+  ]
 
   return (
     <Modal title={record.title} onClose={onClose}>
@@ -99,18 +103,7 @@ export function MedicalDetailModal({ record, members, currentMemberId, memberNam
           {medicalRecordTypeLabel(record.record_type)} · {medicalStatusLabel(record.status)}
         </p>
 
-        <div className="detail-people">
-          <div className="detail-person">
-            <MemberAvatar member={patient} />
-            <span>{patient?.display_name ?? memberName(record.patient_id)}</span>
-          </div>
-          {record.responsible_member_id && (
-            <div className="detail-person">
-              <MemberAvatar member={responsible} />
-              <span>{responsible?.display_name ?? memberName(record.responsible_member_id)}</span>
-            </div>
-          )}
-        </div>
+        <PersonRoleGroup roles={peopleRoles} />
 
         <p className="row-meta">
           {formatFullDate(record.record_date)}

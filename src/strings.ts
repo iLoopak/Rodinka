@@ -11,7 +11,7 @@ export const strings = {
   cs: {
     appName: 'Rodinka',
     claim: 'Ať doma všechno klape.',
-    common: { close: 'Zavřít', primaryNavigation: 'Hlavní navigace', delete: 'Smazat', remove: 'Odebrat', archive: 'Archivovat', restore: 'Obnovit', cancel: 'Zrušit' },
+    common: { close: 'Zavřít', primaryNavigation: 'Hlavní navigace', delete: 'Smazat', remove: 'Odebrat', archive: 'Archivovat', restore: 'Obnovit', cancel: 'Zrušit', participant: 'Účastník', responsibleAdult: 'Zodpovědný dospělý', patient: 'Pacient' },
     destructive: { cancel: 'Zrušit', delete: 'Smazat', remove: 'Odebrat', archive: 'Archivovat', restore: 'Obnovit', undo: 'Zpět', working: 'Pracuji…', archived: 'Archivováno', removeOccurrence: 'Odebrat jen tento výskyt', removeFollowing: 'Odebrat tento a následující výskyty', removeSeries: 'Odebrat celou sérii' },
     offline: {
       title: 'Nepodařilo se připojit',
@@ -488,6 +488,9 @@ export const strings = {
     },
     more: {
       title: 'Více',
+      accountSection: 'Účet',
+      familySection: 'Rodina',
+      appSection: 'Aplikace a oznámení',
       signedInAs: 'Přihlášení jako',
       familyLabel: 'Rodina',
       familyPhotoLabel: 'Rodinná fotka',
@@ -1150,7 +1153,7 @@ export const strings = {
   en: {
     appName: 'Rodinka',
     claim: 'Keep the household running smoothly.',
-    common: { close: 'Close', primaryNavigation: 'Primary navigation', delete: 'Delete', remove: 'Remove', archive: 'Archive', restore: 'Restore', cancel: 'Cancel' },
+    common: { close: 'Close', primaryNavigation: 'Primary navigation', delete: 'Delete', remove: 'Remove', archive: 'Archive', restore: 'Restore', cancel: 'Cancel', participant: 'Participant', responsibleAdult: 'Responsible adult', patient: 'Patient' },
     destructive: { cancel: 'Cancel', delete: 'Delete', remove: 'Remove', archive: 'Archive', restore: 'Restore', undo: 'Undo', working: 'Working…', archived: 'Archived', removeOccurrence: 'Remove only this occurrence', removeFollowing: 'Remove this and following occurrences', removeSeries: 'Remove the entire series' },
     offline: {
       title: 'Could not connect',
@@ -1625,6 +1628,9 @@ export const strings = {
     },
     more: {
       title: 'More',
+      accountSection: 'Account',
+      familySection: 'Family',
+      appSection: 'App and notifications',
       signedInAs: 'Signed in as',
       familyLabel: 'Family',
       familyPhotoLabel: 'Family photo',

@@ -12,6 +12,7 @@ import { AddMealForm } from './AddMealForm'
 import { MealDetailModal } from './MealDetailModal'
 import type { Meal } from '../../hooks/useMeals'
 import type { MealInput } from '../../context/meals/MealsContext'
+import { FilterDisclosure } from '../ui/FilterDisclosure'
 
 interface Props {
   onAddToPlan?: (meal: Meal) => void
@@ -27,6 +28,7 @@ export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
   const [filterCategory, setFilterCategory] = useState('')
   const [filterTag, setFilterTag] = useState('')
   const [showArchived, setShowArchived] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const today = todayISODate()
   const badgeCtx = { meals, planEntries, voteRounds, today }
@@ -44,6 +46,7 @@ export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
     setFilterCategory('')
     setFilterTag('')
     setSearch('')
+    setShowArchived(false)
   }
 
   async function handleAdd(input: MealInput) {
@@ -61,7 +64,7 @@ export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
         </div>
       )}
 
-      <div className="filter-row">
+      <div className="filter-row meal-search-row">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -69,6 +72,8 @@ export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
           aria-label={t.mealLibrary.searchPlaceholder}
         />
       </div>
+      <FilterDisclosure id="meal-library-filter-panel" open={filtersOpen} onOpenChange={setFiltersOpen}
+        activeCount={Number(Boolean(filterCategory)) + Number(Boolean(filterTag)) + Number(showArchived)} onClear={clearFilters}>
       <div className="filter-row">
         <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} aria-label={t.mealLibrary.filterCategoryLabel}>
           <option value="">
@@ -95,6 +100,7 @@ export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
         <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
         {t.mealLibrary.showArchived}
       </label>
+      </FilterDisclosure>
 
       {filtered.length === 0 ? (
         hasFilters ? (

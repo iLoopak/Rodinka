@@ -16,6 +16,7 @@ import type { FamilyMember } from '../hooks/useFamilyMembers'
 import { canEditMemberProfile } from '../utils/memberProfilePermissions'
 import { FamilyMark } from './FamilyMark'
 import { MemberRemovalDialog } from './family/MemberRemovalDialog'
+import { ScreenHeader } from './ui/ScreenHeader'
 
 function roleLabel(role: FamilyMember['role']) {
   if (role === 'admin') return t.family.roleAdmin
@@ -95,18 +96,18 @@ export function FamilyScreen() {
 
   return (
     <>
-      <div className="home-header">
-        <div className="family-title-row">
-          <FamilyMark variant="dynamic" members={members} size={48} className="family-screen-mark" />
-          <h1 className="home-title">{familyName ?? t.family.title}</h1>
-          {currentMember.role === 'admin' && !editingFamilyName && (
-            <button type="button" className="btn-secondary family-name-edit" onClick={() => {
+      <ScreenHeader title={familyName ?? t.family.title}
+        leading={<FamilyMark variant="dynamic" members={members} size={48} className="family-screen-mark" />}
+        actions={<>
+          {isParentOrAdmin && <button type="button" className="header-action-button" onClick={() => setShowAddChild(true)}>
+            <span aria-hidden="true">+</span> {t.family.addChildAction}
+          </button>}
+          {currentMember.role === 'admin' && !editingFamilyName && <button type="button" className="btn-secondary family-name-edit" onClick={() => {
               setFamilyNameDraft(familyName ?? '')
               setFamilyNameSaveError(null)
               setEditingFamilyName(true)
-            }}>{t.family.editFamilyName}</button>
-          )}
-        </div>
+            }}>{t.family.editFamilyName}</button>}
+        </>} />
         {editingFamilyName && (
           <form className="family-name-form" onSubmit={handleFamilyNameSubmit}>
             <label>
@@ -120,7 +121,6 @@ export function FamilyScreen() {
             {familyNameSaveError && <p className="error" role="alert">{familyNameSaveError}</p>}
           </form>
         )}
-      </div>
 
       <section className="section">
         <h2>{t.family.membersTitle}</h2>
@@ -172,9 +172,6 @@ export function FamilyScreen() {
       {isParentOrAdmin && (
         <section className="section">
           <div className="family-actions">
-            <button className="btn-secondary" onClick={() => setShowAddChild(true)}>
-              {t.family.addChildAction}
-            </button>
             <button className="btn-secondary" onClick={() => setShowInvite(true)}>
               {t.family.inviteParentAction}
             </button>
@@ -251,8 +248,8 @@ function InviteModal({ onClose, createInvite }: InviteModalProps) {
       const result = await createInvite()
       setInvite(result)
       setCopied(false)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+    } catch {
+      setError(t.errors.generic)
     } finally {
       setLoading(false)
     }

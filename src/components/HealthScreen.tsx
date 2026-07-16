@@ -9,7 +9,6 @@ import { Modal } from './ui/Modal'
 import { ErrorState } from './ui/ErrorState'
 import { EmptyState } from './ui/EmptyState'
 import { DueBadge } from './ui/DueBadge'
-import { MemberAvatar } from './ui/MemberAvatar'
 import { MEDICAL_RECORD_TYPE_VALUES, medicalRecordTypeLabel } from '../utils/medicalLabels'
 import { formatFullDate, todayISODate } from '../utils/dueDate'
 import { isMedicalRecordOverdue } from '../utils/medicalDueState'
@@ -20,6 +19,8 @@ import { useRouter } from '../router'
 import { resolveDeepLinkedItem } from '../utils/deepLinks'
 import { ScrollableTabs } from './ui/ScrollableTabs'
 import { FilterDisclosure } from './ui/FilterDisclosure'
+import { ScreenHeader } from './ui/ScreenHeader'
+import { PersonRoleGroup, type PersonRole } from './ui/PersonRoleGroup'
 
 type Tab = 'upcoming' | 'history' | 'vaccinations' | 'overdue'
 
@@ -121,14 +122,11 @@ export function HealthScreen() {
 
   return (
     <>
-      <div className="screen-header">
-        <h1 className="home-title">{t.medical.title}</h1>
-        {isParentOrAdmin && (
+      <ScreenHeader title={t.medical.title} actions={isParentOrAdmin ? (
           <button type="button" className="header-action-button" onClick={() => setShowAdd(true)}>
             <span aria-hidden="true">+</span> {t.medical.addAction}
           </button>
-        )}
-      </div>
+        ) : undefined} />
 
       {deepLinkError && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
 
@@ -206,11 +204,14 @@ interface MedicalRowProps {
 function MedicalRow({ record, memberById, onClick }: MedicalRowProps) {
   const dueDate = record.record_type === 'vaccination' ? record.vaccine_next_dose_date : record.next_due_date
   const patient = memberById(record.patient_id)
+  const roles: PersonRole[] = [
+    { member: patient, label: t.common.patient },
+    ...(record.responsible_member_id ? [{ member: memberById(record.responsible_member_id), label: t.common.responsibleAdult }] : []),
+  ]
   return (
     <li className="clickable-row" role="button" tabIndex={0} onClick={onClick} onKeyDown={onActivateKey(onClick)}>
-      <MemberAvatar member={patient} />
       <span className="row-title">{record.title}</span>
-      <span className="row-meta">{patient?.display_name ?? '?'}</span>
+      <PersonRoleGroup roles={roles} compact />
       <span className="row-spacer" />
       <span className="row-meta">{formatFullDate(record.record_date)}</span>
       {dueDate && <DueBadge dueDate={dueDate} />}

@@ -20,6 +20,8 @@ import { useRouter } from '../router'
 import { resolveDeepLinkedItem } from '../utils/deepLinks'
 import { ScrollableTabs } from './ui/ScrollableTabs'
 import { FilterDisclosure } from './ui/FilterDisclosure'
+import { ScreenHeader } from './ui/ScreenHeader'
+import { PersonRoleGroup, type PersonRole } from './ui/PersonRoleGroup'
 
 type Tab = 'upcoming' | 'payments' | 'archived'
 
@@ -77,14 +79,11 @@ export function ActivitiesScreen() {
   }
 
   const header = (
-    <div className="screen-header">
-      <h1 className="home-title">{t.activities.title}</h1>
-      {isParentOrAdmin && (
+    <ScreenHeader title={t.activities.title} actions={isParentOrAdmin ? (
         <button type="button" className="header-action-button" onClick={() => setShowAdd(true)}>
           <span aria-hidden="true">+</span> {t.activities.addAction}
         </button>
-      )}
-    </div>
+      ) : undefined} />
   )
 
   const hasFilters = filterChild !== '' || filterCategory !== '' || filterKind !== ''
@@ -271,15 +270,15 @@ interface ActivityRowProps {
 function ActivityRow({ activity, memberById, onClick }: ActivityRowProps) {
   const next = nextOccurrenceDate(activity)
   const participants = activity.participant_ids.map(memberById).filter((member) => !!member)
-  const child = participants[0]
+  const responsibleIds = [activity.responsible_member_id, activity.secondary_responsible_member_id].filter((id): id is string => Boolean(id))
+  const peopleRoles: PersonRole[] = [
+    ...participants.map((member) => ({ member, label: t.common.participant })),
+    ...responsibleIds.map((id) => ({ member: memberById(id), label: t.common.responsibleAdult })),
+  ]
   return (
     <li className="clickable-row" role="button" tabIndex={0} onClick={onClick} onKeyDown={onActivateKey(onClick)}>
-      <div className="avatar-stack">
-        {participants.slice(0, 3).map((member) => <MemberAvatar key={member.id} member={member} />)}
-        {participants.length > 3 && <span className="avatar-more">+{participants.length - 3}</span>}
-      </div>
       <span className="row-title">{activity.title}</span>
-      <span className="row-meta">{participants.map((member) => member.display_name).join(', ') || child?.display_name || '?'}</span>
+      <PersonRoleGroup roles={peopleRoles} compact />
       <span className="row-spacer" />
       {next ? (
         <span className="row-meta">{formatFullDate(next)}</span>

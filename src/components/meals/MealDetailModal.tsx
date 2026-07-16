@@ -53,8 +53,8 @@ export function MealDetailModal({ meal, onUpdate, onAddToPlan, onAddToVote, onCl
     try {
       await onUpdate(meal.id, { ...mealToInput(meal), status: meal.status === 'active' ? 'archived' : 'active' })
       onClose()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+    } catch {
+      setError(t.errors.generic)
     } finally {
       setBusy(false)
     }
