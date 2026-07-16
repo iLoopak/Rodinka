@@ -29,7 +29,8 @@ export function AddChildForm({ onSubmit }: Props) {
       setDisplayName('')
       setAvatarFile(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      console.error('Failed to add family member:', err)
+      setError(t.errors.generic)
     } finally {
       setLoading(false)
     }
@@ -63,7 +64,7 @@ export function AddChildForm({ onSubmit }: Props) {
           {loading ? t.chores.addingChild : t.chores.addChildSubmit}
         </button>
       </form>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
     </div>
   )
 }

@@ -184,7 +184,7 @@ export function AvatarCropEditor({ file, onSave, onCancel, onError }: Props) {
       // touch local state further so we don't set-state-after-unmount.
     } catch (error) {
       console.error('Failed to save avatar:', error)
-      setSaveError(error instanceof Error ? error.message : t.family.errors.avatarUploadFailed)
+      setSaveError(t.family.errors.avatarUploadFailed)
       setProcessing(false)
     }
   }

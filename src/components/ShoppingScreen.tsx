@@ -23,6 +23,7 @@ import { CompletionCheckbox } from './ui/CompletionCheckbox'
 import { defaultShoppingCategorySettings, type ShoppingCategorySettings } from '../utils/shoppingCategorySettings'
 import { ScreenHeader } from './ui/ScreenHeader'
 import { FilterDisclosure } from './ui/FilterDisclosure'
+import { GripVertical } from 'lucide-react'
 
 export function ShoppingScreen() {
   const { currentMember, isParentOrAdmin } = useFamilyCore()
@@ -44,6 +45,7 @@ export function ShoppingScreen() {
   const [toolsOpen, setToolsOpen] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [syncRetrying, setSyncRetrying] = useState(false)
   const [confirmClearPurchased, setConfirmClearPurchased] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<ShoppingItem | null>(null)
   const deleteTimerRef = useRef<number | null>(null)
@@ -69,7 +71,7 @@ export function ShoppingScreen() {
     try {
       await reorderShoppingItems(movedId, category, orderedIds)
     } catch (error) {
-      console.error('Failed to add shopping item:', error)
+      console.error('Failed to reorder shopping item:', error)
       setFeedback(t.shopping.actionFailed)
     }
   }
@@ -101,7 +103,7 @@ export function ShoppingScreen() {
       setQuickName('')
       setFeedback(result.action === 'added' ? t.shopping.added : result.action === 'merged' ? t.shopping.merged : t.shopping.alreadyExists)
     } catch (error) {
-      console.error('Failed to archive purchased shopping items:', error)
+      console.error('Failed to add shopping item:', error)
       setFeedback(t.shopping.actionFailed)
     }
     finally { setBusy(false) }
@@ -143,6 +145,12 @@ export function ShoppingScreen() {
     setShowHistory(false)
   }
 
+  async function retrySync() {
+    if (syncRetrying) return
+    setSyncRetrying(true)
+    try { await refreshShopping() } finally { setSyncRetrying(false) }
+  }
+
   if (shoppingLoading) return <p className="loading">{t.loading.generic}</p>
   if (shoppingError) return <ErrorState message={t.shopping.dataUnavailable} onRetry={refreshShopping} />
 
@@ -157,7 +165,7 @@ export function ShoppingScreen() {
       {feedback && <p className="shopping-feedback" role="status">{feedback}</p>}
       {(shoppingSyncStatus !== 'synced' || shoppingLastSyncedAt) && <div
         className={`shopping-sync-status ${shoppingSyncStatus}`}
-        role="status"
+        role={shoppingSyncStatus === 'error' ? 'alert' : 'status'}
         aria-live="polite"
       >
         <span className="shopping-sync-status-dot" aria-hidden="true" />
@@ -168,7 +176,7 @@ export function ShoppingScreen() {
             : shoppingSyncStatus === 'error'
               ? t.shopping.syncFailed
               : t.shopping.syncComplete}</span>
-        {shoppingSyncStatus === 'error' && <button type="button" className="link" onClick={() => void refreshShopping()}>{t.shopping.syncRetry}</button>}
+        {shoppingSyncStatus === 'error' && <button type="button" className="link" disabled={syncRetrying} onClick={() => void retrySync()}>{syncRetrying ? t.errors.retrying : t.shopping.syncRetry}</button>}
       </div>}
 
       <FilterDisclosure id="shopping-tools-panel" open={toolsOpen} onOpenChange={setToolsOpen}
@@ -193,7 +201,10 @@ export function ShoppingScreen() {
       {visibleActiveItems.length === 0 && purchasedShoppingItems.length === 0 ? (
         <EmptyState title={t.shopping.emptyTitle} body={t.shopping.emptyBody} />
       ) : filteredActive.length === 0 ? (
-        <EmptyState title={filterResponsible ? t.shopping.filterEmpty : t.shopping.activeEmpty} />
+        <EmptyState
+          title={filterResponsible ? t.shopping.filterEmpty : t.shopping.activeEmpty}
+          action={filterResponsible ? { label: t.shopping.clearFilter, onClick: () => setFilterResponsible('') } : undefined}
+        />
       ) : (
         <DndContext
           sensors={sensors}
@@ -217,7 +228,7 @@ export function ShoppingScreen() {
             {draggedItemId && visibleActiveItems.find((item) => item.id === draggedItemId) && (() => {
               const item = visibleActiveItems.find((candidate) => candidate.id === draggedItemId)!
               return <div className="list-drag-preview quick-todo-drag-overlay">
-                <span className="list-drag-preview-handle" aria-hidden="true">⠿</span>
+                <GripVertical className="list-drag-preview-handle" size={20} aria-hidden="true" />
                 <span className="list-drag-preview-copy"><strong>{item.name}</strong><small>{formatLocalizedShoppingQuantity(item.quantity, item.unit)}</small></span>
               </div>
             })()}
@@ -331,7 +342,7 @@ function ShoppingRow({ item, memberById, pending, onToggle, onEdit, sortable }: 
       aria-label={t.shopping.dragItem(item.name)}
       {...sortable.attributes}
       {...sortable.listeners}
-    ><span aria-hidden="true">⠿</span></button>}
+    ><GripVertical size={20} aria-hidden="true" /></button>}
     <CompletionCheckbox checked={item.purchased} label={`${item.purchased ? t.shopping.purchasedTitle : t.shopping.activeTitle}: ${item.name}`} onClick={onToggle} />
     <button type="button" className="shopping-item-main" onClick={onEdit}>
       <span className="shopping-item-top"><strong>{item.name}</strong>{pending && <span className="shopping-item-pending" title={t.shopping.pendingSync}><span className="sr-only">{t.shopping.pendingSync}</span></span>}{(item.quantity !== null || item.unit) && <b>{formatLocalizedShoppingQuantity(item.quantity, item.unit)}</b>}</span>

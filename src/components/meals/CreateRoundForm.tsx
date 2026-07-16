@@ -61,7 +61,8 @@ export function CreateRoundForm({ meals, initialMealId, onSubmit }: Props) {
         openImmediately
       )
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      console.error('Failed to create meal vote:', err)
+      setError(t.errors.generic)
     } finally {
       setLoading(false)
     }
@@ -152,7 +153,7 @@ export function CreateRoundForm({ meals, initialMealId, onSubmit }: Props) {
         </div>
       )}
 
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
     </div>
   )
 }

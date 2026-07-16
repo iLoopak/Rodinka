@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { t } from '../strings'
 import { FamilyMark } from './FamilyMark'
@@ -18,6 +18,8 @@ export function AuthScreen() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [googleSubmitting, setGoogleSubmitting] = useState(false)
+  const signInTabRef = useRef<HTMLButtonElement>(null)
+  const signUpTabRef = useRef<HTMLButtonElement>(null)
 
   const busy = submitting || googleSubmitting
 
@@ -26,6 +28,17 @@ export function AuthScreen() {
     setMode(next)
     setError(null)
     setConfirmPassword('')
+  }
+
+  function handleTabKeyDown(event: React.KeyboardEvent, current: Mode) {
+    let next: Mode | null = null
+    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') next = current === 'signIn' ? 'signUp' : 'signIn'
+    if (event.key === 'Home') next = 'signIn'
+    if (event.key === 'End') next = 'signUp'
+    if (!next) return
+    event.preventDefault()
+    switchMode(next)
+    ;(next === 'signIn' ? signInTabRef : signUpTabRef).current?.focus()
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -89,26 +102,36 @@ export function AuthScreen() {
 
       <div className="auth-tabs" role="tablist">
         <button
+          ref={signInTabRef}
+          id="auth-tab-sign-in"
           type="button"
           role="tab"
           aria-selected={mode === 'signIn'}
+          aria-controls="auth-panel"
+          tabIndex={mode === 'signIn' ? 0 : -1}
           className={`auth-tab${mode === 'signIn' ? ' active' : ''}`}
           onClick={() => switchMode('signIn')}
+          onKeyDown={(event) => handleTabKeyDown(event, 'signIn')}
         >
           {t.login.tabSignIn}
         </button>
         <button
+          ref={signUpTabRef}
+          id="auth-tab-sign-up"
           type="button"
           role="tab"
           aria-selected={mode === 'signUp'}
+          aria-controls="auth-panel"
+          tabIndex={mode === 'signUp' ? 0 : -1}
           className={`auth-tab${mode === 'signUp' ? ' active' : ''}`}
           onClick={() => switchMode('signUp')}
+          onKeyDown={(event) => handleTabKeyDown(event, 'signUp')}
         >
           {t.login.tabSignUp}
         </button>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form id="auth-panel" role="tabpanel" aria-labelledby={mode === 'signIn' ? 'auth-tab-sign-in' : 'auth-tab-sign-up'} aria-describedby={error ? 'auth-form-error' : undefined} aria-busy={busy} onSubmit={handleSubmit}>
         <label>
           {t.login.emailLabel}
           <input
@@ -153,7 +176,7 @@ export function AuthScreen() {
         </button>
       </form>
 
-      {error && <p className="error">{error}</p>}
+      {error && <p id="auth-form-error" className="error" role="alert">{error}</p>}
 
       <div className="auth-divider">
         <span>{t.login.orDivider}</span>

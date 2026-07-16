@@ -120,7 +120,7 @@ export function MealDetailModal({ meal, onUpdate, onAddToPlan, onAddToVote, onCl
           {meal.status === 'active' ? t.mealLibrary.archiveAction : t.mealLibrary.restoreAction}
         </button>
       </div>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
     </Modal>
   )
 }

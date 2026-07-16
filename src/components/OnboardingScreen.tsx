@@ -3,6 +3,12 @@ import { supabase } from '../supabaseClient'
 import { t } from '../strings'
 import { FamilyMark } from './FamilyMark'
 
+function onboardingError(error: { message?: string } | null, mode: 'create' | 'join') {
+  console.error('Onboarding request failed:', error?.message)
+  if (mode === 'join' && error?.message?.toLowerCase().includes('invite code')) return t.onboarding.errors.invalidInvite
+  return mode === 'create' ? t.onboarding.errors.createFailed : t.onboarding.errors.joinFailed
+}
+
 interface Props {
   onDone: () => void
 }
@@ -27,7 +33,7 @@ export function OnboardingScreen({ onDone }: Props) {
 
     setLoading(false)
     if (error) {
-      setError(error.message)
+      setError(onboardingError(error, 'create'))
     } else {
       onDone()
     }
@@ -45,7 +51,7 @@ export function OnboardingScreen({ onDone }: Props) {
 
     setLoading(false)
     if (error) {
-      setError(error.message)
+      setError(onboardingError(error, 'join'))
     } else {
       onDone()
     }
@@ -59,8 +65,9 @@ export function OnboardingScreen({ onDone }: Props) {
           <h1>{t.onboarding.welcomeTitle}</h1>
         </div>
         <p>{t.onboarding.welcomeSubtitle}</p>
-        <button onClick={() => setMode('create')}>{t.onboarding.createFamilyButton}</button>
-        <button className="btn-secondary" onClick={() => setMode('join')}>
+        <p className="onboarding-progress">{t.onboarding.chooseStep}</p>
+        <button type="button" onClick={() => setMode('create')}>{t.onboarding.createFamilyButton}</button>
+        <button type="button" className="btn-secondary" onClick={() => setMode('join')}>
           {t.onboarding.joinFamilyButton}
         </button>
       </div>
@@ -70,8 +77,9 @@ export function OnboardingScreen({ onDone }: Props) {
   if (mode === 'create') {
     return (
       <div className="auth-screen">
-        <h1>{t.onboarding.createTitle}</h1>
-        <form onSubmit={handleCreate}>
+        <div className="brand-lockup"><FamilyMark variant="static" size={40} /><h1>{t.onboarding.createTitle}</h1></div>
+        <p className="onboarding-progress">{t.onboarding.detailsStep}</p>
+        <form aria-busy={loading} aria-describedby={error ? 'onboarding-create-error' : undefined} onSubmit={handleCreate}>
           <label>
             {t.onboarding.familyNameLabel}
             <input
@@ -94,16 +102,17 @@ export function OnboardingScreen({ onDone }: Props) {
             {loading ? t.onboarding.creating : t.onboarding.createSubmit}
           </button>
         </form>
-        {error && <p className="error">{error}</p>}
-        <button className="link" onClick={() => setMode('choose')}>{t.onboarding.back}</button>
+        {error && <p id="onboarding-create-error" className="error" role="alert">{error}</p>}
+        <button type="button" className="link" disabled={loading} onClick={() => setMode('choose')}>{t.onboarding.back}</button>
       </div>
     )
   }
 
   return (
     <div className="auth-screen">
-      <h1>{t.onboarding.joinTitle}</h1>
-      <form onSubmit={handleJoin}>
+      <div className="brand-lockup"><FamilyMark variant="static" size={40} /><h1>{t.onboarding.joinTitle}</h1></div>
+      <p className="onboarding-progress">{t.onboarding.detailsStep}</p>
+      <form aria-busy={loading} aria-describedby={error ? 'onboarding-join-error' : undefined} onSubmit={handleJoin}>
         <label>
           {t.onboarding.inviteCodeLabel}
           <input
@@ -126,8 +135,8 @@ export function OnboardingScreen({ onDone }: Props) {
           {loading ? t.onboarding.joining : t.onboarding.joinSubmit}
         </button>
       </form>
-      {error && <p className="error">{error}</p>}
-      <button className="link" onClick={() => setMode('choose')}>{t.onboarding.back}</button>
+      {error && <p id="onboarding-join-error" className="error" role="alert">{error}</p>}
+      <button type="button" className="link" disabled={loading} onClick={() => setMode('choose')}>{t.onboarding.back}</button>
     </div>
   )
 }

@@ -56,7 +56,7 @@ export function ConfirmDestructiveActionDialog({
   const descriptionId = useId()
   if (!open) return null
   return (
-    <Modal title={title} onClose={() => { if (!busy) onCancel() }} closeOnBackdrop={!busy} className="destructive-dialog">
+    <Modal title={title} onClose={() => { if (!busy) onCancel() }} closeOnBackdrop={!busy} className="destructive-dialog" descriptionId={descriptionId}>
       <div className="destructive-dialog-body" id={descriptionId}>
         {objectName && <p className="destructive-object-name">{objectName}</p>}
         <div>{explanation}</div>

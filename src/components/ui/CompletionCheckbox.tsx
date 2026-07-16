@@ -15,7 +15,8 @@ export function CompletionCheckbox({ checked, label, disabled = false, onClick }
       disabled={disabled}
       onClick={onClick}
     >
-      <span aria-hidden="true">{checked ? '✓' : ''}</span>
+      <span aria-hidden="true">{checked && <Check size={18} strokeWidth={3} />}</span>
     </button>
   )
 }
+import { Check } from 'lucide-react'

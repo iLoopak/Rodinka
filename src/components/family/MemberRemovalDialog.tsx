@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import type { Activity } from '../../hooks/useActivities'
 import type { Chore } from '../../hooks/useChores'
 import type { FamilyMember } from '../../hooks/useFamilyMembers'
@@ -25,6 +25,7 @@ export function MemberRemovalDialog({ member, activeMembers, chores, activities,
   const [replacementId, setReplacementId] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const descriptionId = useId()
   const today = todayISODate()
   const openTaskCount = useMemo(() => chores.filter((task) => task.status === 'active' && task.assigned_to === member.id).length, [chores, member.id])
   const futureActivityCount = useMemo(() => activities.filter((activity) => activity.status === 'active' && activity.responsible_member_id === member.id && activity.start_date >= today).length, [activities, member.id, today])
@@ -48,8 +49,8 @@ export function MemberRemovalDialog({ member, activeMembers, chores, activities,
 
   const destructiveLabel = selfLeave ? t.family.leaveHouseholdAction : t.family.removeMemberAction
 
-  return <Modal title={selfLeave ? t.family.leaveHouseholdTitle : t.family.removeMemberTitle(member.display_name)} onClose={busy ? () => undefined : onClose} closeOnBackdrop={false}>
-    <div className="member-removal-summary">
+  return <Modal title={selfLeave ? t.family.leaveHouseholdTitle : t.family.removeMemberTitle(member.display_name)} onClose={busy ? () => undefined : onClose} closeOnBackdrop={false} descriptionId={descriptionId}>
+    <div className="member-removal-summary" id={descriptionId}>
       <MemberAvatar member={member} size={56} />
       <div><strong>{member.display_name}</strong><p>{selfLeave ? t.family.leaveHouseholdExplain : t.family.removeMemberExplain}</p></div>
     </div>
@@ -74,8 +75,8 @@ export function MemberRemovalDialog({ member, activeMembers, chores, activities,
     </label>}
     {error && <p className="error" role="alert">{error}</p>}
     <div className="modal-actions">
-      <button type="button" className="btn-danger" disabled={busy || !validReplacement} onClick={confirm}>{busy ? t.family.removingMember : destructiveLabel}</button>
-      <button type="button" className="btn-secondary" disabled={busy} onClick={onClose}>{t.common.close}</button>
+      <button type="button" className="btn-secondary" disabled={busy} onClick={onClose}>{t.common.cancel}</button>
+      <button type="button" className="danger-action" disabled={busy || !validReplacement} onClick={confirm}>{busy ? t.family.removingMember : destructiveLabel}</button>
     </div>
   </Modal>
 }

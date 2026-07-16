@@ -58,7 +58,8 @@ export function AddMealForm({ initial, onSubmit }: Props) {
         status: initial?.status ?? 'active',
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      console.error('Failed to save meal:', err)
+      setError(t.errors.generic)
     } finally {
       setLoading(false)
     }
@@ -162,7 +163,7 @@ export function AddMealForm({ initial, onSubmit }: Props) {
       <button type="submit" disabled={loading}>
         {loading ? t.mealLibrary.submitting : initial ? t.mealLibrary.submitSave : t.mealLibrary.submitAdd}
       </button>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
     </form>
   )
 }

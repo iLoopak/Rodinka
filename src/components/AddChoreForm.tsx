@@ -116,7 +116,8 @@ export function AddChoreForm({ members, currentMemberId, initial, initialDueDate
         setWeekdays(WEEKDAYS)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      console.error('Failed to save chore:', err)
+      setError(t.errors.generic)
     } finally {
       setLoading(false)
     }

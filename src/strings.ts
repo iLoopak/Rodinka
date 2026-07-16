@@ -14,6 +14,7 @@ export const strings = {
     common: { close: 'Zavřít', primaryNavigation: 'Hlavní navigace', delete: 'Smazat', remove: 'Odebrat', archive: 'Archivovat', restore: 'Obnovit', cancel: 'Zrušit', participant: 'Účastník', responsibleAdult: 'Zodpovědný dospělý', patient: 'Pacient' },
     destructive: { cancel: 'Zrušit', delete: 'Smazat', remove: 'Odebrat', archive: 'Archivovat', restore: 'Obnovit', undo: 'Zpět', working: 'Pracuji…', archived: 'Archivováno', removeOccurrence: 'Odebrat jen tento výskyt', removeFollowing: 'Odebrat tento a následující výskyty', removeSeries: 'Odebrat celou sérii' },
     offline: {
+      statusLabel: 'Offline',
       title: 'Nepodařilo se připojit',
       body: 'Server neodpověděl včas nebo není dostupný. Nákupní seznam můžete používat offline, pokud už je v zařízení uložený.',
       deviceOfflineBody: 'Zařízení je offline. Nákupní seznam můžete používat offline, pokud už je v zařízení uložený.',
@@ -74,6 +75,13 @@ export const strings = {
       joinSubmit: 'Připojit se',
       joining: 'Připojuji...',
       back: 'Zpět',
+      chooseStep: 'Krok 1 ze 2 · Vyberte způsob',
+      detailsStep: 'Krok 2 ze 2 · Doplňte údaje',
+      errors: {
+        createFailed: 'Rodinu se nepodařilo založit. Zkuste to prosím znovu.',
+        invalidInvite: 'Kód pozvánky není platný, už byl použitý nebo vypršel.',
+        joinFailed: 'K rodině se nepodařilo připojit. Zkontrolujte údaje a zkuste to znovu.',
+      },
     },
     dashboard: {
       signOut: 'Odhlásit se',
@@ -228,6 +236,7 @@ export const strings = {
       generic: 'Něco se nepovedlo. Zkuste to prosím znovu.',
       loadFailed: 'Data se nepodařilo načíst.',
       retry: 'Zkusit znovu',
+      retrying: 'Zkouším znovu…',
     },
     deepLinks: {
       shareLink: 'Sdílet odkaz',
@@ -498,6 +507,8 @@ export const strings = {
       familyPhotoChoose: 'Vybrat fotku',
       familyPhotoChange: 'Změnit fotku',
       familyPhotoRemove: 'Odstranit fotku',
+      familyPhotoRemoveConfirm: 'Odstranit rodinnou fotku?',
+      familyPhotoRemoveExplain: 'Fotka bude trvale odstraněná z rodinného profilu. Ostatní rodinná data zůstanou beze změny.',
       familyPhotoRemoving: 'Odstraňuji…',
       familyPhotoSaving: 'Ukládám…',
       familyPhotoSaved: 'Rodinná fotka byla uložena.',
@@ -1156,6 +1167,7 @@ export const strings = {
     common: { close: 'Close', primaryNavigation: 'Primary navigation', delete: 'Delete', remove: 'Remove', archive: 'Archive', restore: 'Restore', cancel: 'Cancel', participant: 'Participant', responsibleAdult: 'Responsible adult', patient: 'Patient' },
     destructive: { cancel: 'Cancel', delete: 'Delete', remove: 'Remove', archive: 'Archive', restore: 'Restore', undo: 'Undo', working: 'Working…', archived: 'Archived', removeOccurrence: 'Remove only this occurrence', removeFollowing: 'Remove this and following occurrences', removeSeries: 'Remove the entire series' },
     offline: {
+      statusLabel: 'Offline',
       title: 'Could not connect',
       body: 'The server did not respond in time or is unavailable. You can use the shopping list offline if it has already been saved on this device.',
       deviceOfflineBody: 'This device is offline. You can use the shopping list offline if it has already been saved on this device.',
@@ -1216,6 +1228,13 @@ export const strings = {
       joinSubmit: 'Join family',
       joining: 'Joining...',
       back: 'Back',
+      chooseStep: 'Step 1 of 2 · Choose how to continue',
+      detailsStep: 'Step 2 of 2 · Enter the details',
+      errors: {
+        createFailed: 'The family could not be created. Please try again.',
+        invalidInvite: 'The invite code is invalid, already used, or expired.',
+        joinFailed: 'Could not join the family. Check the details and try again.',
+      },
     },
     dashboard: {
       signOut: 'Sign out',
@@ -1368,6 +1387,7 @@ export const strings = {
       generic: 'Something went wrong. Please try again.',
       loadFailed: 'Could not load data.',
       retry: 'Try again',
+      retrying: 'Trying again…',
     },
     deepLinks: {
       shareLink: 'Share link',
@@ -1638,6 +1658,8 @@ export const strings = {
       familyPhotoChoose: 'Choose photo',
       familyPhotoChange: 'Change photo',
       familyPhotoRemove: 'Remove photo',
+      familyPhotoRemoveConfirm: 'Remove the family photo?',
+      familyPhotoRemoveExplain: 'The photo will be permanently removed from the family profile. Other family data will not change.',
       familyPhotoRemoving: 'Removing…',
       familyPhotoSaving: 'Saving…',
       familyPhotoSaved: 'The family photo has been saved.',

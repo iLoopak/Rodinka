@@ -91,7 +91,8 @@ export function PlanTab({ prefill, onPrefillConsumed }: Props) {
     try {
       await copyWeek(shiftWeek(weekStart, -1), weekStart)
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      console.error('Failed to update meal plan:', err)
+      setError(t.errors.generic)
     } finally {
       setCopying(false)
     }
@@ -129,7 +130,7 @@ export function PlanTab({ prefill, onPrefillConsumed }: Props) {
         )}
       </div>
 
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
 
       <div className="week-planner">
         {dates.map((date, index) => {

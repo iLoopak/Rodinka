@@ -43,7 +43,8 @@ export function VoteRoundResults({ round, members, isParentOrAdmin, onVote, onOp
     try {
       await onVote(candidateId, memberId, value)
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      console.error('Failed to update meal vote:', err)
+      setError(t.errors.generic)
     } finally {
       setBusyKey(null)
     }
@@ -56,7 +57,8 @@ export function VoteRoundResults({ round, members, isParentOrAdmin, onVote, onOp
     try {
       await onOpenRound(round.id)
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      console.error('Failed to open meal vote:', err)
+      setError(t.errors.generic)
     } finally {
       setTransitioning(false)
     }
@@ -69,7 +71,8 @@ export function VoteRoundResults({ round, members, isParentOrAdmin, onVote, onOp
     try {
       await onCloseRound(round.id)
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      console.error('Failed to close meal vote:', err)
+      setError(t.errors.generic)
     } finally {
       setTransitioning(false)
     }
@@ -189,7 +192,7 @@ export function VoteRoundResults({ round, members, isParentOrAdmin, onVote, onOp
         </>
       )}
 
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
     </div>
   )
 }

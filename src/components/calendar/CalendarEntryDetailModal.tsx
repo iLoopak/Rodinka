@@ -66,7 +66,8 @@ export function CalendarEntryDetailModal({ entry, onClose, openAssignmentInitial
       await markDone(chore.id, displayMemberId ?? undefined, entry.date)
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      console.error('Failed to update calendar entry:', err)
+      setError(t.errors.generic)
     } finally {
       setBusy(false)
     }
@@ -80,7 +81,8 @@ export function CalendarEntryDetailModal({ entry, onClose, openAssignmentInitial
       await updateMedicalRecord(medicalRecord.id, { ...recordToInput(medicalRecord), status: 'completed' })
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      console.error('Failed to remove calendar entry:', err)
+      setError(t.errors.generic)
     } finally {
       setBusy(false)
     }
@@ -193,7 +195,7 @@ export function CalendarEntryDetailModal({ entry, onClose, openAssignmentInitial
         </button>
         <ShareLinkButton route="/calendar" param="event" id={entry.sourceId} title={entry.title} />
       </div>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
     </Modal>
   )
 }

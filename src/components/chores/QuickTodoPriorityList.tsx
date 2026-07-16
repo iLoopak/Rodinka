@@ -23,6 +23,7 @@ import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import { t } from '../../strings'
 import type { Chore } from '../../utils/choreModel'
 import { CompletionCheckbox } from '../ui/CompletionCheckbox'
+import { GripVertical } from 'lucide-react'
 
 interface Props {
   tasks: Chore[]
@@ -56,7 +57,8 @@ export function QuickTodoPriorityList({ tasks, onComplete, onPromote, onReorder 
       await onReorder(nextIds)
     } catch (reason) {
       setOrderedIds(previousIds)
-      setError(reason instanceof Error ? reason.message : t.errors.generic)
+      console.error('Failed to reorder quick tasks:', reason)
+      setError(t.errors.generic)
     } finally {
       setBusyId(null)
     }
@@ -84,7 +86,8 @@ export function QuickTodoPriorityList({ tasks, onComplete, onPromote, onReorder 
     try {
       await onComplete(taskId)
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : t.errors.generic)
+      console.error('Failed to complete quick task:', reason)
+      setError(t.errors.generic)
     } finally {
       setBusyId(null)
     }
@@ -112,7 +115,7 @@ export function QuickTodoPriorityList({ tasks, onComplete, onPromote, onReorder 
       </SortableContext>
       <DragOverlay modifiers={[snapCenterToCursor]}>
         {activeTask && <div className="list-drag-preview quick-todo-drag-overlay">
-          <span className="list-drag-preview-handle" aria-hidden="true">⠿</span>
+          <GripVertical className="list-drag-preview-handle" size={20} aria-hidden="true" />
           <span className="list-drag-preview-copy"><strong>{activeTask.title}</strong><small>{t.chores.quickTasksTitle}</small></span>
         </div>}
       </DragOverlay>
@@ -140,7 +143,7 @@ function SortableQuickTodo({ task, busy, onComplete, onPromote }: {
       disabled={busy}
       {...attributes}
       {...listeners}
-    ><span aria-hidden="true">⠿</span></button>
+    ><GripVertical size={20} aria-hidden="true" /></button>
     <CompletionCheckbox checked={false} label={t.today.quickTaskComplete(task.title)} disabled={busy} onClick={onComplete} />
     <span className="quick-todo-priority-title">{task.title}</span>
     <button type="button" className="link quick-todo-priority-promote" disabled={busy} onClick={onPromote}>
