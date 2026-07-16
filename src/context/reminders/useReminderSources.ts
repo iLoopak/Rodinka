@@ -7,7 +7,6 @@ import { useOccurrenceAssignmentsData } from '../activities/OccurrenceAssignment
 import { useMedicalData } from '../health/MedicalContext'
 import { useMealsDataContext } from '../meals/MealsContext'
 import { useShopping } from '../shopping/ShoppingContext'
-import { buildReminderSourceFingerprint } from '../../notifications/reminderLifecycle'
 import { generateReminderDrafts, type GenerateReminderInput } from '../../notifications/reminders'
 
 // Everything ReminderContext needs, composed from the split feature contexts
@@ -17,7 +16,7 @@ import { generateReminderDrafts, type GenerateReminderInput } from '../../notifi
 export function useReminderSources() {
   const { familyId, currentMember, isParentOrAdmin } = useFamilyCore()
   const { members } = useFamilyMembersData()
-  const { chores, completions, pendingCompletions, latestCompletionFor, choresLoading, refreshChores, refreshCompletions } = useChoresData()
+  const { chores, pendingCompletions, latestCompletionFor, choresLoading, refreshChores, refreshCompletions } = useChoresData()
   const { activities, activitiesLoading, refreshActivities } = useActivitiesData()
   const { occurrenceOverrides, assignmentHistory, occurrenceAssignmentsLoading, refreshOccurrenceAssignments } = useOccurrenceAssignmentsData()
   const { medicalRecords, medicalLoading, refreshMedicalRecords } = useMedicalData()
@@ -31,13 +30,6 @@ export function useReminderSources() {
     medicalLoading ||
     mealsLoading ||
     shoppingLoading
-
-  const fingerprint = useMemo(() => buildReminderSourceFingerprint({
-    members, chores, completions, activities,
-    medicalRecords, voteRounds,
-    planEntries, shoppingItems,
-    occurrenceOverrides, assignmentHistory,
-  }), [members, chores, completions, activities, medicalRecords, voteRounds, planEntries, shoppingItems, occurrenceOverrides, assignmentHistory])
 
   const draftInputs: Omit<GenerateReminderInput, 'preferences' | 'copy' | 'now'> = useMemo(() => ({
     familyId, currentMember, isParentOrAdmin,
@@ -59,5 +51,5 @@ export function useReminderSources() {
     ])
   }, [refreshChores, refreshCompletions, refreshActivities, refreshOccurrenceAssignments, refreshMedicalRecords, refreshMealsData, refreshShopping])
 
-  return { loading, fingerprint, draftInputs, generateReminderDrafts, refresh }
+  return { loading, draftInputs, generateReminderDrafts, refresh }
 }

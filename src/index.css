@@ -273,6 +273,46 @@ textarea:focus {
   padding: calc(20px + env(safe-area-inset-top)) 20px 8px;
 }
 
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.realtime-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--neutral-soft);
+  color: var(--ink-muted);
+  font-size: 0.68rem;
+  font-weight: var(--font-weight-strong);
+  white-space: nowrap;
+}
+
+.realtime-status-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--ink-muted);
+}
+
+.realtime-status-badge.reconnecting .realtime-status-dot {
+  background: var(--category-meals);
+  animation: realtime-status-pulse 1.4s ease-in-out infinite;
+}
+
+.realtime-status-badge.disconnected .realtime-status-dot { background: var(--brick); }
+
+@keyframes realtime-status-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
 .brand {
   display: flex;
   align-items: center;

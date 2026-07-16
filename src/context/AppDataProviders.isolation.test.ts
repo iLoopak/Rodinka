@@ -47,13 +47,13 @@ const { ChoresProvider, useChoresData } = await import('./chores/ChoresContext')
 
 function stubMedical(overrides: Partial<ReturnType<typeof useMedicalRecords>> = {}) {
   vi.mocked(useMedicalRecords).mockReturnValue({
-    medicalRecords: [], loading: false, error: null, refresh: vi.fn(), ...overrides,
+    medicalRecords: [], setMedicalRecords: vi.fn(), loading: false, error: null, refresh: vi.fn(), ...overrides,
   })
 }
 
 function stubChores() {
-  vi.mocked(useChores).mockReturnValue({ chores: [], loading: false, error: null, refresh: vi.fn(), reorder: vi.fn() })
-  vi.mocked(useChoreCompletions).mockReturnValue({ completions: [], loading: false, error: null, refresh: vi.fn() })
+  vi.mocked(useChores).mockReturnValue({ chores: [], setChores: vi.fn(), loading: false, error: null, refresh: vi.fn(), reorder: vi.fn() })
+  vi.mocked(useChoreCompletions).mockReturnValue({ completions: [], setCompletions: vi.fn(), loading: false, error: null, refresh: vi.fn() })
 }
 
 let medicalRenderCount = 0

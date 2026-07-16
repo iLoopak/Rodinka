@@ -61,5 +61,10 @@ export function useOccurrenceAssignments(familyId: string | undefined) {
     await refresh()
   }, [familyId, overrides, refresh])
 
-  return { overrides, assignmentHistory, participantHistory, loading, error, refresh, setMemberOverride }
+  return {
+    overrides, setOverrides,
+    assignmentHistory, setAssignmentHistory,
+    participantHistory, setParticipantHistory,
+    loading, error, refresh, setMemberOverride,
+  }
 }

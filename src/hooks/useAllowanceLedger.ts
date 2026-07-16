@@ -52,5 +52,5 @@ export function useAllowanceLedger(familyId: string | undefined) {
     refresh()
   }, [refresh])
 
-  return { entries, loading, error, refresh }
+  return { entries, setEntries, loading, error, refresh }
 }

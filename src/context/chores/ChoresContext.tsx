@@ -1,14 +1,23 @@
-import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { supabase } from '../../supabaseClient'
 import { friendly } from '../../utils/friendlyError'
 import { useChores, type Chore } from '../../hooks/useChores'
 import { useChoreCompletions, type ChoreCompletion } from '../../hooks/useChoreCompletions'
-import { choreInputToRow, type ChoreInput } from '../../utils/choreModel'
+import { choreInputToRow, normalizeChore, type ChoreInput } from '../../utils/choreModel'
 import { compareChoresByDueDate, todayISODate } from '../../utils/dueDate'
 import type { ChoreApprovalResult } from '../../domain/chores/types'
+import { createRealtimeSubscription } from '../../realtime/createRealtimeSubscription'
+import { applyRealtimeDelete } from '../../realtime/applyRealtimeDelete'
+import { applyRealtimeInsert } from '../../realtime/applyRealtimeInsert'
+import { applyRealtimeUpdate } from '../../realtime/applyRealtimeUpdate'
+import type { RealtimeConnectionState } from '../../realtime/connectionState'
 
 export type { ChoreInput } from '../../utils/choreModel'
 export type { ChoreApprovalResult } from '../../domain/chores/types'
+
+function completionFromRow(row: Record<string, unknown>): ChoreCompletion {
+  return { ...row, reward_amount: Number(row.reward_amount) } as unknown as ChoreCompletion
+}
 
 interface ChoresContextValue {
   chores: Chore[]
@@ -16,6 +25,7 @@ interface ChoresContextValue {
   pendingCompletions: ChoreCompletion[]
   choresLoading: boolean
   choresError: string | null
+  choresRealtimeStatus: RealtimeConnectionState
   latestCompletionFor: (choreId: string) => ChoreCompletion | null
   addChore: (input: ChoreInput) => Promise<void>
   updateChore: (id: string, input: ChoreInput) => Promise<void>
@@ -40,6 +50,7 @@ interface ProviderProps {
 export function ChoresProvider({ familyId, userId, currentMemberId, children }: ProviderProps) {
   const {
     chores: rawChores,
+    setChores,
     loading: choresLoading,
     error: choresError,
     refresh: refreshChores,
@@ -47,10 +58,39 @@ export function ChoresProvider({ familyId, userId, currentMemberId, children }: 
   } = useChores(familyId)
   const {
     completions,
+    setCompletions,
     loading: completionsLoading,
     error: completionsError,
     refresh: refreshCompletions,
   } = useChoreCompletions(familyId)
+  const [choresRealtimeStatus, setChoresRealtimeStatus] = useState<RealtimeConnectionState>('connecting')
+
+  useEffect(() => {
+    if (!familyId) return
+    const unsubscribe = createRealtimeSubscription({
+      channelName: `family:${familyId}:chores`,
+      onStatusChange: setChoresRealtimeStatus,
+      tables: [
+        {
+          table: 'chores',
+          filter: `family_id=eq.${familyId}`,
+          onInsert: (row) => setChores((current) => applyRealtimeInsert(current, normalizeChore(row as unknown as Parameters<typeof normalizeChore>[0]))),
+          onUpdate: (row) => setChores((current) => applyRealtimeUpdate(current, normalizeChore(row as unknown as Parameters<typeof normalizeChore>[0]))),
+          onDelete: (row) => setChores((current) => applyRealtimeDelete(current, row.id as string)),
+        },
+        {
+          // chore_completions has no family_id column (it's scoped via its
+          // parent chore) — no `filter` here, RLS still limits delivery to
+          // completions on chores this family can select.
+          table: 'chore_completions',
+          onInsert: (row) => setCompletions((current) => applyRealtimeInsert(current, completionFromRow(row))),
+          onUpdate: (row) => setCompletions((current) => applyRealtimeUpdate(current, completionFromRow(row))),
+          onDelete: (row) => setCompletions((current) => applyRealtimeDelete(current, row.id as string)),
+        },
+      ],
+    })
+    return unsubscribe
+  }, [familyId, setChores, setCompletions])
 
   const chores = useMemo(() => [...rawChores].sort(compareChoresByDueDate), [rawChores])
   const pendingCompletions = useMemo(() => completions.filter((c) => c.status === 'pending_approval'), [completions])
@@ -143,6 +183,7 @@ export function ChoresProvider({ familyId, userId, currentMemberId, children }: 
     pendingCompletions,
     choresLoading: choresLoading || completionsLoading,
     choresError: choresError || completionsError,
+    choresRealtimeStatus,
     latestCompletionFor,
     addChore,
     updateChore,

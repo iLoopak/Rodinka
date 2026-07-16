@@ -59,5 +59,5 @@ export function useChores(familyId: string | undefined) {
     await refresh()
   }, [chores, familyId, refresh])
 
-  return { chores, loading, error, refresh, reorder }
+  return { chores, setChores, loading, error, refresh, reorder }
 }

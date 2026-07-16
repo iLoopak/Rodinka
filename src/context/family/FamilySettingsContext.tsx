@@ -5,6 +5,10 @@ import { friendly } from '../../utils/friendlyError'
 import { getShoppingLocalStore } from '../../shopping/shoppingIndexedDb'
 import { buildFamilyHeroPath, validateFamilyHeroFile } from '../../utils/familyHeroImage'
 import { defaultShoppingCategorySettings, normalizeShoppingCategorySettings, type ShoppingCategorySettings } from '../../utils/shoppingCategorySettings'
+import { createRealtimeSubscription } from '../../realtime/createRealtimeSubscription'
+import type { RealtimeConnectionState } from '../../realtime/connectionState'
+
+const FAMILY_HERO_SIGNED_URL_SECONDS = 12 * 60 * 60
 
 interface FamilySettingsContextValue {
   familyName: string | null
@@ -13,6 +17,7 @@ interface FamilySettingsContextValue {
   familyHeroImagePath: string | null
   familyHeroImageUrl: string | null
   shoppingCategorySettings: ShoppingCategorySettings
+  settingsRealtimeStatus: RealtimeConnectionState
   updateFamilyName: (name: string) => Promise<void>
   updateFamilyHeroImage: (file: File | null) => Promise<void>
   updateShoppingCategorySettings: (settings: ShoppingCategorySettings) => Promise<void>
@@ -58,7 +63,7 @@ export function FamilySettingsProvider({ familyId, children }: ProviderProps) {
     } else {
       let heroImageUrl: string | null = null
       if (data.hero_image_path) {
-        const { data: signedUrl, error: signedUrlError } = await supabase.storage.from('family-hero-images').createSignedUrl(data.hero_image_path, 12 * 60 * 60)
+        const { data: signedUrl, error: signedUrlError } = await supabase.storage.from('family-hero-images').createSignedUrl(data.hero_image_path, FAMILY_HERO_SIGNED_URL_SECONDS)
         if (signedUrlError) console.error('Failed to create family hero signed URL:', signedUrlError.message)
         else heroImageUrl = signedUrl.signedUrl
       }
@@ -103,7 +108,7 @@ export function FamilySettingsProvider({ familyId, children }: ProviderProps) {
         upsert: false,
       })
       if (uploadError) throw friendly(uploadError)
-      const { data: signedUrl, error: signedUrlError } = await supabase.storage.from('family-hero-images').createSignedUrl(uploadedPath, 12 * 60 * 60)
+      const { data: signedUrl, error: signedUrlError } = await supabase.storage.from('family-hero-images').createSignedUrl(uploadedPath, FAMILY_HERO_SIGNED_URL_SECONDS)
       if (signedUrlError) {
         await supabase.storage.from('family-hero-images').remove([uploadedPath])
         throw friendly(signedUrlError)
@@ -129,6 +134,47 @@ export function FamilySettingsProvider({ familyId, children }: ProviderProps) {
     refreshFamilySettings()
   }, [refreshFamilySettings])
 
+  const [settingsRealtimeStatus, setSettingsRealtimeStatus] = useState<RealtimeConnectionState>('connecting')
+
+  // families is one row per family — INSERT/DELETE never happen in normal
+  // use, only UPDATE. A realtime echo of our own update just re-applies the
+  // same values (harmless, single-row table, nothing to duplicate).
+  const applyFamilySettingsRow = useCallback(async (row: Record<string, unknown>) => {
+    let heroImageUrl: string | null = null
+    const heroImagePath = (row.hero_image_path as string | null) ?? null
+    if (heroImagePath) {
+      const { data: signedUrl, error: signedUrlError } = await supabase.storage.from('family-hero-images').createSignedUrl(heroImagePath, FAMILY_HERO_SIGNED_URL_SECONDS)
+      if (signedUrlError) console.error('Failed to create family hero signed URL:', signedUrlError.message)
+      else heroImageUrl = signedUrl.signedUrl
+    }
+    const nextCategorySettings = normalizeShoppingCategorySettings(row.shopping_category_settings)
+    await getShoppingLocalStore().saveCategorySettings(familyId, nextCategorySettings)
+    if (activeFamilyIdRef.current !== familyId) return
+    setFamilyNameState({
+      familyId,
+      name: (row.name as string | null) ?? null,
+      heroImagePath,
+      heroImageUrl,
+      shoppingCategorySettings: nextCategorySettings,
+      loading: false,
+    })
+    setError(null)
+  }, [familyId])
+
+  useEffect(() => {
+    if (!familyId) return
+    const unsubscribe = createRealtimeSubscription({
+      channelName: `family:${familyId}:family-settings`,
+      onStatusChange: setSettingsRealtimeStatus,
+      tables: [{
+        table: 'families',
+        filter: `id=eq.${familyId}`,
+        onUpdate: (row) => void applyFamilySettingsRow(row),
+      }],
+    })
+    return unsubscribe
+  }, [familyId, applyFamilySettingsRow])
+
   const value: FamilySettingsContextValue = {
     familyName,
     familyNameLoading,
@@ -136,6 +182,7 @@ export function FamilySettingsProvider({ familyId, children }: ProviderProps) {
     familyHeroImagePath,
     familyHeroImageUrl,
     shoppingCategorySettings,
+    settingsRealtimeStatus,
     updateFamilyName,
     updateFamilyHeroImage,
     updateShoppingCategorySettings,

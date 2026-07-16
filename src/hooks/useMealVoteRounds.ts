@@ -73,5 +73,5 @@ export function useMealVoteRounds(familyId: string | undefined) {
     refresh()
   }, [refresh])
 
-  return { voteRounds, loading, error, refresh }
+  return { voteRounds, setVoteRounds, loading, error, refresh }
 }

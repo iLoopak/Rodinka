@@ -4,7 +4,7 @@ export type ShoppingRealtimeSubscription = (familyId: string, onRemoteChange: ()
 
 export const subscribeToShoppingRealtime: ShoppingRealtimeSubscription = (familyId, onRemoteChange) => {
   const channel = supabase
-    .channel(`shopping-items:${familyId}`)
+    .channel(`family:${familyId}:shopping`)
     .on('postgres_changes', {
       event: '*',
       schema: 'public',

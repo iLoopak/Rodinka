@@ -1,8 +1,13 @@
-import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { supabase } from '../../supabaseClient'
 import { friendly } from '../../utils/friendlyError'
-import { useAllowanceLedger } from '../../hooks/useAllowanceLedger'
+import { useAllowanceLedger, type LedgerEntry } from '../../hooks/useAllowanceLedger'
 import { useAllowancePlans, type AllowanceCycle, type AllowancePlan, type AllowancePlanInput } from '../../hooks/useAllowancePlans'
+import { createRealtimeSubscription } from '../../realtime/createRealtimeSubscription'
+import { applyRealtimeDelete } from '../../realtime/applyRealtimeDelete'
+import { applyRealtimeInsert } from '../../realtime/applyRealtimeInsert'
+import { applyRealtimeUpdate } from '../../realtime/applyRealtimeUpdate'
+import type { RealtimeConnectionState } from '../../realtime/connectionState'
 
 export type { AllowancePlanInput } from '../../hooks/useAllowancePlans'
 
@@ -12,6 +17,7 @@ interface AllowanceContextValue {
   balances: Map<string, number>
   allowanceLoading: boolean
   allowanceError: string | null
+  allowanceRealtimeStatus: RealtimeConnectionState
   payout: (memberId: string, amount: number, reason: string) => Promise<void>
   saveAllowancePlan: (input: AllowancePlanInput, planId?: string) => Promise<void>
   creditAllowance: (planId: string, payoutDate: string) => Promise<void>
@@ -30,6 +36,7 @@ interface ProviderProps {
 export function AllowanceProvider({ familyId, children }: ProviderProps) {
   const {
     entries,
+    setEntries,
     loading: ledgerLoading,
     error: ledgerError,
     refresh: refreshLedger,
@@ -41,6 +48,25 @@ export function AllowanceProvider({ familyId, children }: ProviderProps) {
     error: allowancePlansError,
     refresh: refreshAllowancePlans,
   } = useAllowancePlans(familyId)
+  const [allowanceRealtimeStatus, setAllowanceRealtimeStatus] = useState<RealtimeConnectionState>('connecting')
+
+  // Only the ledger is realtime-subscribed (per the supported-modules list —
+  // "allowance ledger", not plans/cycles); those stay on manual refresh.
+  useEffect(() => {
+    if (!familyId) return
+    const unsubscribe = createRealtimeSubscription({
+      channelName: `family:${familyId}:allowance`,
+      onStatusChange: setAllowanceRealtimeStatus,
+      tables: [{
+        table: 'allowance_ledger',
+        filter: `family_id=eq.${familyId}`,
+        onInsert: (row) => setEntries((current) => applyRealtimeInsert(current, row as unknown as LedgerEntry)),
+        onUpdate: (row) => setEntries((current) => applyRealtimeUpdate(current, row as unknown as LedgerEntry)),
+        onDelete: (row) => setEntries((current) => applyRealtimeDelete(current, row.id as string)),
+      }],
+    })
+    return unsubscribe
+  }, [familyId, setEntries])
 
   const balances = useMemo(() => {
     const totals = new Map<string, number>()
@@ -104,6 +130,7 @@ export function AllowanceProvider({ familyId, children }: ProviderProps) {
     balances,
     allowanceLoading: ledgerLoading || allowancePlansLoading,
     allowanceError: ledgerError || allowancePlansError,
+    allowanceRealtimeStatus,
     payout,
     saveAllowancePlan,
     creditAllowance,

@@ -12,6 +12,10 @@ export const strings = {
     appName: 'Rodinka',
     claim: 'Ať doma všechno klape.',
     common: { close: 'Zavřít', primaryNavigation: 'Hlavní navigace' },
+    realtimeStatus: {
+      reconnecting: 'Obnovuji spojení…',
+      disconnected: 'Bez spojení',
+    },
     login: {
       title: 'Rodinka',
       tabSignIn: 'Přihlásit se',
@@ -1115,6 +1119,10 @@ export const strings = {
     appName: 'Rodinka',
     claim: 'Keep the household running smoothly.',
     common: { close: 'Close', primaryNavigation: 'Primary navigation' },
+    realtimeStatus: {
+      reconnecting: 'Reconnecting…',
+      disconnected: 'Offline',
+    },
     login: {
       title: 'Rodinka',
       tabSignIn: 'Sign in',

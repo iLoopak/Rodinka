@@ -61,5 +61,5 @@ export function useChoreCompletions(familyId: string | undefined) {
     refresh()
   }, [refresh])
 
-  return { completions, loading, error, refresh }
+  return { completions, setCompletions, loading, error, refresh }
 }
