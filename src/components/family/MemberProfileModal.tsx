@@ -60,6 +60,7 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
   )
   const [vocativeName, setVocativeName] = useState(member.vocative_name ?? '')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPersisted, setAvatarPersisted] = useState(false)
   const [removeAvatar, setRemoveAvatar] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -71,7 +72,32 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
 
   function handleRemoveAvatar() {
     setAvatarFile(null)
+    setAvatarPersisted(false)
     setRemoveAvatar(true)
+    setError(null)
+  }
+
+  // The crop editor's own Save button persists the photo immediately —
+  // independent of whatever unsaved edits are sitting in the rest of this
+  // form — using the member's current (already-persisted) other fields, so
+  // it doesn't accidentally commit in-progress name/birthdate/etc changes.
+  async function handleSaveAvatar(file: File) {
+    try {
+      await saveMemberProfile(member, {
+        displayName: member.display_name,
+        birthDate: member.birth_date,
+        colorKey: memberColorKey(member),
+        grammaticalGender: member.grammatical_gender,
+        vocativeName: member.vocative_name,
+        avatarFile: file,
+        removeAvatar: false,
+      })
+    } catch (saveError) {
+      throw new Error(mutationErrorMessage(saveError))
+    }
+    setAvatarFile(file)
+    setRemoveAvatar(false)
+    setAvatarPersisted(true)
     setError(null)
   }
 
@@ -91,7 +117,7 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
         colorKey: colorTouched ? colorKey : member.color_key,
         grammaticalGender,
         vocativeName: vocativeName || null,
-        avatarFile,
+        avatarFile: avatarPersisted ? null : avatarFile,
         removeAvatar,
       })
       onClose()
@@ -113,11 +139,7 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
           value={avatarFile}
           removed={removeAvatar}
           disabled={saving}
-          onChange={(file) => {
-            setAvatarFile(file)
-            setRemoveAvatar(false)
-            setError(null)
-          }}
+          onSave={handleSaveAvatar}
           onRemove={handleRemoveAvatar}
           onError={(validationError) => setError(avatarValidationMessage(validationError))}
         />

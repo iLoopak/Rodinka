@@ -13,7 +13,10 @@ interface Props {
   value: File | null
   removed: boolean
   disabled?: boolean
-  onChange: (file: File) => void
+  /** Whether saving `value` is still deferred to an outer form submit (shows the "uploads when you submit" hint). */
+  pendingUntilSubmit?: boolean
+  /** Crops, then persists the photo (or stages it, depending on the caller). Rejecting keeps the crop dialog open for retry. */
+  onSave: (file: File) => Promise<void>
   onRemove: () => void
   onError: (error: AvatarValidationError | 'corrupt') => void
 }
@@ -26,7 +29,8 @@ export function MemberAvatarPhotoField({
   value,
   removed,
   disabled = false,
-  onChange,
+  pendingUntilSubmit = false,
+  onSave,
   onRemove,
   onError,
 }: Props) {
@@ -105,7 +109,7 @@ export function MemberAvatarPhotoField({
           />
           {hasPhoto && <button type="button" className="btn-secondary" onClick={onRemove} disabled={disabled}>{t.family.removePhoto}</button>}
         </div>
-        {value && <p className="field-hint">{t.family.photoPending}</p>}
+        {value && pendingUntilSubmit && <p className="field-hint">{t.family.photoPending}</p>}
         {hasExistingPhoto && !value && !removed && <p className="field-hint">{t.family.cropExistingHint}</p>}
       </section>
 
@@ -113,8 +117,8 @@ export function MemberAvatarPhotoField({
         file={sourceFile}
         onCancel={closeEditor}
         onError={() => onError('corrupt')}
-        onApply={(cropped) => {
-          onChange(cropped)
+        onSave={async (cropped) => {
+          await onSave(cropped)
           closeEditor()
         }}
       />}

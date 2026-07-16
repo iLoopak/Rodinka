@@ -45,7 +45,8 @@ export function AddChildForm({ onSubmit }: Props) {
           value={avatarFile}
           removed={false}
           disabled={loading}
-          onChange={(file) => { setAvatarFile(file); setError(null) }}
+          pendingUntilSubmit
+          onSave={async (file) => { setAvatarFile(file); setError(null) }}
           onRemove={() => setAvatarFile(null)}
           onError={(avatarError) => setError(avatarErrorMessage(avatarError))}
         />
