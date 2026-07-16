@@ -84,7 +84,7 @@ export function SetPasswordForm({ onDone }: Props) {
       <button type="submit" disabled={loading}>
         {loading ? t.more.settingPassword : t.more.setPasswordSubmit}
       </button>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
     </form>
   )
 }

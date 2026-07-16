@@ -67,7 +67,7 @@ export function AppShell() {
 function OfflineModuleState() {
   const { navigate } = useRouter()
   return <section className="empty-state offline-module-state">
-    <p className="eyebrow">Offline</p>
+    <p className="eyebrow">{t.offline.statusLabel}</p>
     <h1>{t.offline.moduleTitle}</h1>
     <p>{t.offline.moduleBody}</p>
     <button type="button" onClick={() => navigate('/shopping')}>{t.offline.backToShopping}</button>

@@ -154,7 +154,8 @@ export function AddActivityForm({ members, kids, initial, initialStartDate, onSu
         reminderDaysBefore: reminderDaysBefore ? Number(reminderDaysBefore) : null,
       })
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : String(error))
+      console.error('Failed to save activity:', error)
+      setSubmitError(t.errors.generic)
     } finally {
       setLoading(false)
     }

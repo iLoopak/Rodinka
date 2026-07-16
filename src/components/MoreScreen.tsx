@@ -13,6 +13,7 @@ import { useLanguage } from '../i18n/languageContext'
 import { FamilyHeroCropEditor } from './family/FamilyHeroCropEditor'
 import { validateFamilyHeroFile } from '../utils/familyHeroImage'
 import { ScreenHeader } from './ui/ScreenHeader'
+import { ConfirmDestructiveActionDialog } from './ui/DestructiveActions'
 
 export function MoreScreen() {
   const { currentMember, userEmail } = useFamilyCore()
@@ -28,6 +29,7 @@ export function MoreScreen() {
   const [familyPhotoBusy, setFamilyPhotoBusy] = useState(false)
   const [familyPhotoFeedback, setFamilyPhotoFeedback] = useState<string | null>(null)
   const [familyPhotoError, setFamilyPhotoError] = useState<string | null>(null)
+  const [confirmPhotoRemoval, setConfirmPhotoRemoval] = useState(false)
   const { canPrompt, showIOSInstructions, isStandalone, isNative, promptInstall } = useInstallPrompt()
 
   function startEditingFamilyName() {
@@ -83,6 +85,7 @@ export function MoreScreen() {
     try {
       await updateFamilyHeroImage(null)
       setFamilyPhotoFeedback(t.more.familyPhotoRemoved)
+      setConfirmPhotoRemoval(false)
     } catch {
       setFamilyPhotoError(t.more.familyPhotoSaveFailed)
     } finally {
@@ -162,7 +165,7 @@ export function MoreScreen() {
                   }}
                 />
               </label>
-              {familyHeroImageUrl && <button type="button" className="btn-link destructive-link" disabled={familyPhotoBusy} onClick={() => void removeFamilyPhoto()}>
+              {familyHeroImageUrl && <button type="button" className="btn-link destructive-link" disabled={familyPhotoBusy} onClick={() => setConfirmPhotoRemoval(true)}>
                 {familyPhotoBusy ? t.more.familyPhotoRemoving : t.more.familyPhotoRemove}
               </button>}
             </span>
@@ -225,6 +228,17 @@ export function MoreScreen() {
         onCancel={() => setFamilyPhotoSource(null)}
         onError={() => setFamilyPhotoError(t.more.familyPhotoInvalid)}
       />}
+
+      <ConfirmDestructiveActionDialog
+        open={confirmPhotoRemoval}
+        title={t.more.familyPhotoRemoveConfirm}
+        explanation={t.more.familyPhotoRemoveExplain}
+        confirmLabel={t.more.familyPhotoRemove}
+        busy={familyPhotoBusy}
+        error={familyPhotoError}
+        onCancel={() => setConfirmPhotoRemoval(false)}
+        onConfirm={removeFamilyPhoto}
+      />
 
       <section className="section more-links-section">
         <ul className="section-list plain-list more-settings-list">

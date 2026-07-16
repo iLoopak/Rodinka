@@ -9,6 +9,7 @@ import { getItemTypeStyle, type CalendarItemType } from '../utils/itemTypeStyle'
 import { MonthGrid } from './calendar/MonthGrid'
 import { AgendaList } from './calendar/AgendaList'
 import { ErrorState } from './ui/ErrorState'
+import { EmptyState } from './ui/EmptyState'
 import { UniversalCreateModal } from './planner/UniversalCreateModal'
 import { CalendarEntryDetailModal } from './calendar/CalendarEntryDetailModal'
 import { WeekAgenda } from './calendar/WeekAgenda'
@@ -302,7 +303,7 @@ export function CalendarScreen() {
             </button>
           </div>
           {entries.length === 0 && hasFilters ? (
-            <p className="empty-state">{t.calendar.filtersNoResults}</p>
+            <EmptyState title={t.calendar.filtersNoResults} action={{ label: t.calendar.clearFilters, onClick: clearFilters }} />
           ) : (
             <MonthGrid
               monthAnchor={monthAnchor}
@@ -329,7 +330,7 @@ export function CalendarScreen() {
       )}
 
       {viewMode === 'week' && (
-        <WeekAgenda
+        entries.length === 0 && hasFilters ? <EmptyState title={t.calendar.filtersNoResults} action={{ label: t.calendar.clearFilters, onClick: clearFilters }} /> : <WeekAgenda
           weekStart={weekStart}
           entries={entries}
           today={today}
@@ -351,7 +352,7 @@ export function CalendarScreen() {
       {viewMode === 'agenda' && (
         <section className="section">
           {entries.length === 0 && hasFilters ? (
-            <p className="empty-state">{t.calendar.filtersNoResults}</p>
+            <EmptyState title={t.calendar.filtersNoResults} action={{ label: t.calendar.clearFilters, onClick: clearFilters }} />
           ) : (
             <AgendaList entries={deduplicateAgendaRanges(entries)} today={today} memberById={memberById} onSelectEntry={openEntry} />
           )}

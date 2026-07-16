@@ -57,7 +57,7 @@ export function PendingApprovals({ completions, chores, memberById, onApprove, o
 
   return (
     <div>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
       <ul className="section-list">
         {completions.map((completion) => {
           const chore = choreFor(completion.chore_id)

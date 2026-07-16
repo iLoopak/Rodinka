@@ -38,6 +38,26 @@ Prázdný stav se smí zobrazit až po úspěšném načtení. Loading, error, o
 
 Organické dílky mozaiky, jemné barevné oblouky a měkké gradienty jsou vhodné pro přihlášení, onboarding, hero plochu a prázdné stavy. Nevhodné jsou pro funkční seznamy: žádné náhodně natočené karty, obří marketingové nadpisy, dekorativní překážky, emoji jako funkční ikony ani trvalé animace. Pohyb má trvat přibližně 140–260 ms, vysvětlovat změnu stavu a respektovat `prefers-reduced-motion`.
 
+## Konsolidace aplikace (Waves 2–5)
+
+Pozdější vlny rozšířily základ Wave 1 bez změny vizuálního směru:
+
+- autentizovaná aplikace používá stabilní shell s jedním scrollovatelným `<main>`, bezpečnými okraji a spodní navigací; jednotlivé routy nesmějí zavádět body-level scroll ani horizontální přetečení;
+- obrazovky používají společnou hierarchii `ScreenHeader`, jednu primární akci, `ScrollableTabs` pro delší sady záložek a `FilterDisclosure` pro sekundární filtry;
+- husté pracovní seznamy jsou seskupené papírové plochy s oddělovači. Samostatný stín patří pouze skutečně vyvýšené kartě, modalu, navigaci nebo toastu;
+- identita osoby je sdílená struktura avatar + jméno + role. Pokud má jedna osoba více rolí, zobrazuje se jednou s více popisky; členské barvy zůstávají oddělené od modulových akcentů;
+- všechny modaly mají programový název, volitelný popis, uzavřený focus order, topmost `Escape` a návrat fokusu na spouštěč. Destruktivní potvrzení začíná bezpečnou akcí a pojmenovává konkrétní dopad;
+- loading, skutečně prázdný stav, filtrovaný prázdný stav, offline data, probíhající synchronizace a chyba jsou samostatné stavy. Retry zobrazuje průběh a nepovoluje duplicitní požadavek;
+- autentizace a onboarding používají stejnou značku, typografii a formulářové prvky. Backendové a providerové chyby se nikdy nevykreslují přímo;
+- funkční ikony pocházejí z jedné linkové sady. Textové glyfy a emoji zůstávají pouze uživatelským nebo dekorativním obsahem;
+- `prefers-reduced-motion` vypíná nepodstatné animace, nikoli textovou nebo stavovou zpětnou vazbu.
+
+### Záměrně ponechané výjimky
+
+- barvy čtyř částí Google loga v OAuth tlačítku jsou vlastnictvím poskytovatele, ne paralelní paleta Rodinky;
+- `--area-accent`, `--week-entry-accent` a `--week-entry-surface` jsou lokální CSS custom properties předávané komponentou podle typu záznamu. Nejde o chybějící globální tokeny;
+- historické aliasy zůstávají kompatibilní API pro starší selektory. Nový kód používá sémantické tokeny a ověřovací test hlídá nedefinované globální proměnné.
+
 ## Doporučený směr: **Rodinná mozaika**
 
 Rodinka by neměla vypadat ani jako korporátní productivity nástroj, ani jako přeslazená „aplikace pro maminky“.

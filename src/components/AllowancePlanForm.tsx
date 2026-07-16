@@ -64,7 +64,8 @@ export function AllowancePlanForm({ child, chores, initial, onSubmit }: Props) {
         requirements: [...requirements].map(([choreId, requirement]) => ({ choreId, ...requirement })),
       })
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught))
+      console.error('Failed to save allowance plan:', caught)
+      setError(t.errors.generic)
     } finally { setLoading(false) }
   }
 
@@ -98,6 +99,6 @@ export function AllowancePlanForm({ child, chores, initial, onSubmit }: Props) {
       <option value="active">{t.allowance.active}</option><option value="paused">{t.allowance.paused}</option><option value="archived">{t.allowance.archived}</option>
     </select></label>}
     <button type="submit" disabled={loading}>{loading ? t.allowance.saving : t.allowance.save}</button>
-    {error && <p className="error">{error}</p>}
+    {error && <p className="error" role="alert">{error}</p>}
   </form>
 }

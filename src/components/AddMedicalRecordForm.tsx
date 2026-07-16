@@ -94,7 +94,8 @@ export function AddMedicalRecordForm({ members, currentMemberId, initial, initia
         vaccineNextDoseDate: vaccineNextDoseDate || null,
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      console.error('Failed to save medical record:', err)
+      setError(t.errors.generic)
     } finally {
       setLoading(false)
     }
@@ -273,7 +274,7 @@ export function AddMedicalRecordForm({ members, currentMemberId, initial, initia
       <button type="submit" disabled={loading}>
         {loading ? t.medical.submitting : initial ? t.medical.submitSave : t.medical.submitAdd}
       </button>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
     </form>
   )
 }

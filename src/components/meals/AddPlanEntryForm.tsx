@@ -77,7 +77,8 @@ export function AddPlanEntryForm({ meals, members, planEntries, initial, default
         sourceEntryId: initial?.source_entry_id ?? null,
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      console.error('Failed to save meal plan entry:', err)
+      setError(t.errors.generic)
     } finally {
       setLoading(false)
     }
@@ -199,7 +200,7 @@ export function AddPlanEntryForm({ meals, members, planEntries, initial, default
       <button type="submit" disabled={loading}>
         {loading ? t.mealPlan.submitting : initial ? t.mealPlan.submitSave : t.mealPlan.submitAdd}
       </button>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
     </form>
   )
 }

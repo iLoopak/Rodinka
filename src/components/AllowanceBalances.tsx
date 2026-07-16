@@ -47,7 +47,8 @@ export function AllowanceBalances({ kids, balances, onPayout, chores, completion
       await onPayout(memberId, Number(amount) || 0, reason)
       setPayoutFor(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      console.error('Failed to settle allowance cycle:', err)
+      setError(t.errors.generic)
     } finally {
       setLoading(false)
     }
@@ -118,7 +119,7 @@ export function AllowanceBalances({ kids, balances, onPayout, chores, completion
               <button type="button" className="link" onClick={() => setPayoutFor(null)}>
                 {t.chores.cancel}
               </button>
-              {error && <p className="error">{error}</p>}
+              {error && <p className="error" role="alert">{error}</p>}
             </form>
           )}
           {editingFor === kid.id && <Modal title={t.allowance.setUp} onClose={() => setEditingFor(null)}>

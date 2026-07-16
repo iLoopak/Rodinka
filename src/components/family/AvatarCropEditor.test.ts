@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { createElement } from 'react'
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LoadedMemberAvatarImage } from '../../utils/memberAvatarImage'
 
@@ -55,6 +55,7 @@ describe('AvatarCropEditor', () => {
     }))
 
     const saveButton = await screen.findByText('Save')
+    await waitFor(() => expect((saveButton.closest('button') as HTMLButtonElement).disabled).toBe(false))
     await act(async () => {
       saveButton.click()
     })
@@ -78,11 +79,12 @@ describe('AvatarCropEditor', () => {
     }))
 
     const saveButton = await screen.findByText('Save')
+    await waitFor(() => expect((saveButton.closest('button') as HTMLButtonElement).disabled).toBe(false))
     await act(async () => {
       saveButton.click()
     })
 
-    expect((await screen.findByRole('alert')).textContent).toBe('Fotografii se nepodařilo nahrát.')
+    expect((await screen.findByRole('alert')).textContent).toBe('The photo could not be uploaded.')
     expect(onCancel).not.toHaveBeenCalled()
     expect((screen.getByText('Save').closest('button') as HTMLButtonElement).disabled).toBe(false)
 

@@ -130,7 +130,7 @@ export function MedicalDetailModal({ record, members, currentMemberId, memberNam
         </button>
         <ShareLinkButton route="/health" param="record" id={record.id} title={record.title} />
       </div>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
     </Modal>
   )
 }
