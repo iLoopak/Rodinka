@@ -96,7 +96,6 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
   const refreshInFlight = useRef<Promise<void> | null>(null)
   const lastSourceRefreshAt = useRef(0)
   const senderId = useRef(globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`)
-  const lastBroadcastFingerprint = useRef<string | null>(null)
 
   const broadcastInvalidation = useCallback((kind: ReminderInvalidationKind, fingerprint?: string) => {
     try {
@@ -162,7 +161,6 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
     setLoading(true)
     setReminders([])
     setPreferences(defaultNotificationPreferences(currentMember.id, familyId, browserTimezone(), getCurrentLanguage()))
-    lastBroadcastFingerprint.current = null
     Promise.all([loadPreferences(), refresh()]).finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [currentMember.id, familyId, loadPreferences, refresh])
@@ -177,8 +175,6 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       if (localeError) console.error('Failed to synchronize reminder locale:', localeError.message)
     })
   }, [currentMember.id, familyId, language, loading, preferences.locale])
-
-  const sourceFingerprint = sources.fingerprint
 
   // Renamed from the original `refreshAll`-style bundle to this specific
   // name so the composition stays legible at the call site; still preserves
@@ -221,30 +217,17 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
   }, [refreshReminderSources])
 
   useEffect(() => {
-    if (sources.loading) return
-    if (lastBroadcastFingerprint.current === null) {
-      lastBroadcastFingerprint.current = sourceFingerprint
-      return
-    }
-    if (lastBroadcastFingerprint.current !== sourceFingerprint) {
-      lastBroadcastFingerprint.current = sourceFingerprint
-      broadcastInvalidation('sources', sourceFingerprint)
-    }
-  }, [broadcastInvalidation, sources.loading, sourceFingerprint])
-
-  useEffect(() => {
     function onStorage(event: StorageEvent) {
       if (event.key !== REMINDER_INVALIDATION_KEY) return
       const message = parseReminderInvalidation(event.newValue)
       if (!message || message.senderId === senderId.current || message.familyId !== familyId) return
-      if (message.kind === 'sources' && message.fingerprint !== sourceFingerprint) void refreshReminderSources(true)
-      if (message.kind !== 'sources' && message.memberId !== currentMember.id) return
+      if (message.memberId !== currentMember.id) return
       if (message.kind === 'state') void refresh()
       if (message.kind === 'preferences') void loadPreferences().then(() => setGenerationTick((value) => value + 1))
     }
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
-  }, [currentMember.id, familyId, loadPreferences, refresh, refreshReminderSources, sourceFingerprint])
+  }, [currentMember.id, familyId, loadPreferences, refresh])
 
   const drafts = useMemo(() => {
     void generationTick

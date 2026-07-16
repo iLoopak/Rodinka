@@ -224,6 +224,34 @@ Obrazovky si berou jen to, co skutečně vykreslují — např. `ShoppingScreen`
 
 **Pravidlo pro přidání nové domény:** vytvořte `src/context/<oblast>/<Domena>Context.tsx` s vlastním `<Domena>Provider` a `use<Domena>Data()` hookem, zapojte provider do `AppDataProviders.tsx`, a pokud doména potřebuje vstupní typ pro mutaci, dejte ho do `src/domain/<oblast>/types.ts` — ne do samotného kontextu.
 
+### Realtime
+
+Rodinka používá Supabase Realtime jako výchozí způsob, jak se změny jednoho člena rodiny promítnou u ostatních — bez ručního obnovování a bez periodického dotazování serveru. Realtime nenese žádnou byznys logiku, jen doručuje změny; zdrojem pravdy zůstává databáze a RPC funkce, UI se vždy vykresluje z lokálního stavu.
+
+**Vlastnictví.** Žádný globální "realtime manager" neexistuje — každý feature kontext, který data vlastní, si sám otevírá, uzavírá a aplikuje vlastní odběr (viz tabulka výše). Sdílená, doménově neutrální logika žije v `src/realtime/`:
+
+| Soubor | Účel |
+|---|---|
+| `connectionState.ts` | typ `RealtimeConnectionState` (`connecting`\|`connected`\|`reconnecting`\|`disconnected`) a mapování ze Supabase subscribe statusu |
+| `createRealtimeSubscription.ts` | otevře jeden kanál, zaregistruje INSERT/UPDATE/DELETE listenery pro N tabulek, vrátí funkci pro odhlášení |
+| `applyRealtimeInsert.ts` / `applyRealtimeUpdate.ts` / `applyRealtimeDelete.ts` | generické `(items, row) => items` operace nad polem entit klíčovaným podle `id` |
+
+**Pojmenování kanálů:** jeden kanál na doménu (ne na tabulku, ne jeden globální), `family:<familyId>:<domena>` — např. `family:<id>:chores`, `family:<id>:activities`, `family:<id>:medical`. Doména vlastnící víc tabulek (úkoly + jejich dokončení, tři tabulky pro výjimky termínů, jídla + plán + hlasování) registruje víc tabulek na tomtéž kanálu.
+
+**Cyklus odběru:** efekt v každém provideru se spouští, jen když `familyId` existuje, a vrací funkci pro `supabase.removeChannel(channel)` — při odhlášení uživatele, přepnutí rodiny nebo odmountování providera se kanál korektně uzavře, žádný nezůstává viset.
+
+**Filtrování na serveru:** kde to tabulka umožňuje (má vlastní `family_id`), používá se `filter: 'family_id=eq.<id>'` — server posílá jen řádky patřící dané rodině. Tabulky bez přímého `family_id` (`chore_completions`, `activity_participants`, `meal_vote_candidates`, `meal_votes` — vázané přes rodičovský řádek) žádný `filter` string nemají; správný rozsah dat i tak hlídá Row Level Security na úrovni SELECT, jen bez dodatečného zúžení stringem. `activity_participants` navíc nemá vlastní `id` (composite primary key `activity_id`+`member_id`), takže se nezapojuje do generických `applyRealtime*` helperů — patchuje přímo `participant_ids` vlastnící aktivity (viz `ActivitiesContext.tsx`). Podobně `meal_vote_candidates`/`meal_votes` patchují vnořenou strukturu `meal_vote_rounds → candidates → votes` (viz `useMealsDataSource.ts`) — vnořovací logika zůstává doménová, ne v generických helperech.
+
+**Deduplikace vs. optimistické update.** Žádná z devíti realtime-zapojených domén dnes nedělá skutečný optimistický insert (mutace vždy zavolá RPC a až pak `refresh()`), takže postačí jednoduchá deduplikace podle `id` v `applyRealtimeInsert` — realtime ozvěna vlastní změny je no-op, protože `id` už v poli je. Nákupní seznam (`src/shopping/`) má vlastní, propracovanější frontu mutací s `mutationId` a offline frontou — realtime tam jen spouští resync (`sync()`), který frontu mutací srovná s čerstvým stavem serveru (`applyPendingShoppingMutations`); to zůstalo beze změny, viz níže.
+
+**Proč nákupní seznam nemá granulární insert/update/delete.** `src/shopping/shoppingRepository.ts` je nejdůkladněji otestovaná část synchronizace a už správně řeší souběh offline fronty mutací se serverovým stavem. Realtime tam funguje jako spouštěč celého resyncu (`family:<id>:shopping` kanál → `sync()`), ne jako per-řádkový patch — přepisovat to na granulární apply by jen znovu odvozovalo stejnou správnost bez přínosu pro už battle-tested systém.
+
+**Proč `ReminderContext` neztratil polling úplně.** 15minutový `REMINDER_FOREGROUND_REFRESH_MS` interval a `visibilitychange`/`online` resync zůstávají — mobilní prohlížeče běžně uspávají WebSocket spojení na pozadí, takže polling slouží jako záložní síť, ne jako primární cesta (tou je teď realtime). Cross-tab `localStorage` invalidace v `src/notifications/reminderLifecycle.ts` ztratila druh `'sources'` (byl nadbytečný — každý tab má teď vlastní realtime odběry na stejných doménách), ale `'state'` (přečteno/odloženo) a `'preferences'` zůstaly: připomínky a `notification_preferences` nejsou realtime tabulky z výše uvedeného seznamu, takže mezi taby pořád potřebují signál přes `localStorage`.
+
+**Stav spojení.** Každý zapojený kontext vystavuje `<domena>RealtimeStatus: RealtimeConnectionState`. `src/hooks/useRealtimeStatus.ts` je vybere všechny a vrátí ten nejhorší; `RealtimeStatusBadge` (`src/components/ui/`) ho zobrazuje v hlavičce aplikace — ale jen když není `connected`/`connecting`, takže za normálního provozu nic vidět není (žádné rušivé notifikace).
+
+**Obnova po výpadku.** `createRealtimeSubscription` sám o sobě nic nezkouší znovu — spoléhá na to, že `@supabase/realtime-js` se po výpadku spojení sám přihlásí zpět; wrapper jen mapuje stavové callbacky na `RealtimeConnectionState` a nikdy při výpadku nemaže lokální data, takže obnova je tichá a bez ztráty rozpracovaného stavu.
+
 ## Provozní dokumentace
 
 - [Nastavení Supabase Auth a Google OAuth](./supabase-auth-setup.md)

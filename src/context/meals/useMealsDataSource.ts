@@ -1,8 +1,8 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../../supabaseClient'
 import { friendly } from '../../utils/friendlyError'
 import { useMeals, type Meal, type MealCategory, type MealStatus } from '../../hooks/useMeals'
-import { useMealVoteRounds, type VoteValue } from '../../hooks/useMealVoteRounds'
+import { useMealVoteRounds, type MealVote, type MealVoteCandidate, type MealVoteRound, type VoteValue } from '../../hooks/useMealVoteRounds'
 import {
   useMealPlanEntries,
   type MealPlanEntry,
@@ -12,6 +12,11 @@ import {
 } from '../../hooks/useMealPlanEntries'
 import { getWeekDates } from '../../utils/mealWeek'
 import { buildCopiedEntries } from '../../utils/mealPlanGrouping'
+import { createRealtimeSubscription } from '../../realtime/createRealtimeSubscription'
+import { applyRealtimeDelete } from '../../realtime/applyRealtimeDelete'
+import { applyRealtimeInsert } from '../../realtime/applyRealtimeInsert'
+import { applyRealtimeUpdate } from '../../realtime/applyRealtimeUpdate'
+import type { RealtimeConnectionState } from '../../realtime/connectionState'
 
 export interface MealInput {
   name: string
@@ -70,23 +75,128 @@ function planEntryInputToRow(input: PlanEntryInput) {
   }
 }
 
+// meal_vote_rounds is fetched as one query nested down to candidates->votes
+// (useMealVoteRounds.ts). Realtime fires per-table, not per-nested-shape, so
+// a change to a candidate or a vote has to be located within its owning
+// round (by round_id) or candidate (by candidate_id) and patched in place —
+// this nesting logic is domain-specific and stays local to meals, same as
+// shopping's reorder logic stays in shoppingMutationQueue.ts.
+function voteRoundFromRow(row: Record<string, unknown>, candidates: MealVoteCandidate[]): MealVoteRound {
+  return { ...row, candidates } as unknown as MealVoteRound
+}
+
+function applyVoteRoundChange(rounds: MealVoteRound[], row: Record<string, unknown>, action: 'insert' | 'update' | 'delete'): MealVoteRound[] {
+  if (action === 'delete') return applyRealtimeDelete(rounds, row.id as string)
+  const existing = rounds.find((round) => round.id === row.id)
+  const round = voteRoundFromRow(row, existing?.candidates ?? [])
+  return action === 'insert' ? applyRealtimeInsert(rounds, round) : applyRealtimeUpdate(rounds, round)
+}
+
+function candidateFromRow(row: Record<string, unknown>, votes: MealVote[]): MealVoteCandidate {
+  return { ...row, votes } as unknown as MealVoteCandidate
+}
+
+function applyCandidateChange(rounds: MealVoteRound[], row: Record<string, unknown>, action: 'insert' | 'update' | 'delete'): MealVoteRound[] {
+  const roundId = row.round_id as string
+  const candidateId = row.id as string
+  return rounds.map((round) => {
+    if (round.id !== roundId) return round
+    if (action === 'delete') return { ...round, candidates: applyRealtimeDelete(round.candidates, candidateId) }
+    const existing = round.candidates.find((candidate) => candidate.id === candidateId)
+    const candidate = candidateFromRow(row, existing?.votes ?? [])
+    const candidates = action === 'insert'
+      ? applyRealtimeInsert(round.candidates, candidate)
+      : applyRealtimeUpdate(round.candidates, candidate)
+    return { ...round, candidates }
+  })
+}
+
+function applyVoteChange(rounds: MealVoteRound[], row: Record<string, unknown>, action: 'insert' | 'update' | 'delete'): MealVoteRound[] {
+  const candidateId = row.candidate_id as string
+  const voteId = row.id as string
+  return rounds.map((round) => {
+    const candidateIndex = round.candidates.findIndex((candidate) => candidate.id === candidateId)
+    if (candidateIndex === -1) return round
+    const candidate = round.candidates[candidateIndex]
+    const nextVotes = action === 'delete'
+      ? applyRealtimeDelete(candidate.votes, voteId)
+      : action === 'insert'
+        ? applyRealtimeInsert(candidate.votes, row as unknown as MealVote)
+        : applyRealtimeUpdate(candidate.votes, row as unknown as MealVote)
+    if (nextVotes === candidate.votes) return round
+    const nextCandidates = [...round.candidates]
+    nextCandidates[candidateIndex] = { ...candidate, votes: nextVotes }
+    return { ...round, candidates: nextCandidates }
+  })
+}
+
 // Composes the meals/voting/plan hooks and every meal-related mutation into
 // one object for MealsContext to wrap. Named "Source" (not "Data") to avoid
 // any ambiguity with the MealsContext accessor hook, useMealsDataContext().
 export function useMealsDataSource(familyId: string | undefined, userId: string) {
-  const { meals, loading: mealsLoading, error: mealsError, refresh: refreshMeals } = useMeals(familyId)
+  const { meals, setMeals, loading: mealsLoading, error: mealsError, refresh: refreshMeals } = useMeals(familyId)
   const {
     voteRounds,
+    setVoteRounds,
     loading: voteRoundsLoading,
     error: voteRoundsError,
     refresh: refreshVoteRounds,
   } = useMealVoteRounds(familyId)
   const {
     planEntries,
+    setPlanEntries,
     loading: planEntriesLoading,
     error: planEntriesError,
     refresh: refreshPlanEntries,
   } = useMealPlanEntries(familyId)
+  const [mealsRealtimeStatus, setMealsRealtimeStatus] = useState<RealtimeConnectionState>('connecting')
+
+  useEffect(() => {
+    if (!familyId) return
+    const unsubscribe = createRealtimeSubscription({
+      channelName: `family:${familyId}:meals`,
+      onStatusChange: setMealsRealtimeStatus,
+      tables: [
+        {
+          table: 'meals',
+          filter: `family_id=eq.${familyId}`,
+          onInsert: (row) => setMeals((current) => applyRealtimeInsert(current, row as unknown as Meal)),
+          onUpdate: (row) => setMeals((current) => applyRealtimeUpdate(current, row as unknown as Meal)),
+          onDelete: (row) => setMeals((current) => applyRealtimeDelete(current, row.id as string)),
+        },
+        {
+          table: 'meal_plan_entries',
+          filter: `family_id=eq.${familyId}`,
+          onInsert: (row) => setPlanEntries((current) => applyRealtimeInsert(current, row as unknown as MealPlanEntry)),
+          onUpdate: (row) => setPlanEntries((current) => applyRealtimeUpdate(current, row as unknown as MealPlanEntry)),
+          onDelete: (row) => setPlanEntries((current) => applyRealtimeDelete(current, row.id as string)),
+        },
+        {
+          table: 'meal_vote_rounds',
+          filter: `family_id=eq.${familyId}`,
+          onInsert: (row) => setVoteRounds((current) => applyVoteRoundChange(current, row, 'insert')),
+          onUpdate: (row) => setVoteRounds((current) => applyVoteRoundChange(current, row, 'update')),
+          onDelete: (row) => setVoteRounds((current) => applyVoteRoundChange(current, row, 'delete')),
+        },
+        {
+          // meal_vote_candidates/meal_votes have no family_id column (scoped
+          // via round_id/candidate_id) — no `filter`, RLS still limits
+          // delivery to this family's vote rounds.
+          table: 'meal_vote_candidates',
+          onInsert: (row) => setVoteRounds((current) => applyCandidateChange(current, row, 'insert')),
+          onUpdate: (row) => setVoteRounds((current) => applyCandidateChange(current, row, 'update')),
+          onDelete: (row) => setVoteRounds((current) => applyCandidateChange(current, row, 'delete')),
+        },
+        {
+          table: 'meal_votes',
+          onInsert: (row) => setVoteRounds((current) => applyVoteChange(current, row, 'insert')),
+          onUpdate: (row) => setVoteRounds((current) => applyVoteChange(current, row, 'update')),
+          onDelete: (row) => setVoteRounds((current) => applyVoteChange(current, row, 'delete')),
+        },
+      ],
+    })
+    return unsubscribe
+  }, [familyId, setMeals, setPlanEntries, setVoteRounds])
 
   const loading = mealsLoading || voteRoundsLoading || planEntriesLoading
   const error = mealsError || voteRoundsError || planEntriesError
@@ -267,6 +377,7 @@ export function useMealsDataSource(familyId: string | undefined, userId: string)
     planEntries,
     loading,
     error,
+    mealsRealtimeStatus,
     refreshMealsData,
     addMeal,
     updateMeal,

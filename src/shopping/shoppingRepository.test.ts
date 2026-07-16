@@ -3,6 +3,7 @@ import type { ShoppingItem, ShoppingItemInput } from '../utils/shopping'
 import { MemoryShoppingStore } from './shoppingIndexedDb'
 import { applyShoppingMutation, type ShoppingMutation } from './shoppingMutationQueue'
 import { ShoppingRepository } from './shoppingRepository'
+import type { ShoppingRealtimeSubscription } from './shoppingRealtime'
 import type { ShoppingRemote } from './shoppingSync'
 
 const input: ShoppingItemInput = { name: 'Milk', quantity: 1, unit: 'l', note: '', category: 'dairy', responsibleMemberId: null }
@@ -17,14 +18,25 @@ class FakeRemote implements ShoppingRemote {
   async fetchItems() { return structuredClone(this.items) }
 }
 
-function repository(store: MemoryShoppingStore, remote: FakeRemote, isOnline: () => boolean) {
+function repository(store: MemoryShoppingStore, remote: FakeRemote, isOnline: () => boolean, realtime?: ShoppingRealtimeSubscription) {
   let id = 0
   return new ShoppingRepository({
     familyId: 'family-1', currentMemberId: 'member-1', store, remote, isOnline,
-    realtime: () => () => undefined,
+    realtime: realtime ?? (() => () => undefined),
     createId: () => `00000000-0000-4000-8000-${String(++id).padStart(12, '0')}`,
     now: () => new Date('2026-07-15T10:00:00Z'),
   })
+}
+
+// Captures the onRemoteChange callback the repository registers, so a test
+// can simulate an incoming Postgres change notification by invoking it.
+function capturingRealtime() {
+  let trigger: (() => void) | undefined
+  const realtime: ShoppingRealtimeSubscription = (_familyId, onRemoteChange) => {
+    trigger = onRemoteChange
+    return () => { trigger = undefined }
+  }
+  return { realtime, fire: () => trigger?.() }
 }
 
 describe('offline shopping repository', () => {
@@ -59,6 +71,62 @@ describe('offline shopping repository', () => {
     expect(remote.items[0]).toMatchObject({ id: added.item.id, purchased: true })
     expect(repo.getSnapshot()).toMatchObject({ status: 'synced', pendingCount: 0 })
     expect(await store.loadMutations('family-1')).toEqual([])
+    repo.stop()
+  })
+
+  it('reflects an item another client inserted once realtime fires', async () => {
+    const store = new MemoryShoppingStore()
+    const remote = new FakeRemote()
+    const { realtime, fire } = capturingRealtime()
+    const repo = repository(store, remote, () => true, realtime)
+    await repo.start()
+    expect(repo.getSnapshot().items).toEqual([])
+
+    remote.items.push({
+      id: 'remote-1', family_id: 'family-1', name: 'Eggs', normalized_name: 'eggs', quantity: 6, unit: null, note: null,
+      category: 'dairy', created_by_member_id: 'member-2', responsible_member_id: null, purchased: false,
+      purchased_by_member_id: null, purchased_at: null, archived_at: null, source_meal_id: null,
+      source_meal_plan_entry_id: null, sort_order: 0, created_at: '2026-07-15T10:00:00Z', updated_at: '2026-07-15T10:00:00Z',
+    })
+    fire()
+    await repo.sync()
+
+    expect(repo.getSnapshot().items.map((item) => item.name)).toEqual(['Eggs'])
+    repo.stop()
+  })
+
+  it('reflects an item another client updated once realtime fires', async () => {
+    const store = new MemoryShoppingStore()
+    const remote = new FakeRemote()
+    const { realtime, fire } = capturingRealtime()
+    const repo = repository(store, remote, () => true, realtime)
+    await repo.start()
+    const added = await repo.addItem(input)
+    await repo.sync()
+
+    remote.items = remote.items.map((item) => item.id === added.item.id ? { ...item, purchased: true } : item)
+    fire()
+    await repo.sync()
+
+    expect(repo.getSnapshot().items.find((item) => item.id === added.item.id)?.purchased).toBe(true)
+    repo.stop()
+  })
+
+  it('reflects an item another client deleted once realtime fires', async () => {
+    const store = new MemoryShoppingStore()
+    const remote = new FakeRemote()
+    const { realtime, fire } = capturingRealtime()
+    const repo = repository(store, remote, () => true, realtime)
+    await repo.start()
+    const added = await repo.addItem(input)
+    await repo.sync()
+    expect(repo.getSnapshot().items).toHaveLength(1)
+
+    remote.items = remote.items.filter((item) => item.id !== added.item.id)
+    fire()
+    await repo.sync()
+
+    expect(repo.getSnapshot().items).toHaveLength(0)
     repo.stop()
   })
 

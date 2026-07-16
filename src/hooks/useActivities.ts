@@ -97,5 +97,5 @@ export function useActivities(familyId: string | undefined) {
     refresh()
   }, [refresh])
 
-  return { activities, loading, error, refresh }
+  return { activities, setActivities, loading, error, refresh }
 }

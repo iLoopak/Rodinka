@@ -37,7 +37,7 @@ export function isActiveFamilyMember(member: FamilyMember) {
   return (member.status ?? 'active') === 'active'
 }
 
-const AVATAR_SIGNED_URL_SECONDS = 12 * 60 * 60
+export const AVATAR_SIGNED_URL_SECONDS = 12 * 60 * 60
 
 export function useFamilyMembers(familyId: string | undefined) {
   const [members, setMembers] = useState<FamilyMember[]>([])
@@ -95,5 +95,5 @@ export function useFamilyMembers(familyId: string | undefined) {
     refresh()
   }, [refresh])
 
-  return { members, loading, error, refresh }
+  return { members, setMembers, loading, error, refresh }
 }

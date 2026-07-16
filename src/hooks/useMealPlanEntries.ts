@@ -57,5 +57,5 @@ export function useMealPlanEntries(familyId: string | undefined) {
     refresh()
   }, [refresh])
 
-  return { planEntries, loading, error, refresh }
+  return { planEntries, setPlanEntries, loading, error, refresh }
 }

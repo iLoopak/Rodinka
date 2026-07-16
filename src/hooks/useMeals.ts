@@ -55,5 +55,5 @@ export function useMeals(familyId: string | undefined) {
     refresh()
   }, [refresh])
 
-  return { meals, loading, error, refresh }
+  return { meals, setMeals, loading, error, refresh }
 }

@@ -75,5 +75,5 @@ export function useMedicalRecords(familyId: string | undefined) {
     refresh()
   }, [refresh])
 
-  return { medicalRecords, loading, error, refresh }
+  return { medicalRecords, setMedicalRecords, loading, error, refresh }
 }

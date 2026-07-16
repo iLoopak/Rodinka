@@ -16,11 +16,14 @@ import { ReminderCenter } from './reminders/ReminderCenter'
 import { useFamilySettings } from '../context/family/FamilySettingsContext'
 import { FamilyBrand } from './FamilyBrand'
 import { useActiveFamilyMark } from '../hooks/useActiveFamilyMark'
+import { useRealtimeStatus } from '../hooks/useRealtimeStatus'
+import { RealtimeStatusBadge } from './ui/RealtimeStatusBadge'
 
 export function AppShell() {
   const { path } = useRouter()
   const { familyName, familyNameLoading } = useFamilySettings()
   const familyMark = useActiveFamilyMark()
+  const realtimeStatus = useRealtimeStatus()
 
   return (
     <div className="app-shell">
@@ -31,7 +34,10 @@ export function AppShell() {
           loading={familyNameLoading}
           markLoading={familyMark.loading}
         />
-        <ReminderBell />
+        <div className="app-header-actions">
+          <RealtimeStatusBadge status={realtimeStatus} />
+          <ReminderBell />
+        </div>
       </header>
       <InstallAppBanner />
       <main className="app-main">
