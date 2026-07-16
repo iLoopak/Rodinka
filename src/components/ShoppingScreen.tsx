@@ -31,7 +31,7 @@ export function ShoppingScreen() {
     shoppingLoading, shoppingError, refreshShopping, addShoppingItem, updateShoppingItem, deleteShoppingItem,
     toggleShoppingPurchased, archivePurchasedShoppingItems, importShoppingItems,
     reorderShoppingItems,
-    shoppingSyncStatus, shoppingSyncError, pendingShoppingChanges, pendingShoppingItemIds, shoppingLastSyncedAt,
+    shoppingSyncStatus, pendingShoppingChanges, pendingShoppingItemIds, shoppingLastSyncedAt,
   } = useShopping()
   const [quickName, setQuickName] = useState('')
   const [filterResponsible, setFilterResponsible] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('assignedTo') === 'me' ? currentMember.id : '')
@@ -68,7 +68,8 @@ export function ShoppingScreen() {
     try {
       await reorderShoppingItems(movedId, category, orderedIds)
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : t.errors.generic)
+      console.error('Failed to add shopping item:', error)
+      setFeedback(t.shopping.actionFailed)
     }
   }
 
@@ -98,7 +99,10 @@ export function ShoppingScreen() {
       const result = await addShoppingItem({ name: quickName, quantity: null, unit: null, note: '', category: 'other', responsibleMemberId: null })
       setQuickName('')
       setFeedback(result.action === 'added' ? t.shopping.added : result.action === 'merged' ? t.shopping.merged : t.shopping.alreadyExists)
-    } catch (err) { setFeedback(err instanceof Error ? err.message : String(err)) }
+    } catch (error) {
+      console.error('Failed to archive purchased shopping items:', error)
+      setFeedback(t.shopping.actionFailed)
+    }
     finally { setBusy(false) }
   }
 
@@ -117,7 +121,10 @@ export function ShoppingScreen() {
     setSelectedItem(null)
     deleteTimerRef.current = window.setTimeout(() => {
       deleteTimerRef.current = null
-      void deleteShoppingItem(item.id).catch((err) => setFeedback(err instanceof Error ? err.message : String(err)))
+      void deleteShoppingItem(item.id).catch((error) => {
+        console.error('Failed to delete shopping item:', error)
+        setFeedback(t.shopping.actionFailed)
+      })
       setPendingDelete(null)
     }, 5000)
   }
@@ -136,7 +143,7 @@ export function ShoppingScreen() {
   }
 
   if (shoppingLoading) return <p className="loading">{t.loading.generic}</p>
-  if (shoppingError) return <ErrorState message={shoppingError} onRetry={refreshShopping} />
+  if (shoppingError) return <ErrorState message={t.shopping.dataUnavailable} onRetry={refreshShopping} />
 
   return (
     <>
@@ -179,7 +186,7 @@ export function ShoppingScreen() {
             : shoppingSyncStatus === 'error'
               ? t.shopping.syncFailed
               : t.shopping.syncComplete}</span>
-        {shoppingSyncStatus === 'error' && <button type="button" className="link" onClick={() => void refreshShopping()} title={shoppingSyncError ?? undefined}>{t.shopping.syncRetry}</button>}
+        {shoppingSyncStatus === 'error' && <button type="button" className="link" onClick={() => void refreshShopping()}>{t.shopping.syncRetry}</button>}
       </div>}
 
       <div
@@ -381,7 +388,8 @@ function ShoppingCategorySettingsModal({ settings, onSave, onClose }: {
     try {
       await onSave(draft)
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : t.errors.generic)
+      console.error('Failed to save shopping category settings:', reason)
+      setError(t.shopping.actionFailed)
       setSaving(false)
     }
   }

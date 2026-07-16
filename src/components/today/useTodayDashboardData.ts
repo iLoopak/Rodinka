@@ -30,7 +30,7 @@ export function useTodayDashboardData() {
   const { medicalRecords, refreshMedicalRecords } = useMedicalData()
   const { voteRounds, planEntries, refreshMealsData } = useMealsDataContext()
   const { allowancePlans, allowanceCycles, refreshLedger, refreshAllowancePlans } = useAllowanceData()
-  const { activeShoppingItems, addShoppingItem, refreshShopping } = useShopping()
+  const { activeShoppingItems, addShoppingItem, refreshShopping, shoppingLoading, shoppingHasUsableData, shoppingSyncStatus } = useShopping()
 
   const loading = choresLoading
   const error = choresError
@@ -63,6 +63,9 @@ export function useTodayDashboardData() {
     voteRounds,
     pendingCompletions,
     activeShoppingItems,
+    shoppingLoading,
+    shoppingHasUsableData,
+    shoppingSyncStatus,
     familyHeroImageUrl,
     addChore,
     addShoppingItem,

@@ -11,13 +11,13 @@ export const MEMBER_COLOR_KEYS = [
 ] as const satisfies readonly MemberColorKey[]
 
 export const MEMBER_COLOR_VAR_BY_KEY: Record<MemberColorKey, string> = {
-  brick: '--brick',
-  coral: '--coral',
-  sky: '--accent-sky',
-  sage: '--accent-sage',
-  honey: '--accent-honey',
-  lavender: '--accent-lavender',
-  berry: '--accent-berry',
+  brick: '--member-brick',
+  coral: '--member-coral',
+  sky: '--member-sky',
+  sage: '--member-sage',
+  honey: '--member-honey',
+  lavender: '--member-lavender',
+  berry: '--member-berry',
 }
 
 function hashString(input: string): number {

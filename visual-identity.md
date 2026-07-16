@@ -1,5 +1,43 @@
 # Vizuální identita Rodinky
 
+## Implementovaný základ aplikace (Wave 1)
+
+Rodinka je teplý, klidný a spolehlivý rodinný nástroj. Rozhraní má být přátelské bez infantilnosti, výrazné bez dekorativního hluku a dostatečně husté pro každodenní práci. Marketingový web je barevná inspirace, nikoli předloha rozložení produktu.
+
+### Sémantické role barev
+
+Zdrojová paleta používá teplé plátno `#F7F2E8`, papír `#FFFDF8`, tmavý inkoust `#243128`, tlumený inkoust `#667068`, korál `#E9785E`, medovou `#F2C85B`, mátovou `#8BC6AD` a jemnou modrou `#8DB9C7`. V kódu se však komponenty opírají o sémantické tokeny:
+
+- `--surface-*` určuje plátno, papír, jemnou a vyvýšenou plochu;
+- `--text-*` určuje hlavní, tlumený a jemný text;
+- `--interactive-*` určuje primární akci a její hover/pressed stavy; pro bílé písmo používá tmavší, kontrastní variantu korálu;
+- `--state-danger|warning|success|info|offline` a jejich `-soft` varianty označují systémové stavy;
+- `--border-*`, `--focus-ring`, `--radius-*`, `--shadow-*` a `--motion-*` vlastní společné chování komponent.
+
+Historické tokeny (`--ink`, `--paper`, `--brick`, `--radius-card` a další) jsou pouze dokumentované kompatibilní aliasy. Sémantická vrstva je vlastníkem nového systému; nové komponenty nemají zavádět další paralelní paletu.
+
+### Moduly a členové rodiny
+
+Modulové akcenty (`--accent-*` a `--category-*`) označují typ obsahu. Používají se na ikonách, malých badge, tenkých hranách a jemných výplních, nikoli jako soutěžící velké barevné plochy.
+
+Členské barvy jsou samostatná sada `--member-*`. Objevují se pouze u avataru, přiřazení a rodinné značky. Uložené klíče `brick`, `coral`, `sky`, `sage`, `honey`, `lavender`, `berry` zůstávají platné a deterministické; změnila se jen jejich vizuální interpretace, takže není nutná migrace dat.
+
+### Typografie, tvary a vrstvy
+
+Manrope zůstává jediným písmem pro značku, nadpisy i běžný text. Řezy 500–800 jsou zabalené přímo s aplikací a nevyžadují Google Fonts za běhu. Formulářové prvky zůstávají minimálně `16px`, aby se na iOS nezvětšoval viewport. Tituly obrazovek jsou kompaktní; marketingové velikosti do aplikace nepatří.
+
+Malý, střední a velký radius reprezentují ovládací prvek, řádek a kartu/sheet. Nízký stín jemně odděluje kartu od plátna, vyvýšený stín patří pouze modalu, sheetu, navigaci nebo toastu. Stín není dekorace každé karty.
+
+### Hierarchie komponent a přístupnost
+
+Primární tlačítko nese hlavní akci, sekundární je papírové s hranou, ghost je pro podpůrné akce, icon-only má vždy popisek a nejméně `44×44px`, destruktivní používá vlastní nebezpečnou roli. Disabled stav nesmí být jedinou informací a focus ring musí zůstat zřetelný na všech plochách.
+
+Prázdný stav se smí zobrazit až po úspěšném načtení. Loading, error, offline, success a synchronizační varování mají textový popis a nespoléhají jen na barvu. Text a interaktivní prvky musí dosahovat WCAG AA; jemný korál je určen pro dekoraci a měkké výplně, nikoli pro bílý text na tlačítku.
+
+### Expresivní motivy
+
+Organické dílky mozaiky, jemné barevné oblouky a měkké gradienty jsou vhodné pro přihlášení, onboarding, hero plochu a prázdné stavy. Nevhodné jsou pro funkční seznamy: žádné náhodně natočené karty, obří marketingové nadpisy, dekorativní překážky, emoji jako funkční ikony ani trvalé animace. Pohyb má trvat přibližně 140–260 ms, vysvětlovat změnu stavu a respektovat `prefers-reduced-motion`.
+
 ## Doporučený směr: **Rodinná mozaika**
 
 Rodinka by neměla vypadat ani jako korporátní productivity nástroj, ani jako přeslazená „aplikace pro maminky“.

@@ -1,24 +1,74 @@
 :root {
-  --ink: #26333b;
-  --ink-muted: #64717a;
-  --canvas: #fbf5ed;
-  --paper: #fffdf9;
-  --paper-raised: #ffffff;
-  --neutral-soft: #f4ede4;
-  --border: #e7dcd0;
-  --border-soft: #eee5dc;
-  --brick: #b94742;
-  --brick-dark: #943832;
-  --coral: #dc665d;
-  --coral-light: #f2aaa1;
-  --coral-soft: #fbe7e1;
-  --coral-mist: #fff2ed;
+  /* Semantic foundation. Legacy aliases below remain the compatibility API. */
+  --surface-canvas: #f7f2e8;
+  --surface-paper: #fffdf8;
+  --surface-subtle: #f1eadf;
+  --surface-elevated: #ffffff;
+  --text-primary: #243128;
+  --text-muted: #667068;
+  --text-faint: #667068;
+  --border-default: #ddd5c8;
+  --border-subtle: #e9e2d7;
+  --interactive-primary: #a94738;
+  --interactive-primary-hover: #8e382f;
+  --interactive-primary-pressed: #772f29;
+  --focus-ring: #a94738;
+  --state-danger: #9c3e3e;
+  --state-danger-soft: #f9e8e5;
+  --state-warning: #7a5900;
+  --state-warning-soft: #fff3cf;
+  --state-success: #39745c;
+  --state-success-soft: #e5f3eb;
+  --state-info: #376c79;
+  --state-info-soft: #e5f1f4;
+  --state-offline: #6c5a32;
+  --state-offline-soft: #f4eddc;
+  --danger: var(--state-danger);
+  --brand-coral: #e9785e;
+  --brand-coral-dark: #ce5d47;
+  --brand-honey: #f2c85b;
+  --brand-mint: #8bc6ad;
+  --brand-blue: #8db9c7;
+  --radius-small: 10px;
+  --radius-medium: 16px;
+  --radius-large: 22px;
+  --shadow-low: 0 5px 16px rgba(64, 51, 38, 0.06), 0 1px 2px rgba(64, 51, 38, 0.04);
+  --shadow-elevated: 0 18px 48px rgba(54, 44, 34, 0.14);
+  --motion-fast: 140ms;
+  --motion-standard: 200ms;
+  --motion-slow: 260ms;
+  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
 
-  --accent-sky: #6f9ed6;
-  --accent-sage: #76a98b;
-  --accent-honey: #e8b84b;
-  --accent-lavender: #9683c4;
-  --accent-berry: #c45d70;
+  --ink: var(--text-primary);
+  --ink-muted: var(--text-muted);
+  --ink-faint: var(--text-faint);
+  --canvas: var(--surface-canvas);
+  --paper: var(--surface-paper);
+  --paper-raised: var(--surface-elevated);
+  --neutral-soft: var(--surface-subtle);
+  --border: var(--border-default);
+  --border-soft: var(--border-subtle);
+  --brick: var(--interactive-primary);
+  --brick-dark: var(--interactive-primary-hover);
+  --coral: var(--brand-coral);
+  --coral-light: #efad9d;
+  --coral-soft: #fae8e2;
+  --coral-mist: #fff3ed;
+
+  --accent-sky: #527f8d;
+  --accent-sage: #4f8068;
+  --accent-honey: #947016;
+  --accent-lavender: #7563a8;
+  --accent-berry: #a34f64;
+
+  /* Stored keys stay valid; only their member-identity rendering changes. */
+  --member-brick: #6e4c91;
+  --member-coral: #2f7e7a;
+  --member-sky: #356fa8;
+  --member-sage: #766421;
+  --member-honey: #a5542d;
+  --member-lavender: #6554ad;
+  --member-berry: #984064;
 
   --category-tasks: #4f8068;
   --category-tasks-soft: #eaf4ed;
@@ -37,12 +87,12 @@
   --category-family-soft: #fbf2d8;
   --category-family-border: #eadba8;
 
-  --radius-card: 22px;
-  --radius-row: 15px;
-  --radius-button: 16px;
+  --radius-card: var(--radius-large);
+  --radius-row: var(--radius-medium);
+  --radius-button: var(--radius-medium);
   --radius-input: 12px;
-  --shadow-card: 0 8px 24px rgba(80, 58, 42, 0.055), 0 1px 2px rgba(80, 58, 42, 0.04);
-  --shadow-float: 0 18px 48px rgba(66, 49, 38, 0.12);
+  --shadow-card: var(--shadow-low);
+  --shadow-float: var(--shadow-elevated);
   --font-family: 'Manrope', system-ui, -apple-system, sans-serif;
   --font-size-page-title: clamp(1.55rem, 5vw, 1.9rem);
   --font-size-section-title: 1.12rem;
@@ -143,9 +193,9 @@ button {
   padding: 12px 22px;
   cursor: pointer;
   transition:
-    transform 160ms ease,
-    opacity 160ms ease,
-    background 160ms ease;
+    transform var(--motion-fast) var(--motion-ease),
+    opacity var(--motion-fast) var(--motion-ease),
+    background var(--motion-fast) var(--motion-ease);
 }
 
 button:hover:not(:disabled) {
@@ -157,8 +207,37 @@ button:active:not(:disabled) {
 }
 
 button:disabled {
-  opacity: 0.5;
+  opacity: 0.52;
   cursor: not-allowed;
+}
+
+button:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--focus-ring) 42%, transparent);
+  outline-offset: 3px;
+}
+
+button.btn-ghost,
+button.btn-icon {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+}
+
+button.btn-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+}
+
+button.btn-danger {
+  border: 1px solid color-mix(in srgb, var(--state-danger) 28%, var(--border));
+  background: var(--state-danger);
+  color: #fff;
 }
 
 button.btn-secondary {
@@ -242,11 +321,20 @@ input[type='checkbox'] {
   accent-color: var(--brick);
 }
 
-input:focus,
-select:focus,
-textarea:focus {
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
   outline: none;
-  border-color: var(--brick);
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--surface-subtle);
+  color: var(--ink-muted);
+  cursor: not-allowed;
 }
 
 /* ------------------------------------------------------------------ */
@@ -763,23 +851,23 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
 }
 
 .badge-pending {
-  background: rgba(232, 184, 75, 0.2);
-  color: #8a6516;
+  background: var(--state-warning-soft);
+  color: var(--state-warning);
 }
 
 .badge-done {
-  background: rgba(118, 169, 139, 0.2);
-  color: #3f6b53;
+  background: var(--state-success-soft);
+  color: var(--state-success);
 }
 
 .badge-overdue {
-  background: rgba(151, 48, 43, 0.14);
-  color: var(--brick-dark);
+  background: var(--state-danger-soft);
+  color: var(--state-danger);
 }
 
 .badge-today {
-  background: rgba(185, 71, 66, 0.14);
-  color: var(--brick);
+  background: var(--state-info-soft);
+  color: var(--state-info);
 }
 
 /* ------------------------------------------------------------------ */
@@ -814,6 +902,7 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
   color: #fff;
   font-weight: 700;
   line-height: 1;
+  box-shadow: 0 0 0 2px var(--paper-raised);
 }
 
 .member-avatar.has-photo {
@@ -1249,6 +1338,7 @@ details.manage .add-child-form + .add-chore-form {
 }
 .completion-checkbox:hover:not(:disabled) > span { background: var(--paper-raised); }
 .completion-checkbox[aria-pressed='true'] > span { background: var(--category-tasks); color: white; border-color: var(--category-tasks); }
+.completion-checkbox:focus-visible { outline-offset: 0; }
 
 .list-drag-handle {
   align-self: stretch;
@@ -1478,7 +1568,7 @@ button.list-drag-handle:hover:not(:disabled) {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(38, 50, 58, 0.45);
+  background: color-mix(in srgb, var(--ink) 46%, transparent);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -1492,8 +1582,8 @@ button.list-drag-handle:hover:not(:disabled) {
   max-width: 640px;
   max-height: 88vh;
   overflow-y: auto;
-  background: var(--paper);
-  border-radius: 22px 22px 0 0;
+  background: var(--surface-elevated);
+  border-radius: var(--radius-large) var(--radius-large) 0 0;
   padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
   box-shadow: var(--shadow-float);
 }
@@ -1622,6 +1712,15 @@ button.list-drag-handle:hover:not(:disabled) {
   text-align: center;
   padding: 12px 4px;
 }
+
+.error-state-card {
+  border: 1px solid color-mix(in srgb, var(--state-danger) 22%, var(--border));
+  border-radius: var(--radius-medium);
+  background: var(--state-danger-soft);
+  padding: 18px;
+}
+
+.error-state-card .error { color: var(--state-danger); }
 
 .empty-state-title {
   font-weight: 700;
@@ -4203,6 +4302,27 @@ button.today-shopping-open {
   line-height: var(--line-height-meta);
 }
 
+.today-shopping-state {
+  margin: 12px 2px 0;
+  padding: 9px 11px;
+  border-radius: var(--radius-small);
+  background: var(--state-info-soft);
+  color: var(--state-info);
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-meta);
+}
+
+.today-shopping-state.warning {
+  background: var(--state-warning-soft);
+  color: var(--state-warning);
+}
+
+.today-shopping-state.offline {
+  background: var(--state-offline-soft);
+  color: var(--state-offline);
+}
+
 .today-shopping-more {
   margin-top: 6px;
   color: var(--category-family);
@@ -4621,23 +4741,23 @@ button.today-shopping-open {
   height: 44px;
   min-height: 44px;
   padding: 0;
-  border: 1px solid var(--coral-light);
+  border: 1px solid color-mix(in srgb, var(--state-danger) 28%, var(--border));
   border-radius: 999px;
-  background: #fff7f3;
-  color: var(--brick-dark);
+  background: var(--state-danger-soft);
+  color: var(--state-danger);
 }
 
 .destructive-icon-button:hover:not(:disabled),
 .destructive-icon-button:focus-visible:not(:disabled) {
-  background: var(--coral-soft);
-  border-color: var(--brick);
-  color: var(--brick);
+  background: color-mix(in srgb, var(--state-danger-soft) 72%, white);
+  border-color: var(--state-danger);
+  color: var(--state-danger);
   transform: translateY(-1px);
 }
 
 .destructive-icon-button:active:not(:disabled) {
   transform: translateY(0);
-  background: var(--coral-light);
+  background: color-mix(in srgb, var(--state-danger) 18%, white);
 }
 
 .destructive-icon-button:disabled {
@@ -4674,18 +4794,18 @@ button.today-shopping-open {
 
 .destructive-confirm-button,
 button.danger-action {
-  border-color: var(--coral-light);
-  background: #fff7f3;
-  color: var(--brick-dark);
+  border-color: color-mix(in srgb, var(--state-danger) 28%, var(--border));
+  background: var(--state-danger-soft);
+  color: var(--state-danger);
 }
 
 .destructive-confirm-button:hover:not(:disabled),
 button.danger-action:hover:not(:disabled),
 .destructive-confirm-button:focus-visible:not(:disabled),
 button.danger-action:focus-visible:not(:disabled) {
-  border-color: var(--brick);
-  background: var(--coral-soft);
-  color: var(--brick);
+  border-color: var(--state-danger);
+  background: color-mix(in srgb, var(--state-danger-soft) 72%, white);
+  color: var(--state-danger);
 }
 
 .undo-toast {

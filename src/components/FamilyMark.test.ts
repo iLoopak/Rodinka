@@ -20,9 +20,9 @@ describe('FamilyMark', () => {
 
     expect(html).toContain('aria-hidden="true"')
     expect(html).toContain('data-member-count="3"')
-    expect(html).toContain('var(--coral)')
-    expect(html).toContain('var(--accent-sage)')
-    expect(html).toContain('var(--accent-lavender)')
+    expect(html).toContain('var(--member-coral)')
+    expect(html).toContain('var(--member-sage)')
+    expect(html).toContain('var(--member-lavender)')
     expect(html.match(/family-mark-petal/g)).toHaveLength(3)
   })
 
@@ -33,9 +33,9 @@ describe('FamilyMark', () => {
 
     expect(one).toContain('data-member-count="1"')
     expect(two).toContain('data-member-count="2"')
-    expect(two).toContain('var(--accent-honey)')
-    expect(recolored).toContain('var(--accent-berry)')
-    expect(recolored).not.toContain('var(--accent-sky)')
+    expect(two).toContain('var(--member-honey)')
+    expect(recolored).toContain('var(--member-berry)')
+    expect(recolored).not.toContain('var(--member-sky)')
   })
 
   it('represents remaining member colors in a labelled overflow petal', () => {
@@ -47,8 +47,8 @@ describe('FamilyMark', () => {
 
     expect(html).toContain('data-member-count="8"')
     expect(html).toContain('>+3</text>')
-    expect(html).toContain('var(--accent-lavender)')
-    expect(html).toContain('var(--accent-berry)')
+    expect(html).toContain('var(--member-lavender)')
+    expect(html).toContain('var(--member-berry)')
   })
 
   it('uses a neutral placeholder without stale colors while loading', () => {
@@ -56,7 +56,7 @@ describe('FamilyMark', () => {
       variant: 'dynamic', members: [member('a', 'berry')], loading: true,
     }))
     expect(html).toContain('is-loading')
-    expect(html).not.toContain('var(--accent-berry)')
+    expect(html).not.toContain('var(--member-berry)')
     expect(html).not.toContain('data-member-count')
   })
 

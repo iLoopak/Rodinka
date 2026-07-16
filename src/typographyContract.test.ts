@@ -3,10 +3,14 @@ import { describe, expect, it } from 'vitest'
 
 const styles = readFileSync(new URL('./index.css', import.meta.url), 'utf8')
 const documentSource = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
+const mainSource = readFileSync(new URL('./main.tsx', import.meta.url), 'utf8')
 
 describe('typography contract', () => {
   it('loads every Manrope weight used by the design system', () => {
-    expect(documentSource).toContain('Manrope:wght@500;600;700;800')
+    for (const weight of [500, 600, 700, 800]) {
+      expect(mainSource).toContain(`@fontsource/manrope/${weight}.css`)
+    }
+    expect(documentSource).not.toContain('fonts.googleapis.com')
     expect(styles).not.toMatch(/font-weight:\s*(650|750)\b/)
   })
 

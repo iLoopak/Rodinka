@@ -39,6 +39,9 @@ export function TodayDashboard() {
     voteRounds,
     pendingCompletions,
     activeShoppingItems,
+    shoppingLoading,
+    shoppingHasUsableData,
+    shoppingSyncStatus,
     familyHeroImageUrl,
     addChore,
     addShoppingItem,
@@ -152,6 +155,9 @@ export function TodayDashboard() {
 
       <TodayShoppingWidget
         items={activeShoppingItems}
+        loading={shoppingLoading}
+        hasUsableData={shoppingHasUsableData}
+        syncStatus={shoppingSyncStatus}
         onOpen={() => navigate('/shopping')}
         onAddItem={(name) => addShoppingItem(createQuickShoppingItemInput(name))}
       />
