@@ -260,3 +260,33 @@ Rodinka používá Supabase Realtime jako výchozí způsob, jak se změny jedno
 - [Lokalizace a přidávání překladů](./I18N.md)
 - [Vizuální identita](./visual-identity.md)
 - [Produktová a technická roadmapa](./rodinka-roadmap.md)
+
+## Destructive-action model
+
+Rodinka uses domain-specific destructive actions instead of treating every removal as a permanent delete. New feature work should use the shared destructive UI primitives and route changes through the domain repository or context API rather than calling Supabase directly from React components.
+
+| Domain | Active removal | Historical behavior | Restore | Undo |
+| --- | --- | --- | --- | --- |
+| Shopping item | Offline-safe queued delete/tombstone via the shopping repository | Removed from active list; stale sync updates must not resurrect it | Add/update through a later mutation when supported | Yes, delayed commit from the UI |
+| Purchased shopping history | Archive purchased items | Previous-shop history remains readable | No direct UI restore | No |
+| Chore | Archive the chore | Completion history, approved rewards, and allowance ledger entries remain | Yes | No |
+| Chore occurrence | Recurrence exception for one occurrence; future split when supported | Past completions remain readable | Permission-based | No |
+| Activity / club | Archive or cancel the series/occurrence | Participants, responsible parent, payment, and reminder history remain | Permission-based | No |
+| Family event | Cancel future one-off event | Past events remain visible as history | Permission-based | No |
+| Medical record / vaccination | Cancel planned appointment; archive incorrect records | Completed medical history is preserved by default | Permission-based | No |
+| Meal library item | Archive meal from reusable library | Meal-plan, vote, and shopping references keep their titles | Yes | No |
+| Meal plan entry | Remove only the plan entry | Meal library item and generated shopping items remain | Re-add entry | Yes when not historical |
+| Meal vote round | Delete draft, cancel open, archive closed | Vote history remains meaningful for closed rounds | Permission-based | No |
+| Quick task | Remove from active quick list | No required history | Re-create | Yes |
+| System reminder | Dismiss/resolve | Reminder history is retained | No | No |
+| Family member | Existing safe household-member removal workflow | Historical references, reassignment choices, roles, and last-admin protection remain | Yes, via household workflow | No |
+| Family hero image / member avatar | Clear image path and clean Storage | UI falls back to default/generated image; cleanup failures are logged without exposing content | Re-upload | Yes where rollback is practical |
+
+### Implementation rules for future destructive actions
+
+- **Hard delete** only disposable data that has no audit, synchronization, or historical references.
+- **Archive** reusable domain objects that should disappear from new selections while old references stay meaningful.
+- **Cancel** scheduled future events or appointments that should remain understandable in history.
+- **Occurrence exceptions** are preferred over rewriting a recurring base series for single-occurrence removal.
+- **Undo** must be real: delay the commit or use a reversible soft-delete/restore operation. Never show Undo after an irreversible hard delete.
+- Shared components live in `src/components/ui/DestructiveActions.tsx`: `DestructiveIconButton`, `ConfirmDestructiveActionDialog`, `RecurringDeleteScopeDialog`, `UndoToast`, and `ArchivedItemBadge`.

@@ -4596,3 +4596,126 @@ button.today-shopping-open {
 .offline-card p,
 .offline-module-state p { color: var(--ink-muted); }
 .offline-module-state { margin: 24px auto; }
+
+/* ------------------------------------------------------------------ */
+/* Shared destructive actions                                          */
+/* ------------------------------------------------------------------ */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.destructive-icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid var(--coral-light);
+  border-radius: 999px;
+  background: #fff7f3;
+  color: var(--brick-dark);
+}
+
+.destructive-icon-button:hover:not(:disabled),
+.destructive-icon-button:focus-visible:not(:disabled) {
+  background: var(--coral-soft);
+  border-color: var(--brick);
+  color: var(--brick);
+  transform: translateY(-1px);
+}
+
+.destructive-icon-button:active:not(:disabled) {
+  transform: translateY(0);
+  background: var(--coral-light);
+}
+
+.destructive-icon-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.destructive-dialog-body {
+  display: grid;
+  gap: 10px;
+  color: var(--ink);
+}
+
+.destructive-object-name {
+  margin: 0;
+  font-weight: 800;
+}
+
+.destructive-consequences {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.modal-footer,
+.destructive-dialog-actions,
+.recurring-scope-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.destructive-confirm-button,
+button.danger-action {
+  border-color: var(--coral-light);
+  background: #fff7f3;
+  color: var(--brick-dark);
+}
+
+.destructive-confirm-button:hover:not(:disabled),
+button.danger-action:hover:not(:disabled),
+.destructive-confirm-button:focus-visible:not(:disabled),
+button.danger-action:focus-visible:not(:disabled) {
+  border-color: var(--brick);
+  background: var(--coral-soft);
+  color: var(--brick);
+}
+
+.undo-toast {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(78px + env(safe-area-inset-bottom));
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--paper);
+  box-shadow: var(--shadow-float);
+}
+
+.archived-item-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
