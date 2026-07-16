@@ -4575,3 +4575,24 @@ button.today-shopping-open {
     transition-duration: 0.001ms !important;
   }
 }
+
+.offline-state {
+  min-height: 100dvh;
+  padding: 24px;
+  gap: 18px;
+  background: linear-gradient(135deg, var(--category-meals-soft), var(--paper));
+}
+.offline-card,
+.offline-module-state {
+  width: min(100%, 520px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow-card);
+  padding: 22px;
+}
+.offline-card h1,
+.offline-module-state h1 { margin: 0 0 8px; }
+.offline-card p,
+.offline-module-state p { color: var(--ink-muted); }
+.offline-module-state { margin: 24px auto; }
