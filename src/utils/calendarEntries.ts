@@ -10,6 +10,9 @@ import { nextPayoutDate } from './allowanceCycles'
 import { expandActivitiesOccurrences } from './recurrence'
 import { displayTitle } from './mealPlanGrouping'
 import { getEffectiveActivityParticipants, getEffectiveOccurrenceMember, type ActivityParticipantHistory, type OccurrenceOverride, type SeriesAssignmentHistory } from './occurrenceAssignments'
+import { activityRecurrenceLabel, activityWeekdaysSummary } from './activityLabels'
+import { isoWeekday } from './activityFormModel'
+import { choreRecurrenceSummary } from './choreRecurrence'
 
 export interface CalendarEntry {
   id: string
@@ -35,6 +38,7 @@ export interface CalendarEntry {
   rangeEnd?: string
   isMultiDay?: boolean
   recurring: boolean
+  recurrenceLabel?: string | null
   /** What kind of source record this was derived from, for navigation. */
   sourceType: 'chore' | 'activity' | 'activity_payment' | 'medical' | 'medical_due' | 'meal' | 'allowance'
   sourceId: string
@@ -109,6 +113,7 @@ export function buildCalendarEntries({
       participantMemberIds: assignment.memberId ? [assignment.memberId] : [],
       responsibleMemberIds: assignment.memberId ? [assignment.memberId] : [],
       recurring: chore.recurring,
+      recurrenceLabel: chore.recurring ? choreRecurrenceSummary(chore) : null,
       sourceType: 'chore',
       sourceId: chore.id,
     })
@@ -144,6 +149,13 @@ export function buildCalendarEntries({
       rangeEnd: activity.end_date ?? activity.start_date,
       isMultiDay: activity.recurrence_type === 'one_off' && !!activity.end_date && activity.end_date > activity.start_date,
       recurring: activity.recurrence_type !== 'one_off',
+      recurrenceLabel: activity.recurrence_type === 'weekly'
+        ? t.chores.recurrenceSummaryWeeklyByDay[isoWeekday(activity.start_date) - 1]
+        : activity.recurrence_type === 'custom_weekdays'
+          ? `${activityRecurrenceLabel(activity.recurrence_type)}: ${activityWeekdaysSummary(activity.recurrence_weekdays)}`
+          : activity.recurrence_type === 'biweekly'
+            ? activityRecurrenceLabel(activity.recurrence_type)
+            : null,
       sourceType: 'activity',
       sourceId: activity.id,
     })
