@@ -26,7 +26,14 @@ describe('AppShell native mobile scrolling contract', () => {
   it('keeps fixed navigation safe-area aware and out of document flow', () => {
     expect(css).toMatch(/\.bottom-nav\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*0/s)
     expect(css).toContain('padding: 7px calc(8px + env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));')
-    expect(css).toContain('padding: calc(18px + env(safe-area-inset-top)) 22px 10px;')
+  })
+
+  it('pads the header for the top safe area from a single rule', () => {
+    const headerRules = [...css.matchAll(/^\.app-header\s*\{([^}]*)\}/gms)]
+    expect(headerRules).toHaveLength(1)
+    expect(headerRules[0][1]).toMatch(/padding:[^;]*env\(safe-area-inset-top\)/)
+    expect(headerRules[0][1]).toMatch(/env\(safe-area-inset-left\)/)
+    expect(headerRules[0][1]).toMatch(/env\(safe-area-inset-right\)/)
   })
 
   it('provides non-color active navigation and a 44px reminder target', () => {

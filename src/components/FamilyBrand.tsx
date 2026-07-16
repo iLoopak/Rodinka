@@ -14,7 +14,7 @@ export function FamilyBrand({ familyName, members, loading = false, markLoading 
   const label = formatFamilyBrand(loading ? null : familyName, t.appName)
 
   return <div className="brand" aria-label={label.accessibleLabel}>
-    <FamilyMark variant="dynamic" members={members} size={32} loading={markLoading} />
+    <FamilyMark variant="dynamic" members={members} size={38} loading={markLoading} />
     <span className="brand-lockup family-brand-lockup">
       <span className="wordmark">{label.productName}</span>
       {label.householdName && <span className="household-name" title={label.householdName}>{label.householdName}</span>}

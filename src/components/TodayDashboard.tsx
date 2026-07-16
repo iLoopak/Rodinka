@@ -16,7 +16,6 @@ import { TodayQuickTodoWidget } from './today/TodayQuickTodoWidget'
 import { TodayShoppingWidget } from './today/TodayShoppingWidget'
 import { ErrorState } from './ui/ErrorState'
 import { getLocalizedAddressName } from '../utils/personalizedName'
-import { FamilyMark, type FamilyMarkMember } from './FamilyMark'
 import { createQuickShoppingItemInput, createQuickTaskInput, isQuickTodo } from '../utils/todayQuickAdd'
 import { getChoreState } from '../utils/choreState'
 import { ChoreDetailModal } from './ChoreDetailModal'
@@ -119,7 +118,6 @@ export function TodayDashboard() {
         name={addressName || null}
         date={today}
         itemCount={entries.length}
-        members={members}
         familyHeroImageUrl={familyHeroImageUrl}
         onAdd={() => setShowCreate(true)}
       />
@@ -127,37 +125,43 @@ export function TodayDashboard() {
       {approvalFeedback && <p className="success approval-feedback" role="status">{approvalFeedback}</p>}
 
       {needsAttention && (
-        <section className="section today-attention-section">
-          <h2>{t.today.attentionTitle}</h2>
-          {pendingCompletions.length > 0 && (
-            <div className="today-attention-group">
-              <h3 className="today-section-subheading">{t.today.approvalsTitle}</h3>
-              <PendingApprovals
-                completions={pendingCompletions}
-                chores={chores}
-                memberById={memberById}
-                onApprove={handleApprove}
-                onReject={reject}
-              />
-            </div>
-          )}
-          {attentionItems.length > 0 && (
-            <div className="today-attention-group">
-              {pendingCompletions.length > 0 && (
-                <h3 className="today-section-subheading">{t.today.otherAttentionTitle}</h3>
-              )}
-              <TodayAttentionList items={attentionItems} memberById={memberById} />
-            </div>
-          )}
+        <section className="today-section today-attention-section">
+          <h2 className="today-section-title">{t.today.attentionTitle}</h2>
+          <div className="today-panel is-attention">
+            {pendingCompletions.length > 0 && (
+              <div className="today-attention-group">
+                <h3 className="today-section-subheading">{t.today.approvalsTitle}</h3>
+                <PendingApprovals
+                  completions={pendingCompletions}
+                  chores={chores}
+                  memberById={memberById}
+                  onApprove={handleApprove}
+                  onReject={reject}
+                />
+              </div>
+            )}
+            {attentionItems.length > 0 && (
+              <div className="today-attention-group">
+                {pendingCompletions.length > 0 && (
+                  <h3 className="today-section-subheading">{t.today.otherAttentionTitle}</h3>
+                )}
+                <TodayAttentionList items={attentionItems} memberById={memberById} />
+              </div>
+            )}
+          </div>
         </section>
       )}
 
-      <section className="section today-program-section">
-        <h2>{t.today.programTitle}</h2>
+      <section className="today-section today-program-section">
+        <h2 className="today-section-title">{t.today.programTitle}</h2>
         {entries.length === 0 ? (
-          <TodayProgramEmpty onAdd={() => setShowCreate(true)} />
+          <div className="today-panel is-quiet">
+            <TodayProgramEmpty onAdd={() => setShowCreate(true)} />
+          </div>
         ) : (
-          <TodayAgendaList entries={entries} memberById={memberById} onSelectEntry={setSelectedEntry} />
+          <div className="today-panel is-primary">
+            <TodayAgendaList entries={entries} memberById={memberById} onSelectEntry={setSelectedEntry} />
+          </div>
         )}
       </section>
 
@@ -179,12 +183,14 @@ export function TodayDashboard() {
       />
 
       {kids.length === 0 && (
-        <section className="section today-setup-card">
-          <h2>{t.today.optionalSetupTitle}</h2>
-          <p>{t.today.optionalSetupBody}</p>
-          <button type="button" className="btn-secondary" onClick={() => navigate('/family')}>
-            {t.today.setupAddChildAction}
-          </button>
+        <section className="today-section today-setup-card">
+          <div className="today-panel is-quiet">
+            <h2 className="today-setup-title">{t.today.optionalSetupTitle}</h2>
+            <p>{t.today.optionalSetupBody}</p>
+            <button type="button" className="btn-secondary" onClick={() => navigate('/family')}>
+              {t.today.setupAddChildAction}
+            </button>
+          </div>
         </section>
       )}
       </div>
@@ -221,18 +227,18 @@ interface HeaderProps {
   name: string | null
   date: string
   itemCount: number
-  members: FamilyMarkMember[]
   familyHeroImageUrl: string | null
   onAdd: () => void
 }
 
-function TodayHeader({ name, date, itemCount, members, familyHeroImageUrl, onAdd }: HeaderProps) {
+function TodayHeader({ name, date, itemCount, familyHeroImageUrl, onAdd }: HeaderProps) {
   return (
     <div className={`today-hero${familyHeroImageUrl ? ' has-family-photo' : ''}`}>
       {familyHeroImageUrl && <img className="today-hero-photo" src={familyHeroImageUrl} alt="" aria-hidden="true" />}
-      {!familyHeroImageUrl && <FamilyMark variant="dynamic" members={members} size={96} className="today-family-mark" />}
       <div className="today-hero-copy">
-        <span className="page-eyebrow">{t.home.title}</span>
+        {/* Over a photo the eyebrow is both redundant and unreadable: it sits at
+            the top of the copy, where a scrim anchored to the bottom is weakest. */}
+        {!familyHeroImageUrl && <span className="page-eyebrow">{t.home.title}</span>}
         <h1 className="home-title">{t.home.welcome(name)}</h1>
         <p className="today-date">{formatFullDate(date)}</p>
         <p className="today-summary">{t.today.itemsSummary(itemCount)}</p>

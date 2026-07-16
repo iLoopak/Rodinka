@@ -91,17 +91,18 @@ export function TodayQuickTodoWidget({ tasks, onAdd, onComplete, onPromote, onOp
   }
 
   return (
-    <section className="section today-quick-todo-widget" aria-labelledby="today-quick-todo-title">
-      <div className="today-quick-todo-header">
+    <section className="today-section today-quick-todo-widget" aria-labelledby="today-quick-todo-title">
+      <div className="today-section-head">
         <span className="today-quick-todo-heading">
-          <h2 id="today-quick-todo-title">{t.today.quickTasksTitle}</h2>
-          <span>{t.today.quickTasksCount(visibleTasks.length)}</span>
+          <h2 id="today-quick-todo-title" className="today-section-title">{t.today.quickTasksTitle}</h2>
+          <span className="today-section-count">{t.today.quickTasksCount(visibleTasks.length)}</span>
         </span>
         <button type="button" className="link today-quick-todo-open" onClick={onOpenAll}>
           {t.today.quickTasksOpenAction}<span aria-hidden="true">›</span>
         </button>
       </div>
 
+      <div className="today-panel is-secondary is-tasks">
       <TodayQuickAddField
         value={title}
         placeholder={t.today.quickTaskPlaceholder}
@@ -140,6 +141,7 @@ export function TodayQuickTodoWidget({ tasks, onAdd, onComplete, onPromote, onOp
         </div>
       )}
       {feedback && <p className={`today-quick-add-feedback${hasError ? ' error' : ''}`} role={hasError ? 'alert' : 'status'}>{feedback}</p>}
+      </div>
     </section>
   )
 }

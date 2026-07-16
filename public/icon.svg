@@ -1,10 +1,9 @@
 <!-- Generated static FamilyMark asset. Geometry and colors are verified against src/utils/familyMark.ts. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64" preserveAspectRatio="xMidYMid meet">
   <rect width="64" height="64" rx="12" fill="#FFF8F2"/>
-  <g transform="translate(8 8) scale(.75)">
-    <rect x="24" y="7" width="16" height="16" rx="5.44" fill="#B94742" transform="rotate(45 32 15)"/>
-    <rect x="41" y="24" width="16" height="16" rx="5.44" fill="#E96C62" transform="rotate(45 49 32)"/>
-    <rect x="24" y="41" width="16" height="16" rx="5.44" fill="#97302B" transform="rotate(45 32 49)"/>
-    <rect x="7" y="24" width="16" height="16" rx="5.44" fill="#F2A99F" transform="rotate(45 15 32)"/>
+  <g transform="translate(32 32) scale(.78) translate(-32 -32)">
+    <path d="M -7.452 0 A 7.452 12.195 0 0 1 7.452 0 L 7.452 1.22 A 6.707 10.976 0 0 1 0.745 12.195 L -0.745 12.195 A 6.707 10.976 0 0 1 -7.452 1.22 Z" transform="translate(13.7075 32) rotate(-14)" fill="#e9785e"/>
+    <path d="M -8.13 0 A 8.13 18.293 0 0 1 8.13 0 L 8.13 1.829 A 7.317 16.463 0 0 1 0.813 18.293 L -0.813 18.293 A 7.317 16.463 0 0 1 -8.13 1.829 Z" transform="translate(32 32) rotate(0)" fill="#f2c85b"/>
+    <path d="M -7.452 0 A 7.452 14.227 0 0 1 7.452 0 L 7.452 1.423 A 6.707 12.805 0 0 1 0.745 14.227 L -0.745 14.227 A 6.707 12.805 0 0 1 -7.452 1.423 Z" transform="translate(50.2925 32) rotate(12)" fill="#8bc6ad"/>
   </g>
 </svg>

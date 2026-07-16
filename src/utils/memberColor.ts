@@ -43,6 +43,25 @@ export function memberColorVar(member: { id: string; color_key?: unknown } | str
   return MEMBER_COLOR_VAR_BY_KEY[memberColorKey(member)]
 }
 
+// The brand mark speaks the landing page's four-hue language, not the member
+// identity palette — those greens and purples are tuned for contrast on
+// avatars and would make the logo unrecognisable next to the landing page.
+// A member's stored colour still picks their shape's hue deterministically,
+// so the mapping adds no new colours; it only reuses existing brand tokens.
+export const MARK_COLOR_VAR_BY_KEY: Record<MemberColorKey, string> = {
+  brick: '--brand-coral-dark',
+  coral: '--brand-coral',
+  sky: '--brand-blue',
+  sage: '--brand-mint',
+  honey: '--brand-honey',
+  lavender: '--brand-blue',
+  berry: '--brand-coral-dark',
+}
+
+export function markColorVar(member: { id: string; color_key?: unknown } | string): string {
+  return MARK_COLOR_VAR_BY_KEY[memberColorKey(member)]
+}
+
 export function memberInitials(displayName: string): string {
   const parts = displayName.trim().split(/\s+/).filter(Boolean)
   if (parts.length === 0) return '?'
