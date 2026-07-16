@@ -28,4 +28,10 @@ describe('AppShell native mobile scrolling contract', () => {
     expect(css).toContain('padding: 7px calc(8px + env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));')
     expect(css).toContain('padding: calc(18px + env(safe-area-inset-top)) 22px 10px;')
   })
+
+  it('provides non-color active navigation and a 44px reminder target', () => {
+    expect(css).toMatch(/\.bottom-nav-item\.active::after\s*\{[^}]*height:\s*3px/s)
+    expect(css).toMatch(/\.reminder-bell\s*\{[^}]*min-width:\s*44px[^}]*min-height:\s*44px/s)
+    expect(appShell).toContain("app-shell${path === '/' ? ' is-today' : ''}")
+  })
 })

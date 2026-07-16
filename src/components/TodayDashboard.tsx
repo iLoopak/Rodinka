@@ -19,6 +19,8 @@ import { getLocalizedAddressName } from '../utils/personalizedName'
 import { FamilyMark, type FamilyMarkMember } from './FamilyMark'
 import { createQuickShoppingItemInput, createQuickTaskInput, isQuickTodo } from '../utils/todayQuickAdd'
 import { getChoreState } from '../utils/choreState'
+import { ChoreDetailModal } from './ChoreDetailModal'
+import { closeTodayChoreEditor, openTodayChoreEditor } from './today/todayChoreEditor'
 
 export function TodayDashboard() {
   const [showCreate, setShowCreate] = useState(false)
@@ -44,6 +46,8 @@ export function TodayDashboard() {
     shoppingSyncStatus,
     familyHeroImageUrl,
     addChore,
+    updateChore,
+    setChoreArchived,
     addShoppingItem,
     memberById,
     latestCompletionFor,
@@ -54,7 +58,7 @@ export function TodayDashboard() {
     error,
     refresh,
   } = useTodayDashboardData()
-  const { navigate, navigateHref } = useRouter()
+  const { navigate, searchParams, setQueryParam, removeQueryParam } = useRouter()
 
   if (loading) return <p className="loading">{t.loading.generic}</p>
   if (error) return <ErrorState message={error} onRetry={refresh} />
@@ -83,6 +87,9 @@ export function TodayDashboard() {
   })
   const needsAttention = pendingCompletions.length > 0 || attentionItems.length > 0
   const quickTodos = chores.filter((chore) => isQuickTodo(chore) && getChoreState(chore, latestCompletionFor(chore.id)) === 'actionable')
+  const choreParam = searchParams.get('chore')
+  const editParam = searchParams.get('edit') === '1'
+  const selectedChore = choreParam ? chores.find((chore) => chore.id === choreParam) ?? null : null
   const addressName = getLocalizedAddressName({
     firstName: currentMember.display_name,
     manualVocative: currentMember.vocative_name,
@@ -97,8 +104,17 @@ export function TodayDashboard() {
     return result
   }
 
+  function openQuickTaskEditor(taskId: string) {
+    openTodayChoreEditor(taskId, setQueryParam)
+  }
+
+  function closeQuickTaskEditor() {
+    closeTodayChoreEditor(removeQueryParam)
+  }
+
   return (
     <>
+      <div className="today-dashboard">
       <TodayHeader
         name={addressName || null}
         date={today}
@@ -109,14 +125,6 @@ export function TodayDashboard() {
       />
 
       {approvalFeedback && <p className="success approval-feedback" role="status">{approvalFeedback}</p>}
-
-      {isParentOrAdmin && <TodayQuickTodoWidget
-        tasks={quickTodos}
-        onAdd={(title) => addChore(createQuickTaskInput(title))}
-        onComplete={(taskId) => markDone(taskId)}
-        onPromote={(taskId) => navigateHref(`/chores?chore=${taskId}&edit=1`)}
-        onOpenAll={() => navigate('/chores')}
-      />}
 
       {needsAttention && (
         <section className="section today-attention-section">
@@ -153,6 +161,14 @@ export function TodayDashboard() {
         )}
       </section>
 
+      {isParentOrAdmin && <TodayQuickTodoWidget
+        tasks={quickTodos}
+        onAdd={(title) => addChore(createQuickTaskInput(title))}
+        onComplete={(taskId) => markDone(taskId)}
+        onPromote={openQuickTaskEditor}
+        onOpenAll={() => navigate('/chores')}
+      />}
+
       <TodayShoppingWidget
         items={activeShoppingItems}
         loading={shoppingLoading}
@@ -171,6 +187,7 @@ export function TodayDashboard() {
           </button>
         </section>
       )}
+      </div>
 
       {selectedEntry && (
         <CalendarEntryDetailModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} />
@@ -179,6 +196,23 @@ export function TodayDashboard() {
       {showCreate && (
         <UniversalCreateModal initialDate={today} onClose={() => setShowCreate(false)} />
       )}
+
+      {selectedChore && editParam && isParentOrAdmin && <ChoreDetailModal
+        key={`today:${selectedChore.id}:edit`}
+        chore={selectedChore}
+        assignee={selectedChore.assigned_to ? memberById(selectedChore.assigned_to) : undefined}
+        members={members}
+        currentMemberId={currentMember.id}
+        completions={completions.filter((completion) => completion.chore_id === selectedChore.id)}
+        latestCompletion={latestCompletionFor(selectedChore.id)}
+        canManage={isParentOrAdmin}
+        initialEditing
+        closeAfterSave
+        onMarkDone={markDone}
+        onUpdate={updateChore}
+        onSetArchived={setChoreArchived}
+        onClose={closeQuickTaskEditor}
+      />}
     </>
   )
 }

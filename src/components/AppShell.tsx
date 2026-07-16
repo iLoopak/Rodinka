@@ -31,10 +31,10 @@ export function AppShell() {
   const offlineBlocked = shoppingOnlyOffline && path !== '/shopping'
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${path === '/' ? ' is-today' : ''}`}>
       <header className="app-header">
         <FamilyBrand
-          familyName={familyName}
+          familyName={path === '/' ? null : familyName}
           members={familyMark.members}
           loading={familyNameLoading}
           markLoading={familyMark.loading}

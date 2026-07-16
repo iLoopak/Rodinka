@@ -43,8 +43,9 @@ export function TodayQuickTodoWidget({ tasks, onAdd, onComplete, onPromote, onOp
       setTitle('')
       setFeedback(t.today.quickTaskAdded)
     } catch (error) {
+      console.error('Failed to add a quick task from Today:', error)
       setHasError(true)
-      setFeedback(error instanceof Error ? error.message : t.errors.generic)
+      setFeedback(t.errors.generic)
     } finally {
       setBusy(null)
     }
@@ -61,9 +62,10 @@ export function TodayQuickTodoWidget({ tasks, onAdd, onComplete, onPromote, onOp
       await onComplete(task.id)
       if (mountedRef.current) setFeedback(t.today.quickTaskCompleted)
     } catch (error) {
+      console.error('Failed to complete a quick task from Today:', error)
       if (mountedRef.current) {
         setHasError(true)
-        setFeedback(error instanceof Error ? error.message : t.errors.generic)
+        setFeedback(t.errors.generic)
       }
     } finally {
       if (mountedRef.current) {

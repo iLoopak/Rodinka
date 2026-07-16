@@ -22,7 +22,7 @@ export function useTodayDashboardData() {
   const { familyHeroImageUrl } = useFamilySettings()
   const {
     chores, completions, pendingCompletions, latestCompletionFor,
-    choresLoading, choresError, addChore, reject,
+    choresLoading, choresError, addChore, updateChore, setChoreArchived, reject,
     refreshChores, refreshCompletions,
   } = useChoresData()
   const { approve, markDone } = useChoreApprovalActions()
@@ -68,6 +68,8 @@ export function useTodayDashboardData() {
     shoppingSyncStatus,
     familyHeroImageUrl,
     addChore,
+    updateChore,
+    setChoreArchived,
     addShoppingItem,
     memberById,
     latestCompletionFor,
