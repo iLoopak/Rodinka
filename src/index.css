@@ -4839,3 +4839,177 @@ button.danger-action:focus-visible:not(:disabled) {
   font-size: 0.78rem;
   font-weight: 700;
 }
+
+/* ------------------------------------------------------------------ */
+/* Wave 2: application shell and Today                                */
+/* ------------------------------------------------------------------ */
+
+.app-shell {
+  width: min(100%, 760px);
+  max-width: 760px;
+  background: color-mix(in srgb, var(--surface-canvas) 92%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--border-subtle) 65%, transparent);
+}
+
+.app-header {
+  position: relative;
+  z-index: 12;
+  min-height: calc(60px + env(safe-area-inset-top));
+  padding: calc(10px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 10px calc(16px + env(safe-area-inset-left));
+  border-bottom: 1px solid color-mix(in srgb, var(--border-default) 72%, transparent);
+  background: color-mix(in srgb, var(--surface-paper) 94%, transparent);
+  box-shadow: 0 5px 16px rgba(64, 51, 38, 0.035);
+  backdrop-filter: blur(16px);
+}
+
+.app-header .brand { gap: 10px; }
+.app-header .family-mark { flex: 0 0 auto; }
+.app-header .family-brand-lockup { font-size: 1.08rem; }
+.app-shell.is-today .app-header .household-name { display: none; }
+
+.reminder-bell {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  border-color: var(--border-default);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-low);
+}
+
+.reminder-bell.has-unread::after {
+  content: '';
+  position: absolute;
+  right: 6px;
+  bottom: 5px;
+  width: 7px;
+  height: 7px;
+  border: 2px solid var(--surface-elevated);
+  border-radius: 50%;
+  background: var(--state-danger);
+}
+
+.app-main {
+  scrollbar-gutter: stable;
+  padding: 14px 20px calc(102px + env(safe-area-inset-bottom));
+}
+
+.bottom-nav {
+  width: min(100%, 760px);
+  max-width: 760px;
+  gap: 4px;
+  padding: 7px calc(8px + env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));
+  border-top: 1px solid color-mix(in srgb, var(--border-default) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-paper) 95%, transparent);
+  box-shadow: 0 -10px 30px rgba(64, 51, 38, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.bottom-nav-item {
+  min-width: 0;
+  min-height: 58px;
+  gap: 2px;
+  padding: 5px 2px 4px;
+  border-radius: var(--radius-medium);
+  color: var(--text-muted);
+  font-size: clamp(0.64rem, 2.7vw, 0.72rem);
+  line-height: 1.15;
+}
+
+.bottom-nav-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 30px;
+  border-radius: 999px;
+}
+
+.bottom-nav-item.active {
+  background: var(--coral-soft);
+  color: var(--interactive-primary-hover);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--interactive-primary) 12%, transparent);
+  font-weight: var(--font-weight-emphasis);
+}
+
+.bottom-nav-item.active .bottom-nav-icon {
+  background: var(--surface-elevated);
+}
+
+.bottom-nav-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  width: 16px;
+  height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.today-dashboard {
+  width: 100%;
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+.today-hero {
+  min-height: 132px;
+  margin: 0 0 14px;
+  padding: 20px;
+  border-color: color-mix(in srgb, var(--brand-coral) 24%, var(--border-subtle));
+  border-radius: var(--radius-large);
+  background:
+    radial-gradient(circle at 85% 12%, color-mix(in srgb, var(--surface-elevated) 72%, transparent), transparent 9rem),
+    linear-gradient(140deg, var(--coral-soft), var(--surface-paper) 64%, color-mix(in srgb, var(--brand-honey) 12%, var(--surface-paper)));
+  box-shadow: var(--shadow-low);
+}
+
+.today-hero .home-title {
+  max-width: 18ch;
+  font-size: clamp(1.45rem, 5vw, 1.85rem);
+}
+
+.today-hero .today-date { margin-top: 7px; }
+.today-hero .today-summary { margin-top: 3px; }
+.today-family-mark { top: 18px; right: 90px; width: 74px; height: 74px; opacity: 0.38; }
+.hero-action-button { min-width: 104px; box-shadow: 0 7px 18px color-mix(in srgb, var(--interactive-primary) 20%, transparent); }
+
+.today-dashboard > .section {
+  margin-bottom: 12px;
+  padding: 18px;
+}
+
+.today-attention-section {
+  border-color: color-mix(in srgb, var(--state-warning) 22%, var(--border-subtle));
+  box-shadow: var(--shadow-low);
+}
+
+.today-program-section,
+.today-quick-todo-widget,
+.today-shopping-widget {
+  box-shadow: none;
+}
+
+@media (max-width: 390px) {
+  .app-main { padding-inline: 14px; }
+  .app-header { padding-inline: calc(12px + env(safe-area-inset-left)) calc(12px + env(safe-area-inset-right)); }
+  .app-header-actions { gap: 6px; }
+  .app-header .family-brand-lockup { font-size: 1rem; }
+  .realtime-status-badge { max-width: 88px; overflow: hidden; text-overflow: ellipsis; }
+  .today-hero { align-items: center; flex-direction: row; gap: 12px; min-height: 124px; padding: 17px; }
+  .today-hero .home-title { max-width: 13ch; }
+  .today-hero .today-summary { max-width: 27ch; }
+  .today-family-mark { right: 76px; width: 62px; height: 62px; }
+  .hero-action-button { align-self: center; min-width: 0; padding-inline: 13px; }
+  .today-dashboard > .section { padding: 16px; }
+}
+
+@media (max-width: 340px) {
+  .app-header .family-mark { width: 28px !important; height: 28px !important; }
+  .realtime-status-badge { max-width: 70px; padding-inline: 6px; }
+  .bottom-nav { gap: 1px; padding-inline: 4px; }
+  .bottom-nav-item { font-size: 0.62rem; }
+  .today-hero { align-items: flex-start; flex-direction: column; }
+  .today-hero .home-title { max-width: none; }
+  .hero-action-button { align-self: flex-start; }
+}

@@ -21,6 +21,7 @@ interface Props {
   latestCompletion: ChoreCompletion | null
   canManage: boolean
   initialEditing?: boolean
+  closeAfterSave?: boolean
   onMarkDone: (choreId: string, assignedTo?: string) => Promise<void>
   onUpdate: (choreId: string, input: ChoreInput) => Promise<void>
   onSetArchived: (choreId: string, archived: boolean) => Promise<void>
@@ -49,6 +50,7 @@ export function ChoreDetailModal({
   latestCompletion,
   canManage,
   initialEditing = false,
+  closeAfterSave = false,
   onMarkDone,
   onUpdate,
   onSetArchived,
@@ -68,7 +70,8 @@ export function ChoreDetailModal({
       await onMarkDone(chore.id, chore.assigned_to ?? undefined)
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      console.error('Failed to complete chore:', err)
+      setError(t.errors.generic)
     } finally {
       setBusy(false)
     }
@@ -76,7 +79,8 @@ export function ChoreDetailModal({
 
   async function handleSave(input: ChoreInput) {
     await onUpdate(chore.id, input)
-    setEditing(false)
+    if (closeAfterSave) onClose()
+    else setEditing(false)
   }
 
   async function handleArchiveChange() {
@@ -85,7 +89,8 @@ export function ChoreDetailModal({
     try {
       await onSetArchived(chore.id, chore.status === 'active')
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      console.error('Failed to change chore archive state:', err)
+      setError(t.errors.generic)
     } finally {
       setBusy(false)
     }

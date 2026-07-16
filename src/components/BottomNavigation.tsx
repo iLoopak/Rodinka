@@ -81,7 +81,7 @@ export function BottomNavigation() {
             className={`bottom-nav-item${active ? ' active' : ''}`}
             aria-current={active ? 'page' : undefined}
           >
-            {item.icon(active)}
+            <span className="bottom-nav-icon" aria-hidden="true">{item.icon(active)}</span>
             <span>{item.label()}</span>
           </Link>
         )
