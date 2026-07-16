@@ -69,7 +69,15 @@
 html,
 body,
 #root {
+  width: 100%;
+  height: 100%;
   min-height: 100%;
+}
+
+html,
+body,
+#root {
+  overflow: hidden;
 }
 
 body {
@@ -247,17 +255,22 @@ textarea:focus {
 
 .app-shell {
   max-width: 640px;
-  margin: 0 auto;
+  height: 100vh;
+  height: 100dvh;
   min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .app-header {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 20px 8px;
+  padding: calc(20px + env(safe-area-inset-top)) 20px 8px;
 }
 
 .brand {
@@ -312,13 +325,17 @@ textarea:focus {
 }
 
 main {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 8px 20px 48px;
-  flex: 1;
 }
 
 .app-main {
-  padding-bottom: calc(96px + env(safe-area-inset-bottom));
   width: 100%;
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ------------------------------------------------------------------ */
@@ -327,6 +344,7 @@ main {
 
 .install-banner {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 12px;
   margin: 0 20px 8px;
@@ -3382,7 +3400,7 @@ button.btn-danger:hover:not(:disabled) {
 .app-header {
   position: relative;
   gap: 12px;
-  padding: 18px 22px 10px;
+  padding: calc(18px + env(safe-area-inset-top)) 22px 10px;
 }
 
 .app-header > :last-child { flex: none; }
@@ -4493,7 +4511,7 @@ button.today-shopping-open {
 
 @media (max-width: 390px) {
   main { padding-inline: 14px; }
-  .app-header { padding-inline: 16px; }
+  .app-header { padding-inline: calc(16px + env(safe-area-inset-left)) calc(16px + env(safe-area-inset-right)); }
   .brand-lockup { gap: 5px; }
   .wordmark { font-size: 1.08rem; }
   .family-brand-lockup { font-size: 1.08rem; }
