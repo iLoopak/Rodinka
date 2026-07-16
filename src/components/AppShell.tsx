@@ -18,12 +18,17 @@ import { FamilyBrand } from './FamilyBrand'
 import { useActiveFamilyMark } from '../hooks/useActiveFamilyMark'
 import { useRealtimeStatus } from '../hooks/useRealtimeStatus'
 import { RealtimeStatusBadge } from './ui/RealtimeStatusBadge'
+import { useShopping } from '../context/shopping/ShoppingContext'
+import { t } from '../strings'
 
 export function AppShell() {
   const { path } = useRouter()
   const { familyName, familyNameLoading } = useFamilySettings()
   const familyMark = useActiveFamilyMark()
   const realtimeStatus = useRealtimeStatus()
+  const { shoppingSyncStatus } = useShopping()
+  const shoppingOnlyOffline = shoppingSyncStatus === 'offline'
+  const offlineBlocked = shoppingOnlyOffline && path !== '/shopping'
 
   return (
     <div className="app-shell">
@@ -41,19 +46,30 @@ export function AppShell() {
       </header>
       <InstallAppBanner />
       <main className="app-main">
-        {path === '/' && <TodayDashboard />}
-        {path === '/calendar' && <CalendarScreen />}
-        {path === '/plan' && <PlannerScreen />}
-        {path === '/chores' && <ChoresScreen />}
-        {path === '/activities' && <ActivitiesScreen />}
-        {path === '/health' && <HealthScreen />}
-        {path === '/meals' && <MealPlanScreen />}
+        {offlineBlocked && <OfflineModuleState />}
+        {!offlineBlocked && path === '/' && <TodayDashboard />}
+        {!offlineBlocked && path === '/calendar' && <CalendarScreen />}
+        {!offlineBlocked && path === '/plan' && <PlannerScreen />}
+        {!offlineBlocked && path === '/chores' && <ChoresScreen />}
+        {!offlineBlocked && path === '/activities' && <ActivitiesScreen />}
+        {!offlineBlocked && path === '/health' && <HealthScreen />}
+        {!offlineBlocked && path === '/meals' && <MealPlanScreen />}
         {path === '/shopping' && <ShoppingScreen />}
-        {path === '/family' && <FamilyScreen />}
-        {path === '/more' && <MoreScreen />}
-        {path === '/reminders' && <ReminderCenter />}
+        {!offlineBlocked && path === '/family' && <FamilyScreen />}
+        {!offlineBlocked && path === '/more' && <MoreScreen />}
+        {!offlineBlocked && path === '/reminders' && <ReminderCenter />}
       </main>
       <BottomNavigation />
     </div>
   )
+}
+
+function OfflineModuleState() {
+  const { navigate } = useRouter()
+  return <section className="empty-state offline-module-state">
+    <p className="eyebrow">Offline</p>
+    <h1>{t.offline.moduleTitle}</h1>
+    <p>{t.offline.moduleBody}</p>
+    <button type="button" onClick={() => navigate('/shopping')}>{t.offline.backToShopping}</button>
+  </section>
 }
