@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 const root = process.cwd()
 const css = readFileSync(join(root, 'src/index.css'), 'utf8')
 const reminderCenter = readFileSync(join(root, 'src/components/reminders/ReminderCenter.tsx'), 'utf8')
+const scrollableTabs = readFileSync(join(root, 'src/components/ui/ScrollableTabs.tsx'), 'utf8')
 
 describe('Reminder Center mobile layout contract', () => {
   it('constrains nested grids and flexible text to the available width', () => {
@@ -17,9 +18,11 @@ describe('Reminder Center mobile layout contract', () => {
     expect(css).toContain('.setting-row > span { display: grid; flex: 1 1 auto; min-width: 0;')
   })
 
-  it('fits Reminder Center tabs instead of introducing a nested side-scroll', () => {
-    expect(css).toContain('.reminder-center .tabs { width: 100%; overflow-x: visible; }')
-    expect(css).toContain('.reminder-center .tab-button { flex: 1 1 0; min-width: 0;')
+  it('uses the shared scrollable tabs primitive without compressing labels', () => {
+    expect(reminderCenter).toContain('<ScrollableTabs')
+    expect(scrollableTabs).toContain('className="tabs scrollable-tabs"')
+    expect(css).toContain('.reminder-center .scrollable-tabs { overflow-x: auto; }')
+    expect(css).toContain('.reminder-center .tab-button { flex: 0 0 auto;')
   })
 
   it('does not mask layout regressions by clipping the app wrapper', () => {

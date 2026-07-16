@@ -21,6 +21,8 @@ import { ConfirmDestructiveActionDialog, UndoToast } from './ui/DestructiveActio
 import { ShoppingItemForm } from './shopping/ShoppingItemForm'
 import { CompletionCheckbox } from './ui/CompletionCheckbox'
 import { defaultShoppingCategorySettings, type ShoppingCategorySettings } from '../utils/shoppingCategorySettings'
+import { ScreenHeader } from './ui/ScreenHeader'
+import { FilterDisclosure } from './ui/FilterDisclosure'
 
 export function ShoppingScreen() {
   const { currentMember, isParentOrAdmin } = useFamilyCore()
@@ -40,7 +42,6 @@ export function ShoppingScreen() {
   const [showHistory, setShowHistory] = useState(false)
   const [showCategorySettings, setShowCategorySettings] = useState(false)
   const [toolsOpen, setToolsOpen] = useState(false)
-  const toolsButtonRef = useRef<HTMLButtonElement>(null)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [confirmClearPurchased, setConfirmClearPurchased] = useState(false)
@@ -147,26 +148,7 @@ export function ShoppingScreen() {
 
   return (
     <>
-      <div className="screen-header shopping-header">
-        <div><h1 className="home-title">{t.shopping.title}</h1><p className="home-subtitle">{t.shopping.activeCount(visibleActiveItems.length)}</p></div>
-        <div className="header-actions">
-          <button
-            ref={toolsButtonRef}
-            type="button"
-            className={`header-icon-button btn-secondary calendar-filter-button shopping-tools-button${filterResponsible ? ' active' : ''}`}
-            aria-label={toolsOpen ? t.shopping.hideTools : t.shopping.showTools}
-            aria-expanded={toolsOpen}
-            aria-controls="shopping-tools-panel"
-            title={t.shopping.toolsLabel}
-            onClick={() => setToolsOpen((open) => !open)}
-          >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M4 6h16M7 12h10M10 18h4" />
-            </svg>
-            {filterResponsible && <span className="calendar-filter-count" aria-hidden="true">1</span>}
-          </button>
-        </div>
-      </div>
+      <ScreenHeader className="shopping-header" title={t.shopping.title} subtitle={t.shopping.activeCount(visibleActiveItems.length)} />
 
       <form className="shopping-quick-add" onSubmit={quickAdd}>
         <input value={quickName} onChange={(event) => setQuickName(event.target.value)} placeholder={t.shopping.quickAddPlaceholder} aria-label={t.shopping.quickAddPlaceholder} />
@@ -189,19 +171,10 @@ export function ShoppingScreen() {
         {shoppingSyncStatus === 'error' && <button type="button" className="link" onClick={() => void refreshShopping()}>{t.shopping.syncRetry}</button>}
       </div>}
 
-      <div
-        id="shopping-tools-panel"
-        className="calendar-filter-panel shopping-tools-panel"
-        role="region"
-        aria-label={t.shopping.toolsLabel}
-        hidden={!toolsOpen}
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') {
-            setToolsOpen(false)
-            toolsButtonRef.current?.focus()
-          }
-        }}
-      >
+      <FilterDisclosure id="shopping-tools-panel" open={toolsOpen} onOpenChange={setToolsOpen}
+        activeCount={Number(Boolean(filterResponsible))} onClear={() => setFilterResponsible('')} label={t.shopping.toolsLabel}
+        showLabel={t.shopping.showTools} hideLabel={t.shopping.hideTools}>
+      <div className="shopping-tools-panel">
         <div className="shopping-toolbar">
           <button type="button" className="btn-secondary" onClick={() => setShowCommon(true)}>{t.shopping.commonAction}</button>
           <button type="button" className="btn-secondary" onClick={() => setShowHistory(true)}>{t.shopping.historyAction}</button>
@@ -215,6 +188,7 @@ export function ShoppingScreen() {
           {filterResponsible && <button type="button" className="link shopping-filter-clear" onClick={() => setFilterResponsible('')}>{t.shopping.clearFilter}</button>}
         </div>}
       </div>
+      </FilterDisclosure>
 
       {visibleActiveItems.length === 0 && purchasedShoppingItems.length === 0 ? (
         <EmptyState title={t.shopping.emptyTitle} body={t.shopping.emptyBody} />

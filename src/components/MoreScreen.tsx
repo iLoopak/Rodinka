@@ -12,6 +12,7 @@ import { useActiveFamilyMark } from '../hooks/useActiveFamilyMark'
 import { useLanguage } from '../i18n/languageContext'
 import { FamilyHeroCropEditor } from './family/FamilyHeroCropEditor'
 import { validateFamilyHeroFile } from '../utils/familyHeroImage'
+import { ScreenHeader } from './ui/ScreenHeader'
 
 export function MoreScreen() {
   const { currentMember, userEmail } = useFamilyCore()
@@ -91,12 +92,11 @@ export function MoreScreen() {
 
   return (
     <>
-      <div className="home-header">
-        <h1 className="home-title">{t.more.title}</h1>
-      </div>
+      <ScreenHeader title={t.more.title} />
 
       <section className="section more-settings-section">
         <ul className="section-list plain-list more-settings-list">
+          <li className="more-settings-group-heading"><h2>{t.more.accountSection}</h2></li>
           <li className="more-settings-row">
             <span className="more-setting-copy">
               <span className="more-setting-label">{t.more.signedInAs}</span>
@@ -104,6 +104,7 @@ export function MoreScreen() {
               <span className="more-setting-detail">{userEmail}</span>
             </span>
           </li>
+          <li className="more-settings-group-heading"><h2>{t.more.familySection}</h2></li>
           <li className="family-settings-brand-row more-settings-row">
             <FamilyMark variant="dynamic" members={familyMark.members} size={32} loading={familyMark.loading} />
             {editingFamilyName ? (
@@ -115,7 +116,6 @@ export function MoreScreen() {
                   onChange={(event) => setFamilyNameDraft(event.target.value)}
                   disabled={familyNameSaving}
                   required
-                  autoFocus
                 />
                 <div className="more-family-name-actions">
                   <button type="submit" disabled={familyNameSaving || !familyNameDraft.trim()}>
@@ -169,6 +169,7 @@ export function MoreScreen() {
             {familyPhotoFeedback && <p className="more-setting-feedback" role="status">{familyPhotoFeedback}</p>}
             {familyPhotoError && <p className="error more-setting-feedback" role="alert">{familyPhotoError}</p>}
           </li>}
+          <li className="more-settings-group-heading"><h2>{t.more.appSection}</h2></li>
           <li className="language-setting-row more-settings-row">
             <label htmlFor="app-language">
               <span className="more-setting-value">{t.more.languageLabel}</span>

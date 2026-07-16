@@ -29,8 +29,8 @@ export function PendingApprovals({ completions, chores, memberById, onApprove, o
     setError(null)
     try {
       await onApprove(completion.id)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+    } catch {
+      setError(t.errors.generic)
     } finally {
       setBusyId(null)
       setBusyAction(null)
@@ -43,8 +43,8 @@ export function PendingApprovals({ completions, chores, memberById, onApprove, o
     setError(null)
     try {
       await onReject(completion.id)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+    } catch {
+      setError(t.errors.generic)
     } finally {
       setBusyId(null)
       setBusyAction(null)

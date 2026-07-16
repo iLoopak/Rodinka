@@ -7,6 +7,7 @@ import { DueBadge } from './ui/DueBadge'
 import { MemberAvatar } from './ui/MemberAvatar'
 import { getChoreState } from '../utils/choreState'
 import { choreRecurrenceSummary } from '../utils/choreRecurrence'
+import { CompletionCheckbox } from './ui/CompletionCheckbox'
 
 interface Props {
   chores: Chore[]
@@ -25,8 +26,8 @@ export function ChoreList({ chores, memberById, latestCompletionFor, onMarkDone,
     setError(null)
     try {
       await onMarkDone(chore.id, chore.assigned_to ?? undefined)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+    } catch {
+      setError(t.errors.generic)
     } finally {
       setMarkingId(null)
     }
@@ -49,6 +50,12 @@ export function ChoreList({ chores, memberById, latestCompletionFor, onMarkDone,
 
           return (
             <li key={chore.id}>
+              {state === 'actionable' && <CompletionCheckbox
+                checked={false}
+                label={`${t.chores.markDone}: ${chore.title}`}
+                disabled={markingId === chore.id}
+                onClick={() => handleMarkDone(chore)}
+              />}
               <MemberAvatar member={assignee} />
               <span className="row-title">{chore.title}</span>
               <span className="row-meta">{assignee?.display_name ?? t.chores.unassigned}</span>
@@ -61,11 +68,6 @@ export function ChoreList({ chores, memberById, latestCompletionFor, onMarkDone,
               <button type="button" className="btn-secondary" onClick={() => onSelect(chore)}>
                 {t.deepLinks.openDetail}
               </button>
-              {state === 'actionable' && (
-                <button onClick={() => handleMarkDone(chore)} disabled={markingId === chore.id}>
-                  {markingId === chore.id ? t.chores.markingDone : t.chores.markDone}
-                </button>
-              )}
             </li>
           )
         })}

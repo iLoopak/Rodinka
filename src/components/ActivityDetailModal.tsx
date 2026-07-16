@@ -7,9 +7,9 @@ import type { Activity } from '../hooks/useActivities'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
 import type { ActivityInput } from '../domain/activities/types'
 import { Modal } from './ui/Modal'
-import { MemberAvatar } from './ui/MemberAvatar'
 import { AddActivityForm } from './AddActivityForm'
 import { ShareLinkButton } from './ui/ShareLinkButton'
+import { PersonRoleGroup, type PersonRole } from './ui/PersonRoleGroup'
 
 interface Props {
   activity: Activity
@@ -63,26 +63,18 @@ export function ActivityDetailModal({
   const responsible = activity.responsible_member_id
     ? memberById(activity.responsible_member_id)
     : undefined
+  const peopleRoles: PersonRole[] = [
+    ...participants.map((participant) => ({ member: participant, label: t.common.participant })),
+    ...(activity.responsible_member_id ? [{ member: responsible, fallbackName: memberName(activity.responsible_member_id), label: t.common.responsibleAdult }] : []),
+  ]
 
   return (
     <Modal title={activity.title} onClose={onClose}>
       <div className="detail-view">
         <p className="row-meta">{activity.kind === 'event' ? t.activities.kindEvent : t.activities.kindClub} · {activityCategoryLabel(activity.category)}</p>
 
-        <div className="detail-people">
-          {participants.map((participant) => <div className="detail-person" key={participant.id}>
-            <MemberAvatar member={participant} />
-            <span>{participant.display_name}</span>
-          </div>)}
-          {activity.responsible_member_id ? (
-            <div className="detail-person">
-              <MemberAvatar member={responsible} />
-              <span>{responsible?.display_name ?? memberName(activity.responsible_member_id)}</span>
-            </div>
-          ) : (
-            <p className="row-meta">{t.activities.detailNoResponsible}</p>
-          )}
-        </div>
+        {peopleRoles.length > 0 && <PersonRoleGroup roles={peopleRoles} />}
+        {!activity.responsible_member_id && <p className="row-meta">{t.activities.detailNoResponsible}</p>}
 
         {scheduleParts.length > 0 && <p className="row-meta">{scheduleParts.join(' · ')}</p>}
         {activity.recurrence_type === 'one_off' && <p className="row-meta">

@@ -5023,6 +5023,32 @@ button.danger-action:focus-visible:not(:disabled) {
   min-width: 0;
 }
 
+/* ------------------------------------------------------------------ */
+/* Wave 4: shared feature-module structure                            */
+/* ------------------------------------------------------------------ */
+
+.feature-screen-header { align-items: flex-start; flex-wrap: wrap; }
+.feature-screen-header .header-actions { flex-wrap: wrap; justify-content: flex-end; }
+.feature-screen-heading { display: flex; align-items: center; min-width: 0; gap: 11px; }
+.feature-screen-heading > div { min-width: 0; }
+.feature-screen-heading .home-subtitle { max-width: 52ch; }
+
+.person-role-group { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; min-width: 0; }
+.person-role { display: flex; align-items: center; min-width: 0; gap: 8px; }
+.person-role > span { display: grid; min-width: 0; line-height: 1.25; }
+.person-role strong { overflow-wrap: anywhere; font-size: var(--font-size-meta); }
+.person-role small { color: var(--text-muted); font-size: var(--font-size-caption); }
+.person-role-group.compact { gap: 5px 10px; }
+.person-role-group.compact .person-role { gap: 5px; }
+.person-role-group.compact .person-role strong { font-weight: var(--font-weight-emphasis); }
+.section-list li > .person-role-group { flex: 1 1 190px; }
+
+@media (max-width: 390px) {
+  .feature-screen-header { gap: 10px; }
+  .feature-screen-header .header-actions { margin-left: auto; }
+  .section-list li > .person-role-group { flex-basis: 100%; padding-left: 42px; }
+}
+
 .scrollable-tabs-shell::after {
   content: '';
   position: absolute;
@@ -5089,4 +5115,49 @@ button.danger-action:focus-visible:not(:disabled) {
   .filter-disclosure-panel .filter-row { display: grid; grid-template-columns: 1fr; }
   .planner-area-grid { grid-template-columns: 1fr; }
   .planner-area-link { min-height: 96px; }
+}
+
+/* Wave 4 feature lists are grouped surfaces, not collections of raised cards. */
+.reminder-center .scrollable-tabs { overflow-x: auto; }
+.reminder-center .tab-button { flex: 0 0 auto; min-width: max-content; white-space: nowrap; }
+.reminder-list {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-large);
+  background: var(--surface-paper);
+}
+.reminder-card {
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.reminder-card:last-child { border-bottom: 0; }
+.reminder-card.unread { border-left: 4px solid var(--blue); }
+.reminder-card.important { background: var(--coral-soft); }
+.reminder-card.quiet { background: transparent; box-shadow: none; }
+.reminder-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; }
+
+.section-list.more-settings-list > .more-settings-group-heading {
+  min-height: 0;
+  padding: 20px 2px 7px;
+  border-bottom: 0;
+}
+.section-list.more-settings-list > .more-settings-group-heading:first-child { padding-top: 12px; }
+.more-settings-group-heading h2 {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-emphasis);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 390px) {
+  .feature-screen-header .header-actions { width: 100%; margin-left: 0; }
+  .feature-screen-header .header-actions > * { flex: 1 1 auto; }
+  .more-settings-row { flex-wrap: wrap; }
+  .more-family-name-edit { margin-left: 44px; }
 }
