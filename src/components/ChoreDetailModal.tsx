@@ -7,6 +7,7 @@ import { getChoreState, type ChoreState } from '../utils/choreState'
 import { choreRecurrenceSummary } from '../utils/choreRecurrence'
 import { formatFullDate } from '../utils/dueDate'
 import { Modal } from './ui/Modal'
+import { ConfirmDestructiveActionDialog, DestructiveIconButton } from './ui/DestructiveActions'
 import { MemberAvatar } from './ui/MemberAvatar'
 import { ShareLinkButton } from './ui/ShareLinkButton'
 import { AddChoreForm } from './AddChoreForm'
@@ -56,6 +57,7 @@ export function ChoreDetailModal({
   const [editing, setEditing] = useState(initialEditing)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirmArchiveOpen, setConfirmArchiveOpen] = useState(false)
   const state = getChoreState(chore, latestCompletion)
   const pending = state === 'pending'
 
@@ -78,7 +80,6 @@ export function ChoreDetailModal({
   }
 
   async function handleArchiveChange() {
-    if (chore.status === 'active' && !window.confirm(t.chores.archiveConfirm(chore.title))) return
     setBusy(true)
     setError(null)
     try {
@@ -129,11 +130,27 @@ export function ChoreDetailModal({
           {canManage && <button type="button" className="btn-secondary" onClick={() => setEditing(true)} disabled={pending || busy}>
             {t.chores.edit}
           </button>}
-          {canManage && <button type="button" className="btn-secondary danger-action" onClick={handleArchiveChange} disabled={pending || busy || (chore.status === 'archived' && state === 'done')}>
-            {chore.status === 'archived' ? t.chores.restore : t.chores.archive}
-          </button>}
+          {canManage && <DestructiveIconButton
+            label={chore.status === 'archived' ? t.chores.restore : t.chores.archive}
+            title={chore.status === 'archived' ? t.chores.restore : t.chores.archive}
+            onClick={() => setConfirmArchiveOpen(true)}
+            disabled={pending || busy || (chore.status === 'archived' && state === 'done')}
+          />}
           <ShareLinkButton route="/chores" param="chore" id={chore.id} title={chore.title} />
         </div>
+
+        <ConfirmDestructiveActionDialog
+          open={confirmArchiveOpen}
+          title={t.chores.archiveConfirm(chore.title)}
+          objectName={chore.title}
+          explanation={chore.status === 'archived' ? t.chores.restoreExplanation : t.chores.archiveExplanation}
+          consequences={[chore.status === 'archived' ? t.chores.restoreCompletedHint : t.chores.editBlockedPending]}
+          confirmLabel={chore.status === 'archived' ? t.chores.restoreAction : t.chores.archiveAction}
+          busy={busy}
+          error={error}
+          onCancel={() => setConfirmArchiveOpen(false)}
+          onConfirm={async () => { await handleArchiveChange(); setConfirmArchiveOpen(false) }}
+        />
 
         <section className="chore-history">
           <h4>{t.chores.historyTitle}</h4>

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useDroppable, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -17,6 +17,7 @@ import { EmptyState } from './ui/EmptyState'
 import { ErrorState } from './ui/ErrorState'
 import { MemberAvatar } from './ui/MemberAvatar'
 import { Modal } from './ui/Modal'
+import { ConfirmDestructiveActionDialog, UndoToast } from './ui/DestructiveActions'
 import { ShoppingItemForm } from './shopping/ShoppingItemForm'
 import { CompletionCheckbox } from './ui/CompletionCheckbox'
 import { defaultShoppingCategorySettings, type ShoppingCategorySettings } from '../utils/shoppingCategorySettings'
@@ -42,16 +43,24 @@ export function ShoppingScreen() {
   const toolsButtonRef = useRef<HTMLButtonElement>(null)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [confirmClearPurchased, setConfirmClearPurchased] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<ShoppingItem | null>(null)
+  const deleteTimerRef = useRef<number | null>(null)
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null)
+  useEffect(() => () => {
+    if (deleteTimerRef.current !== null) window.clearTimeout(deleteTimerRef.current)
+  }, [])
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 140, tolerance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
+  const visibleActiveItems = useMemo(() => pendingDelete ? activeShoppingItems.filter((item) => item.id !== pendingDelete.id) : activeShoppingItems, [activeShoppingItems, pendingDelete])
   const filteredActive = useMemo(() => filterResponsible
-    ? activeShoppingItems.filter((item) => item.responsible_member_id === filterResponsible)
-    : activeShoppingItems, [activeShoppingItems, filterResponsible])
+    ? visibleActiveItems.filter((item) => item.responsible_member_id === filterResponsible)
+    : visibleActiveItems, [visibleActiveItems, filterResponsible])
   const groups = useMemo(() => groupShoppingItems(filteredActive, draggedItemId !== null), [draggedItemId, filteredActive])
 
   async function saveShoppingOrder(movedId: string, category: ShoppingCategory, orderedIds: string[]) {
@@ -66,14 +75,14 @@ export function ShoppingScreen() {
   function handleShoppingDragEnd(event: DragEndEvent) {
     setDraggedItemId(null)
     const movedId = String(event.active.id)
-    const movedItem = activeShoppingItems.find((item) => item.id === movedId)
+    const movedItem = visibleActiveItems.find((item) => item.id === movedId)
     if (!movedItem || !event.over) return
     const overData = event.over.data.current as { type?: string; category?: ShoppingCategory } | undefined
     const targetCategory = overData?.category
     if (!targetCategory) return
     const targetId = overData.type === 'item' ? String(event.over.id) : null
     if (movedItem.category === targetCategory && targetId === movedId) return
-    const targetIds = activeShoppingItems.filter((item) => item.category === targetCategory).map((item) => item.id)
+    const targetIds = visibleActiveItems.filter((item) => item.category === targetCategory).map((item) => item.id)
     const orderedIds = movedItem.category === targetCategory && targetId
       ? arrayMove(targetIds, targetIds.indexOf(movedId), targetIds.indexOf(targetId))
       : insertIdBefore(targetIds, movedId, targetId)
@@ -102,6 +111,23 @@ export function ShoppingScreen() {
     setShowCommon(false)
   }
 
+  function scheduleDeleteShoppingItem(item: ShoppingItem) {
+    if (deleteTimerRef.current !== null) window.clearTimeout(deleteTimerRef.current)
+    setPendingDelete(item)
+    setSelectedItem(null)
+    deleteTimerRef.current = window.setTimeout(() => {
+      deleteTimerRef.current = null
+      void deleteShoppingItem(item.id).catch((err) => setFeedback(err instanceof Error ? err.message : String(err)))
+      setPendingDelete(null)
+    }, 5000)
+  }
+
+  function undoDeleteShoppingItem() {
+    if (deleteTimerRef.current !== null) window.clearTimeout(deleteTimerRef.current)
+    deleteTimerRef.current = null
+    setPendingDelete(null)
+  }
+
   async function copySession(session: ShoppingSession, selectedIds: Set<string>) {
     const selected = session.items.filter((item) => selectedIds.has(item.id))
     const result = await importShoppingItems(shoppingItemsForCopy(selected))
@@ -115,7 +141,7 @@ export function ShoppingScreen() {
   return (
     <>
       <div className="screen-header shopping-header">
-        <div><h1 className="home-title">{t.shopping.title}</h1><p className="home-subtitle">{t.shopping.activeCount(activeShoppingItems.length)}</p></div>
+        <div><h1 className="home-title">{t.shopping.title}</h1><p className="home-subtitle">{t.shopping.activeCount(visibleActiveItems.length)}</p></div>
         <div className="header-actions">
           <button
             ref={toolsButtonRef}
@@ -183,7 +209,7 @@ export function ShoppingScreen() {
         </div>}
       </div>
 
-      {activeShoppingItems.length === 0 && purchasedShoppingItems.length === 0 ? (
+      {visibleActiveItems.length === 0 && purchasedShoppingItems.length === 0 ? (
         <EmptyState title={t.shopping.emptyTitle} body={t.shopping.emptyBody} />
       ) : filteredActive.length === 0 ? (
         <EmptyState title={filterResponsible ? t.shopping.filterEmpty : t.shopping.activeEmpty} />
@@ -207,8 +233,8 @@ export function ShoppingScreen() {
             />)}
           </div>
           <DragOverlay modifiers={[snapCenterToCursor]}>
-            {draggedItemId && activeShoppingItems.find((item) => item.id === draggedItemId) && (() => {
-              const item = activeShoppingItems.find((candidate) => candidate.id === draggedItemId)!
+            {draggedItemId && visibleActiveItems.find((item) => item.id === draggedItemId) && (() => {
+              const item = visibleActiveItems.find((candidate) => candidate.id === draggedItemId)!
               return <div className="list-drag-preview quick-todo-drag-overlay">
                 <span className="list-drag-preview-handle" aria-hidden="true">⠿</span>
                 <span className="list-drag-preview-copy"><strong>{item.name}</strong><small>{formatLocalizedShoppingQuantity(item.quantity, item.unit)}</small></span>
@@ -221,14 +247,23 @@ export function ShoppingScreen() {
       {purchasedShoppingItems.length > 0 && <details className="shopping-purchased">
         <summary>{t.shopping.purchasedCount(purchasedShoppingItems.length)}</summary>
         <ul className="shopping-list purchased">{purchasedShoppingItems.map((item) => <ShoppingRow key={item.id} item={item} memberById={memberById} pending={pendingShoppingItemIds.has(item.id)} onToggle={() => toggleShoppingPurchased(item.id, false)} onEdit={() => setSelectedItem(item)} />)}</ul>
-        <button type="button" className="link" onClick={async () => { if (window.confirm(t.shopping.clearPurchasedConfirm)) await archivePurchasedShoppingItems() }}>{t.shopping.clearPurchased}</button>
+        <button type="button" className="link danger-action" onClick={() => setConfirmClearPurchased(true)}>{t.shopping.clearPurchased}</button>
       </details>}
 
       {selectedItem && <Modal title={t.shopping.editTitle} onClose={() => setSelectedItem(null)}><ShoppingItemForm
         initial={selectedItem} members={members} categorySettings={shoppingCategorySettings}
         onSubmit={async (input) => { await updateShoppingItem(selectedItem.id, input); setSelectedItem(null) }}
-        onDelete={async () => { if (window.confirm(t.shopping.deleteConfirm)) { await deleteShoppingItem(selectedItem.id); setSelectedItem(null) } }}
+        onDelete={async () => scheduleDeleteShoppingItem(selectedItem)}
       /></Modal>}
+      {pendingDelete && <UndoToast message={t.shopping.removedWithUndo(pendingDelete.name)} onUndo={undoDeleteShoppingItem} />}
+      <ConfirmDestructiveActionDialog
+        open={confirmClearPurchased}
+        title={t.shopping.clearPurchasedConfirm}
+        explanation={t.shopping.clearPurchasedExplanation}
+        confirmLabel={t.shopping.clearPurchasedAction}
+        onCancel={() => setConfirmClearPurchased(false)}
+        onConfirm={async () => { await archivePurchasedShoppingItems(); setConfirmClearPurchased(false) }}
+      />
       {showCommon && <CommonItemsModal items={commonShoppingItems} onAdd={addTemplate} onClose={() => setShowCommon(false)} />}
       {showHistory && <HistoryModal sessions={shoppingSessions} onCopy={copySession} onClose={() => setShowHistory(false)} />}
       {showCategorySettings && <ShoppingCategorySettingsModal

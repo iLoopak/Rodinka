@@ -4,6 +4,7 @@ import { SHOPPING_CATEGORIES, SHOPPING_UNITS, validateShoppingInput, type Shoppi
 import { shoppingCategoryLabel, shoppingUnitLabel } from '../../utils/shoppingLabels'
 import type { FamilyMember } from '../../hooks/useFamilyMembers'
 import type { ShoppingCategorySettings } from '../../utils/shoppingCategorySettings'
+import { DestructiveIconButton } from '../ui/DestructiveActions'
 
 interface Props {
   initial?: ShoppingItem
@@ -64,8 +65,10 @@ export function ShoppingItemForm({ initial, members, categorySettings, onSubmit,
         {members.map((member) => <option key={member.id} value={member.id}>{member.display_name}</option>)}
       </select></label>
       {members.length === 0 && <p className="empty-state">{t.shopping.noResponsibleMembers}</p>}
-      <button type="submit" disabled={busy}>{busy ? t.shopping.saving : t.shopping.save}</button>
-      {onDelete && <button type="button" className="btn-secondary shopping-delete-action" onClick={onDelete} disabled={busy}>{t.shopping.delete}</button>}
+      <div className="modal-footer">
+        {onDelete && <DestructiveIconButton label={t.shopping.delete} onClick={() => { void onDelete() }} disabled={busy} />}
+        <button type="submit" disabled={busy}>{busy ? t.shopping.saving : t.shopping.save}</button>
+      </div>
       {error && <p className="error" role="alert">{error}</p>}
     </form>
   )
