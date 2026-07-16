@@ -14,8 +14,8 @@ describe('FamilyBrand', () => {
     expect(html).toContain('class="wordmark">Rodinka</span>')
     expect(html).toContain('title="Novákovi">Novákovi</span>')
     expect(html).toContain('data-member-count="2"')
-    expect(html).toContain('var(--member-sky)')
-    expect(html).toContain('var(--member-honey)')
+    expect(html).toContain('var(--brand-blue)')
+    expect(html).toContain('var(--brand-honey)')
   })
 
   it('updates naturally when a different active family is rendered', () => {
@@ -24,9 +24,9 @@ describe('FamilyBrand', () => {
     expect(first).toContain('Novákovi')
     expect(second).toContain('Svobodovi')
     expect(second).not.toContain('Novákovi')
-    expect(first).toContain('var(--member-sky)')
-    expect(second).toContain('var(--member-honey)')
-    expect(second).not.toContain('var(--member-sky)')
+    expect(first).toContain('var(--brand-blue)')
+    expect(second).toContain('var(--brand-honey)')
+    expect(second).not.toContain('var(--brand-blue)')
   })
 
   it('shows only the product while loading or when the family name is unusable', () => {
@@ -36,7 +36,7 @@ describe('FamilyBrand', () => {
     const duplicate = renderToStaticMarkup(createElement(FamilyBrand, { familyName: 'Rodinka', members: [firstMember] }))
     expect(loading).toContain('aria-label="Rodinka"')
     expect(loading).not.toContain('Previous family')
-    expect(loading).not.toContain('var(--member-sky)')
+    expect(loading).not.toContain('var(--brand-blue)')
     expect(loading).not.toContain('data-member-count')
     expect(duplicate.match(/Rodinka/g)).toHaveLength(2) // aria-label plus visible wordmark
   })
@@ -47,6 +47,6 @@ describe('FamilyBrand', () => {
     }))
     expect(html).toContain('aria-label="Rodinka Novákovi"')
     expect(html).toContain('Novákovi</span>')
-    expect(html).not.toContain('var(--member-sky)')
+    expect(html).not.toContain('var(--brand-blue)')
   })
 })

@@ -1,15 +1,17 @@
-import { useId } from 'react'
-import type { FamilyMember } from '../hooks/useFamilyMembers'
-import { memberColorVar } from '../utils/memberColor'
+import type { FamilyMember, MemberRole } from '../hooks/useFamilyMembers'
+import { markColorVar } from '../utils/memberColor'
 import {
   createFamilyMarkModel,
   createFamilyMarkSlots,
+  createStaticFamilyMarkSlots,
+  familyMarkPetalPath,
+  familyMarkPetalTransform,
   FAMILY_MARK_VIEW_BOX_SIZE,
   STATIC_FAMILY_MARK_COLORS,
   type FamilyMarkSlot,
 } from '../utils/familyMark'
 
-export type FamilyMarkMember = Pick<FamilyMember, 'id' | 'color_key'>
+export type FamilyMarkMember = Pick<FamilyMember, 'id' | 'color_key'> & { role?: MemberRole }
 
 interface SharedProps {
   size?: number
@@ -33,16 +35,11 @@ interface DynamicProps extends SharedProps {
 export type FamilyMarkProps = StaticProps | DynamicProps
 
 function Petal({ slot, fill, className }: { slot: FamilyMarkSlot; fill: string; className?: string }) {
-  const radius = slot.size * 0.34
-  return <rect
+  return <path
     className={className}
-    x={slot.cx - slot.size / 2}
-    y={slot.cy - slot.size / 2}
-    width={slot.size}
-    height={slot.size}
-    rx={radius}
+    d={familyMarkPetalPath(slot)}
+    transform={familyMarkPetalTransform(slot)}
     fill={fill}
-    transform={`rotate(${slot.rotation} ${slot.cx} ${slot.cy})`}
   />
 }
 
@@ -55,10 +52,7 @@ export function FamilyMark(props: FamilyMarkProps) {
   } = props
   const dynamic = props.variant === 'dynamic'
   const loading = dynamic && Boolean(props.loading)
-  const members = dynamic && !loading ? props.members : []
-  const model = createFamilyMarkModel(members)
-  const staticSlots = createFamilyMarkSlots(4)
-  const gradientId = `family-mark-${useId().replace(/:/g, '')}`
+  const model = createFamilyMarkModel(dynamic && !loading ? props.members : [])
   const classes = ['family-mark', `family-mark-${props.variant}`, loading ? 'is-loading' : '', className ?? '']
     .filter(Boolean)
     .join(' ')
@@ -78,40 +72,25 @@ export function FamilyMark(props: FamilyMarkProps) {
     data-member-count={dynamic && !loading ? props.members.length : undefined}
     {...accessibility}
   >
-    {props.variant === 'static' && staticSlots.map((slot, index) => <Petal
+    {props.variant === 'static' && createStaticFamilyMarkSlots().map((slot, index) => <Petal
       key={STATIC_FAMILY_MARK_COLORS[index]}
       slot={slot}
       fill={STATIC_FAMILY_MARK_COLORS[index]}
       className="family-mark-petal"
     />)}
 
-    {loading && <>
-      <circle className="family-mark-loading-ring" cx="32" cy="32" r="22" />
-      <Petal slot={createFamilyMarkSlots(1)[0]} fill="var(--neutral-soft)" className="family-mark-loading-petal" />
-    </>}
+    {loading && createFamilyMarkSlots(3).map((slot, index) => <Petal
+      key={index}
+      slot={slot}
+      fill="var(--neutral-soft)"
+      className="family-mark-petal family-mark-loading-petal"
+    />)}
 
-    {dynamic && !loading && <>
-      {model.overflowMembers.length > 0 && <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-          {model.overflowMembers.map((member, index) => <stop
-            key={member.id}
-            offset={model.overflowMembers.length === 1 ? 0 : index / (model.overflowMembers.length - 1)}
-            stopColor={`var(${memberColorVar(member)})`}
-          />)}
-        </linearGradient>
-      </defs>}
-      {model.visibleMembers.map((member, index) => <Petal
-        key={member.id}
-        slot={model.slots[index]}
-        fill={`var(${memberColorVar(member)})`}
-        className="family-mark-petal"
-      />)}
-      {model.overflowMembers.length > 0 && <>
-        <Petal slot={model.slots[5]} fill={`url(#${gradientId})`} className="family-mark-petal family-mark-overflow" />
-        {size >= 32 && <text className="family-mark-overflow-label" x={model.slots[5].cx} y={model.slots[5].cy}>
-          +{model.overflowMembers.length}
-        </text>}
-      </>}
-    </>}
+    {dynamic && !loading && model.members.map((member, index) => <Petal
+      key={member.id}
+      slot={model.slots[index]}
+      fill={`var(${markColorVar(member)})`}
+      className="family-mark-petal"
+    />)}
   </svg>
 }

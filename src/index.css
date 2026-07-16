@@ -94,6 +94,9 @@
   --shadow-card: var(--shadow-low);
   --shadow-float: var(--shadow-elevated);
   --font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+  /* The landing page's serif accent. System fonts only: no runtime download,
+     works offline. Reserved for genuinely human, non-functional phrases. */
+  --font-family-accent: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
   --font-size-page-title: clamp(1.55rem, 5vw, 1.9rem);
   --font-size-section-title: 1.12rem;
   --font-size-subsection-title: 1rem;
@@ -359,14 +362,6 @@ textarea:disabled {
   overflow: hidden;
 }
 
-.app-header {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: space-between;
-  padding: calc(20px + env(safe-area-inset-top)) 20px 8px;
-}
-
 .app-header-actions {
   display: flex;
   align-items: center;
@@ -434,12 +429,13 @@ textarea:disabled {
 
 .brand-lockup .wordmark { flex: none; }
 
+/* Matches the landing page wordmark: Manrope 800, tightly tracked. */
 .family-brand-lockup {
   font-family: var(--font-family);
   font-size: 1.2rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-emphasis);
   line-height: 1.25;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.035em;
 }
 
 .family-brand-lockup .wordmark,
@@ -452,10 +448,10 @@ textarea:disabled {
 }
 
 .wordmark {
-  font-weight: 700;
+  font-weight: var(--font-weight-emphasis);
   font-size: 1.2rem;
   color: var(--ink);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.035em;
 }
 
 main {
@@ -713,9 +709,78 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
   line-height: var(--line-height-meta);
 }
 
-.today-attention-section > h2,
-.today-program-section > h2 {
-  margin-bottom: 12px;
+/* Today's section system.
+   The heading sits directly on the warm canvas and exactly one paper surface
+   wraps the content, so no module is a bordered box inside a bordered box.
+   Hierarchy comes from type, whitespace and surface — not from outlines. */
+.today-section {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 26px;
+}
+
+.today-section-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.today-section-title {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.2rem;
+  font-weight: var(--font-weight-emphasis);
+  line-height: var(--line-height-tight);
+  letter-spacing: -0.03em;
+}
+
+.today-section-count {
+  color: var(--ink-muted);
+  font-size: var(--font-size-meta);
+  line-height: var(--line-height-meta);
+}
+
+/* One surface, one hairline. Elevation is reserved for the primary module. */
+.today-panel {
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--paper);
+}
+
+.today-panel.is-primary {
+  box-shadow: var(--shadow-card);
+}
+
+/* Secondary modules stay lighter: a tinted surface carries the module accent
+   instead of a full-strength pastel fill inside a coloured outline. */
+.today-panel.is-secondary {
+  background: var(--paper);
+  padding: 4px 14px 12px;
+}
+
+.today-panel.is-tasks {
+  background: color-mix(in srgb, var(--brand-mint) 7%, var(--paper));
+  border-color: color-mix(in srgb, var(--brand-mint) 24%, var(--border-subtle));
+}
+
+.today-panel.is-shopping {
+  background: color-mix(in srgb, var(--brand-honey) 8%, var(--paper));
+  border-color: color-mix(in srgb, var(--brand-honey) 26%, var(--border-subtle));
+}
+
+.today-panel.is-attention {
+  padding: 16px;
+  background: color-mix(in srgb, var(--brand-honey) 9%, var(--paper));
+  border-color: color-mix(in srgb, var(--state-warning) 22%, var(--border-subtle));
+}
+
+.today-panel.is-quiet {
+  padding: 16px;
+  border-style: dashed;
+  background: transparent;
 }
 
 .today-attention-group + .today-attention-group {
@@ -731,7 +796,6 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
   text-transform: uppercase;
 }
 
-.today-agenda-list,
 .today-attention-list {
   display: flex;
   flex-direction: column;
@@ -741,23 +805,44 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
   list-style: none;
 }
 
-.today-agenda-item {
-  display: grid;
-  grid-template-columns: minmax(48px, auto) auto auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  min-height: 68px;
-  padding: 11px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-row);
-  background: var(--canvas);
+/* Rows share the panel's surface and are separated by dividers rather than
+   each being its own card floating inside another card. */
+.today-agenda-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
+.today-agenda-item {
+  display: grid;
+  grid-template-columns: minmax(44px, auto) auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 60px;
+  padding: 10px 14px;
+}
+
+.today-agenda-item + .today-agenda-item {
+  border-top: 1px solid color-mix(in srgb, var(--border-subtle) 80%, transparent);
+}
+
+/* Rows sit flush inside a clipped panel, so the focus ring has to be drawn
+   inside the row or the panel's overflow would shave it off. Scoped to the
+   panel to outrank the generic .clickable-row:focus-visible offset. */
+.today-panel .today-agenda-item:focus-visible {
+  outline-offset: -3px;
+  border-radius: var(--radius-row);
+}
+
+/* The time is the row's anchor: dark ink, tabular, confidently weighted. */
 .today-agenda-when {
   color: var(--ink);
-  font-size: var(--font-size-meta);
-  font-weight: var(--font-weight-strong);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-emphasis);
+  letter-spacing: -0.02em;
 }
 
 .today-agenda-copy,
@@ -772,16 +857,18 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
 .today-attention-title {
   overflow-wrap: anywhere;
   color: var(--ink);
-  font-size: var(--font-size-item-title);
+  font-size: var(--font-size-subsection-title);
   font-weight: var(--font-weight-strong);
   line-height: var(--line-height-tight);
+  letter-spacing: -0.015em;
 }
 
+/* An ordinary functional label — not an eyebrow. Left in sentence case and
+   kept quiet so the title clearly outranks it. */
 .today-agenda-type {
   color: var(--ink-muted);
   font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-strong);
-  text-transform: uppercase;
+  font-weight: var(--font-weight-medium);
 }
 
 .today-agenda-people,
@@ -3536,16 +3623,7 @@ button.btn-danger:hover:not(:disabled) {
   box-shadow: 0 0 70px rgba(88, 65, 47, 0.045);
 }
 
-.app-header {
-  position: relative;
-  gap: 12px;
-  padding: calc(18px + env(safe-area-inset-top)) 22px 10px;
-}
-
 .app-header > :last-child { flex: none; }
-
-.brand { gap: 9px; }
-.wordmark { font-size: 1.25rem; letter-spacing: -0.025em; }
 
 .family-mark {
   display: block;
@@ -3555,26 +3633,8 @@ button.btn-danger:hover:not(:disabled) {
   overflow: visible;
 }
 
-.family-mark-loading-ring {
-  fill: none;
-  stroke: var(--border);
-  stroke-width: 4;
-}
-
 .family-mark-loading-petal {
   opacity: 0.88;
-}
-
-.family-mark-overflow-label {
-  fill: #fff;
-  font-family: var(--font-family);
-  font-size: 7px;
-  font-weight: 800;
-  text-anchor: middle;
-  dominant-baseline: central;
-  paint-order: stroke;
-  stroke: rgba(38, 51, 59, 0.2);
-  stroke-width: 0.75px;
 }
 
 .family-screen-mark {
@@ -3778,6 +3838,10 @@ button.btn-danger:hover:not(:disabled) {
   background: var(--neutral-soft);
 }
 
+/* Two deliberate hero modes.
+   Without a photo: a warm paper panel carrying the family mark as its one
+   graphic detail. With a photo: the photo itself, readable because a scrim
+   sits *behind the text only* — never across the whole image. */
 .today-hero {
   position: relative;
   isolation: isolate;
@@ -3786,68 +3850,69 @@ button.btn-danger:hover:not(:disabled) {
   justify-content: space-between;
   gap: 18px;
   overflow: hidden;
-  min-height: 172px;
-  margin: 4px 0 18px;
-  padding: 24px;
-  border: 1px solid rgba(235, 195, 181, 0.62);
-  border-radius: 28px;
+  min-height: 150px;
+  margin: 2px 0 22px;
+  padding: 20px;
+  border: 1px solid color-mix(in srgb, var(--brand-coral) 22%, var(--border-subtle));
+  border-radius: var(--radius-large);
   background:
-    radial-gradient(circle at 78% 15%, rgba(255, 255, 255, 0.72), transparent 11rem),
-    linear-gradient(135deg, #fbe1d8 0%, #fff2e8 50%, #f8efe1 100%);
-  box-shadow: 0 15px 36px rgba(137, 84, 57, 0.09);
-}
-
-.today-hero::after {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  width: 190px;
-  height: 190px;
-  right: -75px;
-  bottom: -105px;
-  border: 34px solid rgba(233, 108, 98, 0.075);
-  border-radius: 50%;
+    radial-gradient(circle at 82% 14%, color-mix(in srgb, var(--surface-elevated) 70%, transparent), transparent 9rem),
+    linear-gradient(140deg, var(--coral-soft) 0%, var(--surface-paper) 62%, color-mix(in srgb, var(--brand-honey) 14%, var(--surface-paper)) 100%);
+  box-shadow: var(--shadow-card);
 }
 
 .today-hero-copy { min-width: 0; }
-.today-hero .home-title { max-width: 13ch; }
-.today-hero .today-date { color: var(--ink); margin-top: 10px; }
-.today-hero .today-summary { color: var(--ink-muted); font-size: 0.84rem; }
+.today-hero .home-title { max-width: 15ch; }
+.today-hero .today-date { color: var(--ink); margin-top: 8px; }
+.today-hero .today-summary { color: var(--ink-muted); font-size: 0.84rem; margin-top: 2px; }
 
 .hero-action-button {
   flex: 0 0 auto;
   min-height: 44px;
+  min-width: 104px;
   padding: 10px 16px;
   border-radius: 999px;
-  box-shadow: 0 8px 20px rgba(151, 48, 43, 0.18);
+  box-shadow: 0 7px 18px color-mix(in srgb, var(--interactive-primary) 22%, transparent);
 }
 
-.today-family-mark {
-  position: absolute;
-  z-index: -1;
-  right: 30px;
-  top: 25px;
-  width: 96px;
-  height: 96px;
-  opacity: 0.16;
-}
-
-.today-hero.has-family-photo {
-  background: #f8efe1;
-}
-
-.today-hero.has-family-photo::before {
+/* The single restrained graphic detail of the no-photo fallback: one soft
+   honey shape bleeding off the corner, echoing the disc behind the landing
+   page's mockup. Abstract on purpose — repeating the logo here made the
+   fallback read as a placeholder for the missing photo. */
+.today-hero:not(.has-family-photo)::after {
   content: '';
   position: absolute;
-  z-index: 1;
-  inset: 0;
-  background:
-    linear-gradient(90deg, rgba(255, 247, 240, 0.97) 0%, rgba(255, 247, 240, 0.9) 42%, rgba(255, 247, 240, 0.5) 72%, rgba(255, 247, 240, 0.3) 100%),
-    linear-gradient(0deg, rgba(248, 225, 216, 0.28), rgba(255, 242, 232, 0.12));
-  pointer-events: none;
+  z-index: -1;
+  right: -52px;
+  bottom: -66px;
+  width: 196px;
+  height: 196px;
+  border-radius: 56% 44% 47% 53% / 51% 49% 51% 49%;
+  background: radial-gradient(
+    circle at 36% 30%,
+    color-mix(in srgb, var(--brand-honey) 26%, transparent) 0%,
+    color-mix(in srgb, var(--brand-honey) 19%, transparent) 62%,
+    color-mix(in srgb, var(--brand-honey) 14%, transparent) 100%
+  );
 }
 
-.today-hero.has-family-photo::after { display: none; }
+/* The stored image is already cropped to 16:7 by the hero crop editor, so
+   matching that ratio renders exactly the crop the family chose. The cap stops
+   it becoming a billboard on wide screens. */
+/* Copy sits bottom-left inside the scrim; the action goes top-right, over the
+   open part of the frame. They never compete for one row, and the control
+   never lands on the people. */
+.today-hero.has-family-photo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  aspect-ratio: 16 / 7;
+  min-height: 150px;
+  max-height: 230px;
+  padding: 0;
+  border-color: color-mix(in srgb, var(--ink) 14%, transparent);
+  background: var(--surface-subtle);
+}
 
 .today-hero-photo {
   position: absolute;
@@ -3856,11 +3921,79 @@ button.btn-danger:hover:not(:disabled) {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 38%;
+}
+
+/* Two-part scrim. A gentle wash grounds the bottom edge, and a soft pool
+   anchored behind the copy itself (below) carries the actual contrast. The
+   photo's upper half — where faces live — stays untouched. */
+.today-hero.has-family-photo::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(22, 31, 25, 0.72) 0%,
+    rgba(22, 31, 25, 0.6) 35%,
+    rgba(22, 31, 25, 0.28) 58%,
+    rgba(22, 31, 25, 0) 78%
+  );
+  pointer-events: none;
 }
 
 .today-hero.has-family-photo > :not(.today-hero-photo) {
   position: relative;
   z-index: 2;
+}
+
+/* The localised pool. Painted across the whole hero so it has no box edges to
+   clip against, but anchored bottom-left so it only deepens behind the copy
+   and fades out before the open top-right of the frame. */
+.today-hero.has-family-photo::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: radial-gradient(
+    88% 105% at 0% 100%,
+    rgba(20, 28, 22, 0.8) 0%,
+    rgba(20, 28, 22, 0.66) 45%,
+    rgba(20, 28, 22, 0.3) 72%,
+    rgba(20, 28, 22, 0) 90%
+  );
+  pointer-events: none;
+}
+
+.today-hero.has-family-photo .today-hero-copy {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: end;
+  padding: 0 12px 16px 18px;
+}
+
+.today-hero.has-family-photo .hero-action-button {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  justify-self: end;
+  margin: 14px 14px 0 0;
+}
+
+.today-hero.has-family-photo .home-title,
+.today-hero.has-family-photo .today-date {
+  color: #fff;
+  text-shadow: 0 1px 12px rgba(20, 28, 22, 0.4);
+}
+
+.today-hero.has-family-photo .today-summary {
+  color: rgba(255, 255, 255, 0.88);
+  text-shadow: 0 1px 10px rgba(20, 28, 22, 0.4);
+}
+
+.today-hero.has-family-photo .page-eyebrow {
+  color: #ffd9a8;
+  text-shadow: 0 1px 10px rgba(20, 28, 22, 0.45);
 }
 
 .today-quick-add-field {
@@ -3934,19 +4067,6 @@ button.btn-danger:hover:not(:disabled) {
     min-width: 44px;
     padding-inline: 10px;
   }
-}
-
-.today-quick-todo-widget {
-  border-color: var(--category-tasks-border);
-  background: linear-gradient(145deg, var(--category-tasks-soft), rgba(255, 253, 249, 0.96));
-  box-shadow: 0 10px 26px rgba(69, 105, 84, 0.07);
-}
-
-.today-quick-todo-header {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  margin-bottom: 11px;
 }
 
 .today-quick-todo-heading {
@@ -4112,13 +4232,7 @@ button.today-quick-todo-more {
   font-size: var(--font-size-action);
 }
 
-.today-attention-section {
-  border-color: #ead8b8;
-  background: linear-gradient(145deg, #fffaf0, #fbf1df);
-  box-shadow: 0 10px 28px rgba(132, 94, 39, 0.07);
-}
-
-.today-attention-section > h2::before {
+.today-attention-section > .today-section-title::before {
   content: '';
   display: inline-block;
   width: 9px;
@@ -4130,23 +4244,22 @@ button.today-quick-todo-more {
   vertical-align: 2px;
 }
 
-.today-attention-link,
-.today-agenda-item {
+.today-attention-link {
   border-color: transparent;
   background: rgba(255, 255, 255, 0.68);
-  box-shadow: 0 3px 12px rgba(91, 67, 48, 0.04);
-  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  transition: background var(--motion-fast) var(--motion-ease);
 }
 
-.today-attention-link:hover,
-.today-agenda-item:hover {
-  transform: translateY(-1px);
+.today-attention-link:hover {
   background: var(--paper-raised);
-  box-shadow: 0 8px 18px rgba(91, 67, 48, 0.08);
 }
 
-.today-program-section {
-  background: linear-gradient(160deg, rgba(255, 253, 249, 0.96), rgba(250, 244, 236, 0.92));
+.today-agenda-item {
+  transition: background var(--motion-fast) var(--motion-ease);
+}
+
+.today-agenda-item:hover {
+  background: color-mix(in srgb, var(--surface-subtle) 55%, transparent);
 }
 
 .today-program-empty {
@@ -4164,10 +4277,14 @@ button.today-quick-todo-more {
   gap: 3px;
 }
 
+/* The one serif moment on Today: a human sentence in an exceptional empty
+   state, never a button, label, date or operational heading. */
 .today-program-empty-copy strong {
   color: var(--ink);
-  font-size: var(--font-size-item-title);
-  font-weight: var(--font-weight-strong);
+  font-family: var(--font-family-accent);
+  font-size: 1.16rem;
+  font-style: italic;
+  font-weight: 400;
   line-height: var(--line-height-tight);
 }
 
@@ -4197,22 +4314,6 @@ button.today-program-empty-action {
   button.today-program-empty-action {
     padding-left: 4px;
   }
-}
-
-.today-shopping-widget {
-  border-color: var(--category-family-border);
-  background: linear-gradient(145deg, var(--category-family-soft), rgba(255, 253, 249, 0.96));
-  box-shadow: 0 10px 26px rgba(82, 104, 72, 0.07);
-}
-
-.today-shopping-header {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-}
-
-.today-shopping-widget > .today-quick-add-field {
-  margin-top: 11px;
 }
 
 .today-shopping-icon {
@@ -4685,7 +4786,8 @@ button.today-shopping-open {
 }
 
 @media (min-width: 600px) {
-  .today-hero { min-height: 190px; padding: 28px; }
+  .today-hero { min-height: 176px; padding: 26px; }
+  .today-hero.has-family-photo { min-height: 0; padding: 0; }
 }
 
 @media (max-width: 390px) {
@@ -4695,9 +4797,6 @@ button.today-shopping-open {
   .wordmark { font-size: 1.08rem; }
   .family-brand-lockup { font-size: 1.08rem; }
   .household-name { max-width: min(42vw, 150px); }
-  .today-hero { align-items: flex-start; flex-direction: column; min-height: 0; padding: 20px; }
-  .today-hero .home-title { max-width: none; }
-  .hero-action-button { align-self: flex-start; }
   .month-grid { padding: 7px; }
   .month-grid-day { min-height: 54px; padding-inline: 0; }
   .month-grid-indicator { width: 13px; height: 13px; }
@@ -4873,30 +4972,46 @@ button.danger-action:focus-visible:not(:disabled) {
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--border-subtle) 65%, transparent);
 }
 
+/* The one authoritative header rule. Kept short: the brand carries it, and a
+   hairline is enough separation from the scrolling content beneath. */
 .app-header {
   position: relative;
   z-index: 12;
-  min-height: calc(60px + env(safe-area-inset-top));
-  padding: calc(10px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 10px calc(16px + env(safe-area-inset-left));
-  border-bottom: 1px solid color-mix(in srgb, var(--border-default) 72%, transparent);
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: calc(52px + env(safe-area-inset-top));
+  padding: calc(6px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 6px calc(16px + env(safe-area-inset-left));
+  border-bottom: 1px solid color-mix(in srgb, var(--border-default) 60%, transparent);
   background: color-mix(in srgb, var(--surface-paper) 94%, transparent);
-  box-shadow: 0 5px 16px rgba(64, 51, 38, 0.035);
   backdrop-filter: blur(16px);
 }
 
-.app-header .brand { gap: 10px; }
-.app-header .family-mark { flex: 0 0 auto; }
-.app-header .family-brand-lockup { font-size: 1.08rem; }
-.app-shell.is-today .app-header .household-name { display: none; }
+.app-header .brand { gap: 9px; }
+.app-header .family-mark { flex: 0 0 auto; margin-left: -4px; }
 
+/* Findable, not a floating bubble: the container only appears on interaction. */
 .reminder-bell {
   width: 44px;
   min-width: 44px;
   height: 44px;
   min-height: 44px;
-  border-color: var(--border-default);
-  background: var(--surface-elevated);
-  box-shadow: var(--shadow-low);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  transition: background var(--motion-fast) var(--motion-ease);
+}
+
+.reminder-bell:hover {
+  background: color-mix(in srgb, var(--surface-subtle) 80%, transparent);
+}
+
+.reminder-bell.important {
+  border-color: transparent;
+  background: var(--coral-soft);
 }
 
 .reminder-bell.has-unread::after {
@@ -4974,43 +5089,15 @@ button.danger-action:focus-visible:not(:disabled) {
   margin-inline: auto;
 }
 
-.today-hero {
-  min-height: 132px;
-  margin: 0 0 14px;
-  padding: 20px;
-  border-color: color-mix(in srgb, var(--brand-coral) 24%, var(--border-subtle));
-  border-radius: var(--radius-large);
-  background:
-    radial-gradient(circle at 85% 12%, color-mix(in srgb, var(--surface-elevated) 72%, transparent), transparent 9rem),
-    linear-gradient(140deg, var(--coral-soft), var(--surface-paper) 64%, color-mix(in srgb, var(--brand-honey) 12%, var(--surface-paper)));
-  box-shadow: var(--shadow-low);
-}
-
 .today-hero .home-title {
-  max-width: 18ch;
   font-size: clamp(1.45rem, 5vw, 1.85rem);
 }
-
-.today-hero .today-date { margin-top: 7px; }
-.today-hero .today-summary { margin-top: 3px; }
-.today-family-mark { top: 18px; right: 90px; width: 74px; height: 74px; opacity: 0.38; }
-.hero-action-button { min-width: 104px; box-shadow: 0 7px 18px color-mix(in srgb, var(--interactive-primary) 20%, transparent); }
 
 .today-dashboard > .section {
   margin-bottom: 12px;
   padding: 18px;
 }
 
-.today-attention-section {
-  border-color: color-mix(in srgb, var(--state-warning) 22%, var(--border-subtle));
-  box-shadow: var(--shadow-low);
-}
-
-.today-program-section,
-.today-quick-todo-widget,
-.today-shopping-widget {
-  box-shadow: none;
-}
 
 @media (max-width: 390px) {
   .app-main { padding-inline: 14px; }
@@ -5018,12 +5105,30 @@ button.danger-action:focus-visible:not(:disabled) {
   .app-header-actions { gap: 6px; }
   .app-header .family-brand-lockup { font-size: 1rem; }
   .realtime-status-badge { max-width: 88px; overflow: hidden; text-overflow: ellipsis; }
-  .today-hero { align-items: center; flex-direction: row; gap: 12px; min-height: 124px; padding: 17px; }
-  .today-hero .home-title { max-width: 13ch; }
-  .today-hero .today-summary { max-width: 27ch; }
-  .today-family-mark { right: 76px; width: 62px; height: 62px; }
-  .hero-action-button { align-self: center; min-width: 0; padding-inline: 13px; }
   .today-dashboard > .section { padding: 16px; }
+}
+
+/* Narrow phones: let the hero reorganise into a column instead of squeezing
+   greeting and action into one row — long Czech names need the full width. */
+@media (max-width: 430px) {
+  .today-hero {
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 14px;
+    min-height: 168px;
+  }
+
+  .today-hero .home-title { max-width: none; }
+  .hero-action-button { align-self: flex-start; }
+
+  /* The photo hero keeps its own grid: copy and action are already on
+     separate rows, so there is nothing to unstack. */
+  .today-hero.has-family-photo {
+    aspect-ratio: auto;
+    min-height: 178px;
+    max-height: none;
+  }
 }
 
 @media (max-width: 340px) {
@@ -5031,9 +5136,6 @@ button.danger-action:focus-visible:not(:disabled) {
   .realtime-status-badge { max-width: 70px; padding-inline: 6px; }
   .bottom-nav { gap: 1px; padding-inline: 4px; }
   .bottom-nav-item { font-size: 0.62rem; }
-  .today-hero { align-items: flex-start; flex-direction: column; }
-  .today-hero .home-title { max-width: none; }
-  .hero-action-button { align-self: flex-start; }
 }
 
 /* ------------------------------------------------------------------ */

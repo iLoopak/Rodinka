@@ -1,7 +1,12 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { createFamilyMarkSlots, STATIC_FAMILY_MARK_COLORS } from './utils/familyMark'
+import {
+  createStaticFamilyMarkSlots,
+  familyMarkPetalPath,
+  familyMarkPetalTransform,
+  STATIC_FAMILY_MARK_COLORS,
+} from './utils/familyMark'
 
 const root = process.cwd()
 const read = (path: string) => readFileSync(join(root, path), 'utf8')
@@ -27,7 +32,6 @@ describe('family brand visual contract', () => {
       ['src/components/AuthScreen.tsx', 'variant="static"'],
       ['src/components/OnboardingScreen.tsx', 'variant="static"'],
       ['src/components/FamilyBrand.tsx', 'variant="dynamic"'],
-      ['src/components/TodayDashboard.tsx', 'variant="dynamic"'],
       ['src/components/FamilyScreen.tsx', 'variant="dynamic"'],
       ['src/components/MoreScreen.tsx', 'variant="dynamic"'],
       ['src/components/ui/EmptyState.tsx', 'variant="dynamic"'],
@@ -39,6 +43,15 @@ describe('family brand visual contract', () => {
     }
   })
 
+  it("decorates Today's photo-less hero abstractly rather than restating the logo", () => {
+    const today = read('src/components/TodayDashboard.tsx')
+    expect(today).not.toContain('<FamilyMark')
+    expect(today).not.toContain('<svg')
+    expect(today).not.toContain('today-family-mark')
+    expect(css).not.toContain('.today-family-mark')
+    expect(css).toMatch(/\.today-hero:not\(\.has-family-photo\)::after\s*\{[^}]*--brand-honey/s)
+  })
+
   it('removes copied petal JSX and transform-based motif scaling', () => {
     expect(css).not.toContain('empty-state-motif')
     expect(css).not.toContain('brand-motif')
@@ -47,14 +60,18 @@ describe('family brand visual contract', () => {
   })
 
   it('keeps the generated public icon aligned with the shared static geometry and colors', () => {
-    const slots = createFamilyMarkSlots(4)
+    const slots = createStaticFamilyMarkSlots()
     for (const [index, slot] of slots.entries()) {
-      const x = slot.cx - slot.size / 2
-      const y = slot.cy - slot.size / 2
-      expect(icon).toContain(`x="${x}" y="${y}" width="${slot.size}" height="${slot.size}"`)
+      expect(icon).toContain(`d="${familyMarkPetalPath(slot)}"`)
+      expect(icon).toContain(`transform="${familyMarkPetalTransform(slot)}"`)
       expect(icon).toContain(`fill="${STATIC_FAMILY_MARK_COLORS[index]}"`)
-      expect(icon).toContain(`rotate(${slot.rotation} ${slot.cx} ${slot.cy})`)
     }
+  })
+
+  it('shares one shape language between the stable and dynamic variants', () => {
+    expect(mark).toContain('familyMarkPetalPath')
+    expect(mark).not.toContain('<rect')
+    expect(icon).not.toContain('<rect x=')
   })
 
   it('uses the single public icon for favicon and launcher contexts', () => {

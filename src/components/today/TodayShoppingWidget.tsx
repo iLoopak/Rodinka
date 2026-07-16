@@ -48,20 +48,21 @@ export function TodayShoppingWidget({ items, loading, hasUsableData, syncStatus,
   }
 
   return (
-    <section className="section today-shopping-widget" aria-labelledby="today-shopping-title">
-      <div className="today-shopping-header">
+    <section className="today-section today-shopping-widget" aria-labelledby="today-shopping-title">
+      <div className="today-section-head">
         <span className="today-shopping-icon" aria-hidden="true">
           <ShoppingCategoryIcon category="household" />
         </span>
         <span className="today-shopping-heading">
-          <h2 id="today-shopping-title">{t.shopping.title}</h2>
-          <span>{loading || !hasUsableData ? t.shopping.loading : t.shopping.activeCount(items.length)}</span>
+          <h2 id="today-shopping-title" className="today-section-title">{t.shopping.title}</h2>
+          <span className="today-section-count">{loading || !hasUsableData ? t.shopping.loading : t.shopping.activeCount(items.length)}</span>
         </span>
         <button type="button" className="link today-shopping-open" onClick={onOpen}>
           {t.today.shoppingOpenAction}<span aria-hidden="true">›</span>
         </button>
       </div>
 
+      <div className="today-panel is-secondary is-shopping">
       <TodayQuickAddField
         value={name}
         placeholder={t.today.quickShoppingPlaceholder}
@@ -95,6 +96,7 @@ export function TodayShoppingWidget({ items, loading, hasUsableData, syncStatus,
       {hasUsableData && syncStatus === 'offline' && <p className="today-shopping-state offline" role="status">{t.shopping.cachedOffline}</p>}
       {remaining > 0 && <p className="today-shopping-more">{t.today.shoppingMore(remaining)}</p>}
       {feedback && <p className={`today-quick-add-feedback${hasError ? ' error' : ''}`} role={hasError ? 'alert' : 'status'}>{feedback}</p>}
+      </div>
     </section>
   )
 }

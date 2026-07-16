@@ -34,7 +34,7 @@ export function AppShell() {
     <div className={`app-shell${path === '/' ? ' is-today' : ''}`}>
       <header className="app-header">
         <FamilyBrand
-          familyName={path === '/' ? null : familyName}
+          familyName={familyName}
           members={familyMark.members}
           loading={familyNameLoading}
           markLoading={familyMark.loading}
