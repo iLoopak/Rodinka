@@ -6,13 +6,13 @@ import { useActivitiesData } from '../../context/activities/ActivitiesContext'
 import { useMedicalData } from '../../context/health/MedicalContext'
 import { useMealsDataContext } from '../../context/meals/MealsContext'
 import { t } from '../../strings'
-import { getItemTypeStyle } from '../../utils/itemTypeStyle'
 import {
   getPlannerDatePrefill,
   type PlannerItemType,
 } from '../../utils/plannerCreate'
 import { AddActivityForm } from '../AddActivityForm'
 import { AddChoreForm } from '../AddChoreForm'
+import { ItemTypeIcon } from '../ui/ItemTypeIcon'
 import { AddMedicalRecordForm } from '../AddMedicalRecordForm'
 import { AddPlanEntryForm } from '../meals/AddPlanEntryForm'
 import { Modal } from '../ui/Modal'
@@ -117,7 +117,6 @@ export function UniversalCreateModal({ initialType, initialDate, onClose }: Prop
         <div className="create-type-grid">
           <p className="create-type-intro">{t.create.intro}</p>
           {options.map((option, index) => {
-            const style = getItemTypeStyle(option.type)
             return (
               <button
                 key={option.type}
@@ -126,9 +125,7 @@ export function UniversalCreateModal({ initialType, initialDate, onClose }: Prop
                 onClick={() => setSelectedType(option.type)}
                 autoFocus={index === 0}
               >
-                <span className="create-type-icon" style={{ color: `var(${style.colorVar})` }}>
-                  {style.icon}
-                </span>
+                <ItemTypeIcon type={option.type} />
                 <span className="create-type-copy">
                   <span className="create-type-title">{option.title}</span>
                   <span className="create-type-description">{option.description}</span>

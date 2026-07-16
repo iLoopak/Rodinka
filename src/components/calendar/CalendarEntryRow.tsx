@@ -1,6 +1,7 @@
 import { t } from '../../strings'
 import { getItemTypeStyle } from '../../utils/itemTypeStyle'
 import { DueBadge } from '../ui/DueBadge'
+import { ItemTypeIcon } from '../ui/ItemTypeIcon'
 import { MemberAvatar } from '../ui/MemberAvatar'
 import type { CalendarEntry } from '../../utils/calendarEntries'
 import type { FamilyMember } from '../../hooks/useFamilyMembers'
@@ -28,9 +29,7 @@ export function CalendarEntryRow({ entry, memberById, onClick, onAssignmentClick
   return (
     <li className="calendar-entry-row-shell">
       <button type="button" className="clickable-row calendar-entry-row" onClick={onClick}>
-        <span className="calendar-entry-icon" style={{ color: `var(${style.colorVar})`, backgroundColor: `var(${style.surfaceVar})` }}>
-          {style.icon}
-        </span>
+        <ItemTypeIcon type={entry.type} size={34} />
         <span className="calendar-entry-content">
           <strong className="row-title">{entry.title}</strong>
           <span className="calendar-entry-meta-line">

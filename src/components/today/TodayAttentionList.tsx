@@ -1,8 +1,8 @@
 import { Link } from '../../router'
 import { t } from '../../strings'
 import { formatDueDateLabel } from '../../utils/dueDate'
-import { getItemTypeStyle } from '../../utils/itemTypeStyle'
 import type { TodayAttentionItem } from '../../utils/todayAgenda'
+import { ItemTypeIcon } from '../ui/ItemTypeIcon'
 import { MemberAvatar } from '../ui/MemberAvatar'
 import type { FamilyMember } from '../../hooks/useFamilyMembers'
 
@@ -41,16 +41,13 @@ export function TodayAttentionList({ items, memberById }: Props) {
   return (
     <ul className="today-attention-list">
       {items.map((item) => {
-        const style = getItemTypeStyle(item.itemType)
         const personId = item.personId ?? item.responsibleMemberId
         const person = personId ? memberById(personId) : undefined
         const people = peopleLabel(item, memberById)
         return (
           <li key={item.id}>
             <Link to={item.route} hash={item.hash} className="today-attention-link">
-              <span className="today-attention-icon" style={{ color: `var(${style.colorVar})` }}>
-                {style.icon}
-              </span>
+              <ItemTypeIcon type={item.itemType} size={32} />
               {personId && (
                 <MemberAvatar member={person} size={26} />
               )}

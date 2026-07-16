@@ -95,8 +95,6 @@ export function PlannerScreen() {
             to="/chores"
             icon={choreStyle.icon}
             colorVar={choreStyle.colorVar}
-            surfaceVar={choreStyle.surfaceVar}
-            borderVar={choreStyle.borderVar}
             title={t.planner.choresTitle}
             summary={t.planner.choresActive(activeChores.length)}
             details={[
@@ -111,8 +109,6 @@ export function PlannerScreen() {
             to="/activities"
             icon={activityStyle.icon}
             colorVar={activityStyle.colorVar}
-            surfaceVar={activityStyle.surfaceVar}
-            borderVar={activityStyle.borderVar}
             title={t.planner.activitiesTitle}
             summary={t.planner.activitiesActive(activeActivities.length)}
             details={[
@@ -135,8 +131,6 @@ export function PlannerScreen() {
             to="/health"
             icon={medicalStyle.icon}
             colorVar={medicalStyle.colorVar}
-            surfaceVar={medicalStyle.surfaceVar}
-            borderVar={medicalStyle.borderVar}
             title={t.planner.healthTitle}
             summary={
               nextMedical
@@ -155,8 +149,6 @@ export function PlannerScreen() {
             to="/meals"
             icon={mealStyle.icon}
             colorVar={mealStyle.colorVar}
-            surfaceVar={mealStyle.surfaceVar}
-            borderVar={mealStyle.borderVar}
             title={t.planner.mealsTitle}
             summary={
               nextMeal
@@ -175,8 +167,6 @@ export function PlannerScreen() {
             to="/shopping"
             icon={<ShoppingCategoryIcon category="household" />}
             colorVar="--category-family"
-            surfaceVar="--category-family-soft"
-            borderVar="--category-family-border"
             title={t.shopping.title}
             summary={t.shopping.activeCount(activeShoppingItems.length)}
             details={[]}
