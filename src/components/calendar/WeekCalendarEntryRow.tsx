@@ -3,6 +3,7 @@ import type { FamilyMember } from '../../hooks/useFamilyMembers'
 import { t } from '../../strings'
 import type { CalendarEntry } from '../../utils/calendarEntries'
 import { getItemTypeStyle } from '../../utils/itemTypeStyle'
+import { ItemTypeIcon } from '../ui/ItemTypeIcon'
 import { MemberAvatar } from '../ui/MemberAvatar'
 
 interface Props {
@@ -42,10 +43,9 @@ export function WeekCalendarEntryRow({ entry, memberById, onClick, onAssignmentC
     className={`week-entry${entry.completed ? ' completed' : ''}`}
     style={{ '--week-entry-accent': `var(${style.colorVar})`, '--week-entry-surface': `var(${style.surfaceVar})` } as CSSProperties}
   >
-    <span className="week-entry-accent" aria-hidden="true" />
     <div className="week-entry-layout">
       <div className="week-entry-heading">
-        <span className="week-entry-icon" style={{ color: `var(${style.colorVar})`, backgroundColor: `var(${style.surfaceVar})` }}>{style.icon}</span>
+        <ItemTypeIcon type={entry.type} size={40} />
         <strong>{entry.title}</strong>
         {entry.completed && <span className="week-entry-status">{t.calendar.completed}</span>}
       </div>

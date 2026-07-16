@@ -14,8 +14,6 @@ describe('PlannerAreaCard', () => {
       to: '/chores',
       icon: 'T',
       colorVar: '--category-tasks',
-      surfaceVar: '--category-tasks-soft',
-      borderVar: '--category-tasks-border',
       title: 'Household tasks',
       summary: '8 active',
       details: ['1 overdue'],

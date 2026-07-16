@@ -5,8 +5,6 @@ interface Props {
   to: Route
   icon: ReactNode
   colorVar: string
-  surfaceVar: string
-  borderVar: string
   title: string
   summary: string
   details: string[]
@@ -15,18 +13,17 @@ interface Props {
   onCreate: () => void
 }
 
-export function PlannerAreaCard({ to, icon, colorVar, surfaceVar, borderVar, title, summary, details, ariaLabel, createLabel, onCreate }: Props) {
+export function PlannerAreaCard({ to, icon, colorVar, title, summary, details, ariaLabel, createLabel, onCreate }: Props) {
   return (
     <article
       className="planner-area-card"
-      style={{
-        '--area-accent': `var(${colorVar})`,
-        '--area-surface': `var(${surfaceVar})`,
-        '--area-border': `var(${borderVar})`,
-      } as CSSProperties}
+      style={{ '--area-accent': `var(${colorVar})` } as CSSProperties}
     >
       <Link to={to} className="planner-area-link" aria-label={ariaLabel}>
-        <span className="planner-area-icon" style={{ color: `var(${colorVar})` }}>{icon}</span>
+        <span
+          className="item-type-icon planner-area-icon"
+          style={{ backgroundColor: `color-mix(in srgb, var(${colorVar}) 10%, transparent)`, color: `var(${colorVar})` }}
+        >{icon}</span>
         <span className="planner-area-copy">
           <span className="planner-area-heading">{title}</span>
           <span className="planner-area-summary">{summary}</span>

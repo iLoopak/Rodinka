@@ -3,6 +3,7 @@ import { onActivateKey } from '../../utils/a11y'
 import type { CalendarEntry } from '../../utils/calendarEntries'
 import { getItemTypeStyle } from '../../utils/itemTypeStyle'
 import { mealSlotLabel } from '../../utils/mealLabels'
+import { ItemTypeIcon } from '../ui/ItemTypeIcon'
 import { MemberAvatar } from '../ui/MemberAvatar'
 import type { FamilyMember } from '../../hooks/useFamilyMembers'
 import { daysBetweenISO } from '../../utils/dueDate'
@@ -75,9 +76,7 @@ export function TodayAgendaList({ entries, memberById, onSelectEntry }: Props) {
             onKeyDown={onActivateKey(activate)}
           >
             <span className="today-agenda-when font-tabular">{whenLabel(entry)}</span>
-            <span className="today-agenda-icon" style={{ color: `var(${style.colorVar})` }}>
-              {style.icon}
-            </span>
+            <ItemTypeIcon type={entry.type} size={32} />
             {personId && (
               <MemberAvatar member={person} size={26} />
             )}

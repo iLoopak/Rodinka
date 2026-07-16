@@ -26,10 +26,10 @@
   --category-activities: #7563a8;
   --category-activities-soft: #f0edf9;
   --category-activities-border: #d9d1ee;
-  --category-health: #4d7fa8;
+  --category-health: #b1554f;
   --category-health-strong: #8f536e;
-  --category-health-soft: #eaf3f9;
-  --category-health-border: #c9deec;
+  --category-health-soft: #f8e9e7;
+  --category-health-border: #edd1cd;
   --category-meals: #a75f3d;
   --category-meals-soft: #fbeddf;
   --category-meals-border: #edcfbb;
@@ -626,14 +626,6 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
   font-weight: var(--font-weight-strong);
 }
 
-.today-agenda-icon,
-.today-attention-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-}
-
 .today-agenda-copy,
 .today-attention-copy {
   display: flex;
@@ -748,6 +740,21 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
 .badge-today {
   background: rgba(185, 71, 66, 0.14);
   color: var(--brick);
+}
+
+/* ------------------------------------------------------------------ */
+/* Item type icon                                                       */
+/* ------------------------------------------------------------------ */
+
+/* The one shared identity mark for "what kind of thing is this" across
+   calendar, today, planner and the create modal — a tinted icon container
+   instead of a colored border/stripe. Sizing/radius/tint are set inline per
+   instance (see ItemTypeIcon.tsx), this just fixes the shape. */
+.item-type-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1541,22 +1548,6 @@ button.list-drag-handle:hover:not(:disabled) {
   background: var(--canvas);
 }
 
-.create-type-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: var(--canvas);
-}
-
-.create-type-icon svg {
-  width: 22px;
-  height: 22px;
-}
-
 .create-type-copy {
   display: flex;
   min-width: 0;
@@ -2112,7 +2103,6 @@ label.member-gender-option {
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  background: var(--canvas);
 }
 
 .planner-area-copy {
@@ -3005,19 +2995,6 @@ button.btn-danger:hover:not(:disabled) {
   margin-bottom: 8px;
 }
 
-.calendar-entry-row .calendar-entry-icon {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
-}
-
-.calendar-entry-row .calendar-entry-icon svg {
-  display: block;
-}
-
 .calendar-entry-row-shell {
   display: flex;
   align-items: stretch;
@@ -3053,8 +3030,7 @@ button.btn-danger:hover:not(:disabled) {
 .calendar-entry-side .badge { white-space: nowrap; }
 
 @media (max-width: 420px) {
-  .calendar-entry-row-shell .calendar-entry-row { grid-template-columns: 32px minmax(0, 1fr); gap: 8px; padding: 10px; }
-  .calendar-entry-row .calendar-entry-icon { width: 32px; height: 32px; }
+  .calendar-entry-row-shell .calendar-entry-row { grid-template-columns: 34px minmax(0, 1fr); gap: 8px; padding: 10px; }
   .calendar-entry-side { grid-column: 2; grid-auto-flow: column; align-items: center; justify-content: start; }
 }
 
@@ -3996,14 +3972,6 @@ button.today-quick-todo-more {
   box-shadow: 0 8px 18px rgba(91, 67, 48, 0.08);
 }
 
-.today-agenda-icon,
-.today-attention-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 11px;
-  background: var(--paper);
-}
-
 .today-program-section {
   background: linear-gradient(160deg, rgba(255, 253, 249, 0.96), rgba(250, 244, 236, 0.92));
 }
@@ -4282,21 +4250,17 @@ button.today-shopping-open {
 .planner-area-card {
   min-height: 108px;
   padding: 17px;
-  border-color: var(--area-border);
-  background: linear-gradient(135deg, var(--area-surface), rgba(255, 253, 249, 0.94));
   box-shadow: none;
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 .planner-area-card:hover {
-  border-color: var(--area-accent);
+  border-color: var(--coral-light);
   transform: translateY(-2px);
-  box-shadow: 0 12px 26px color-mix(in srgb, var(--area-accent) 10%, transparent);
+  box-shadow: 0 12px 26px rgba(76, 56, 42, 0.06);
 }
 .planner-area-icon {
   width: 44px;
   height: 44px;
-  color: var(--area-accent) !important;
-  background: rgba(255, 255, 255, 0.72);
 }
 .planner-area-icon svg { width: 24px; height: 24px; }
 .planner-area-heading { color: var(--area-accent); font-size: var(--font-size-caption); font-weight: var(--font-weight-emphasis); letter-spacing: 0.04em; text-transform: uppercase; }
@@ -4462,7 +4426,6 @@ button.today-shopping-open {
 .week-entry {
   position: relative;
   display: grid;
-  grid-template-columns: 4px minmax(0, 1fr);
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--border-soft);
@@ -4470,9 +4433,7 @@ button.today-shopping-open {
   background: var(--paper-raised);
 }
 .week-entry.completed { opacity: 0.7; }
-.week-entry-accent { grid-column: 1; grid-row: 1; background: var(--week-entry-accent); }
 .week-entry-layout {
-  grid-column: 2;
   grid-row: 1;
   display: grid;
   gap: 7px;
@@ -4494,10 +4455,9 @@ button.today-shopping-open {
 .week-entry-heading { display: flex; align-items: center; gap: 9px; min-width: 0; padding-right: 2px; }
 .week-entry-heading strong { min-width: 0; overflow-wrap: break-word; font-size: 1.02rem; font-weight: var(--font-weight-strong); line-height: 1.24; }
 .week-entry.completed .week-entry-heading strong { text-decoration: line-through; }
-.week-entry-icon { display: grid; place-items: center; width: 28px; height: 28px; flex: 0 0 28px; border-radius: 9px; font-size: 0.94rem; }
-.week-entry-time { padding-left: 37px; color: var(--ink-muted); font-size: var(--font-size-body); font-weight: var(--font-weight-strong); line-height: var(--line-height-body); white-space: nowrap; }
+.week-entry-time { padding-left: 49px; color: var(--ink-muted); font-size: var(--font-size-body); font-weight: var(--font-weight-strong); line-height: var(--line-height-body); white-space: nowrap; }
 .week-entry-status { padding: 1px 5px; border-radius: 999px; background: var(--neutral-soft); color: var(--ink-muted); font-size: 0.58rem; font-weight: 800; text-transform: uppercase; }
-.week-entry-metadata { display: grid; gap: 6px; min-width: 0; padding-left: 37px; color: var(--ink-muted); font-size: var(--font-size-meta); line-height: 1.35; }
+.week-entry-metadata { display: grid; gap: 6px; min-width: 0; padding-left: 49px; color: var(--ink-muted); font-size: var(--font-size-meta); line-height: 1.35; }
 .week-entry-meta-row,
 .week-entry-assignment { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 30px; }
 .week-entry-meta-row > span:last-child,
@@ -4554,7 +4514,7 @@ button.today-shopping-open {
   .week-day-card { padding: 13px; }
   .week-entry-layout { padding: 12px 12px 13px; }
   .week-entry-time,
-  .week-entry-metadata { padding-left: 37px; }
+  .week-entry-metadata { padding-left: 49px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
