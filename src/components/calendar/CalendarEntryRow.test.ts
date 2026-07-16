@@ -49,4 +49,32 @@ describe('CalendarEntryRow', () => {
 
     expect(html).toContain('badge badge-done')
   })
+
+  it('shows the same person only once while keeping an explicit assignment action', () => {
+    const html = renderToStaticMarkup(createElement(CalendarEntryRow, {
+      entry: entry({ assignmentSeriesType: 'task' }),
+      memberById: (id) => id === member.id ? member : undefined,
+      onClick: vi.fn(),
+      onAssignmentClick: vi.fn(),
+    }))
+
+    expect(html.match(/class="member-avatar/g)).toHaveLength(1)
+    expect(html).toContain('class="assignment-change-indicator"')
+    expect(html).toContain('Změnit přiřazení pro tento termín')
+  })
+
+  it('labels a different responsible person and preserves occurrence override state', () => {
+    const adult = makeFamilyMember({ id: 'adult', display_name: 'Alex' })
+    const html = renderToStaticMarkup(createElement(CalendarEntryRow, {
+      entry: entry({ responsibleMemberId: adult.id, assignmentSeriesType: 'activity', assignmentOverridden: true }),
+      memberById: (id) => id === member.id ? member : id === adult.id ? adult : undefined,
+      onClick: vi.fn(),
+      onAssignmentClick: vi.fn(),
+    }))
+
+    expect(html).toContain('Zodpovídá: Alex')
+    expect(html).toContain('Změnit doprovod pro tento termín: Alex')
+    expect(html).toContain('assignment-change-indicator overridden')
+    expect(html.match(/class="member-avatar/g)).toHaveLength(2)
+  })
 })

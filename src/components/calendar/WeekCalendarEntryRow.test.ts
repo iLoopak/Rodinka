@@ -86,6 +86,7 @@ describe('WeekCalendarEntryRow', () => {
     expect(html).toContain('16:30–17:15')
     expect(html).toContain('<span>Nekky JS</span>')
     expect(html).toContain('<span>Každý pátek</span>')
-    expect(html.match(/class="week-entry-meta-row"/g)).toHaveLength(3)
+    expect(html.match(/class="week-entry-meta-row"/g)).toHaveLength(2)
+    expect(html.match(/>Terra</g)).toHaveLength(1)
   })
 })

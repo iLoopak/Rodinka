@@ -18,6 +18,8 @@ import type { MedicalRecord } from '../hooks/useMedicalRecords'
 import type { MedicalRecordInput } from '../domain/medical/types'
 import { useRouter } from '../router'
 import { resolveDeepLinkedItem } from '../utils/deepLinks'
+import { ScrollableTabs } from './ui/ScrollableTabs'
+import { FilterDisclosure } from './ui/FilterDisclosure'
 
 type Tab = 'upcoming' | 'history' | 'vaccinations' | 'overdue'
 
@@ -27,6 +29,7 @@ export function HealthScreen() {
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null)
   const [filterMember, setFilterMember] = useState('')
   const [filterType, setFilterType] = useState('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [deepLinkError, setDeepLinkError] = useState(false)
   const { searchParams, setQueryParam, removeQueryParam } = useRouter()
   const recordParam = searchParams.get('record')
@@ -129,6 +132,8 @@ export function HealthScreen() {
 
       {deepLinkError && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
 
+      <FilterDisclosure id="health-filter-panel" open={filtersOpen} onOpenChange={setFiltersOpen}
+        activeCount={Number(Boolean(filterMember)) + Number(Boolean(filterType))} onClear={clearFilters}>
       <div className="filter-row">
         <select value={filterMember} onChange={(e) => setFilterMember(e.target.value)} aria-label={t.medical.filterMemberLabel}>
           <option value="">
@@ -151,22 +156,9 @@ export function HealthScreen() {
           ))}
         </select>
       </div>
+      </FilterDisclosure>
 
-      <div className="tabs" role="tablist">
-        {tabs.map((tabItem) => (
-          <button
-            key={tabItem.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === tabItem.id}
-            className={`tab-button${tab === tabItem.id ? ' active' : ''}`}
-            onClick={() => setTab(tabItem.id)}
-          >
-            {tabItem.label}
-            {!!tabItem.count && <span className="tab-count">{tabItem.count}</span>}
-          </button>
-        ))}
-      </div>
+      <ScrollableTabs tabs={tabs} activeTab={tab} onChange={setTab} />
 
       <section className="section">
         {currentList.length === 0 ? (

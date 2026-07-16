@@ -25,6 +25,7 @@ export function CalendarEntryRow({ entry, memberById, onClick, onAssignmentClick
   const participantNames = participantIds.map((id) => memberById(id)?.display_name).filter(Boolean).join(', ')
   const responsible = entry.responsibleMemberId ? memberById(entry.responsibleMemberId) : undefined
   const showResponsible = responsible && !participantIds.includes(responsible.id)
+  const responsibleIsParticipant = Boolean(responsible && participantIds.includes(responsible.id))
 
   return (
     <li className="calendar-entry-row-shell">
@@ -56,11 +57,11 @@ export function CalendarEntryRow({ entry, memberById, onClick, onAssignmentClick
       {entry.assignmentSeriesType && onAssignmentClick && <button
         type="button"
         className="calendar-entry-assignment"
-        aria-label={`${entry.assignmentSeriesType === 'activity' ? t.calendar.changeCompanion : t.calendar.changeAssignee}${entry.assignmentOverridden ? `. ${t.calendar.occurrenceOverrideBadge}` : ''}`}
+        aria-label={`${entry.assignmentSeriesType === 'activity' ? t.calendar.changeCompanion : t.calendar.changeAssignee}: ${responsible?.display_name ?? t.calendar.unassignedMember}${entry.assignmentOverridden ? `. ${t.calendar.occurrenceOverrideBadge}` : ''}`}
         onClick={onAssignmentClick}
       >
-        <MemberAvatar member={responsible} size={36} />
-        {entry.assignmentOverridden && <span className="assignment-override-indicator" aria-hidden="true">↔</span>}
+        {!responsibleIsParticipant && <MemberAvatar member={responsible} size={36} />}
+        <span className={`assignment-change-indicator${entry.assignmentOverridden ? ' overridden' : ''}`} aria-hidden="true">↔</span>
       </button>}
     </li>
   )

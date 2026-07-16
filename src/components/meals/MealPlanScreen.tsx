@@ -6,6 +6,7 @@ import { MealLibraryTab } from './MealLibraryTab'
 import { VoteTab } from './VoteTab'
 import { PlanTab, type PlanPrefill } from './PlanTab'
 import type { Meal } from '../../hooks/useMeals'
+import { ScrollableTabs } from '../ui/ScrollableTabs'
 
 type Tab = 'plan' | 'vote' | 'meals'
 
@@ -56,20 +57,7 @@ export function MealPlanScreen() {
         <h1 className="home-title">{t.meals.title}</h1>
       </div>
 
-      <div className="tabs" role="tablist">
-        {tabs.map((tabItem) => (
-          <button
-            key={tabItem.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === tabItem.id}
-            className={`tab-button${tab === tabItem.id ? ' active' : ''}`}
-            onClick={() => setTab(tabItem.id)}
-          >
-            {tabItem.label}
-          </button>
-        ))}
-      </div>
+      <ScrollableTabs tabs={tabs} activeTab={tab} onChange={setTab} />
 
       {tab === 'plan' && <PlanTab prefill={planPrefill} onPrefillConsumed={() => setPlanPrefill(undefined)} />}
       {tab === 'vote' && (

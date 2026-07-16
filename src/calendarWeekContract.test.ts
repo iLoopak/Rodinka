@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 const root = process.cwd()
 const screen = readFileSync(join(root, 'src/components/CalendarScreen.tsx'), 'utf8')
+const tabs = readFileSync(join(root, 'src/components/ui/ScrollableTabs.tsx'), 'utf8')
 const week = readFileSync(join(root, 'src/components/calendar/WeekAgenda.tsx'), 'utf8')
 const dayCard = readFileSync(join(root, 'src/components/calendar/CalendarDayAgendaCard.tsx'), 'utf8')
 const entryRow = readFileSync(join(root, 'src/components/calendar/WeekCalendarEntryRow.tsx'), 'utf8')
@@ -12,8 +13,10 @@ const styles = readFileSync(join(root, 'src/index.css'), 'utf8')
 describe('weekly calendar integration contracts', () => {
   it('keeps month, week, and overview as accessible tabs', () => {
     expect(screen).toContain("type ViewMode = 'month' | 'week' | 'agenda'")
-    expect(screen.match(/role="tab"/g)).toHaveLength(3)
-    expect(screen).toContain('aria-selected={viewMode === \'week\'}')
+    expect(screen).toContain('<ScrollableTabs tabs={viewTabs} activeTab={viewMode}')
+    expect(screen.match(/id: '(month|week|agenda)'/g)).toHaveLength(3)
+    expect(tabs).toContain('role="tab"')
+    expect(tabs).toContain('aria-selected={activeTab === tab.id}')
   })
 
   it('preserves the existing event deep-link path for weekly rows', () => {

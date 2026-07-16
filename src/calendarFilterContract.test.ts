@@ -4,25 +4,26 @@ import { describe, expect, it } from 'vitest'
 
 const root = process.cwd()
 const screen = readFileSync(join(root, 'src/components/CalendarScreen.tsx'), 'utf8')
+const disclosure = readFileSync(join(root, 'src/components/ui/FilterDisclosure.tsx'), 'utf8')
 const styles = readFileSync(join(root, 'src/index.css'), 'utf8')
 const strings = readFileSync(join(root, 'src/strings.ts'), 'utf8')
 
 describe('calendar filter disclosure', () => {
   it('keeps filters collapsed behind one accessible header control', () => {
     expect(screen).toContain('const [filtersOpen, setFiltersOpen] = useState(false)')
-    expect(screen).toContain('aria-expanded={filtersOpen}')
-    expect(screen).toContain('aria-controls="calendar-filter-panel"')
-    expect(screen).toContain('hidden={!filtersOpen}')
+    expect(screen).toContain('<FilterDisclosure id="calendar-filter-panel" open={filtersOpen}')
+    expect(disclosure).toContain('aria-expanded={open}')
+    expect(disclosure).toContain('aria-controls={id}')
+    expect(disclosure).toContain('hidden={!open}')
     expect(screen.match(/className="filter-row"/g)).toHaveLength(1)
   })
 
   it('signals active filters and keeps clear inside the disclosure', () => {
     expect(screen).toContain('activeFilterCount')
-    expect(screen).toContain('calendar-filter-count')
-    expect(screen).toContain('onClick={clearFilters}')
-    expect(screen).toContain("event.key === 'Escape'")
-    expect(styles).toContain('.calendar-filter-panel[hidden] { display: none; }')
-    expect(styles).toMatch(/\.calendar-filter-panel\s*\{[^}]*width: 100%/s)
+    expect(disclosure).toContain('filter-active-count')
+    expect(screen).toContain('onClear={clearFilters}')
+    expect(disclosure).toContain("event.key === 'Escape'")
+    expect(styles).toContain('.filter-disclosure-panel[hidden] { display: none; }')
     expect(screen).not.toContain('<strong>{t.calendar.filtersLabel}</strong>')
   })
 
