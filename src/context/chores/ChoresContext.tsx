@@ -1,23 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { supabase } from '../../supabaseClient'
-import { friendly } from '../../utils/friendlyError'
 import { useChores, type Chore } from '../../hooks/useChores'
 import { useChoreCompletions, type ChoreCompletion } from '../../hooks/useChoreCompletions'
-import { choreInputToRow, normalizeChore, type ChoreInput } from '../../utils/choreModel'
-import { compareChoresByDueDate, todayISODate } from '../../utils/dueDate'
+import type { ChoreInput } from '../../utils/choreModel'
+import { compareChoresByDueDate } from '../../utils/dueDate'
 import type { ChoreApprovalResult } from '../../domain/chores/types'
-import { createRealtimeSubscription } from '../../realtime/createRealtimeSubscription'
-import { applyRealtimeDelete } from '../../realtime/applyRealtimeDelete'
-import { applyRealtimeInsert } from '../../realtime/applyRealtimeInsert'
-import { applyRealtimeUpdate } from '../../realtime/applyRealtimeUpdate'
+import { createChoresRepository } from '../../repositories/chores/choresRepository'
 import type { RealtimeConnectionState } from '../../realtime/connectionState'
 
 export type { ChoreInput } from '../../utils/choreModel'
 export type { ChoreApprovalResult } from '../../domain/chores/types'
 
-function completionFromRow(row: Record<string, unknown>): ChoreCompletion {
-  return { ...row, reward_amount: Number(row.reward_amount) } as unknown as ChoreCompletion
-}
 
 interface ChoresContextValue {
   chores: Chore[]
@@ -64,33 +56,16 @@ export function ChoresProvider({ familyId, userId, currentMemberId, children }: 
     refresh: refreshCompletions,
   } = useChoreCompletions(familyId)
   const [choresRealtimeStatus, setChoresRealtimeStatus] = useState<RealtimeConnectionState>('connecting')
+  const choresRepository = useMemo(() => createChoresRepository({ familyId, userId, currentMemberId }), [familyId, userId, currentMemberId])
 
   useEffect(() => {
     if (!familyId) return
-    const unsubscribe = createRealtimeSubscription({
-      channelName: `family:${familyId}:chores`,
+    return choresRepository.subscribeToChanges({
       onStatusChange: setChoresRealtimeStatus,
-      tables: [
-        {
-          table: 'chores',
-          filter: `family_id=eq.${familyId}`,
-          onInsert: (row) => setChores((current) => applyRealtimeInsert(current, normalizeChore(row as unknown as Parameters<typeof normalizeChore>[0]))),
-          onUpdate: (row) => setChores((current) => applyRealtimeUpdate(current, normalizeChore(row as unknown as Parameters<typeof normalizeChore>[0]))),
-          onDelete: (row) => setChores((current) => applyRealtimeDelete(current, row.id as string)),
-        },
-        {
-          // chore_completions has no family_id column (it's scoped via its
-          // parent chore) — no `filter` here, RLS still limits delivery to
-          // completions on chores this family can select.
-          table: 'chore_completions',
-          onInsert: (row) => setCompletions((current) => applyRealtimeInsert(current, completionFromRow(row))),
-          onUpdate: (row) => setCompletions((current) => applyRealtimeUpdate(current, completionFromRow(row))),
-          onDelete: (row) => setCompletions((current) => applyRealtimeDelete(current, row.id as string)),
-        },
-      ],
+      onChoresChange: setChores,
+      onCompletionsChange: setCompletions,
     })
-    return unsubscribe
-  }, [familyId, setChores, setCompletions])
+  }, [familyId, choresRepository, setChores, setCompletions])
 
   const chores = useMemo(() => [...rawChores].sort(compareChoresByDueDate), [rawChores])
   const pendingCompletions = useMemo(() => completions.filter((c) => c.status === 'pending_approval'), [completions])
@@ -101,80 +76,51 @@ export function ChoresProvider({ familyId, userId, currentMemberId, children }: 
 
   const addChore = useCallback(
     async (input: ChoreInput) => {
-      const { error } = await supabase.from('chores').insert({
-        family_id: familyId,
-        created_by: userId,
-        created_by_member_id: currentMemberId,
-        ...choreInputToRow(input),
-      })
-      if (error) throw friendly(error)
+      await choresRepository.create(input)
       await refreshChores()
     },
-    [currentMemberId, familyId, userId, refreshChores]
+    [choresRepository, refreshChores]
   )
 
   const updateChore = useCallback(
     async (id: string, input: ChoreInput) => {
-      const { error } = await supabase
-        .from('chores')
-        .update(choreInputToRow(input))
-        .eq('id', id)
-        .eq('family_id', familyId)
-      if (error) throw friendly(error)
+      await choresRepository.update(id, input)
       await refreshChores()
     },
-    [familyId, refreshChores]
+    [choresRepository, refreshChores]
   )
 
   const setChoreArchived = useCallback(
     async (id: string, archived: boolean) => {
-      const { error } = await supabase
-        .from('chores')
-        .update({ status: archived ? 'archived' : 'active' })
-        .eq('id', id)
-        .eq('family_id', familyId)
-      if (error) throw friendly(error)
+      await choresRepository.setArchived(id, archived)
       await refreshChores()
     },
-    [familyId, refreshChores]
+    [choresRepository, refreshChores]
   )
 
   const markDone = useCallback(
     async (choreId: string, _assignedTo?: string, occurrenceDate?: string) => {
-      const { error } = await supabase.rpc('complete_household_task', {
-        p_task_id: choreId,
-        p_occurrence_date: occurrenceDate ?? null,
-      })
-      if (error) throw friendly(error)
+      await choresRepository.completeOccurrence({ choreId, occurrenceDate })
       await Promise.all([refreshChores(), refreshCompletions()])
     },
-    [refreshChores, refreshCompletions]
+    [choresRepository, refreshChores, refreshCompletions]
   )
 
   const approve = useCallback(
     async (completionId: string) => {
-      const { data, error } = await supabase.rpc('approve_chore_completion', {
-        completion_id: completionId,
-        approval_date: todayISODate(),
-      })
-      if (error) throw friendly(error)
+      const result = await choresRepository.approveCompletion(completionId)
       await Promise.all([refreshChores(), refreshCompletions()])
-      const result = data as { chore_id?: string; next_due_date?: string | null } | null
-      return {
-        choreId: result?.chore_id ?? '',
-        nextDueDate: result?.next_due_date ?? null,
-      }
+      return result
     },
-    [refreshChores, refreshCompletions]
+    [choresRepository, refreshChores, refreshCompletions]
   )
 
   const reject = useCallback(
     async (completionId: string) => {
-      const { error } = await supabase.rpc('reject_chore_completion', { completion_id: completionId })
-      if (error) throw friendly(error)
+      await choresRepository.rejectCompletion(completionId)
       await refreshCompletions()
     },
-    [refreshCompletions]
+    [choresRepository, refreshCompletions]
   )
 
   const value: ChoresContextValue = {

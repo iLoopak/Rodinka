@@ -1,12 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { supabase } from '../../supabaseClient'
-import { friendly } from '../../utils/friendlyError'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useMedicalRecords, type MedicalRecord } from '../../hooks/useMedicalRecords'
-import { medicalInputToRow, type MedicalRecordInput } from '../../domain/medical/types'
-import { createRealtimeSubscription } from '../../realtime/createRealtimeSubscription'
-import { applyRealtimeDelete } from '../../realtime/applyRealtimeDelete'
-import { applyRealtimeInsert } from '../../realtime/applyRealtimeInsert'
-import { applyRealtimeUpdate } from '../../realtime/applyRealtimeUpdate'
+import type { MedicalRecordInput } from '../../domain/medical/types'
+import { createMedicalRepository } from '../../repositories/medical/medicalRepository'
 import type { RealtimeConnectionState } from '../../realtime/connectionState'
 
 export type { MedicalRecordInput } from '../../domain/medical/types'
@@ -38,44 +33,38 @@ export function MedicalProvider({ familyId, userId, children }: ProviderProps) {
     refresh: refreshMedicalRecords,
   } = useMedicalRecords(familyId)
   const [medicalRealtimeStatus, setMedicalRealtimeStatus] = useState<RealtimeConnectionState>('connecting')
+  const medicalRepository = useMemo(() => createMedicalRepository({ familyId, userId }), [familyId, userId])
 
   useEffect(() => {
     if (!familyId) return
-    const unsubscribe = createRealtimeSubscription({
-      channelName: `family:${familyId}:medical`,
+    return medicalRepository.subscribeToChanges({
       onStatusChange: setMedicalRealtimeStatus,
-      tables: [{
-        table: 'medical_records',
-        filter: `family_id=eq.${familyId}`,
-        onInsert: (row) => setMedicalRecords((current) => applyRealtimeInsert(current, row as unknown as MedicalRecord)),
-        onUpdate: (row) => setMedicalRecords((current) => applyRealtimeUpdate(current, row as unknown as MedicalRecord)),
-        onDelete: (row) => setMedicalRecords((current) => applyRealtimeDelete(current, row.id as string)),
-      }],
+      onRecordsChange: setMedicalRecords,
     })
-    return unsubscribe
-  }, [familyId, setMedicalRecords])
+  }, [familyId, medicalRepository, setMedicalRecords])
 
   const addMedicalRecord = useCallback(
     async (input: MedicalRecordInput) => {
-      const { error } = await supabase
-        .from('medical_records')
-        .insert({ family_id: familyId, created_by: userId, ...medicalInputToRow(input) })
-      if (error) throw friendly(error)
-      await refreshMedicalRecords()
+      try {
+        await medicalRepository.create(input)
+        await refreshMedicalRecords()
+      } catch (error) {
+        throw medicalRepository.toSafeError(error)
+      }
     },
-    [familyId, userId, refreshMedicalRecords]
+    [medicalRepository, refreshMedicalRecords]
   )
 
   const updateMedicalRecord = useCallback(
     async (id: string, input: MedicalRecordInput) => {
-      const { error } = await supabase
-        .from('medical_records')
-        .update({ ...medicalInputToRow(input), updated_at: new Date().toISOString() })
-        .eq('id', id)
-      if (error) throw friendly(error)
-      await refreshMedicalRecords()
+      try {
+        await medicalRepository.update(id, input)
+        await refreshMedicalRecords()
+      } catch (error) {
+        throw medicalRepository.toSafeError(error)
+      }
     },
-    [refreshMedicalRecords]
+    [medicalRepository, refreshMedicalRecords]
   )
 
   const value: MedicalContextValue = {
