@@ -22,7 +22,7 @@ function repository(store: MemoryShoppingStore, remote: FakeRemote, isOnline: ()
   let id = 0
   return new ShoppingRepository({
     familyId: 'family-1', currentMemberId: 'member-1', store, remote, isOnline,
-    realtime: realtime ?? (() => () => undefined),
+    realtime: realtime ?? (async () => async () => undefined),
     createId: () => `00000000-0000-4000-8000-${String(++id).padStart(12, '0')}`,
     now: () => new Date('2026-07-15T10:00:00Z'),
   })
@@ -32,14 +32,47 @@ function repository(store: MemoryShoppingStore, remote: FakeRemote, isOnline: ()
 // can simulate an incoming Postgres change notification by invoking it.
 function capturingRealtime() {
   let trigger: (() => void) | undefined
-  const realtime: ShoppingRealtimeSubscription = (_familyId, onRemoteChange) => {
+  const realtime: ShoppingRealtimeSubscription = async (_familyId, onRemoteChange) => {
     trigger = onRemoteChange
-    return () => { trigger = undefined }
+    return async () => { trigger = undefined }
   }
   return { realtime, fire: () => trigger?.() }
 }
 
 describe('offline shopping repository', () => {
+  it('does not subscribe when stop wins a start that is still loading', async () => {
+    const store = new MemoryShoppingStore()
+    const originalLoadItems = store.loadItems.bind(store)
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => { release = resolve })
+    store.loadItems = async (familyId) => { await gate; return originalLoadItems(familyId) }
+    let subscriptions = 0
+    const realtime: ShoppingRealtimeSubscription = async () => {
+      subscriptions += 1
+      return async () => undefined
+    }
+    const repo = repository(store, new FakeRemote(), () => true, realtime)
+    const starting = repo.start()
+    await repo.stop()
+    release()
+    await starting
+    expect(subscriptions).toBe(0)
+  })
+
+  it('makes repeated start and stop calls idempotent', async () => {
+    let subscriptions = 0
+    let stops = 0
+    const realtime: ShoppingRealtimeSubscription = async () => {
+      subscriptions += 1
+      return async () => { stops += 1 }
+    }
+    const repo = repository(new MemoryShoppingStore(), new FakeRemote(), () => true, realtime)
+    await Promise.all([repo.start(), repo.start()])
+    expect(subscriptions).toBe(1)
+    await Promise.all([repo.stop(), repo.stop()])
+    expect(stops).toBe(1)
+  })
+
   it('persists offline creates and restores both list and queue after an app restart', async () => {
     const store = new MemoryShoppingStore()
     const remote = new FakeRemote()

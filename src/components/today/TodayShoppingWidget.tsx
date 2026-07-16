@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { t } from '../../strings'
 import type { ShoppingAddResult, ShoppingItem } from '../../utils/shopping'
+import type { ShoppingSyncStatus } from '../../shopping/shoppingRepository'
 import { formatLocalizedShoppingQuantity } from '../../utils/shoppingLabels'
 import { ShoppingCategoryIcon } from '../shopping/ShoppingCategoryIcon'
 import { TodayQuickAddField } from './TodayQuickAddField'
@@ -9,11 +10,14 @@ const PREVIEW_LIMIT = 3
 
 interface Props {
   items: ShoppingItem[]
+  loading: boolean
+  hasUsableData: boolean
+  syncStatus: ShoppingSyncStatus
   onOpen: () => void
   onAddItem: (name: string) => Promise<ShoppingAddResult>
 }
 
-export function TodayShoppingWidget({ items, onOpen, onAddItem }: Props) {
+export function TodayShoppingWidget({ items, loading, hasUsableData, syncStatus, onOpen, onAddItem }: Props) {
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
@@ -34,8 +38,9 @@ export function TodayShoppingWidget({ items, onOpen, onAddItem }: Props) {
       setName('')
       setFeedback(result.action === 'added' ? t.shopping.added : result.action === 'merged' ? t.shopping.merged : t.shopping.alreadyExists)
     } catch (error) {
+      console.error('Failed to add a shopping item from Today:', error)
       setHasError(true)
-      setFeedback(error instanceof Error ? error.message : t.errors.generic)
+      setFeedback(t.shopping.actionFailed)
     } finally {
       setBusy(false)
       inputRef.current?.focus()
@@ -50,7 +55,7 @@ export function TodayShoppingWidget({ items, onOpen, onAddItem }: Props) {
         </span>
         <span className="today-shopping-heading">
           <h2 id="today-shopping-title">{t.shopping.title}</h2>
-          <span>{t.shopping.activeCount(items.length)}</span>
+          <span>{loading || !hasUsableData ? t.shopping.loading : t.shopping.activeCount(items.length)}</span>
         </span>
         <button type="button" className="link today-shopping-open" onClick={onOpen}>
           {t.today.shoppingOpenAction}<span aria-hidden="true">›</span>
@@ -68,7 +73,9 @@ export function TodayShoppingWidget({ items, onOpen, onAddItem }: Props) {
         onSubmit={submit}
       />
 
-      {preview.length > 0 ? (
+      {loading || (!hasUsableData && syncStatus === 'syncing') ? (
+        <p className="today-shopping-state" role="status">{t.shopping.loading}</p>
+      ) : preview.length > 0 ? (
         <ul className="today-shopping-preview" data-preview-count={preview.length}>
           {preview.map((item) => {
             const quantity = formatLocalizedShoppingQuantity(item.quantity, item.unit)
@@ -79,9 +86,13 @@ export function TodayShoppingWidget({ items, onOpen, onAddItem }: Props) {
             </li>
           })}
         </ul>
-      ) : (
+      ) : hasUsableData ? (
         <p className="today-shopping-empty">{t.today.shoppingEmpty}</p>
+      ) : (
+        <p className="today-shopping-state warning" role="status">{syncStatus === 'offline' ? t.shopping.noOfflineData : t.shopping.dataUnavailable}</p>
       )}
+      {hasUsableData && syncStatus === 'error' && <p className="today-shopping-state warning" role="status">{t.shopping.cachedSyncWarning}</p>}
+      {hasUsableData && syncStatus === 'offline' && <p className="today-shopping-state offline" role="status">{t.shopping.cachedOffline}</p>}
       {remaining > 0 && <p className="today-shopping-more">{t.today.shoppingMore(remaining)}</p>}
       {feedback && <p className={`today-quick-add-feedback${hasError ? ' error' : ''}`} role={hasError ? 'alert' : 'status'}>{feedback}</p>}
     </section>

@@ -12,6 +12,7 @@ import {
 
 const emptySnapshot: ShoppingRepositorySnapshot = {
   ready: false,
+  hasUsableData: false,
   items: [],
   pendingItemIds: new Set(),
   pendingCount: 0,
@@ -40,7 +41,7 @@ export function useShoppingDataSource(familyId: string | undefined, currentMembe
 
   useEffect(() => {
     if (!familyId || !currentMemberId) {
-      repositoryRef.current?.stop()
+      void repositoryRef.current?.stop()
       repositoryRef.current = null
       setSnapshot({ ...emptySnapshot, ready: true, status: 'offline' })
       setMealIngredients([])
@@ -57,14 +58,14 @@ export function useShoppingDataSource(familyId: string | undefined, currentMembe
     const unsubscribe = repository.subscribe((next) => { if (active) setSnapshot(next) })
     repository.start().catch((error) => {
       console.error('Failed to initialize offline shopping:', error)
-      if (active) setSnapshot((current) => ({ ...current, ready: true, status: 'error', error: String(error) }))
+      if (active) setSnapshot((current) => ({ ...current, ready: true, status: 'error', error: 'initialization-failed' }))
     })
     void refreshMealIngredients()
 
     return () => {
       active = false
       unsubscribe()
-      repository.stop()
+      void repository.stop()
       if (repositoryRef.current === repository) repositoryRef.current = null
     }
   }, [currentMemberId, familyId, refreshMealIngredients])
@@ -147,7 +148,8 @@ export function useShoppingDataSource(familyId: string | undefined, currentMembe
     mealIngredients,
     ingredientsForMeal,
     shoppingLoading: !snapshot.ready,
-    shoppingError: null,
+    shoppingHasUsableData: snapshot.hasUsableData,
+    shoppingError: snapshot.ready && snapshot.status === 'error' && !snapshot.hasUsableData ? 'shopping-unavailable' : null,
     shoppingSyncStatus: snapshot.status,
     shoppingSyncError: snapshot.error,
     pendingShoppingChanges: snapshot.pendingCount,

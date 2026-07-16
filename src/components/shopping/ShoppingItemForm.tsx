@@ -42,7 +42,10 @@ export function ShoppingItemForm({ initial, members, categorySettings, onSubmit,
     setBusy(true)
     setError(null)
     try { await onSubmit(input) }
-    catch (err) { setError(err instanceof Error ? err.message : String(err)) }
+    catch (error) {
+      console.error('Failed to save shopping item:', error)
+      setError(t.shopping.actionFailed)
+    }
     finally { setBusy(false) }
   }
 

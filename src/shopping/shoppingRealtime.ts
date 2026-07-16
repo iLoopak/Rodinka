@@ -1,10 +1,15 @@
 import { supabase } from '../supabaseClient'
 
-export type ShoppingRealtimeSubscription = (familyId: string, onRemoteChange: () => void) => () => void
+export type ShoppingRealtimeStop = () => Promise<void>
+export type ShoppingRealtimeSubscription = (familyId: string, onRemoteChange: () => void) => Promise<ShoppingRealtimeStop>
 
-export const subscribeToShoppingRealtime: ShoppingRealtimeSubscription = (familyId, onRemoteChange) => {
+const channelTeardowns = new Map<string, Promise<void>>()
+
+export const subscribeToShoppingRealtime: ShoppingRealtimeSubscription = async (familyId, onRemoteChange) => {
+  const topic = `family:${familyId}:shopping`
+  await channelTeardowns.get(topic)
   const channel = supabase
-    .channel(`family:${familyId}:shopping`)
+    .channel(topic)
     .on('postgres_changes', {
       event: '*',
       schema: 'public',
@@ -13,5 +18,13 @@ export const subscribeToShoppingRealtime: ShoppingRealtimeSubscription = (family
     }, onRemoteChange)
     .subscribe()
 
-  return () => { void supabase.removeChannel(channel) }
+  let stopped = false
+  return async () => {
+    if (stopped) return
+    stopped = true
+    const teardown = supabase.removeChannel(channel).then(() => undefined)
+    channelTeardowns.set(topic, teardown)
+    try { await teardown }
+    finally { if (channelTeardowns.get(topic) === teardown) channelTeardowns.delete(topic) }
+  }
 }

@@ -9,7 +9,7 @@ import {
 describe('member colors', () => {
   it('uses a valid saved color instead of the hash fallback', () => {
     expect(memberColorKey({ id: 'same-id', color_key: 'lavender' })).toBe('lavender')
-    expect(memberColorVar({ id: 'same-id', color_key: 'lavender' })).toBe('--accent-lavender')
+    expect(memberColorVar({ id: 'same-id', color_key: 'lavender' })).toBe('--member-lavender')
   })
 
   it('keeps the null fallback deterministic', () => {

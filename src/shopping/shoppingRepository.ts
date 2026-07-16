@@ -25,6 +25,7 @@ export type ShoppingSyncStatus = 'offline' | 'syncing' | 'synced' | 'error'
 
 export interface ShoppingRepositorySnapshot {
   ready: boolean
+  hasUsableData: boolean
   items: ShoppingItem[]
   pendingItemIds: Set<string>
   pendingCount: number
@@ -59,7 +60,12 @@ export class ShoppingRepository {
   private inFlightMutations: ShoppingMutation[] = []
   private localWrite: Promise<void> = Promise.resolve()
   private syncPromise: Promise<void> | null = null
-  private stopRealtime: (() => void) | null = null
+  private stopRealtime: (() => Promise<void>) | null = null
+  private running = false
+  private lifecycle = 0
+  private startPromise: Promise<void> | null = null
+  private stopPromise: Promise<void> = Promise.resolve()
+  private realtimeHealthy = false
   private onlineListener = () => { void this.sync() }
   private visibilityListener = () => { if (typeof document !== 'undefined' && document.visibilityState === 'visible') void this.sync() }
 
@@ -74,6 +80,7 @@ export class ShoppingRepository {
     this.createId = options.createId ?? (() => crypto.randomUUID())
     this.snapshot = {
       ready: false,
+      hasUsableData: false,
       items: [],
       pendingItemIds: new Set(),
       pendingCount: 0,
@@ -91,70 +98,98 @@ export class ShoppingRepository {
     return () => this.listeners.delete(listener)
   }
 
-  async start() {
+  start() {
+    if (this.running) return this.startPromise ?? Promise.resolve()
+    this.running = true
+    const lifecycle = ++this.lifecycle
+    const startPromise = this.startLifecycle(lifecycle)
+    this.startPromise = startPromise.finally(() => {
+      if (this.startPromise === startPromise) this.startPromise = null
+    })
+    return this.startPromise
+  }
+
+  private async startLifecycle(lifecycle: number) {
     const [items, mutations, metadata] = await Promise.all([
       this.store.loadItems(this.familyId),
       this.store.loadMutations(this.familyId),
       this.store.loadMetadata(this.familyId),
     ])
+    if (!this.isActive(lifecycle)) return
     this.mutations = mutations
     this.replaceSnapshot({
       ready: true,
+      hasUsableData: Boolean(metadata?.hasSnapshot || items.length > 0 || mutations.length > 0),
       items,
       pendingItemIds: pendingShoppingItemIds(mutations),
       pendingCount: mutations.length,
-      status: this.isOnline() ? 'synced' : 'offline',
+      status: this.isOnline() ? 'syncing' : 'offline',
       lastSuccessfulSyncAt: metadata?.lastSuccessfulSyncAt ?? null,
       error: null,
     })
-    this.stopRealtime = this.realtime(this.familyId, () => { void this.sync() })
+    await this.ensureRealtime(lifecycle)
+    if (!this.isActive(lifecycle)) return
     if (typeof window !== 'undefined') window.addEventListener('online', this.onlineListener)
     if (typeof document !== 'undefined') document.addEventListener('visibilitychange', this.visibilityListener)
-    void this.sync()
+    await this.sync()
   }
 
   stop() {
-    this.stopRealtime?.()
+    if (!this.running && !this.stopRealtime) return this.stopPromise
+    this.running = false
+    this.lifecycle += 1
+    const stopRealtime = this.stopRealtime
     this.stopRealtime = null
+    this.realtimeHealthy = false
     if (typeof window !== 'undefined') window.removeEventListener('online', this.onlineListener)
     if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', this.visibilityListener)
+    this.stopPromise = this.stopPromise.then(() => stopRealtime?.()).then(() => undefined)
+    return this.stopPromise
   }
 
   async sync() {
+    if (!this.running) return
     if (this.syncPromise) return this.syncPromise
     if (!this.isOnline()) {
       this.replaceSnapshot({ ...this.snapshot, status: 'offline', error: null })
       return
     }
-    this.syncPromise = this.performSync().then((syncAgain) => {
+    const lifecycle = this.lifecycle
+    this.syncPromise = this.performSync(lifecycle).then((syncAgain) => {
       this.syncPromise = null
-      if (syncAgain && this.isOnline()) this.scheduleSync()
+      if (syncAgain && this.isOnline() && this.isActive(lifecycle)) this.scheduleSync()
     })
     return this.syncPromise
   }
 
-  private async performSync() {
+  private async performSync(lifecycle: number) {
     this.replaceSnapshot({ ...this.snapshot, status: 'syncing', error: null })
+    await this.ensureRealtime(lifecycle)
+    if (!this.isActive(lifecycle)) return false
     await this.waitForLocalWrites()
+    if (!this.isActive(lifecycle)) return false
     const uploading = this.mutations
     this.mutations = []
     this.inFlightMutations = uploading
     try {
       const result = await synchronizeShopping(this.familyId, uploading, this.remote)
+      if (!this.isActive(lifecycle)) return false
       this.inFlightMutations = []
       const items = applyPendingShoppingMutations(result.items, this.mutations)
       await this.persistLocal(items, result.lastSuccessfulSyncAt)
       this.replaceSnapshot({
         ready: true,
+        hasUsableData: true,
         items,
         pendingItemIds: pendingShoppingItemIds(this.mutations),
         pendingCount: this.mutations.length,
-        status: this.mutations.length > 0 ? 'syncing' : 'synced',
+        status: !this.realtimeHealthy ? 'error' : this.mutations.length > 0 ? 'syncing' : 'synced',
         lastSuccessfulSyncAt: result.lastSuccessfulSyncAt,
-        error: null,
+        error: this.realtimeHealthy ? null : 'realtime-unavailable',
       })
       return this.mutations.length > 0
     } catch (error) {
+      if (!this.isActive(lifecycle)) return false
       this.mutations = [...uploading, ...this.mutations]
       this.inFlightMutations = []
       try { await this.persistLocal(this.snapshot.items) }
@@ -297,6 +332,28 @@ export class ShoppingRepository {
   }
 
   private scheduleSync() { if (this.isOnline()) queueMicrotask(() => { void this.sync() }) }
+
+  private isActive(lifecycle: number) { return this.running && lifecycle === this.lifecycle }
+
+  private async ensureRealtime(lifecycle: number) {
+    if (this.stopRealtime || !this.isActive(lifecycle)) return
+    try {
+      await this.stopPromise
+      if (!this.isActive(lifecycle)) return
+      const stop = await this.realtime(this.familyId, () => {
+        if (this.isActive(lifecycle)) void this.sync()
+      })
+      if (!this.isActive(lifecycle)) {
+        await stop()
+        return
+      }
+      this.stopRealtime = stop
+      this.realtimeHealthy = true
+    } catch (error) {
+      this.realtimeHealthy = false
+      console.error('Shopping Realtime subscription failed:', error)
+    }
+  }
 
   private replaceSnapshot(snapshot: ShoppingRepositorySnapshot) {
     this.snapshot = snapshot
