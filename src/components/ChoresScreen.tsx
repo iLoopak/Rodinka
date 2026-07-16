@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { t } from '../strings'
-import { useFamilyData } from '../context/FamilyDataContext'
+import { useFamilyCore } from '../context/family/FamilyCoreContext'
+import { useFamilyMembersData } from '../context/family/FamilyMembersContext'
+import { useChoresData } from '../context/chores/ChoresContext'
+import { useAllowanceData } from '../context/chores/AllowanceContext'
+import { useChoreApprovalActions } from '../context/chores/useChoreApprovalActions'
 import { ChoreList } from './ChoreList'
 import { PendingApprovals } from './PendingApprovals'
 import { AllowanceBalances } from './AllowanceBalances'
@@ -35,34 +39,43 @@ export function ChoresScreen() {
   const { searchParams, setQueryParam, removeQueryParam } = useRouter()
   const choreParam = searchParams.get('chore')
   const editParam = searchParams.get('edit') === '1'
+  const { currentMember, isParentOrAdmin } = useFamilyCore()
+  const { kids, members, memberById, membersLoading, membersError, refreshMembers } = useFamilyMembersData()
   const {
     chores,
     completions,
-    kids,
-    members,
-    currentMember,
     pendingCompletions,
-    balances,
-    memberById,
     latestCompletionFor,
-    markDone,
-    approve,
     reject,
+    addChore,
+    updateChore,
+    setChoreArchived,
+    reorderQuickTodos,
+    choresLoading,
+    choresError,
+    refreshChores,
+    refreshCompletions,
+  } = useChoresData()
+  const { approve, markDone } = useChoreApprovalActions()
+  const {
+    balances,
     payout,
     allowancePlans,
     allowanceCycles,
     saveAllowancePlan,
     creditAllowance,
     skipAllowance,
-    addChore,
-    updateChore,
-    setChoreArchived,
-    reorderQuickTodos,
-    isParentOrAdmin,
-    loading,
-    error,
-    refreshAll,
-  } = useFamilyData()
+    allowanceLoading,
+    allowanceError,
+    refreshLedger,
+    refreshAllowancePlans,
+  } = useAllowanceData()
+
+  const loading = membersLoading || choresLoading || allowanceLoading
+  const error = membersError || choresError || allowanceError
+  async function refreshAll() {
+    await Promise.all([refreshMembers(), refreshChores(), refreshCompletions(), refreshLedger(), refreshAllowancePlans()])
+  }
 
   useEffect(() => {
     if (loading) return

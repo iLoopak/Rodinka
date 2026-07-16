@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { t } from '../../strings'
 import type { Meal } from '../../hooks/useMeals'
-import type { VoteRoundInput } from '../../context/useMealsData'
+import type { VoteRoundInput } from '../../context/meals/MealsContext'
 
 interface Props {
   meals: Meal[]

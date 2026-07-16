@@ -13,13 +13,13 @@ import { InstallAppBanner } from './InstallAppBanner'
 import { ShoppingScreen } from './ShoppingScreen'
 import { ReminderBell } from './reminders/ReminderBell'
 import { ReminderCenter } from './reminders/ReminderCenter'
-import { useFamilyData } from '../context/FamilyDataContext'
+import { useFamilySettings } from '../context/family/FamilySettingsContext'
 import { FamilyBrand } from './FamilyBrand'
 import { useActiveFamilyMark } from '../hooks/useActiveFamilyMark'
 
 export function AppShell() {
   const { path } = useRouter()
-  const { familyName, familyNameLoading } = useFamilyData()
+  const { familyName, familyNameLoading } = useFamilySettings()
   const familyMark = useActiveFamilyMark()
 
   return (

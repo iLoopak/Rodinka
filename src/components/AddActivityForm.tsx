@@ -17,7 +17,7 @@ import {
   selectedRecurrenceWeekdays,
   toggleRecurrenceWeekday,
 } from '../utils/activityFormModel'
-import type { ActivityInput } from '../context/FamilyDataContext'
+import type { ActivityInput } from '../domain/activities/types'
 import type { Activity, ActivityCategory, ActivityKind, ActivityPaymentFrequency, ActivityRecurrenceType } from '../hooks/useActivities'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
 import { ActivityParticipantPicker } from './activities/ActivityParticipantPicker'

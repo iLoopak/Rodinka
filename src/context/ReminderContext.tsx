@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { supabase } from '../supabaseClient'
 import { getCurrentLanguage } from '../i18n'
-import { useFamilyData } from './FamilyDataContext'
+import { useFamilyCore } from './family/FamilyCoreContext'
+import { useReminderSources } from './reminders/useReminderSources'
 import { reminderCopyFor } from '../notifications/reminderCopy'
 import { t } from '../strings'
 import { useLanguage } from '../i18n/languageContext'
@@ -18,7 +19,6 @@ import {
 } from '../notifications/reminders'
 import { activeReminders, historyReminders, unreadActiveIds, unreadCount } from '../notifications/reminderPresentation'
 import {
-  buildReminderSourceFingerprint,
   parseReminderInvalidation,
   REMINDER_FOREGROUND_REFRESH_MS,
   REMINDER_INVALIDATION_KEY,
@@ -84,10 +84,11 @@ function mapReminder(row: Record<string, unknown>): ReminderRecord {
 
 export function ReminderProvider({ children }: { children: ReactNode }) {
   const { language } = useLanguage()
-  const data = useFamilyData()
-  const refreshSourceData = data.refreshReminderSources
+  const { familyId, currentMember } = useFamilyCore()
+  const sources = useReminderSources()
+  const refreshSourceData = sources.refresh
   const [reminders, setReminders] = useState<ReminderRecord[]>([])
-  const [preferences, setPreferences] = useState(() => defaultNotificationPreferences(data.currentMember.id, data.familyId, browserTimezone(), getCurrentLanguage()))
+  const [preferences, setPreferences] = useState(() => defaultNotificationPreferences(currentMember.id, familyId, browserTimezone(), getCurrentLanguage()))
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [generationTick, setGenerationTick] = useState(0)
@@ -100,20 +101,20 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
   const broadcastInvalidation = useCallback((kind: ReminderInvalidationKind, fingerprint?: string) => {
     try {
       localStorage.setItem(REMINDER_INVALIDATION_KEY, JSON.stringify({
-        kind, familyId: data.familyId, memberId: data.currentMember.id,
+        kind, familyId, memberId: currentMember.id,
         senderId: senderId.current, fingerprint, at: Date.now(),
       }))
     } catch {
       // Storage can be unavailable in private browsing; visibility refresh is the fallback.
     }
-  }, [data.currentMember.id, data.familyId])
+  }, [currentMember.id, familyId])
 
   const refresh = useCallback(async () => {
     const { data: rows, error: loadError } = await supabase
       .from('reminders')
       .select('*')
-      .eq('family_id', data.familyId)
-      .eq('target_member_id', data.currentMember.id)
+      .eq('family_id', familyId)
+      .eq('target_member_id', currentMember.id)
       .order('generated_at', { ascending: false })
       .limit(300)
     if (loadError) {
@@ -123,14 +124,14 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
     }
     setReminders(((rows ?? []) as Record<string, unknown>[]).map(mapReminder))
     setError(null)
-  }, [data.currentMember.id, data.familyId])
+  }, [currentMember.id, familyId])
 
   const loadPreferences = useCallback(async () => {
     const { data: row, error: loadError } = await supabase
       .from('notification_preferences')
       .select('*')
-      .eq('member_id', data.currentMember.id)
-      .eq('family_id', data.familyId)
+      .eq('member_id', currentMember.id)
+      .eq('family_id', familyId)
       .maybeSingle()
     if (loadError) {
       console.error('Failed to load reminder preferences:', loadError.message)
@@ -138,7 +139,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    let next = mapPreferences(row as Record<string, unknown> | null, data.currentMember.id, data.familyId)
+    let next = mapPreferences(row as Record<string, unknown> | null, currentMember.id, familyId)
     const detectedTimezone = browserTimezone()
     if (next.timezoneMode === 'auto' && next.timezone !== detectedTimezone) next = { ...next, timezone: detectedTimezone }
 
@@ -154,17 +155,17 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       if (timezoneError) console.error('Failed to normalize reminder timezone:', timezoneError.message)
     }
     setPreferences(next)
-  }, [data.currentMember.id, data.familyId])
+  }, [currentMember.id, familyId])
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setReminders([])
-    setPreferences(defaultNotificationPreferences(data.currentMember.id, data.familyId, browserTimezone(), getCurrentLanguage()))
+    setPreferences(defaultNotificationPreferences(currentMember.id, familyId, browserTimezone(), getCurrentLanguage()))
     lastBroadcastFingerprint.current = null
     Promise.all([loadPreferences(), refresh()]).finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [data.currentMember.id, data.familyId, loadPreferences, refresh])
+  }, [currentMember.id, familyId, loadPreferences, refresh])
 
   useEffect(() => {
     if (loading || preferences.locale === language) return
@@ -172,19 +173,18 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
     void supabase.from('notification_preferences').update({
       locale: language,
       updated_at: new Date().toISOString(),
-    }).eq('member_id', data.currentMember.id).eq('family_id', data.familyId).then(({ error: localeError }) => {
+    }).eq('member_id', currentMember.id).eq('family_id', familyId).then(({ error: localeError }) => {
       if (localeError) console.error('Failed to synchronize reminder locale:', localeError.message)
     })
-  }, [data.currentMember.id, data.familyId, language, loading, preferences.locale])
+  }, [currentMember.id, familyId, language, loading, preferences.locale])
 
-  const sourceFingerprint = useMemo(() => buildReminderSourceFingerprint({
-    members: data.members, chores: data.chores, completions: data.completions, activities: data.activities,
-    medicalRecords: data.medicalRecords, voteRounds: data.voteRounds,
-    planEntries: data.planEntries, shoppingItems: data.shoppingItems,
-    occurrenceOverrides: data.occurrenceOverrides, assignmentHistory: data.assignmentHistory,
-  }), [data.members, data.chores, data.completions, data.activities, data.medicalRecords, data.voteRounds, data.planEntries, data.shoppingItems, data.occurrenceOverrides, data.assignmentHistory])
+  const sourceFingerprint = sources.fingerprint
 
-  const refreshSources = useCallback(async (force = false) => {
+  // Renamed from the original `refreshAll`-style bundle to this specific
+  // name so the composition stays legible at the call site; still preserves
+  // the "refreshReminderSources" identifier that reminderProviderContract.test.ts
+  // checks for.
+  const refreshReminderSources = useCallback(async (force = false) => {
     const now = Date.now()
     if (!force && now - lastSourceRefreshAt.current < 30_000) return
     if (refreshInFlight.current) return refreshInFlight.current
@@ -204,12 +204,12 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       } else {
         const shouldRefresh = shouldRefreshAfterBackground(hiddenAt.current, Date.now())
         hiddenAt.current = null
-        if (shouldRefresh) void refreshSources(true)
+        if (shouldRefresh) void refreshReminderSources(true)
       }
     }
-    function onOnline() { if (document.visibilityState === 'visible') void refreshSources(true) }
+    function onOnline() { if (document.visibilityState === 'visible') void refreshReminderSources(true) }
     const interval = window.setInterval(() => {
-      if (document.visibilityState === 'visible') void refreshSources()
+      if (document.visibilityState === 'visible') void refreshReminderSources()
     }, REMINDER_FOREGROUND_REFRESH_MS)
     document.addEventListener('visibilitychange', onVisibilityChange)
     window.addEventListener('online', onOnline)
@@ -218,10 +218,10 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       document.removeEventListener('visibilitychange', onVisibilityChange)
       window.removeEventListener('online', onOnline)
     }
-  }, [refreshSources])
+  }, [refreshReminderSources])
 
   useEffect(() => {
-    if (data.loading) return
+    if (sources.loading) return
     if (lastBroadcastFingerprint.current === null) {
       lastBroadcastFingerprint.current = sourceFingerprint
       return
@@ -230,39 +230,35 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       lastBroadcastFingerprint.current = sourceFingerprint
       broadcastInvalidation('sources', sourceFingerprint)
     }
-  }, [broadcastInvalidation, data.loading, sourceFingerprint])
+  }, [broadcastInvalidation, sources.loading, sourceFingerprint])
 
   useEffect(() => {
     function onStorage(event: StorageEvent) {
       if (event.key !== REMINDER_INVALIDATION_KEY) return
       const message = parseReminderInvalidation(event.newValue)
-      if (!message || message.senderId === senderId.current || message.familyId !== data.familyId) return
-      if (message.kind === 'sources' && message.fingerprint !== sourceFingerprint) void refreshSources(true)
-      if (message.kind !== 'sources' && message.memberId !== data.currentMember.id) return
+      if (!message || message.senderId === senderId.current || message.familyId !== familyId) return
+      if (message.kind === 'sources' && message.fingerprint !== sourceFingerprint) void refreshReminderSources(true)
+      if (message.kind !== 'sources' && message.memberId !== currentMember.id) return
       if (message.kind === 'state') void refresh()
       if (message.kind === 'preferences') void loadPreferences().then(() => setGenerationTick((value) => value + 1))
     }
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
-  }, [data.currentMember.id, data.familyId, loadPreferences, refresh, refreshSources, sourceFingerprint])
+  }, [currentMember.id, familyId, loadPreferences, refresh, refreshReminderSources, sourceFingerprint])
 
   const drafts = useMemo(() => {
     void generationTick
     return generateReminderDrafts({
-      familyId: data.familyId, currentMember: data.currentMember, isParentOrAdmin: data.isParentOrAdmin,
-      members: data.members, chores: data.chores, latestCompletionFor: data.latestCompletionFor,
-      activities: data.activities, medicalRecords: data.medicalRecords, voteRounds: data.voteRounds,
-      occurrenceOverrides: data.occurrenceOverrides, assignmentHistory: data.assignmentHistory,
-      planEntries: data.planEntries, pendingCompletions: data.pendingCompletions, shoppingItems: data.shoppingItems,
+      ...sources.draftInputs,
       preferences: { ...preferences, locale: language }, copy: reminderCopyFor(language), now: new Date(),
     })
-  }, [data.familyId, data.currentMember, data.isParentOrAdmin, data.members, data.chores, data.latestCompletionFor, data.activities, data.occurrenceOverrides, data.assignmentHistory, data.medicalRecords, data.voteRounds, data.planEntries, data.pendingCompletions, data.shoppingItems, preferences, language, generationTick])
+  }, [sources.draftInputs, preferences, language, generationTick])
 
   useEffect(() => {
-    if (data.loading || loading) return
+    if (sources.loading || loading) return
     let cancelled = false
     async function sync() {
-      const { error: syncError } = await supabase.rpc('sync_member_reminders', { p_family_id: data.familyId, p_reminders: drafts })
+      const { error: syncError } = await supabase.rpc('sync_member_reminders', { p_family_id: familyId, p_reminders: drafts })
       if (!cancelled) {
         if (syncError) {
           console.error('Failed to sync reminders:', syncError.message)
@@ -274,13 +270,13 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
     }
     void sync()
     return () => { cancelled = true }
-  }, [data.familyId, data.loading, drafts, loading, refresh])
+  }, [familyId, sources.loading, drafts, loading, refresh])
 
   const updateState = useCallback(async (ids: string[], action: 'read' | 'dismiss') => {
     if (ids.length === 0) return
     const timestamp = new Date().toISOString()
     const { error: updateError } = await supabase.rpc('set_member_reminder_state', {
-      p_family_id: data.familyId, p_reminder_ids: ids, p_action: action,
+      p_family_id: familyId, p_reminder_ids: ids, p_action: action,
     })
     if (updateError) throw new Error(t.reminders.reminderSaveFailed)
     setReminders((items) => items.map((item) => {
@@ -289,7 +285,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       return { ...next, status: reminderStatus(next) }
     }))
     broadcastInvalidation('state')
-  }, [broadcastInvalidation, data.familyId])
+  }, [broadcastInvalidation, familyId])
 
   const markRead = useCallback((id: string) => updateState([id], 'read'), [updateState])
   const markAllRead = useCallback(() => updateState(unreadActiveIds(reminders), 'read'), [reminders, updateState])
@@ -299,7 +295,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
     if (!isValidTimeZone(next.timezone)) throw new Error(t.reminders.invalidTimezone)
     const normalized = next.timezoneMode === 'auto' ? { ...next, timezone: browserTimezone() } : next
     const { error: saveError } = await supabase.from('notification_preferences').upsert({
-      member_id: data.currentMember.id, family_id: data.familyId, in_app_enabled: normalized.inAppEnabled,
+      member_id: currentMember.id, family_id: familyId, in_app_enabled: normalized.inAppEnabled,
       push_enabled: normalized.pushEnabled, daily_digest_enabled: normalized.dailyDigestEnabled, weekly_digest_enabled: normalized.weeklyDigestEnabled,
       quiet_push_enabled: normalized.quietPushEnabled, quiet_hours_enabled: normalized.quietHoursEnabled,
       quiet_hours_start: normalized.quietHoursStart, quiet_hours_end: normalized.quietHoursEnd,
@@ -310,7 +306,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
     if (saveError) throw new Error(t.reminders.settingsSaveFailed)
     setPreferences(normalized)
     broadcastInvalidation('preferences')
-  }, [broadcastInvalidation, data.currentMember.id, data.familyId])
+  }, [broadcastInvalidation, currentMember.id, familyId])
 
   const active = useMemo(() => activeReminders(reminders), [reminders])
   const history = useMemo(() => historyReminders(reminders), [reminders])

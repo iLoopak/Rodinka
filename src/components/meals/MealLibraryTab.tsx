@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { t } from '../../strings'
-import { useFamilyData } from '../../context/FamilyDataContext'
+import { useFamilyCore } from '../../context/family/FamilyCoreContext'
+import { useMealsDataContext } from '../../context/meals/MealsContext'
 import { todayISODate } from '../../utils/dueDate'
 import { MEAL_CATEGORY_VALUES, mealBadgeLabel, mealCategoryLabel, suggestedTagLabel, SUGGESTED_MEAL_TAGS } from '../../utils/mealLabels'
 import { getMealBadges } from '../../utils/mealSuggestions'
@@ -10,7 +11,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { AddMealForm } from './AddMealForm'
 import { MealDetailModal } from './MealDetailModal'
 import type { Meal } from '../../hooks/useMeals'
-import type { MealInput } from '../../context/useMealsData'
+import type { MealInput } from '../../context/meals/MealsContext'
 
 interface Props {
   onAddToPlan?: (meal: Meal) => void
@@ -18,7 +19,8 @@ interface Props {
 }
 
 export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
-  const { meals, planEntries, voteRounds, isParentOrAdmin, addMeal, updateMeal } = useFamilyData()
+  const { isParentOrAdmin } = useFamilyCore()
+  const { meals, planEntries, voteRounds, addMeal, updateMeal } = useMealsDataContext()
   const [showAdd, setShowAdd] = useState(false)
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null)
   const [search, setSearch] = useState('')

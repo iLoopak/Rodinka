@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { t } from '../strings'
-import { useFamilyData } from '../context/FamilyDataContext'
+import { useFamilyCore } from '../context/family/FamilyCoreContext'
+import { useFamilyMembersData } from '../context/family/FamilyMembersContext'
+import { useActivitiesData } from '../context/activities/ActivitiesContext'
 import { AddActivityForm } from './AddActivityForm'
 import { ActivityDetailModal } from './ActivityDetailModal'
 import { Modal } from './ui/Modal'
@@ -13,7 +15,7 @@ import { nextOccurrenceDate } from '../utils/recurrence'
 import { formatFullDate } from '../utils/dueDate'
 import { onActivateKey } from '../utils/a11y'
 import type { Activity } from '../hooks/useActivities'
-import type { ActivityInput } from '../context/FamilyDataContext'
+import type { ActivityInput } from '../domain/activities/types'
 import { useRouter } from '../router'
 import { resolveDeepLinkedItem } from '../utils/deepLinks'
 
@@ -30,20 +32,17 @@ export function ActivitiesScreen() {
   const { searchParams, setQueryParam, removeQueryParam } = useRouter()
   const activityParam = searchParams.get('activity')
 
+  const { isParentOrAdmin } = useFamilyCore()
+  const { kids, members, memberName, memberById } = useFamilyMembersData()
   const {
     activities,
-    kids,
-    members,
-    memberName,
-    memberById,
-    isParentOrAdmin,
     addActivity,
     updateActivity,
     markActivityPaymentPaid,
-    loading,
-    error,
-    refreshAll,
-  } = useFamilyData()
+    activitiesLoading: loading,
+    activitiesError: error,
+    refreshActivities: refreshAll,
+  } = useActivitiesData()
 
   useEffect(() => {
     if (loading) return
@@ -273,7 +272,7 @@ export function ActivitiesScreen() {
 
 interface ActivityRowProps {
   activity: Activity
-  memberById: ReturnType<typeof useFamilyData>['memberById']
+  memberById: ReturnType<typeof useFamilyMembersData>['memberById']
   onClick: () => void
 }
 

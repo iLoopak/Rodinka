@@ -1,0 +1,158 @@
+import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react'
+import { supabase } from '../../supabaseClient'
+import { friendly } from '../../utils/friendlyError'
+import { isActiveFamilyMember, useFamilyMembers, type FamilyMember } from '../../hooks/useFamilyMembers'
+import { useMemberProfiles, type MemberProfileInput } from '../../hooks/useMemberProfiles'
+import { createMemberLookup } from '../../utils/memberLookup'
+import { MemberLookupBridge } from './currentMemberBridge'
+
+interface FamilyMembersContextValue {
+  members: FamilyMember[]
+  allMembers: FamilyMember[]
+  kids: FamilyMember[]
+  membersLoading: boolean
+  membersError: string | null
+  memberById: (id: string) => FamilyMember | undefined
+  memberName: (id: string) => string
+  addChild: (displayName: string, avatarFile?: File | null) => Promise<void>
+  editMemberProfile: (member: FamilyMember, input: MemberProfileInput) => Promise<void>
+  removeMember: (memberId: string, replacementMemberId: string | null, taskStrategy: 'unassign' | 'reassign', activityStrategy: 'clear' | 'reassign', reason?: string) => Promise<void>
+  leaveHousehold: (currentMemberId: string, replacementMemberId: string | null, taskStrategy: 'unassign' | 'reassign', activityStrategy: 'clear' | 'reassign') => Promise<void>
+  restoreMember: (memberId: string) => Promise<void>
+  createInvite: () => Promise<{ code: string; expiresAt: string | null }>
+  refreshMembers: () => Promise<void>
+}
+
+const FamilyMembersContext = createContext<FamilyMembersContextValue | null>(null)
+
+interface ProviderProps {
+  familyId: string
+  children: ReactNode
+}
+
+export function FamilyMembersProvider({ familyId, children }: ProviderProps) {
+  const {
+    members: allMembers,
+    loading: membersLoading,
+    error: membersError,
+    refresh: refreshMembers,
+  } = useFamilyMembers(familyId)
+  const { saveMemberProfile } = useMemberProfiles(refreshMembers)
+
+  const members = useMemo(() => allMembers.filter(isActiveFamilyMember), [allMembers])
+  const kids = useMemo(() => members.filter((m) => m.role === 'child'), [members])
+  const memberById = useMemo(() => createMemberLookup(allMembers), [allMembers])
+  const memberName = useMemo(() => (id: string) => memberById(id)?.display_name ?? '?', [memberById])
+
+  const addChild = useCallback(
+    async (displayName: string, avatarFile: File | null = null) => {
+      const { data, error } = await supabase
+        .from('members')
+        .insert({ family_id: familyId, display_name: displayName, role: 'child' })
+        .select('id, family_id, display_name, role, user_id, birth_date, color_key, avatar_path, grammatical_gender, vocative_name')
+        .single()
+      if (error) throw friendly(error)
+      if (avatarFile) {
+        try {
+          await saveMemberProfile({ ...data, avatar_url: null } as FamilyMember, {
+            displayName,
+            birthDate: null,
+            colorKey: null,
+            grammaticalGender: null,
+            vocativeName: null,
+            avatarFile,
+            removeAvatar: false,
+          })
+        } catch (profileError) {
+          const { error: rollbackError } = await supabase
+            .from('members')
+            .delete()
+            .eq('id', data.id)
+            .eq('family_id', familyId)
+          if (rollbackError) console.error('Failed to roll back member after avatar upload failure:', rollbackError.message)
+          await refreshMembers()
+          throw profileError
+        }
+      } else {
+        await refreshMembers()
+      }
+    },
+    [familyId, refreshMembers, saveMemberProfile]
+  )
+
+  const editMemberProfile = useCallback(
+    async (member: FamilyMember, input: MemberProfileInput) => {
+      await saveMemberProfile(member, input)
+    },
+    [saveMemberProfile]
+  )
+
+  const removeMember = useCallback(async (memberId: string, replacementMemberId: string | null, taskStrategy: 'unassign' | 'reassign', activityStrategy: 'clear' | 'reassign', reason = '') => {
+    const { error: removalError } = await supabase.rpc('remove_household_member', {
+      p_member_id: memberId,
+      p_replacement_member_id: replacementMemberId,
+      p_task_strategy: taskStrategy,
+      p_activity_strategy: activityStrategy,
+      p_reason: reason || null,
+      p_allow_self: false,
+    })
+    if (removalError) throw friendly(removalError)
+    await refreshMembers()
+  }, [refreshMembers])
+
+  const leaveHousehold = useCallback(async (currentMemberId: string, replacementMemberId: string | null, taskStrategy: 'unassign' | 'reassign', activityStrategy: 'clear' | 'reassign') => {
+    const { error: leaveError } = await supabase.rpc('remove_household_member', {
+      p_member_id: currentMemberId,
+      p_replacement_member_id: replacementMemberId,
+      p_task_strategy: taskStrategy,
+      p_activity_strategy: activityStrategy,
+      p_reason: 'self_leave',
+      p_allow_self: true,
+    })
+    if (leaveError) throw friendly(leaveError)
+    window.location.assign('/')
+  }, [])
+
+  const restoreMember = useCallback(async (memberId: string) => {
+    const { error: restoreError } = await supabase.rpc('restore_household_member', { p_member_id: memberId })
+    if (restoreError) throw friendly(restoreError)
+    await refreshMembers()
+  }, [refreshMembers])
+
+  const createInvite = useCallback(async () => {
+    const { data: code, error } = await supabase.rpc('create_invite', { fid: familyId })
+    if (error) throw friendly(error)
+    // Best-effort: fetch expiry for display. Not fatal if this second read fails.
+    const { data: invite } = await supabase.from('invites').select('expires_at').eq('code', code).single()
+    return { code: code as string, expiresAt: invite?.expires_at ?? null }
+  }, [familyId])
+
+  const value: FamilyMembersContextValue = {
+    members,
+    allMembers,
+    kids,
+    membersLoading,
+    membersError,
+    memberById,
+    memberName,
+    addChild,
+    editMemberProfile,
+    removeMember,
+    leaveHousehold,
+    restoreMember,
+    createInvite,
+    refreshMembers,
+  }
+
+  return (
+    <FamilyMembersContext.Provider value={value}>
+      <MemberLookupBridge.Provider value={memberById}>{children}</MemberLookupBridge.Provider>
+    </FamilyMembersContext.Provider>
+  )
+}
+
+export function useFamilyMembersData() {
+  const ctx = useContext(FamilyMembersContext)
+  if (!ctx) throw new Error('useFamilyMembersData must be used within a FamilyMembersProvider')
+  return ctx
+}

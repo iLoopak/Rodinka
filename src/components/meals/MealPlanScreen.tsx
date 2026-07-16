@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { t } from '../../strings'
-import { useFamilyData } from '../../context/FamilyDataContext'
+import { useMealsDataContext } from '../../context/meals/MealsContext'
 import { ErrorState } from '../ui/ErrorState'
 import { MealLibraryTab } from './MealLibraryTab'
 import { VoteTab } from './VoteTab'
@@ -16,7 +16,7 @@ function initialTab(): Tab {
 }
 
 export function MealPlanScreen() {
-  const { loading, error, refreshAll } = useFamilyData()
+  const { loading, error, refreshMealsData: refreshAll } = useMealsDataContext()
   const [tab, setTab] = useState<Tab>(initialTab)
   const [planPrefill, setPlanPrefill] = useState<PlanPrefill | undefined>(undefined)
   const [voteMealPrefill, setVoteMealPrefill] = useState<string | undefined>(undefined)

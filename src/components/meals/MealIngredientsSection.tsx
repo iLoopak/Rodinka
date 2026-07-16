@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useFamilyData } from '../../context/FamilyDataContext'
+import { useFamilyCore } from '../../context/family/FamilyCoreContext'
+import { useShopping } from '../../context/shopping/ShoppingContext'
 import { t } from '../../strings'
 import { ingredientsForImport, SHOPPING_CATEGORIES, SHOPPING_UNITS, type MealIngredientInput, type ShoppingCategory, type ShoppingUnit } from '../../utils/shopping'
 import { formatLocalizedShoppingQuantity, shoppingCategoryLabel, shoppingUnitLabel } from '../../utils/shoppingLabels'
@@ -15,7 +16,8 @@ interface Props {
 const EMPTY_INGREDIENT: MealIngredientInput = { name: '', quantity: null, unit: null, note: '', category: 'other' }
 
 export function MealIngredientsSection({ mealId, sourcePlanEntryId = null, allowEdit = true }: Props) {
-  const { ingredientsForMeal, replaceMealIngredients, importShoppingItems, isParentOrAdmin } = useFamilyData()
+  const { isParentOrAdmin } = useFamilyCore()
+  const { ingredientsForMeal, replaceMealIngredients, importShoppingItems } = useShopping()
   const ingredients = ingredientsForMeal(mealId)
   const [editing, setEditing] = useState(false)
   const [showImport, setShowImport] = useState(false)

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { t } from '../../strings'
 import { MEAL_CATEGORY_VALUES, mealCategoryLabel, suggestedTagLabel, SUGGESTED_MEAL_TAGS } from '../../utils/mealLabels'
-import type { MealInput } from '../../context/useMealsData'
+import type { MealInput } from '../../context/meals/MealsContext'
 import type { Meal, MealCategory } from '../../hooks/useMeals'
 
 const CATEGORY_OPTIONS = MEAL_CATEGORY_VALUES.map((value) => ({ value, label: mealCategoryLabel(value) }))

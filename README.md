@@ -186,14 +186,43 @@ npm run build
 ### Struktura aplikace
 
 - `src/components` — obrazovky a znovupoužitelné UI,
-- `src/context` a `src/hooks` — sdílená data a operace,
+- `src/context` a `src/hooks` — sdílená data a operace (viz "Datová vrstva" níže),
+- `src/domain` — doménové vstupní typy pro mutace (`ActivityInput`, `MedicalRecordInput`, `ChoreApprovalResult`), oddělené od kontextů,
 - `src/utils` — doménová logika, recurrence, projekce kalendáře a formátování,
 - `src/notifications` — pravidla připomínek a plánování doručení,
+- `src/shopping` — offline-first repozitář nákupního seznamu (IndexedDB, fronta mutací, synchronizace, realtime),
 - `src/strings.ts` a `src/i18n` — české a anglické texty,
 - `supabase/migrations` — databázové schéma, oprávnění a transakční RPC,
 - `supabase/functions` — serverové zpracování připomínek a Web Push.
 
 Kalendář nemá vlastní duplicitní tabulku. Jednotlivé pohledy skládají události z aktivit, úkolů, zdravotních záznamů a jídelního plánu. Opakování a jednorázové výjimky se vyhodnocují ve sdílené doménové vrstvě, aby všechny obrazovky zobrazovaly stejný efektivní stav.
+
+### Datová vrstva: feature kontexty
+
+Aplikace nemá jeden sdílený "god" kontext. Každá doména má vlastní React Context pod `src/context/<oblast>/`, vlastní `loading`/`error` a vlastní `refresh()` — mutace v jedné doméně nepřekresluje obrazovky, které ji nepoužívají, a chyba načtení v jedné doméně neblokuje ostatní.
+
+| Kontext | Hook | Vlastní data |
+|---|---|---|
+| `family/FamilyCoreContext.tsx` | `useFamilyCore()` | `familyId`, `userId`, `userEmail`, `currentMember`, `isParentOrAdmin` — malé a stabilní, nenačítá žádnou doménová data |
+| `family/FamilyMembersContext.tsx` | `useFamilyMembersData()` | členové (aktivní i odebraní), `memberById`, přidání/úprava/odebrání/obnovení člena, pozvánky |
+| `family/FamilySettingsContext.tsx` | `useFamilySettings()` | název rodiny, fotografie v záhlaví, nastavení kategorií nákupu |
+| `chores/ChoresContext.tsx` | `useChoresData()` | úkoly, dokončení, schvalování, rychlé úkoly a jejich pořadí |
+| `chores/AllowanceContext.tsx` | `useAllowanceData()` | kapesné — zůstatky, plány, cykly, výplaty |
+| `activities/ActivitiesContext.tsx` | `useActivitiesData()` | kroužky a rodinné události, platby |
+| `activities/OccurrenceAssignmentsContext.tsx` | `useOccurrenceAssignmentsData()` | výjimky jednotlivých termínů a historie přiřazení — sdíleno úkoly i aktivitami |
+| `health/MedicalContext.tsx` | `useMedicalData()` | zdravotní záznamy včetně očkování |
+| `meals/MealsContext.tsx` | `useMealsDataContext()` | jídla, hlasování, jídelní plán |
+| `shopping/ShoppingContext.tsx` | `useShopping()` | nákupní seznam — tenká obálka nad offline-first repozitářem v `src/shopping` |
+
+`src/context/AppDataProviders.tsx` tyto providery skládá do jednoho stromu. Až na dvě výjimky (kapesné čerpá ID úkolů od domény úkolů; schválení úkolu smí dobít i žebříček kapesného, viz níže) každý provider potřebuje jen `familyId`/`userId` předané jako prop — providery mezi sebou navzájem neimportují svůj kontext.
+
+Obrazovky si berou jen to, co skutečně vykreslují — např. `ShoppingScreen` používá `useShopping()` + `useFamilyMembersData()`, nikoli úkoly, jídla nebo zdraví. `TodayDashboard` a `CalendarScreen` legitimně kombinují víc domén najednou; místo aby importovaly všechny kontexty přímo, skládají si data přes vlastní kompoziční hooky (`src/components/today/useTodayDashboardData.ts`, `src/components/calendar/useCalendarSources.ts`). `ReminderContext` má obdobný `useReminderSources()` v `src/context/reminders/`.
+
+**Pravidlo pro mezidoménové refreshe:** žádný kontext nevolá "refresh všeho". Jediné dvě výjimky jsou tam, kde to odpovídá skutečné transakci na backendu:
+- schválení/dokončení úkolu (`useChoreApprovalActions` v `src/context/chores/`) obnoví úkoly, jejich dokončení *a* žebříček kapesného, protože schvalovací RPC obojí mění zároveň,
+- odebrání nebo obnovení člena (`FamilyScreen.tsx`) obnoví i úkoly, aktivity a výjimky termínů, protože RPC přeřazuje jejich přiřazení.
+
+**Pravidlo pro přidání nové domény:** vytvořte `src/context/<oblast>/<Domena>Context.tsx` s vlastním `<Domena>Provider` a `use<Domena>Data()` hookem, zapojte provider do `AppDataProviders.tsx`, a pokud doména potřebuje vstupní typ pro mutaci, dejte ho do `src/domain/<oblast>/types.ts` — ne do samotného kontextu.
 
 ## Provozní dokumentace
 

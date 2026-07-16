@@ -7,7 +7,7 @@ import {
   medicalRecordTypeLabel,
   medicalStatusLabel,
 } from '../utils/medicalLabels'
-import type { MedicalRecordInput } from '../context/FamilyDataContext'
+import type { MedicalRecordInput } from '../domain/medical/types'
 import type { MedicalRecord, MedicalRecordType, MedicalStatus } from '../hooks/useMedicalRecords'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
 

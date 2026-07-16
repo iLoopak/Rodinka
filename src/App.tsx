@@ -4,7 +4,7 @@ import { AuthScreen } from './components/AuthScreen'
 import { OnboardingScreen } from './components/OnboardingScreen'
 import { AppShell } from './components/AppShell'
 import { RouterProvider } from './router'
-import { FamilyDataProvider } from './context/FamilyDataContext'
+import { AppDataProviders } from './context/AppDataProviders'
 import { ReminderProvider } from './context/ReminderContext'
 import { PushProvider } from './context/PushContext'
 import { t } from './strings'
@@ -38,13 +38,13 @@ export default function App() {
 
   return (
     <RouterProvider>
-      <FamilyDataProvider member={member} userId={session.user.id} userEmail={session.user.email ?? ''}>
+      <AppDataProviders member={member} userId={session.user.id} userEmail={session.user.email ?? ''}>
         <ReminderProvider>
           <PushProvider>
             <AppShell />
           </PushProvider>
         </ReminderProvider>
-      </FamilyDataProvider>
+      </AppDataProviders>
     </RouterProvider>
   )
 }

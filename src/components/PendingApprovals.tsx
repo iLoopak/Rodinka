@@ -4,7 +4,7 @@ import type { Chore } from '../hooks/useChores'
 import type { ChoreCompletion } from '../hooks/useChoreCompletions'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
 import { MemberAvatar } from './ui/MemberAvatar'
-import type { ChoreApprovalResult } from '../context/FamilyDataContext'
+import type { ChoreApprovalResult } from '../domain/chores/types'
 
 interface Props {
   completions: ChoreCompletion[]

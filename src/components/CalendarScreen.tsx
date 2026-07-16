@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { t } from '../strings'
-import { useFamilyData } from '../context/FamilyDataContext'
+import { useCalendarSources } from './calendar/useCalendarSources'
 import { buildCalendarEntries, deduplicateAgendaRanges, entryMatchesMember, type CalendarEntry } from '../utils/calendarEntries'
 import { getChoreState } from '../utils/choreState'
 import { addDays, formatMonthYear, todayISODate } from '../utils/dueDate'
@@ -65,8 +65,8 @@ export function CalendarScreen() {
     latestCompletionFor,
     loading,
     error,
-    refreshAll,
-  } = useFamilyData()
+    refresh,
+  } = useCalendarSources()
 
   useEffect(() => {
     try { localStorage.setItem(CALENDAR_VIEW_KEY, viewMode) } catch { /* Private browsing can deny storage. */ }
@@ -169,7 +169,7 @@ export function CalendarScreen() {
   }, [activities, allowancePlans, assignmentHistory, chores, filterPerson, filterType, latestCompletionFor, medicalRecords, occurrenceOverrides, participantHistory, planEntries, range.end, range.start])
 
   if (loading) return <p className="loading">{t.loading.generic}</p>
-  if (error) return <ErrorState message={error} onRetry={refreshAll} />
+  if (error) return <ErrorState message={error} onRetry={refresh} />
 
   const hasFilters = filterPerson !== '' || filterType !== ''
   function clearFilters() {

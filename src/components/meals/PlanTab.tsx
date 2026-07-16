@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { t } from '../../strings'
-import { useFamilyData } from '../../context/FamilyDataContext'
+import { useFamilyCore } from '../../context/family/FamilyCoreContext'
+import { useFamilyMembersData } from '../../context/family/FamilyMembersContext'
+import { useMealsDataContext } from '../../context/meals/MealsContext'
 import { formatShortDate, todayISODate } from '../../utils/dueDate'
 import { getCurrentWeekStart, getWeekStart, getWeekDates, isCurrentWeek, shiftWeek, formatWeekRangeLabel } from '../../utils/mealWeek'
 import { displayTitle, groupEntriesByDate } from '../../utils/mealPlanGrouping'
@@ -10,7 +12,7 @@ import { Modal } from '../ui/Modal'
 import { MemberAvatar } from '../ui/MemberAvatar'
 import { AddPlanEntryForm } from './AddPlanEntryForm'
 import type { MealPlanEntry, MealSlot } from '../../hooks/useMealPlanEntries'
-import type { PlanEntryInput } from '../../context/useMealsData'
+import type { PlanEntryInput } from '../../context/meals/MealsContext'
 import { MealIngredientsSection } from './MealIngredientsSection'
 
 function weekdayLabels() { return [
@@ -45,8 +47,9 @@ function statusBadgeClass(status: MealPlanEntry['status']): string {
 }
 
 export function PlanTab({ prefill, onPrefillConsumed }: Props) {
-  const { meals, members, planEntries, memberById, isParentOrAdmin, addPlanEntry, updatePlanEntry, deletePlanEntry, copyWeek } =
-    useFamilyData()
+  const { isParentOrAdmin } = useFamilyCore()
+  const { members, memberById } = useFamilyMembersData()
+  const { meals, planEntries, addPlanEntry, updatePlanEntry, deletePlanEntry, copyWeek } = useMealsDataContext()
   const [weekStart, setWeekStart] = useState(() => {
     const date = new URLSearchParams(window.location.search).get('date')
     return date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? getWeekStart(date) : getCurrentWeekStart()
