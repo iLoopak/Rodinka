@@ -13,7 +13,7 @@ import {
 
 interface Props {
   file: File
-  onApply: (file: File) => void
+  onSave: (file: File) => Promise<void>
   onCancel: () => void
   onError: () => void
 }
@@ -25,7 +25,7 @@ interface Gesture {
   distance: number
 }
 
-export function AvatarCropEditor({ file, onApply, onCancel, onError }: Props) {
+export function AvatarCropEditor({ file, onSave, onCancel, onError }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const dialogRef = useRef<HTMLElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
@@ -38,6 +38,7 @@ export function AvatarCropEditor({ file, onApply, onCancel, onError }: Props) {
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [decodeFailed, setDecodeFailed] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
     cancelRef.current?.focus()
@@ -175,11 +176,15 @@ export function AvatarCropEditor({ file, onApply, onCancel, onError }: Props) {
     const image = imageRef.current
     if (!image) return
     setProcessing(true)
+    setSaveError(null)
     try {
-      onApply(await createCroppedMemberAvatar(image, viewportSize, transform))
+      const cropped = await createCroppedMemberAvatar(image, viewportSize, transform)
+      await onSave(cropped)
+      // On success the caller closes this dialog (it owns that state) — don't
+      // touch local state further so we don't set-state-after-unmount.
     } catch (error) {
-      console.error('Failed to crop avatar:', error)
-      onError()
+      console.error('Failed to save avatar:', error)
+      setSaveError(error instanceof Error ? error.message : t.family.errors.avatarUploadFailed)
       setProcessing(false)
     }
   }
@@ -226,13 +231,17 @@ export function AvatarCropEditor({ file, onApply, onCancel, onError }: Props) {
           <output>{Math.round(transform.zoom * 100)}%</output>
         </label>
 
+        {saveError && <p className="error avatar-crop-error" role="alert">{saveError}</p>}
+
         <footer className="avatar-crop-actions">
-          <button ref={cancelRef} type="button" className="btn-secondary" onClick={onCancel} disabled={processing}>
-            {t.family.cropCancel}
-          </button>
-          <button type="button" className="btn-secondary" onClick={() => updateTransform(initialAvatarCropTransform())} disabled={loading || decodeFailed || processing}>
-            {t.family.cropReset}
-          </button>
+          <div className="avatar-crop-actions-secondary">
+            <button ref={cancelRef} type="button" className="btn-secondary" onClick={onCancel} disabled={processing}>
+              {t.family.cropCancel}
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => updateTransform(initialAvatarCropTransform())} disabled={loading || decodeFailed || processing}>
+              {t.family.cropReset}
+            </button>
+          </div>
           <button type="button" onClick={applyCrop} disabled={loading || decodeFailed || processing}>
             {processing ? t.family.cropApplying : t.family.cropApply}
           </button>

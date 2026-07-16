@@ -1824,13 +1824,25 @@ label.profile-photo-picker:focus-within {
   bottom: 0;
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
   gap: 8px;
   width: 100%;
   max-width: 480px;
   margin-top: auto;
   padding-top: 8px;
   background: var(--paper);
+}
+
+.avatar-crop-actions-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.avatar-crop-error {
+  width: 100%;
+  max-width: 480px;
 }
 
 @media (min-width: 600px) {
