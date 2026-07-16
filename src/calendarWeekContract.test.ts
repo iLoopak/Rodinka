@@ -6,6 +6,7 @@ const root = process.cwd()
 const screen = readFileSync(join(root, 'src/components/CalendarScreen.tsx'), 'utf8')
 const week = readFileSync(join(root, 'src/components/calendar/WeekAgenda.tsx'), 'utf8')
 const dayCard = readFileSync(join(root, 'src/components/calendar/CalendarDayAgendaCard.tsx'), 'utf8')
+const entryRow = readFileSync(join(root, 'src/components/calendar/WeekCalendarEntryRow.tsx'), 'utf8')
 const styles = readFileSync(join(root, 'src/index.css'), 'utf8')
 
 describe('weekly calendar integration contracts', () => {
@@ -54,6 +55,25 @@ describe('weekly calendar integration contracts', () => {
     expect(dayCard).toContain('timed.map')
     expect(styles).toContain('.week-day-group ul { display: grid;')
     expect(styles).not.toContain('.week-day-add-small')
+  })
+
+  it('uses a mobile-first vertical event hierarchy without legacy side columns', () => {
+    const layoutRule = styles.match(/\.week-entry-layout\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(entryRow).toContain('className="week-entry-heading"')
+    expect(entryRow).toContain('className="week-entry-time font-tabular"')
+    expect(entryRow).toContain('className="week-entry-metadata"')
+    expect(entryRow).not.toContain('DueBadge')
+    expect(entryRow).not.toContain('week-entry-side')
+    expect(entryRow).not.toContain('avatar-stack')
+    expect(layoutRule).not.toContain('grid-template-columns')
+    expect(styles).not.toContain('.week-entry-button')
+  })
+
+  it('keeps the companion switch compact and inside the event content', () => {
+    expect(entryRow).toContain('<MemberAvatar member={responsible} size={30} />')
+    expect(entryRow).toContain('className="week-entry-swap"')
+    expect(entryRow).toContain('className="week-entry-override-dot"')
+    expect(styles).toContain('min-height: 44px')
   })
 
   it('does not repeat participant avatars in day headers', () => {

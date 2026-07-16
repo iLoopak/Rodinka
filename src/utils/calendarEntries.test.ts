@@ -58,6 +58,7 @@ describe('buildCalendarEntries — activities', () => {
       type: 'activity',
       childOrPatientId: 'child-1',
       responsibleMemberId: 'parent-1',
+      recurrenceLabel: 'Každý týden ve středu',
     })
 
     const paymentEntries = entries.filter((e) => e.sourceType === 'activity_payment')
