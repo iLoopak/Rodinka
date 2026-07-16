@@ -1,25 +1,17 @@
 import { useCallback } from 'react'
-import { supabase } from '../supabaseClient'
-import { t } from '../strings'
-import { useMeals, type Meal, type MealCategory, type MealStatus } from '../hooks/useMeals'
-import { useMealVoteRounds, type VoteValue } from '../hooks/useMealVoteRounds'
+import { supabase } from '../../supabaseClient'
+import { friendly } from '../../utils/friendlyError'
+import { useMeals, type Meal, type MealCategory, type MealStatus } from '../../hooks/useMeals'
+import { useMealVoteRounds, type VoteValue } from '../../hooks/useMealVoteRounds'
 import {
   useMealPlanEntries,
   type MealPlanEntry,
   type MealPlanOrigin,
   type MealPlanStatus,
   type MealSlot,
-} from '../hooks/useMealPlanEntries'
-import { getWeekDates } from '../utils/mealWeek'
-import { buildCopiedEntries } from '../utils/mealPlanGrouping'
-
-// Supabase errors aren't meant for end users (raw constraint names,
-// English text) — log the real one for debugging, surface a generic
-// localized string. Same helper shape as FamilyDataContext's `friendly`.
-function friendly(error: { message: string }): Error {
-  console.error(error.message)
-  return new Error(t.errors.generic)
-}
+} from '../../hooks/useMealPlanEntries'
+import { getWeekDates } from '../../utils/mealWeek'
+import { buildCopiedEntries } from '../../utils/mealPlanGrouping'
 
 export interface MealInput {
   name: string
@@ -78,13 +70,10 @@ function planEntryInputToRow(input: PlanEntryInput) {
   }
 }
 
-// Composes the meals/voting/plan hooks and every meal-related mutation
-// into one object. Kept separate from FamilyDataContext.tsx (which just
-// calls this hook and spreads the result into its own value) purely to
-// stop that file from growing into an unmaintainable single file — this
-// is not a second data boundary, `useFamilyData()` remains the one place
-// components read from.
-export function useMealsData(familyId: string | undefined, userId: string) {
+// Composes the meals/voting/plan hooks and every meal-related mutation into
+// one object for MealsContext to wrap. Named "Source" (not "Data") to avoid
+// any ambiguity with the MealsContext accessor hook, useMealsDataContext().
+export function useMealsDataSource(familyId: string | undefined, userId: string) {
   const { meals, loading: mealsLoading, error: mealsError, refresh: refreshMeals } = useMeals(familyId)
   const {
     voteRounds,

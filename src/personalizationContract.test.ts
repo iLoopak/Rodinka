@@ -8,7 +8,7 @@ const root = process.cwd()
 const migration = readFileSync(join(root, 'supabase/migrations/20260714150000_member_vocative_name.sql'), 'utf8')
 const profile = readFileSync(join(root, 'src/components/family/MemberProfileModal.tsx'), 'utf8')
 const shell = readFileSync(join(root, 'src/components/AppShell.tsx'), 'utf8')
-const familyContext = readFileSync(join(root, 'src/context/FamilyDataContext.tsx'), 'utf8')
+const familyContext = readFileSync(join(root, 'src/context/family/FamilySettingsContext.tsx'), 'utf8')
 const familyScreen = readFileSync(join(root, 'src/components/FamilyScreen.tsx'), 'utf8')
 const familyMarkHook = readFileSync(join(root, 'src/hooks/useActiveFamilyMark.ts'), 'utf8')
 
@@ -28,7 +28,7 @@ describe('personalization persistence and UI contracts', () => {
   })
 
   it('loads the shared brand from the active family context', () => {
-    expect(shell).toContain('useFamilyData()')
+    expect(shell).toContain('useFamilySettings()')
     expect(shell).toContain('members={familyMark.members}')
     expect(shell).toContain('loading={familyNameLoading}')
     expect(shell).toContain('markLoading={familyMark.loading}')

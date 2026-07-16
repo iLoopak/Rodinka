@@ -1,5 +1,10 @@
 import { useState } from 'react'
-import { useFamilyData } from '../../context/FamilyDataContext'
+import { useFamilyCore } from '../../context/family/FamilyCoreContext'
+import { useFamilyMembersData } from '../../context/family/FamilyMembersContext'
+import { useChoresData } from '../../context/chores/ChoresContext'
+import { useActivitiesData } from '../../context/activities/ActivitiesContext'
+import { useMedicalData } from '../../context/health/MedicalContext'
+import { useOccurrenceAssignmentsData } from '../../context/activities/OccurrenceAssignmentsContext'
 import { useRouter, type Route } from '../../router'
 import { t } from '../../strings'
 import type { CalendarEntry } from '../../utils/calendarEntries'
@@ -19,17 +24,12 @@ interface Props {
 }
 
 export function CalendarEntryDetailModal({ entry, onClose, openAssignmentInitially = false }: Props) {
-  const {
-    chores,
-    medicalRecords,
-    memberById,
-    latestCompletionFor,
-    markDone,
-    updateMedicalRecord,
-    members,
-    isParentOrAdmin,
-    setOccurrenceMember,
-  } = useFamilyData()
+  const { isParentOrAdmin } = useFamilyCore()
+  const { members, memberById } = useFamilyMembersData()
+  const { chores, latestCompletionFor, markDone, refreshChores } = useChoresData()
+  const { medicalRecords, updateMedicalRecord } = useMedicalData()
+  const { refreshActivities } = useActivitiesData()
+  const { setOccurrenceMember } = useOccurrenceAssignmentsData()
   const { navigate } = useRouter()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -103,6 +103,7 @@ export function CalendarEntryDetailModal({ entry, onClose, openAssignmentInitial
     setError(null)
     try {
       await setOccurrenceMember(entry.assignmentSeriesType, entry.sourceId, entry.date, memberId, restoreDefault)
+      await (entry.assignmentSeriesType === 'activity' ? refreshActivities() : refreshChores())
       setAssignmentOpen(false)
     } catch {
       setDisplayMemberId(previousMemberId)

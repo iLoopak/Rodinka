@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { t } from '../strings'
-import { useFamilyData } from '../context/FamilyDataContext'
+import { useFamilyCore } from '../context/family/FamilyCoreContext'
+import { useFamilySettings } from '../context/family/FamilySettingsContext'
 import { supabase } from '../supabaseClient'
 import { useInstallPrompt } from '../hooks/useInstallPrompt'
 import { Modal } from './ui/Modal'
@@ -13,7 +14,8 @@ import { FamilyHeroCropEditor } from './family/FamilyHeroCropEditor'
 import { validateFamilyHeroFile } from '../utils/familyHeroImage'
 
 export function MoreScreen() {
-  const { currentMember, userEmail, familyName, familyHeroImageUrl, updateFamilyName, updateFamilyHeroImage } = useFamilyData()
+  const { currentMember, userEmail } = useFamilyCore()
+  const { familyName, familyHeroImageUrl, updateFamilyName, updateFamilyHeroImage } = useFamilySettings()
   const familyMark = useActiveFamilyMark()
   const { language, changeLanguage } = useLanguage()
   const [showSetPassword, setShowSetPassword] = useState(false)

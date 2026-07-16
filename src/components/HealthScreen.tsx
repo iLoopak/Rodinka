@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { t } from '../strings'
-import { useFamilyData } from '../context/FamilyDataContext'
+import { useFamilyCore } from '../context/family/FamilyCoreContext'
+import { useFamilyMembersData } from '../context/family/FamilyMembersContext'
+import { useMedicalData } from '../context/health/MedicalContext'
 import { AddMedicalRecordForm } from './AddMedicalRecordForm'
 import { MedicalDetailModal } from './MedicalDetailModal'
 import { Modal } from './ui/Modal'
@@ -13,7 +15,7 @@ import { formatFullDate, todayISODate } from '../utils/dueDate'
 import { isMedicalRecordOverdue } from '../utils/medicalDueState'
 import { onActivateKey } from '../utils/a11y'
 import type { MedicalRecord } from '../hooks/useMedicalRecords'
-import type { MedicalRecordInput } from '../context/FamilyDataContext'
+import type { MedicalRecordInput } from '../domain/medical/types'
 import { useRouter } from '../router'
 import { resolveDeepLinkedItem } from '../utils/deepLinks'
 
@@ -29,8 +31,16 @@ export function HealthScreen() {
   const { searchParams, setQueryParam, removeQueryParam } = useRouter()
   const recordParam = searchParams.get('record')
 
-  const { medicalRecords, members, currentMember, memberName, memberById, isParentOrAdmin, addMedicalRecord, updateMedicalRecord, loading, error, refreshAll } =
-    useFamilyData()
+  const { currentMember, isParentOrAdmin } = useFamilyCore()
+  const { members, memberName, memberById } = useFamilyMembersData()
+  const {
+    medicalRecords,
+    addMedicalRecord,
+    updateMedicalRecord,
+    medicalLoading: loading,
+    medicalError: error,
+    refreshMedicalRecords: refreshAll,
+  } = useMedicalData()
 
   useEffect(() => {
     if (loading) return
@@ -197,7 +207,7 @@ export function HealthScreen() {
 
 interface MedicalRowProps {
   record: MedicalRecord
-  memberById: ReturnType<typeof useFamilyData>['memberById']
+  memberById: ReturnType<typeof useFamilyMembersData>['memberById']
   onClick: () => void
 }
 

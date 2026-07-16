@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useFamilyData } from '../context/FamilyDataContext'
+import { useTodayDashboardData } from './today/useTodayDashboardData'
 import { useRouter } from '../router'
 import { t } from '../strings'
 import { getCurrentLanguage } from '../i18n'
@@ -49,12 +49,12 @@ export function TodayDashboard() {
     reject,
     loading,
     error,
-    refreshAll,
-  } = useFamilyData()
+    refresh,
+  } = useTodayDashboardData()
   const { navigate, navigateHref } = useRouter()
 
   if (loading) return <p className="loading">{t.loading.generic}</p>
-  if (error) return <ErrorState message={error} onRetry={refreshAll} />
+  if (error) return <ErrorState message={error} onRetry={refresh} />
 
   const today = todayISODate()
   const entries = buildTodayEntries({

@@ -3,7 +3,10 @@ import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor, cl
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { snapCenterToCursor } from '@dnd-kit/modifiers'
-import { useFamilyData } from '../context/FamilyDataContext'
+import { useFamilyCore } from '../context/family/FamilyCoreContext'
+import { useFamilyMembersData } from '../context/family/FamilyMembersContext'
+import { useFamilySettings } from '../context/family/FamilySettingsContext'
+import { useShopping } from '../context/shopping/ShoppingContext'
 import { t } from '../strings'
 import { formatShortDate } from '../utils/dueDate'
 import { SHOPPING_CATEGORIES, groupShoppingItems, shoppingItemsForCopy, type ShoppingCategory, type ShoppingItem, type ShoppingSession, type ShoppingTemplate } from '../utils/shopping'
@@ -19,13 +22,16 @@ import { CompletionCheckbox } from './ui/CompletionCheckbox'
 import { defaultShoppingCategorySettings, type ShoppingCategorySettings } from '../utils/shoppingCategorySettings'
 
 export function ShoppingScreen() {
+  const { currentMember, isParentOrAdmin } = useFamilyCore()
+  const { members, memberById } = useFamilyMembersData()
+  const { shoppingCategorySettings, updateShoppingCategorySettings } = useFamilySettings()
   const {
-    members, memberById, currentMember, activeShoppingItems, purchasedShoppingItems, commonShoppingItems, shoppingSessions,
+    activeShoppingItems, purchasedShoppingItems, commonShoppingItems, shoppingSessions,
     shoppingLoading, shoppingError, refreshShopping, addShoppingItem, updateShoppingItem, deleteShoppingItem,
     toggleShoppingPurchased, archivePurchasedShoppingItems, importShoppingItems,
-    reorderShoppingItems, shoppingCategorySettings, updateShoppingCategorySettings, isParentOrAdmin,
+    reorderShoppingItems,
     shoppingSyncStatus, shoppingSyncError, pendingShoppingChanges, pendingShoppingItemIds, shoppingLastSyncedAt,
-  } = useFamilyData()
+  } = useShopping()
   const [quickName, setQuickName] = useState('')
   const [filterResponsible, setFilterResponsible] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('assignedTo') === 'me' ? currentMember.id : '')
   const [selectedItem, setSelectedItem] = useState<ShoppingItem | null>(null)
@@ -241,7 +247,7 @@ export function ShoppingScreen() {
 function ShoppingSortableGroup({ group, appearance, memberById, pendingItemIds, onToggle, onEdit }: {
   group: ReturnType<typeof groupShoppingItems>[number]
   appearance: ShoppingCategorySettings[ShoppingCategory]
-  memberById: ReturnType<typeof useFamilyData>['memberById']
+  memberById: ReturnType<typeof useFamilyMembersData>['memberById']
   pendingItemIds: Set<string>
   onToggle: (itemId: string, purchased: boolean) => Promise<void>
   onEdit: (item: ShoppingItem) => void
@@ -282,7 +288,7 @@ function SortableShoppingRow(props: Omit<ShoppingRowProps, 'sortable'>) {
 
 interface ShoppingRowProps {
   item: ShoppingItem
-  memberById: ReturnType<typeof useFamilyData>['memberById']
+  memberById: ReturnType<typeof useFamilyMembersData>['memberById']
   pending: boolean
   onToggle: () => Promise<void>
   onEdit: () => void

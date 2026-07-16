@@ -7,7 +7,7 @@ import { isValidPlanEntryInput } from '../../utils/mealPlanGrouping'
 import type { Meal } from '../../hooks/useMeals'
 import type { MealPlanEntry, MealPlanStatus, MealSlot } from '../../hooks/useMealPlanEntries'
 import type { FamilyMember } from '../../hooks/useFamilyMembers'
-import type { PlanEntryInput } from '../../context/useMealsData'
+import type { PlanEntryInput } from '../../context/meals/MealsContext'
 
 const SLOT_OPTIONS = MEAL_SLOT_VALUES.map((value) => ({ value, label: mealSlotLabel(value) }))
 const STATUS_OPTIONS = MEAL_PLAN_STATUS_VALUES.map((value) => ({ value, label: mealPlanStatusLabel(value) }))

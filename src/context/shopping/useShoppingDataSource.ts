@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { supabase } from '../supabaseClient'
-import { ShoppingRepository, type ShoppingRepositorySnapshot } from '../shopping/shoppingRepository'
-import { getShoppingLocalStore } from '../shopping/shoppingIndexedDb'
+import { supabase } from '../../supabaseClient'
+import { ShoppingRepository, type ShoppingRepositorySnapshot } from '../../shopping/shoppingRepository'
+import { getShoppingLocalStore } from '../../shopping/shoppingIndexedDb'
 import {
   buildCommonShoppingTemplates,
   buildShoppingSessions,
   type MealIngredient,
   type MealIngredientInput,
   type ShoppingItemInput,
-} from '../utils/shopping'
+} from '../../utils/shopping'
 
 const emptySnapshot: ShoppingRepositorySnapshot = {
   ready: false,
@@ -20,7 +20,9 @@ const emptySnapshot: ShoppingRepositorySnapshot = {
   error: null,
 }
 
-export function useShoppingData(familyId: string | undefined, currentMemberId: string | undefined) {
+// "Source" (not "Data") to avoid ambiguity with the ShoppingContext
+// accessor hook, useShopping().
+export function useShoppingDataSource(familyId: string | undefined, currentMemberId: string | undefined) {
   const repositoryRef = useRef<ShoppingRepository | null>(null)
   const [snapshot, setSnapshot] = useState<ShoppingRepositorySnapshot>(emptySnapshot)
   const [mealIngredients, setMealIngredients] = useState<MealIngredient[]>([])

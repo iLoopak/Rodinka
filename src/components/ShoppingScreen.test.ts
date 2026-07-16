@@ -4,8 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ShoppingItem } from '../utils/shopping'
 import { defaultShoppingCategorySettings } from '../utils/shoppingCategorySettings'
 
-const useFamilyDataMock = vi.hoisted(() => vi.fn())
-vi.mock('../context/FamilyDataContext', () => ({ useFamilyData: useFamilyDataMock }))
+const useFamilyCoreMock = vi.hoisted(() => vi.fn())
+const useFamilyMembersDataMock = vi.hoisted(() => vi.fn())
+const useFamilySettingsMock = vi.hoisted(() => vi.fn())
+const useShoppingMock = vi.hoisted(() => vi.fn())
+vi.mock('../context/family/FamilyCoreContext', () => ({ useFamilyCore: useFamilyCoreMock }))
+vi.mock('../context/family/FamilyMembersContext', () => ({ useFamilyMembersData: useFamilyMembersDataMock }))
+vi.mock('../context/family/FamilySettingsContext', () => ({ useFamilySettings: useFamilySettingsMock }))
+vi.mock('../context/shopping/ShoppingContext', () => ({ useShopping: useShoppingMock }))
 
 import { ShoppingScreen } from './ShoppingScreen'
 
@@ -21,11 +27,19 @@ const baseItem: ShoppingItem = {
   source_meal_plan_entry_id: null, sort_order: 0, created_at: '2026-07-01T10:00:00Z', updated_at: '2026-07-01T10:00:00Z',
 }
 
-function context(active: ShoppingItem[], purchased: ShoppingItem[] = []) {
+function mockContexts(active: ShoppingItem[], purchased: ShoppingItem[] = []) {
   const members = [member, responsible]
-  return {
-    members,
-    memberById: (id: string) => members.find((entry) => entry.id === id),
+  useFamilyCoreMock.mockReturnValue({
+    familyId: 'family-1', userId: 'user-1', userEmail: 'alex@example.com', currentMember: member, isParentOrAdmin: true,
+  })
+  useFamilyMembersDataMock.mockReturnValue({
+    members, memberById: (id: string) => members.find((entry) => entry.id === id),
+  })
+  useFamilySettingsMock.mockReturnValue({
+    shoppingCategorySettings: defaultShoppingCategorySettings(),
+    updateShoppingCategorySettings: vi.fn(),
+  })
+  useShoppingMock.mockReturnValue({
     activeShoppingItems: active,
     purchasedShoppingItems: purchased,
     commonShoppingItems: [],
@@ -41,17 +55,19 @@ function context(active: ShoppingItem[], purchased: ShoppingItem[] = []) {
     addShoppingItem: vi.fn(), updateShoppingItem: vi.fn(), deleteShoppingItem: vi.fn(),
     toggleShoppingPurchased: vi.fn(), archivePurchasedShoppingItems: vi.fn(), importShoppingItems: vi.fn(),
     reorderShoppingItems: vi.fn(),
-    shoppingCategorySettings: defaultShoppingCategorySettings(),
-    updateShoppingCategorySettings: vi.fn(),
-    isParentOrAdmin: true,
-  }
+  })
 }
 
 describe('ShoppingScreen', () => {
-  beforeEach(() => useFamilyDataMock.mockReset())
+  beforeEach(() => {
+    useFamilyCoreMock.mockReset()
+    useFamilyMembersDataMock.mockReset()
+    useFamilySettingsMock.mockReset()
+    useShoppingMock.mockReset()
+  })
 
   it('renders quick add, category grouping, creator and responsibility context', () => {
-    useFamilyDataMock.mockReturnValue(context([baseItem]))
+    mockContexts([baseItem])
     const html = renderToStaticMarkup(createElement(ShoppingScreen))
     expect(html).toContain('Co potřebujete koupit?')
     expect(html).toContain('Mléčné')
@@ -70,14 +86,14 @@ describe('ShoppingScreen', () => {
 
   it('separates purchased items into the secondary section', () => {
     const purchased = { ...baseItem, id: 'item-2', purchased: true, purchased_at: '2026-07-01T12:00:00Z', purchased_by_member_id: member.id }
-    useFamilyDataMock.mockReturnValue(context([], [purchased]))
+    mockContexts([], [purchased])
     const html = renderToStaticMarkup(createElement(ShoppingScreen))
     expect(html).toContain('Koupeno (1)')
     expect(html).toContain('Všechno je koupené.')
   })
 
   it('renders the useful completely empty state', () => {
-    useFamilyDataMock.mockReturnValue(context([]))
+    mockContexts([])
     const html = renderToStaticMarkup(createElement(ShoppingScreen))
     expect(html).toContain('Seznam je zatím prázdný')
     expect(html).toContain('Přidejte první položku')

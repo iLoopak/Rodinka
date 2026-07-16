@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { t } from '../../strings'
-import { useFamilyData } from '../../context/FamilyDataContext'
+import { useFamilyCore } from '../../context/family/FamilyCoreContext'
+import { useFamilyMembersData } from '../../context/family/FamilyMembersContext'
+import { useMealsDataContext } from '../../context/meals/MealsContext'
 import { EmptyState } from '../ui/EmptyState'
 import { Modal } from '../ui/Modal'
 import { CreateRoundForm } from './CreateRoundForm'
@@ -19,8 +21,9 @@ interface Props {
 }
 
 export function VoteTab({ onAddWinnerToPlan, prefillMealId, onPrefillConsumed }: Props) {
-  const { meals, voteRounds, members, isParentOrAdmin, createVoteRound, openRound, closeRound, castVote } =
-    useFamilyData()
+  const { isParentOrAdmin } = useFamilyCore()
+  const { members } = useFamilyMembersData()
+  const { meals, voteRounds, createVoteRound, openRound, closeRound, castVote } = useMealsDataContext()
   const [showCreate, setShowCreate] = useState(false)
 
   const requestedRoundId = new URLSearchParams(window.location.search).get('round')

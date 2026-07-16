@@ -1,5 +1,10 @@
 import { useState } from 'react'
-import { useFamilyData } from '../../context/FamilyDataContext'
+import { useFamilyCore } from '../../context/family/FamilyCoreContext'
+import { useFamilyMembersData } from '../../context/family/FamilyMembersContext'
+import { useChoresData } from '../../context/chores/ChoresContext'
+import { useActivitiesData } from '../../context/activities/ActivitiesContext'
+import { useMedicalData } from '../../context/health/MedicalContext'
+import { useMealsDataContext } from '../../context/meals/MealsContext'
 import { t } from '../../strings'
 import { getItemTypeStyle } from '../../utils/itemTypeStyle'
 import {
@@ -26,17 +31,12 @@ interface CreateOption {
 
 export function UniversalCreateModal({ initialType, initialDate, onClose }: Props) {
   const [selectedType, setSelectedType] = useState<PlannerItemType | null>(initialType ?? null)
-  const {
-    members,
-    kids,
-    currentMember,
-    meals,
-    planEntries,
-    addChore,
-    addActivity,
-    addMedicalRecord,
-    addPlanEntry,
-  } = useFamilyData()
+  const { currentMember } = useFamilyCore()
+  const { members, kids } = useFamilyMembersData()
+  const { addChore } = useChoresData()
+  const { addActivity } = useActivitiesData()
+  const { addMedicalRecord } = useMedicalData()
+  const { meals, planEntries, addPlanEntry } = useMealsDataContext()
 
   const options: CreateOption[] = [
     { type: 'chore', title: t.create.choreTitle, description: t.create.choreDescription },

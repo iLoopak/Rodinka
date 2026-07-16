@@ -1,5 +1,9 @@
 import { useState } from 'react'
-import { useFamilyData } from '../context/FamilyDataContext'
+import { useChoresData } from '../context/chores/ChoresContext'
+import { useActivitiesData } from '../context/activities/ActivitiesContext'
+import { useMedicalData } from '../context/health/MedicalContext'
+import { useMealsDataContext } from '../context/meals/MealsContext'
+import { useShopping } from '../context/shopping/ShoppingContext'
 import { t } from '../strings'
 import { getChoreState } from '../utils/choreState'
 import { formatDueDateLabel, todayISODate } from '../utils/dueDate'
@@ -18,18 +22,19 @@ export function PlannerScreen() {
   const [createConfig, setCreateConfig] = useState<{ type?: PlannerItemType } | null>(null)
   const { navigate } = useRouter()
   const {
-    chores,
-    pendingCompletions,
-    activities,
-    medicalRecords,
-    planEntries,
-    voteRounds,
-    latestCompletionFor,
-    loading,
-    error,
-    refreshAll,
-    activeShoppingItems,
-  } = useFamilyData()
+    chores, pendingCompletions, latestCompletionFor,
+    choresLoading, choresError, refreshChores, refreshCompletions,
+  } = useChoresData()
+  const { activities, activitiesLoading, activitiesError, refreshActivities } = useActivitiesData()
+  const { medicalRecords, medicalLoading, medicalError, refreshMedicalRecords } = useMedicalData()
+  const { planEntries, voteRounds, loading: mealsLoading, error: mealsError, refreshMealsData } = useMealsDataContext()
+  const { activeShoppingItems, shoppingLoading, shoppingError, refreshShopping } = useShopping()
+
+  const loading = choresLoading || activitiesLoading || medicalLoading || mealsLoading || shoppingLoading
+  const error = choresError || activitiesError || medicalError || mealsError || shoppingError
+  async function refreshAll() {
+    await Promise.all([refreshChores(), refreshCompletions(), refreshActivities(), refreshMedicalRecords(), refreshMealsData(), refreshShopping()])
+  }
 
   if (loading) return <p className="loading">{t.loading.generic}</p>
   if (error) return <ErrorState message={error} onRetry={refreshAll} />

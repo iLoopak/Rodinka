@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import { t } from '../strings'
 import { getCurrentLanguage } from '../i18n'
-import { useFamilyData } from '../context/FamilyDataContext'
+import { useFamilyCore } from '../context/family/FamilyCoreContext'
+import { useFamilyMembersData } from '../context/family/FamilyMembersContext'
+import { useFamilySettings } from '../context/family/FamilySettingsContext'
+import { useChoresData } from '../context/chores/ChoresContext'
+import { useActivitiesData } from '../context/activities/ActivitiesContext'
+import { useOccurrenceAssignmentsData } from '../context/activities/OccurrenceAssignmentsContext'
 import { AddChildForm } from './AddChildForm'
 import { ErrorState } from './ui/ErrorState'
 import { Modal } from './ui/Modal'
@@ -23,8 +28,36 @@ function formatDate(iso: string) {
 }
 
 export function FamilyScreen() {
-  const { familyName, members, allMembers, chores, activities, currentMember, isParentOrAdmin, addChild, createInvite, removeMember, leaveHousehold, restoreMember, loading, error, refreshAll, refreshMembers, updateFamilyName } =
-    useFamilyData()
+  const { currentMember, isParentOrAdmin } = useFamilyCore()
+  const {
+    members, allMembers, addChild, createInvite, removeMember, leaveHousehold: leaveHouseholdRaw, restoreMember,
+    membersLoading, membersError, refreshMembers,
+  } = useFamilyMembersData()
+  const { familyName, familyNameLoading, familyNameError, updateFamilyName } = useFamilySettings()
+  const { chores, refreshChores } = useChoresData()
+  const { activities, refreshActivities } = useActivitiesData()
+  const { refreshOccurrenceAssignments } = useOccurrenceAssignmentsData()
+
+  const loading = membersLoading || familyNameLoading
+  const error = membersError || familyNameError
+  async function refreshAll() {
+    await Promise.all([refreshMembers(), refreshChores(), refreshActivities(), refreshOccurrenceAssignments()])
+  }
+
+  async function handleRemoveMember(memberId: string, replacementMemberId: string | null, taskStrategy: 'unassign' | 'reassign', activityStrategy: 'clear' | 'reassign') {
+    await removeMember(memberId, replacementMemberId, taskStrategy, activityStrategy)
+    await Promise.all([refreshChores(), refreshActivities(), refreshOccurrenceAssignments()])
+  }
+
+  async function handleRestoreMember(memberId: string) {
+    await restoreMember(memberId)
+    await Promise.all([refreshChores(), refreshActivities(), refreshOccurrenceAssignments()])
+  }
+
+  function leaveHousehold(replacementMemberId: string | null, taskStrategy: 'unassign' | 'reassign', activityStrategy: 'clear' | 'reassign') {
+    return leaveHouseholdRaw(currentMember.id, replacementMemberId, taskStrategy, activityStrategy)
+  }
+
   const [showAddChild, setShowAddChild] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null)
@@ -130,7 +163,7 @@ export function FamilyScreen() {
             <button type="button" className="btn-secondary" disabled={restoringMemberId === archived.id} onClick={async () => {
               setRestoringMemberId(archived.id)
               setMemberActionError(null)
-              try { await restoreMember(archived.id) } catch { setMemberActionError(t.family.restoreError) } finally { setRestoringMemberId(null) }
+              try { await handleRestoreMember(archived.id) } catch { setMemberActionError(t.family.restoreError) } finally { setRestoringMemberId(null) }
             }}>{restoringMemberId === archived.id ? t.family.restoringMember : t.family.restoreMemberAction}</button>
           </li>)}
         </ul>
@@ -184,7 +217,7 @@ export function FamilyScreen() {
         activeMembers={members}
         chores={chores}
         activities={activities}
-        onConfirm={(replacementMemberId, taskStrategy, activityStrategy) => removeMember(removingMember.id, replacementMemberId, taskStrategy, activityStrategy)}
+        onConfirm={(replacementMemberId, taskStrategy, activityStrategy) => handleRemoveMember(removingMember.id, replacementMemberId, taskStrategy, activityStrategy)}
         onClose={() => setRemovingMember(null)}
       />}
       {leavingHousehold && <MemberRemovalDialog

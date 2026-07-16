@@ -19,8 +19,8 @@ export function useOccurrenceAssignments(familyId: string | undefined) {
       return
     }
     // An override save refreshes the canonical rows after its optimistic update.
-    // Keep that synchronization in the background so FamilyDataContext does not
-    // replace the entire calendar with its global loading state.
+    // Keep that synchronization in the background so consumers (e.g. calendar)
+    // don't get replaced by a loading state on every override save.
     if (isInitialFamilyDataLoad(loadedFamilyIdRef.current, familyId)) setLoading(true)
     const [overrideResult, historyResult, participantResult] = await Promise.all([
       supabase.from('occurrence_overrides').select('id,family_id,series_type,series_id,occurrence_date,companion_member_id,assignee_member_id,cancelled,updated_at').eq('family_id', familyId),

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { useFamilyData } from './FamilyDataContext'
+import { useFamilyCore } from './family/FamilyCoreContext'
 import {
   detectPushCapability,
   enablePushOnCurrentDevice,
@@ -31,7 +31,7 @@ interface PushContextValue {
 const PushContext = createContext<PushContextValue | null>(null)
 
 export function PushProvider({ children }: { children: ReactNode }) {
-  const { familyId } = useFamilyData()
+  const { familyId } = useFamilyCore()
   const [capability, setCapability] = useState(() => detectPushCapability())
   const [devices, setDevices] = useState<PushDevice[]>([])
   const [currentEndpoint, setCurrentEndpoint] = useState<string | null>(null)
