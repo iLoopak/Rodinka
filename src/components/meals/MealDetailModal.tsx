@@ -6,6 +6,8 @@ import type { MealInput } from '../../context/meals/MealsContext'
 import { Modal } from '../ui/Modal'
 import { AddMealForm } from './AddMealForm'
 import { MealIngredientsSection } from './MealIngredientsSection'
+import { useFamilyCore } from '../../context/family/FamilyCoreContext'
+import { capabilitiesFor } from '../../utils/uiCapabilities'
 
 interface Props {
   meal: Meal
@@ -29,11 +31,13 @@ function mealToInput(meal: Meal): MealInput {
 }
 
 export function MealDetailModal({ meal, onUpdate, onAddToPlan, onAddToVote, onClose }: Props) {
+  const { currentMember } = useFamilyCore()
+  const capabilities = capabilitiesFor(currentMember)
   const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  if (editing) {
+  if (editing && capabilities.manageMeals) {
     return (
       <Modal title={t.mealLibrary.editTitle} onClose={onClose}>
         <AddMealForm
@@ -92,7 +96,7 @@ export function MealDetailModal({ meal, onUpdate, onAddToPlan, onAddToVote, onCl
       <MealIngredientsSection mealId={meal.id} />
 
       <div className="family-actions">
-        {onAddToPlan && meal.status === 'active' && (
+        {capabilities.manageMeals && onAddToPlan && meal.status === 'active' && (
           <button
             onClick={() => {
               onAddToPlan(meal)
@@ -102,7 +106,7 @@ export function MealDetailModal({ meal, onUpdate, onAddToPlan, onAddToVote, onCl
             {t.mealLibrary.addToPlanAction}
           </button>
         )}
-        {onAddToVote && meal.status === 'active' && (
+        {capabilities.manageMeals && onAddToVote && meal.status === 'active' && (
           <button
             className="btn-secondary"
             onClick={() => {
@@ -113,12 +117,12 @@ export function MealDetailModal({ meal, onUpdate, onAddToPlan, onAddToVote, onCl
             {t.mealLibrary.addToVoteAction}
           </button>
         )}
-        <button className="btn-secondary" onClick={() => setEditing(true)}>
+        {capabilities.manageMeals && <button className="btn-secondary" onClick={() => setEditing(true)}>
           {t.mealLibrary.edit}
-        </button>
-        <button className="btn-secondary" onClick={toggleArchive} disabled={busy}>
+        </button>}
+        {capabilities.manageMeals && <button className="btn-secondary" onClick={toggleArchive} disabled={busy}>
           {meal.status === 'active' ? t.mealLibrary.archiveAction : t.mealLibrary.restoreAction}
-        </button>
+        </button>}
       </div>
       {error && <p className="error" role="alert">{error}</p>}
     </Modal>

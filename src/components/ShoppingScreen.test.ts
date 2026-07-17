@@ -27,10 +27,11 @@ const baseItem: ShoppingItem = {
   source_meal_plan_entry_id: null, sort_order: 0, created_at: '2026-07-01T10:00:00Z', updated_at: '2026-07-01T10:00:00Z',
 }
 
-function mockContexts(active: ShoppingItem[], purchased: ShoppingItem[] = []) {
+function mockContexts(active: ShoppingItem[], purchased: ShoppingItem[] = [], child = false) {
   const members = [member, responsible]
+  const actor = child ? { ...member, role: 'child' as const } : member
   useFamilyCoreMock.mockReturnValue({
-    familyId: 'family-1', userId: 'user-1', userEmail: 'alex@example.com', currentMember: member, isParentOrAdmin: true,
+    familyId: 'family-1', userId: 'user-1', userEmail: 'alex@example.com', currentMember: actor, isParentOrAdmin: !child,
   })
   useFamilyMembersDataMock.mockReturnValue({
     members, memberById: (id: string) => members.find((entry) => entry.id === id),
@@ -97,5 +98,16 @@ describe('ShoppingScreen', () => {
     const html = renderToStaticMarkup(createElement(ShoppingScreen))
     expect(html).toContain('Seznam je zatím prázdný')
     expect(html).toContain('Přidejte první položku')
+  })
+
+  it('keeps child shopping to quick add and toggling without management controls', () => {
+    mockContexts([baseItem], [], true)
+    const html = renderToStaticMarkup(createElement(ShoppingScreen))
+    expect(html).toContain('completion-checkbox')
+    expect(html).toContain('shopping-item-main')
+    expect(html).not.toContain('list-drag-handle')
+    expect(html).not.toContain('aria-controls="shopping-tools-panel"')
+    expect(html).not.toContain('aria-roledescription="sortable"')
+    expect(html).not.toMatch(/<button[^>]*class="shopping-item-main"/)
   })
 })

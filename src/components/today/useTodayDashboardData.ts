@@ -9,6 +9,7 @@ import { useActivitiesData } from '../../context/activities/ActivitiesContext'
 import { useMedicalData } from '../../context/health/MedicalContext'
 import { useMealsDataContext } from '../../context/meals/MealsContext'
 import { useShopping } from '../../context/shopping/ShoppingContext'
+import { useOccurrenceAssignmentsData } from '../../context/activities/OccurrenceAssignmentsContext'
 
 // Composes every feature context Today's dashboard actually renders. The
 // page shell (header/greeting/quick-todo widget) only needs identity +
@@ -27,6 +28,7 @@ export function useTodayDashboardData() {
   } = useChoresData()
   const { approve, markDone } = useChoreApprovalActions()
   const { activities, refreshActivities } = useActivitiesData()
+  const { occurrenceOverrides, assignmentHistory, participantHistory, refreshOccurrenceAssignments } = useOccurrenceAssignmentsData()
   const { medicalRecords, refreshMedicalRecords } = useMedicalData()
   const { voteRounds, planEntries, refreshMealsData } = useMealsDataContext()
   const { allowancePlans, allowanceCycles, refreshLedger, refreshAllowancePlans } = useAllowanceData()
@@ -40,13 +42,14 @@ export function useTodayDashboardData() {
       refreshChores(),
       refreshCompletions(),
       refreshActivities(),
+      refreshOccurrenceAssignments(),
       refreshMedicalRecords(),
       refreshMealsData(),
       refreshLedger(),
       refreshAllowancePlans(),
       refreshShopping(),
     ])
-  }, [refreshChores, refreshCompletions, refreshActivities, refreshMedicalRecords, refreshMealsData, refreshLedger, refreshAllowancePlans, refreshShopping])
+  }, [refreshChores, refreshCompletions, refreshActivities, refreshOccurrenceAssignments, refreshMedicalRecords, refreshMealsData, refreshLedger, refreshAllowancePlans, refreshShopping])
 
   return {
     currentMember,
@@ -55,6 +58,9 @@ export function useTodayDashboardData() {
     kids,
     chores,
     activities,
+    occurrenceOverrides,
+    assignmentHistory,
+    participantHistory,
     medicalRecords,
     planEntries,
     allowancePlans,

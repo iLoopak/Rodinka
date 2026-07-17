@@ -16,7 +16,7 @@ interface Props {
   memberById: (id: string) => FamilyMember | undefined
   onSelectEntry: (entry: CalendarEntry) => void
   onChangeAssignment?: (entry: CalendarEntry) => void
-  onAddDay: (date: string) => void
+  onAddDay?: (date: string) => void
   onClose?: () => void
 }
 
@@ -45,6 +45,6 @@ export function CalendarDayAgendaCard({ date, entries, today, selected = false, 
         {untimed.length > 0 && <div className="week-day-group"><h3>{t.calendar.untimedGroup}</h3><ul>{untimed.map((entry) => <WeekCalendarEntryRow key={entry.id} entry={entry} memberById={memberById} onClick={() => onSelectEntry(entry)} onAssignmentClick={onChangeAssignment ? () => onChangeAssignment(entry) : undefined} />)}</ul></div>}
         {timed.length > 0 && <div className="week-day-group"><h3>{t.calendar.timedGroup}</h3><ul>{timed.map((entry) => <WeekCalendarEntryRow key={entry.id} entry={entry} memberById={memberById} onClick={() => onSelectEntry(entry)} onAssignmentClick={onChangeAssignment ? () => onChangeAssignment(entry) : undefined} />)}</ul></div>}
       </div>}
-    <button type="button" className="link week-day-add" onClick={() => onAddDay(date)} aria-label={`${t.create.addThisDayAction}: ${formatShortDate(date)}`}>+ {t.create.addThisDayAction}</button>
+    {onAddDay && <button type="button" className="link week-day-add" onClick={() => onAddDay(date)} aria-label={`${t.create.addThisDayAction}: ${formatShortDate(date)}`}>+ {t.create.addThisDayAction}</button>}
   </section>
 }

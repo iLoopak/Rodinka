@@ -94,8 +94,15 @@ export const strings = {
     dashboard: {
       signOut: 'Odhlásit se',
     },
+    childShell: {
+      restrictedTitle: 'Tahle část není v dětském účtu dostupná',
+      restrictedBody: 'Vraťte se do části určené pro váš účet.',
+      restrictedAction: 'Pokračovat',
+    },
     nav: {
       today: 'Dnes',
+      myTasks: 'Moje úkoly',
+      shopping: 'Nákup',
       chores: 'Úkoly',
       family: 'Rodina',
       more: 'Více',
@@ -392,6 +399,9 @@ export const strings = {
       },
     },
     allowance: {
+      historyTitle: 'Historie kapesného',
+      historyEmpty: 'Zatím tu nejsou žádné pohyby.',
+      historyEntry: 'Pohyb kapesného',
       monthly: 'Měsíční kapesné', setUp: 'Nastavit kapesné', manage: 'Spravovat plán',
       amount: 'Částka', payoutDay: 'Den kapesného', startsOn: 'Platí od',
       unconditional: 'Bez podmínek', byChores: 'Podle splněných úkolů', conditions: 'Podmínky kapesného',
@@ -515,6 +525,13 @@ export const strings = {
     },
     more: {
       title: 'Více',
+      childLoginLabel: 'Přihlašovací jméno',
+      childLoginUnavailable: 'není k dispozici',
+      editMyProfile: 'Upravit můj profil',
+      childLinksSection: 'Moje Rodinka',
+      activitiesAction: 'Aktivity',
+      mealsAction: 'Jídelníček a hlasování',
+      allowanceAction: 'Moje kapesné',
       accountSection: 'Účet',
       familySection: 'Rodina',
       appSection: 'Aplikace a oznámení',
@@ -1265,8 +1282,15 @@ export const strings = {
     dashboard: {
       signOut: 'Sign out',
     },
+    childShell: {
+      restrictedTitle: 'This area is not available for a child account',
+      restrictedBody: 'Return to an area intended for your account.',
+      restrictedAction: 'Continue',
+    },
     nav: {
       today: 'Today',
+      myTasks: 'My tasks',
+      shopping: 'Shopping',
       chores: 'Tasks',
       family: 'Family',
       more: 'More',
@@ -1561,6 +1585,9 @@ export const strings = {
       },
     },
     allowance: {
+      historyTitle: 'Allowance history',
+      historyEmpty: 'There are no entries yet.',
+      historyEntry: 'Allowance entry',
       monthly: 'Monthly allowance', setUp: 'Set up allowance', manage: 'Manage plan',
       amount: 'Amount', payoutDay: 'Allowance day', startsOn: 'Starts on',
       unconditional: 'No conditions', byChores: 'Based on completed chores', conditions: 'Allowance conditions',
@@ -1684,6 +1711,13 @@ export const strings = {
     },
     more: {
       title: 'More',
+      childLoginLabel: 'Login name',
+      childLoginUnavailable: 'not available',
+      editMyProfile: 'Edit my profile',
+      childLinksSection: 'My Rodinka',
+      activitiesAction: 'Activities',
+      mealsAction: 'Meals and voting',
+      allowanceAction: 'My allowance',
       accountSection: 'Account',
       familySection: 'Family',
       appSection: 'App and notifications',

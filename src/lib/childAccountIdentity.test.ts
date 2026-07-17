@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { childLoginNameToInternalEmail, isValidChildLoginName, normalizeChildLoginName } from './childAccountIdentity'
+import { childLoginNameToInternalEmail, internalEmailToChildLoginName, isValidChildLoginName, normalizeChildLoginName } from './childAccountIdentity'
 
 describe('managed child login identity', () => {
   it('normalizes public login names deterministically', () => {
@@ -15,5 +15,10 @@ describe('managed child login identity', () => {
 
   it('maps the public name to the reserved internal Auth identifier', () => {
     expect(childLoginNameToInternalEmail('zofka-7')).toBe('child.zofka-7@children.rodinka.invalid')
+  })
+
+  it('recovers only the public name from a managed internal identifier', () => {
+    expect(internalEmailToChildLoginName('child.zofka-7@children.rodinka.invalid')).toBe('zofka-7')
+    expect(internalEmailToChildLoginName('parent@example.com')).toBeNull()
   })
 })

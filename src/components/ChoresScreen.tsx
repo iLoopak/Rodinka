@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { t } from '../strings'
 import { useFamilyCore } from '../context/family/FamilyCoreContext'
 import { useFamilyMembersData } from '../context/family/FamilyMembersContext'
@@ -24,6 +24,9 @@ import { QuickTodoPriorityList } from './chores/QuickTodoPriorityList'
 import { ScrollableTabs } from './ui/ScrollableTabs'
 import { ScreenHeader } from './ui/ScreenHeader'
 import { ArchivedItemBadge } from './ui/DestructiveActions'
+import { capabilitiesFor } from '../utils/uiCapabilities'
+import { useOccurrenceAssignmentsData } from '../context/activities/OccurrenceAssignmentsContext'
+import { childVisibleChores } from '../utils/childChoreVisibility'
 
 type Tab = 'active' | 'pending' | 'allowance' | 'manage'
 
@@ -43,6 +46,7 @@ export function ChoresScreen() {
   const choreParam = searchParams.get('chore')
   const editParam = searchParams.get('edit') === '1'
   const { currentMember, isParentOrAdmin } = useFamilyCore()
+  const capabilities = capabilitiesFor(currentMember)
   const { kids, members, memberById, membersLoading, membersError, refreshMembers } = useFamilyMembersData()
   const {
     chores,
@@ -60,8 +64,10 @@ export function ChoresScreen() {
     refreshCompletions,
   } = useChoresData()
   const { approve, markDone } = useChoreApprovalActions()
+  const { occurrenceOverrides, assignmentHistory } = useOccurrenceAssignmentsData()
   const {
     balances,
+    allowanceEntries,
     payout,
     allowancePlans,
     allowanceCycles,
@@ -74,6 +80,11 @@ export function ChoresScreen() {
     refreshAllowancePlans,
   } = useAllowanceData()
 
+  const visibleChores = useMemo(() => {
+    if (!capabilities.isChild) return chores
+    return childVisibleChores(currentMember.id, chores, occurrenceOverrides, assignmentHistory)
+  }, [assignmentHistory, capabilities.isChild, chores, currentMember.id, occurrenceOverrides])
+
   const loading = membersLoading || choresLoading || allowanceLoading
   const error = membersError || choresError || allowanceError
   async function refreshAll() {
@@ -82,7 +93,7 @@ export function ChoresScreen() {
 
   useEffect(() => {
     if (loading) return
-    const resolution = resolveDeepLinkedItem(chores, choreParam)
+    const resolution = resolveDeepLinkedItem(visibleChores, choreParam)
     if (resolution.status === 'found') {
       setSelectedChore(resolution.item)
       if (resolution.item.status === 'archived') setTab('manage')
@@ -94,7 +105,7 @@ export function ChoresScreen() {
       setSelectedChore(null)
       setDeepLinkError(false)
     }
-  }, [choreParam, chores, loading])
+  }, [choreParam, loading, visibleChores])
 
   if (loading) {
     return <p className="loading">{t.loading.generic}</p>
@@ -137,13 +148,17 @@ export function ChoresScreen() {
     setQueryParam('edit', '1', 'replace')
   }
 
-  const tabs: { id: Tab; label: string; count?: number }[] = [
+  const adultTabs: { id: Tab; label: string; count?: number }[] = [
     { id: 'active', label: t.chores.tabActive },
     { id: 'pending', label: t.chores.tabPending, count: pendingCompletions.length },
     { id: 'allowance', label: t.chores.tabAllowance },
     { id: 'manage', label: t.chores.tabManage },
   ]
-  const activeChores = chores.filter((chore) => {
+  const tabs = capabilities.isChild
+    ? adultTabs.filter((item) => item.id === 'active' || item.id === 'allowance')
+    : adultTabs
+  const visibleTab: Tab = capabilities.isChild && (tab === 'pending' || tab === 'manage') ? 'active' : tab
+  const activeChores = visibleChores.filter((chore) => {
     const state = getChoreState(chore, latestCompletionFor(chore.id))
     return chore.status === 'active' && state !== 'done' && state !== 'archived'
   })
@@ -152,7 +167,7 @@ export function ChoresScreen() {
 
   return (
     <>
-      <ScreenHeader title={t.nav.chores} actions={isParentOrAdmin ? (
+      <ScreenHeader title={capabilities.isChild ? t.nav.myTasks : t.nav.chores} actions={capabilities.manageTaskDefinitions ? (
           <button
             type="button"
             className="header-action-button"
@@ -162,12 +177,12 @@ export function ChoresScreen() {
           </button>
         ) : undefined} />
 
-      <ScrollableTabs tabs={tabs} activeTab={tab} onChange={setTab} />
+      <ScrollableTabs tabs={tabs} activeTab={visibleTab} onChange={setTab} />
 
       {deepLinkError && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
       {approvalFeedback && <p className="success approval-feedback" role="status">{approvalFeedback}</p>}
 
-      {tab === 'active' && (
+      {visibleTab === 'active' && (
         <>
         {quickTodos.length > 0 && <section className="page-section">
           <div className="quick-todo-priority-heading">
@@ -198,7 +213,7 @@ export function ChoresScreen() {
         </>
       )}
 
-      {tab === 'pending' && (
+      {visibleTab === 'pending' && capabilities.approveTaskCompletions && (
         <section className="page-section">
           {pendingCompletions.length === 0 ? (
             <p className="empty-state">{t.chores.noPendingApprovals}</p>
@@ -216,17 +231,18 @@ export function ChoresScreen() {
         </section>
       )}
 
-      {tab === 'allowance' && (
+      {visibleTab === 'allowance' && (
         <section className="page-section">
           <div className="panel is-primary">
-            <AllowanceBalances kids={kids} balances={balances} onPayout={payout} chores={chores}
+            <AllowanceBalances kids={capabilities.isChild ? kids.filter((kid) => kid.id === currentMember.id) : kids} balances={balances} onPayout={payout} chores={chores}
               completions={completions} plans={allowancePlans} cycles={allowanceCycles}
+              entries={capabilities.isChild ? allowanceEntries.filter((entry) => entry.member_id === currentMember.id) : undefined}
               canManage={isParentOrAdmin} onSavePlan={saveAllowancePlan} onCredit={creditAllowance} onSkip={skipAllowance} />
           </div>
         </section>
       )}
 
-      {tab === 'manage' && (
+      {visibleTab === 'manage' && capabilities.manageTaskDefinitions && (
         <section className="page-section">
           <p className="home-subtitle">{t.chores.manageIntro}</p>
           {chores.length === 0 ? <p className="empty-state">{t.chores.managementEmpty}</p> : (
@@ -246,7 +262,7 @@ export function ChoresScreen() {
         </section>
       )}
 
-      {showAddChore && (
+      {showAddChore && capabilities.manageTaskDefinitions && (
         <Modal title={t.chores.addTitle} onClose={() => setShowAddChore(false)}>
           <AddChoreForm members={members} currentMemberId={currentMember.id} onSubmit={handleAddChore} />
         </Modal>
