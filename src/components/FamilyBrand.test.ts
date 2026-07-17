@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { makeFamilyMember } from '../utils/testFixtures'
 import { FamilyBrand } from './FamilyBrand'
 
-const firstMember = makeFamilyMember({ id: 'member-a', color_key: 'sky' })
+const firstMember = makeFamilyMember({ id: 'member-a', color_key: 'blue' })
 const secondMember = makeFamilyMember({ id: 'member-b', color_key: 'honey' })
 
 describe('FamilyBrand', () => {
@@ -14,8 +14,8 @@ describe('FamilyBrand', () => {
     expect(html).toContain('class="wordmark">Rodinka</span>')
     expect(html).toContain('title="Novákovi">Novákovi</span>')
     expect(html).toContain('data-member-count="2"')
-    expect(html).toContain('var(--brand-blue)')
-    expect(html).toContain('var(--brand-honey)')
+    expect(html).toContain('#8DB9C7')
+    expect(html).toContain('#F2C85B')
   })
 
   it('updates naturally when a different active family is rendered', () => {
@@ -24,9 +24,9 @@ describe('FamilyBrand', () => {
     expect(first).toContain('Novákovi')
     expect(second).toContain('Svobodovi')
     expect(second).not.toContain('Novákovi')
-    expect(first).toContain('var(--brand-blue)')
-    expect(second).toContain('var(--brand-honey)')
-    expect(second).not.toContain('var(--brand-blue)')
+    expect(first).toContain('#8DB9C7')
+    expect(second).toContain('#F2C85B')
+    expect(second).not.toContain('#8DB9C7')
   })
 
   it('shows only the product while loading or when the family name is unusable', () => {

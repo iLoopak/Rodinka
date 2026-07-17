@@ -4,6 +4,7 @@ import { friendly } from '../../utils/friendlyError'
 import { AVATAR_SIGNED_URL_SECONDS, isActiveFamilyMember, useFamilyMembers, type FamilyMember, type FamilyMemberStatus } from '../../hooks/useFamilyMembers'
 import { useMemberProfiles, type MemberProfileInput } from '../../hooks/useMemberProfiles'
 import { createMemberLookup } from '../../utils/memberLookup'
+import { chooseLeastUsedMemberColor } from '../../utils/memberColor'
 import { MemberLookupBridge } from './currentMemberBridge'
 import { createRealtimeSubscription } from '../../realtime/createRealtimeSubscription'
 import { applyRealtimeDelete } from '../../realtime/applyRealtimeDelete'
@@ -103,9 +104,10 @@ export function FamilyMembersProvider({ familyId, children }: ProviderProps) {
 
   const addChild = useCallback(
     async (displayName: string, avatarFile: File | null = null) => {
+      const colorKey = chooseLeastUsedMemberColor(members)
       const { data, error } = await supabase
         .from('members')
-        .insert({ family_id: familyId, display_name: displayName, role: 'child' })
+        .insert({ family_id: familyId, display_name: displayName, role: 'child', color_key: colorKey })
         .select('id, family_id, display_name, role, user_id, birth_date, color_key, avatar_path, grammatical_gender, vocative_name')
         .single()
       if (error) throw friendly(error)
@@ -114,7 +116,7 @@ export function FamilyMembersProvider({ familyId, children }: ProviderProps) {
           await saveMemberProfile({ ...data, avatar_url: null } as FamilyMember, {
             displayName,
             birthDate: null,
-            colorKey: null,
+            colorKey,
             grammaticalGender: null,
             vocativeName: null,
             avatarFile,
@@ -134,7 +136,7 @@ export function FamilyMembersProvider({ familyId, children }: ProviderProps) {
         await refreshMembers()
       }
     },
-    [familyId, refreshMembers, saveMemberProfile]
+    [familyId, members, refreshMembers, saveMemberProfile]
   )
 
   const editMemberProfile = useCallback(

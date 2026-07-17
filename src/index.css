@@ -61,14 +61,24 @@
   --accent-lavender: #7563a8;
   --accent-berry: #a34f64;
 
-  /* Stored keys stay valid; only their member-identity rendering changes. */
-  --member-brick: #6e4c91;
-  --member-coral: #2f7e7a;
-  --member-sky: #356fa8;
-  --member-sage: #766421;
-  --member-honey: #a5542d;
-  --member-lavender: #6554ad;
-  --member-berry: #984064;
+  /* Canonical member identity palette. */
+  --member-coral: #E9785E;
+  --member-coral-soft: #F1C9BC;
+  --member-honey: #F2C85B;
+  --member-honey-soft: #F1DDA1;
+  --member-mint: #8BC6AD;
+  --member-mint-soft: #B9D8CA;
+  --member-blue: #8DB9C7;
+  --member-blue-soft: #9CC7D1;
+  --member-lavender: #A89BCB;
+  --member-lavender-soft: #D8D2E8;
+  --member-berry: #CC859F;
+  --member-berry-soft: #E7C4D1;
+  --member-peach: #E6A47D;
+  --member-peach-soft: #F1D0BC;
+  --member-sage: #9EBA82;
+  --member-sage-soft: #CDDDBD;
+  --member-ink: #243128;
 
   --category-tasks: #4f8068;
   --category-tasks-soft: #eaf4ed;
@@ -986,7 +996,7 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
   border-radius: 999px;
   box-sizing: border-box;
   border: 2px solid transparent;
-  color: #fff;
+  color: var(--member-color-ink, var(--member-ink));
   font-weight: 700;
   line-height: 1;
   box-shadow: 0 0 0 2px var(--paper-raised);
@@ -2181,8 +2191,8 @@ input[readonly] {
 }
 
 .member-color-picker {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(40px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
@@ -2191,8 +2201,8 @@ label.member-color-option {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 0;
-  min-height: 48px;
+  min-width: 44px;
+  min-height: 44px;
   margin: 0;
   border: 2px solid transparent;
   border-radius: var(--radius-input);
@@ -2216,7 +2226,7 @@ label.member-color-option:focus-within {
   height: 34px;
   border: 2px solid var(--paper);
   border-radius: 999px;
-  color: #fff;
+  color: var(--member-ink);
   box-shadow: 0 0 0 1px var(--border);
   font-size: 1rem;
   font-weight: 700;
@@ -2259,7 +2269,7 @@ label.member-gender-option {
 
 @media (max-width: 390px) {
   .member-color-picker {
-    grid-template-columns: repeat(4, minmax(44px, 1fr));
+    justify-content: flex-start;
   }
 
   .profile-readonly-grid {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { memberColorVar, memberInitials } from '../../utils/memberColor'
+import { memberColorStyle, memberInitials } from '../../utils/memberColor'
 import type { FamilyMember } from '../../hooks/useFamilyMembers'
 
 interface Props {
@@ -21,8 +21,9 @@ export function MemberAvatar({ member, size = 26, decorative = true, forceInitia
         width: size,
         height: size,
         fontSize: Math.round(size * 0.42),
-        backgroundColor: `var(${memberColorVar(member)})`,
-        borderColor: `var(${memberColorVar(member)})`,
+        ...memberColorStyle(member),
+        backgroundColor: 'var(--member-color-soft)',
+        borderColor: 'var(--member-color-main)',
       }}
       title={member.display_name}
       role={decorative ? undefined : 'img'}

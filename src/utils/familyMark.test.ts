@@ -11,7 +11,7 @@ import {
 
 const members = Array.from({ length: 8 }, (_, index) => ({
   id: `member-${String.fromCharCode(104 - index)}`,
-  color_key: index % 2 === 0 ? 'sky' as const : 'honey' as const,
+  color_key: index % 2 === 0 ? 'blue' as const : 'honey' as const,
 }))
 
 const FAMILY_SIZES = [1, 2, 3, 4, 5, 6, 8, 12]

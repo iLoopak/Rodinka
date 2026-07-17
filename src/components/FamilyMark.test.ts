@@ -6,14 +6,14 @@ import { FamilyMark } from './FamilyMark'
 
 const supportedSizes = [16, 20, 24, 32, 48, 64, 96, 128]
 
-function member(id: string, color_key: 'brick' | 'coral' | 'sky' | 'sage' | 'honey' | 'lavender' | 'berry') {
+function member(id: string, color_key: 'coral' | 'honey' | 'mint' | 'blue' | 'lavender' | 'berry' | 'peach' | 'sage') {
   return makeFamilyMember({ id, color_key })
 }
 
 const countShapes = (html: string) => html.match(/family-mark-petal/g)?.length ?? 0
 
 describe('FamilyMark', () => {
-  it('is decorative and gives every member a brand-palette shape', () => {
+  it('is decorative and gives every member a member-color shape', () => {
     const html = renderToStaticMarkup(createElement(FamilyMark, {
       variant: 'dynamic',
       members: [member('b', 'coral'), member('a', 'sage'), member('c', 'honey')],
@@ -22,34 +22,35 @@ describe('FamilyMark', () => {
 
     expect(html).toContain('aria-hidden="true"')
     expect(html).toContain('data-member-count="3"')
-    expect(html).toContain('var(--brand-coral)')
-    expect(html).toContain('var(--brand-mint)')
-    expect(html).toContain('var(--brand-honey)')
+    expect(html).toContain('#E9785E')
+    expect(html).toContain('#9EBA82')
+    expect(html).toContain('#F2C85B')
     expect(countShapes(html)).toBe(3)
   })
 
-  it('draws the mark from the landing palette, never the member identity palette', () => {
+  it('draws the dynamic mark from member identity colors, not CSS variables', () => {
     const html = renderToStaticMarkup(createElement(FamilyMark, {
       variant: 'dynamic',
       members: [member('a', 'lavender'), member('b', 'berry')],
     }))
-    expect(html).not.toContain('var(--member-')
+    expect(html).toContain('#A89BCB')
+    expect(html).toContain('#CC859F')
   })
 
   it('updates for add, remove and accent changes', () => {
-    const one = renderToStaticMarkup(createElement(FamilyMark, { variant: 'dynamic', members: [member('a', 'sky')] }))
-    const two = renderToStaticMarkup(createElement(FamilyMark, { variant: 'dynamic', members: [member('a', 'sky'), member('b', 'honey')] }))
+    const one = renderToStaticMarkup(createElement(FamilyMark, { variant: 'dynamic', members: [member('a', 'blue')] }))
+    const two = renderToStaticMarkup(createElement(FamilyMark, { variant: 'dynamic', members: [member('a', 'blue'), member('b', 'honey')] }))
     const recolored = renderToStaticMarkup(createElement(FamilyMark, { variant: 'dynamic', members: [member('a', 'sage')] }))
 
     expect(one).toContain('data-member-count="1"')
     expect(two).toContain('data-member-count="2"')
-    expect(two).toContain('var(--brand-honey)')
-    expect(recolored).toContain('var(--brand-mint)')
-    expect(recolored).not.toContain('var(--brand-blue)')
+    expect(two).toContain('#F2C85B')
+    expect(recolored).toContain('#9EBA82')
+    expect(recolored).not.toContain('#8DB9C7')
   })
 
   it.each([1, 2, 3, 4, 5, 8, 12])('gives each of %i members one shape without overflow badges', (count) => {
-    const family = Array.from({ length: count }, (_, index) => member(`member-${index}`, 'sky'))
+    const family = Array.from({ length: count }, (_, index) => member(`member-${index}`, 'blue'))
     const html = renderToStaticMarkup(createElement(FamilyMark, { variant: 'dynamic', members: family }))
 
     expect(countShapes(html)).toBe(count)

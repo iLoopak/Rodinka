@@ -4,7 +4,7 @@ import { getCurrentLanguage } from '../../i18n'
 import type { FamilyMember, GrammaticalGender, MemberColorKey } from '../../hooks/useFamilyMembers'
 import { MemberProfileError, useMemberProfiles } from '../../hooks/useMemberProfiles'
 import { editableMemberProfileFields } from '../../utils/memberProfilePermissions'
-import { MEMBER_COLOR_KEYS, MEMBER_COLOR_VAR_BY_KEY, memberColorKey } from '../../utils/memberColor'
+import { MEMBER_COLOR_KEYS, getMemberMainColor, getMemberColor, memberColorKey } from '../../utils/memberColor'
 import type { AvatarValidationError } from '../../utils/memberAvatarImage'
 import { Modal } from '../ui/Modal'
 import { MemberAvatarPhotoField } from './MemberAvatarPhotoField'
@@ -20,7 +20,8 @@ interface Props {
 }
 
 function colorLabel(key: MemberColorKey) {
-  return { brick: t.family.colorBrick, coral: t.family.colorCoral, sky: t.family.colorSky, sage: t.family.colorSage, honey: t.family.colorHoney, lavender: t.family.colorLavender, berry: t.family.colorBerry }[key]
+  const label = getMemberColor(key).label
+  return getCurrentLanguage() === 'cs' ? label.cs : label.en
 }
 
 function genderOptions(): Array<{ value: GrammaticalGender | null; label: string }> {
@@ -54,7 +55,6 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
   const [displayName, setDisplayName] = useState(member.display_name)
   const [birthDate, setBirthDate] = useState(member.birth_date ?? '')
   const [colorKey, setColorKey] = useState<MemberColorKey>(memberColorKey(member))
-  const [colorTouched, setColorTouched] = useState(false)
   const [grammaticalGender, setGrammaticalGender] = useState<GrammaticalGender | null>(
     member.grammatical_gender
   )
@@ -114,7 +114,7 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
       await saveMemberProfile(member, {
         displayName: fields.displayName ? displayName : member.display_name,
         birthDate: fields.birthDate ? birthDate || null : member.birth_date,
-        colorKey: colorTouched ? colorKey : member.color_key,
+        colorKey,
         grammaticalGender,
         vocativeName: vocativeName || null,
         avatarFile: avatarPersisted ? null : avatarFile,
@@ -216,10 +216,9 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
                   disabled={saving}
                   onChange={() => {
                     setColorKey(key)
-                    setColorTouched(true)
                   }}
                 />
-                <span className="member-color-swatch" style={{ backgroundColor: `var(${MEMBER_COLOR_VAR_BY_KEY[key]})` }}>
+                <span className="member-color-swatch" style={{ backgroundColor: getMemberMainColor(key) }}>
                   {colorKey === key && <span aria-hidden="true">✓</span>}
                 </span>
                 <span className="visually-hidden">{colorLabel(key)}</span>

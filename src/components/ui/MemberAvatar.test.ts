@@ -6,7 +6,7 @@ import { MemberAvatar } from './MemberAvatar'
 const member = {
   id: 'member-1',
   display_name: 'Lukáš Sitto',
-  color_key: 'sky' as const,
+  color_key: 'blue' as const,
   avatar_url: 'https://example.test/lukas.jpg',
 }
 
@@ -19,6 +19,10 @@ describe('MemberAvatar', () => {
     }))
 
     expect(html).toContain('LS')
+    expect(html).toContain('background-color:var(--member-color-soft)')
+    expect(html).toContain('border-color:var(--member-color-main)')
+    expect(html).toContain('--member-color-main:#8DB9C7')
+    expect(html).toContain('--member-color-soft:#9CC7D1')
     expect(html).not.toContain('<img')
     expect(html).not.toContain('has-photo')
   })
@@ -27,6 +31,7 @@ describe('MemberAvatar', () => {
     const html = renderToStaticMarkup(createElement(MemberAvatar, { member, size: 36 }))
 
     expect(html).toContain('<img')
+    expect(html).toContain('border-color:var(--member-color-main)')
     expect(html).toContain('has-photo')
   })
 })
