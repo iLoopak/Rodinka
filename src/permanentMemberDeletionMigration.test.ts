@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-const sql = readFileSync(new URL('../supabase/migrations/20260717120000_permanently_delete_removed_member.sql', import.meta.url), 'utf8')
+const initialSql = readFileSync(new URL('../supabase/migrations/20260717120000_permanently_delete_removed_member.sql', import.meta.url), 'utf8')
+const fixSql = readFileSync(new URL('../supabase/migrations/20260717123000_fix_permanently_delete_removed_member_preferences.sql', import.meta.url), 'utf8')
+const sql = `${initialSql}\n${fixSql}`
 
 describe('permanent member deletion migration', () => {
   it('exposes a dedicated guarded RPC', () => {
@@ -25,5 +27,10 @@ describe('permanent member deletion migration', () => {
     expect(sql).toContain('update series_assignment_history set member_id = null')
     expect(sql).toContain('update activity_participant_history set member_id = null')
     expect(sql).toContain("'avatar_path', v_avatar_path")
+  })
+
+  it('deletes current-family notification preferences for the removed member', () => {
+    expect(sql).toContain('delete from notification_preferences where member_id = target.id and family_id = target.family_id')
+    expect(sql).not.toContain('reminder' + '_preferences')
   })
 })
