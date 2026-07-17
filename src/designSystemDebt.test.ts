@@ -27,4 +27,8 @@ describe('design-system CSS contract', () => {
     expect(css).toMatch(/\.planner-area-create\s*\{[^}]*width:\s*44px[^}]*height:\s*44px[^}]*min-width:\s*44px[^}]*min-height:\s*44px[^}]*padding:\s*0/s)
     expect(css).toMatch(/\.planner-area-create svg\s*\{[^}]*display:\s*block/s)
   })
+
+  it('does not use left borders as status or category accents', () => {
+    expect(css).not.toMatch(/border-(?:left|inline-start)(?:-color)?:/)
+  })
 })
