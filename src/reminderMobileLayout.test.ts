@@ -15,7 +15,15 @@ describe('Reminder Center mobile layout contract', () => {
     expect(css).toContain('.reminder-settings { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0;')
     expect(css).toContain('.push-settings { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0;')
     expect(css).toContain('.push-device span { display: grid; flex: 1 1 auto; min-width: 0;')
-    expect(css).toContain('.setting-row > span { display: grid; flex: 1 1 auto; min-width: 0;')
+    expect(css).toContain('.setting-row > span:not(.status-pill) { display: grid; flex: 1 1 auto; min-width: 0;')
+  })
+
+  it('uses one typography and spacing hierarchy throughout reminder settings', () => {
+    expect(css).toMatch(/\.reminder-settings \.section-heading\s*\{[^}]*font-size:\s*var\(--font-size-section-title\)[^}]*font-weight:\s*var\(--font-weight-strong\)/s)
+    expect(css).toMatch(/\.reminder-settings-panel\s*\{[^}]*padding:\s*0 16px/s)
+    expect(css).toMatch(/\.setting-row\s*\{[^}]*margin:\s*0[^}]*padding:\s*14px 0[^}]*font-size:\s*var\(--font-size-item-title\)/s)
+    expect(css).toMatch(/\.setting-row small\s*\{[^}]*font-size:\s*var\(--font-size-meta\)[^}]*line-height:\s*var\(--line-height-meta\)/s)
+    expect(css).toMatch(/\.setting-row > span:not\(\.status-pill\)/)
   })
 
   it('uses the shared scrollable tabs primitive without compressing labels', () => {
