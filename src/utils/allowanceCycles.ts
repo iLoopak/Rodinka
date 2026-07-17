@@ -3,10 +3,22 @@ import { addDays, compareISODates, daysBetweenISO, todayISODate, toUTCDate } fro
 export type AllowancePlanStatus = 'active' | 'paused' | 'archived'
 export type AllowanceConditionMode = 'none' | 'chores'
 export type AllowanceRequirementType = 'per_cycle' | 'weekly'
+export type AllowanceFrequency = 'weekly' | 'monthly'
 
-export interface AllowancePlanDates {
-  payout_day: number
+/**
+ * A plan's payout anchor. Monthly plans carry payout_day (1-31, clamped to
+ * short months); weekly plans carry payout_weekday as an ISO weekday
+ * (1 = Monday … 7 = Sunday). Exactly one of the two is set, which the
+ * allowance_plans_schedule_check constraint enforces in the database.
+ */
+export interface AllowanceSchedule {
+  frequency: AllowanceFrequency
+  payout_day: number | null
+  payout_weekday: number | null
   starts_on: string
+}
+
+export interface AllowancePlanDates extends AllowanceSchedule {
   status: AllowancePlanStatus
 }
 
@@ -25,6 +37,11 @@ function isoDate(year: number, monthIndex: number, day: number): string {
   return new Date(Date.UTC(year, monthIndex, day)).toISOString().slice(0, 10)
 }
 
+function isoWeekday(date: string): number {
+  const day = toUTCDate(date).getUTCDay()
+  return day === 0 ? 7 : day
+}
+
 export function payoutDateForMonth(year: number, monthIndex: number, payoutDay: number): string {
   if (!Number.isInteger(payoutDay) || payoutDay < 1 || payoutDay > 31) {
     throw new RangeError('payoutDay must be an integer between 1 and 31')
@@ -33,65 +50,86 @@ export function payoutDateForMonth(year: number, monthIndex: number, payoutDay: 
   return isoDate(year, monthIndex, Math.min(payoutDay, lastDay))
 }
 
-export function nextPayoutDate(fromDate: string, payoutDay: number): string {
+function monthlyAnchor(schedule: AllowanceSchedule): number {
+  if (schedule.payout_day === null) throw new Error('A monthly allowance plan must have payout_day')
+  return schedule.payout_day
+}
+
+function weeklyAnchor(schedule: AllowanceSchedule): number {
+  const weekday = schedule.payout_weekday
+  if (weekday === null || !Number.isInteger(weekday) || weekday < 1 || weekday > 7) {
+    throw new RangeError('A weekly allowance plan must have payout_weekday between 1 and 7')
+  }
+  return weekday
+}
+
+/** The first payout on or after fromDate. */
+export function nextPayoutDate(fromDate: string, schedule: AllowanceSchedule): string {
+  if (schedule.frequency === 'weekly') {
+    const target = weeklyAnchor(schedule)
+    return addDays(fromDate, (target - isoWeekday(fromDate) + 7) % 7)
+  }
+  const payoutDay = monthlyAnchor(schedule)
   const from = toUTCDate(fromDate)
   const thisMonth = payoutDateForMonth(from.getUTCFullYear(), from.getUTCMonth(), payoutDay)
   if (compareISODates(thisMonth, fromDate) >= 0) return thisMonth
   return payoutDateForMonth(from.getUTCFullYear(), from.getUTCMonth() + 1, payoutDay)
 }
 
-export function previousPayoutDate(payoutDate: string, payoutDay: number): string {
+/** The payout one full cycle before payoutDate. */
+export function previousPayoutDate(payoutDate: string, schedule: AllowanceSchedule): string {
+  if (schedule.frequency === 'weekly') return addDays(payoutDate, -7)
+  const payoutDay = monthlyAnchor(schedule)
   const date = toUTCDate(payoutDate)
   return payoutDateForMonth(date.getUTCFullYear(), date.getUTCMonth() - 1, payoutDay)
 }
 
-export function allowanceCycleForPayout(
-  plan: Pick<AllowancePlanDates, 'payout_day' | 'starts_on'>,
-  payoutDate: string
-): AllowanceCycleRange {
-  const expected = payoutDateForMonth(
-    toUTCDate(payoutDate).getUTCFullYear(),
-    toUTCDate(payoutDate).getUTCMonth(),
-    plan.payout_day
-  )
-  if (expected !== payoutDate) throw new Error('payoutDate is not valid for this plan')
-  const previous = previousPayoutDate(payoutDate, plan.payout_day)
-  const periodStart = compareISODates(plan.starts_on, previous) > 0 ? plan.starts_on : previous
+export function isValidPayoutDate(schedule: AllowanceSchedule, payoutDate: string): boolean {
+  if (schedule.frequency === 'weekly') return isoWeekday(payoutDate) === weeklyAnchor(schedule)
+  const date = toUTCDate(payoutDate)
+  return payoutDateForMonth(date.getUTCFullYear(), date.getUTCMonth(), monthlyAnchor(schedule)) === payoutDate
+}
+
+export function allowanceCycleForPayout(schedule: AllowanceSchedule, payoutDate: string): AllowanceCycleRange {
+  if (!isValidPayoutDate(schedule, payoutDate)) throw new Error('payoutDate is not valid for this plan')
+  const previous = previousPayoutDate(payoutDate, schedule)
+  const periodStart = compareISODates(schedule.starts_on, previous) > 0 ? schedule.starts_on : previous
   return { payoutDate, periodStart, periodEnd: payoutDate }
 }
 
 export function nextCycleForPlan(plan: AllowancePlanDates, today: string = todayISODate()): AllowanceCycleRange | null {
   if (plan.status !== 'active') return null
   const from = compareISODates(today, plan.starts_on) < 0 ? plan.starts_on : today
-  return allowanceCycleForPayout(plan, nextPayoutDate(from, plan.payout_day))
+  return allowanceCycleForPayout(plan, nextPayoutDate(from, plan))
 }
 
 export function isCycleDue(cycle: AllowanceCycleRange, today: string = todayISODate()): boolean {
   return compareISODates(cycle.payoutDate, today) <= 0
 }
 
+// Ten years of cycles at either frequency: enough that a long-running plan
+// still reports every unsettled date, while a bad anchor cannot spin forever.
+function maxCyclesToWalk(frequency: AllowanceFrequency): number {
+  return frequency === 'weekly' ? 520 : 120
+}
+
 export function unsettledDuePayoutDates(
-  plan: Pick<AllowancePlanDates, 'payout_day' | 'starts_on' | 'status'>,
+  plan: AllowancePlanDates,
   settledDates: Iterable<string>,
   today: string = todayISODate()
 ): string[] {
   if (plan.status !== 'active') return []
   const settled = new Set(settledDates)
   const dates: string[] = []
-  let cursor = nextPayoutDate(plan.starts_on, plan.payout_day)
+  const limit = maxCyclesToWalk(plan.frequency)
+  let cursor = nextPayoutDate(plan.starts_on, plan)
   let guard = 0
-  while (compareISODates(cursor, today) <= 0 && guard < 120) {
+  while (compareISODates(cursor, today) <= 0 && guard < limit) {
     if (!settled.has(cursor)) dates.push(cursor)
-    const date = toUTCDate(cursor)
-    cursor = payoutDateForMonth(date.getUTCFullYear(), date.getUTCMonth() + 1, plan.payout_day)
+    cursor = nextPayoutDate(addDays(cursor, 1), plan)
     guard++
   }
   return dates
-}
-
-function isoWeekday(date: string): number {
-  const day = toUTCDate(date).getUTCDay()
-  return day === 0 ? 7 : day
 }
 
 /**

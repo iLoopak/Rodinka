@@ -11,7 +11,9 @@ import { MemberAvatarPhotoField } from './MemberAvatarPhotoField'
 import { getLocalizedAddressName } from '../../utils/personalizedName'
 import type { ChildAccount } from '../../hooks/useChildAccounts'
 import { canManageChildAccount, childAccountState, childAccountStatusLabel } from '../../utils/childAccountStatus'
+import { canManageAllowance } from '../../utils/allowancePlans'
 import { ChildAccountSection } from './ChildAccountSection'
+import { AllowanceSection } from './AllowanceSection'
 
 interface Props {
   member: FamilyMember
@@ -60,6 +62,9 @@ function mutationErrorMessage(error: unknown): string {
 export function MemberProfileModal({ member, currentMember, refreshMembers, onClose, onRequestRemove, onRequestLeave, childAccount = null, onAccountChanged }: Props) {
   const fields = editableMemberProfileFields(currentMember, member)
   const showAccountManagement = Boolean(onAccountChanged) && canManageChildAccount(currentMember, member)
+  // Adults have no allowance, and a child opening their own profile must not
+  // be offered the parent's controls.
+  const showAllowance = canManageAllowance(currentMember, member)
   const { saveMemberProfile } = useMemberProfiles(refreshMembers)
   const [displayName, setDisplayName] = useState(member.display_name)
   const [birthDate, setBirthDate] = useState(member.birth_date ?? '')
@@ -272,9 +277,11 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
         </section>}
       </form>
 
-      {/* Deliberately a sibling of the profile form, not a child of it: the
-          account dialogs carry their own forms, and this Modal renders inline
-          rather than through a portal. */}
+      {/* Deliberately siblings of the profile form, not children of it: these
+          panels carry their own forms and dialogs, and this Modal renders
+          inline rather than through a portal. */}
+      {showAllowance && <AllowanceSection child={member} />}
+
       {showAccountManagement && <ChildAccountSection
         child={member}
         account={childAccount}

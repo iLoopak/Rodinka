@@ -71,7 +71,6 @@ export function ChoresScreen() {
     payout,
     allowancePlans,
     allowanceCycles,
-    saveAllowancePlan,
     creditAllowance,
     skipAllowance,
     allowanceLoading,
@@ -237,7 +236,7 @@ export function ChoresScreen() {
             <AllowanceBalances kids={capabilities.isChild ? kids.filter((kid) => kid.id === currentMember.id) : kids} balances={balances} onPayout={payout} chores={chores}
               completions={completions} plans={allowancePlans} cycles={allowanceCycles}
               entries={capabilities.isChild ? allowanceEntries.filter((entry) => entry.member_id === currentMember.id) : undefined}
-              canManage={isParentOrAdmin} onSavePlan={saveAllowancePlan} onCredit={creditAllowance} onSkip={skipAllowance} />
+              canManage={isParentOrAdmin} onCredit={creditAllowance} onSkip={skipAllowance} />
           </div>
         </section>
       )}

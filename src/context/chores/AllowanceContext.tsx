@@ -21,6 +21,7 @@ interface AllowanceContextValue {
   allowanceRealtimeStatus: RealtimeConnectionState
   payout: (memberId: string, amount: number, reason: string) => Promise<void>
   saveAllowancePlan: (input: AllowancePlanInput, planId?: string) => Promise<void>
+  deleteAllowancePlan: (planId: string) => Promise<void>
   creditAllowance: (planId: string, payoutDate: string) => Promise<void>
   skipAllowance: (planId: string, payoutDate: string) => Promise<void>
   refreshLedger: () => Promise<void>
@@ -96,7 +97,10 @@ export function AllowanceProvider({ familyId, children }: ProviderProps) {
       family_id: familyId,
       member_id: input.memberId,
       amount: input.amount,
+      frequency: input.frequency,
       payout_day: input.payoutDay,
+      payout_weekday: input.payoutWeekday,
+      note: input.note,
       starts_on: input.startsOn,
       status: input.status,
       condition_mode: input.conditionMode,
@@ -113,6 +117,15 @@ export function AllowanceProvider({ familyId, children }: ProviderProps) {
     if (error) throw friendly(error)
     await refreshAllowancePlans()
   }, [familyId, refreshAllowancePlans])
+
+  // Server-side this removes the plan outright only when it never settled a
+  // cycle; a plan with ledger history is archived instead. Either way it stops
+  // appearing, so the caller does not need to tell the two apart.
+  const deleteAllowancePlan = useCallback(async (planId: string) => {
+    const { error } = await supabase.rpc('delete_allowance_plan', { target_plan_id: planId })
+    if (error) throw friendly(error)
+    await refreshAllowancePlans()
+  }, [refreshAllowancePlans])
 
   const creditAllowance = useCallback(async (planId: string, payoutDate: string) => {
     const { error } = await supabase.rpc('credit_monthly_allowance', { plan_id: planId, payout_date: payoutDate })
@@ -136,6 +149,7 @@ export function AllowanceProvider({ familyId, children }: ProviderProps) {
     allowanceRealtimeStatus,
     payout,
     saveAllowancePlan,
+    deleteAllowancePlan,
     creditAllowance,
     skipAllowance,
     refreshLedger,
