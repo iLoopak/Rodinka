@@ -22,4 +22,9 @@ describe('design-system CSS contract', () => {
     expect(css).toContain('@media (prefers-reduced-motion: reduce)')
     expect(css).toMatch(/animation-duration:\s*0\.001ms\s*!important/)
   })
+
+  it('keeps planner create icons centered in their square touch targets', () => {
+    expect(css).toMatch(/\.planner-area-create\s*\{[^}]*width:\s*44px[^}]*height:\s*44px[^}]*min-width:\s*44px[^}]*min-height:\s*44px[^}]*padding:\s*0/s)
+    expect(css).toMatch(/\.planner-area-create svg\s*\{[^}]*display:\s*block/s)
+  })
 })
