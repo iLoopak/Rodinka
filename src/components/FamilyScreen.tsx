@@ -18,11 +18,28 @@ import { FamilyMark } from './FamilyMark'
 import { MemberRemovalDialog } from './family/MemberRemovalDialog'
 import { ScreenHeader } from './ui/ScreenHeader'
 import { ArchivedItemBadge, ConfirmDestructiveActionDialog, DestructiveIconButton } from './ui/DestructiveActions'
+import { useChildAccounts, type ChildAccount } from '../hooks/useChildAccounts'
+import { childAccountState, childAccountStatusLabel } from '../utils/childAccountStatus'
+import { revokeChildAccount } from '../lib/childAccountAdmin'
 
 function roleLabel(role: FamilyMember['role']) {
   if (role === 'admin') return t.family.roleAdmin
   if (role === 'parent') return t.family.roleParent
   return t.family.roleChild
+}
+
+// Compact enough for the member row, but carries the canonical account state
+// for children instead of the old has-account/no-account split. Adults have no
+// managed account, so they keep the plain account-link wording.
+function MemberAccountBadge({ member, account }: { member: FamilyMember; account: ChildAccount | null }) {
+  if (member.role !== 'child') {
+    return <span className={`badge ${member.user_id ? 'badge-done' : 'badge-pending'}`}>
+      {member.user_id ? t.family.hasAccount : t.family.noAccount}
+    </span>
+  }
+  const state = childAccountState(member, account)
+  const tone = state === 'active' ? 'badge-done' : state === 'revoked' ? 'badge-revoked' : 'badge-pending'
+  return <span className={`badge ${tone}`}>{childAccountStatusLabel(state)}</span>
 }
 
 function formatDate(iso: string) {
@@ -40,15 +57,48 @@ export function FamilyScreen() {
   const { activities, refreshActivities } = useActivitiesData()
   const { refreshOccurrenceAssignments } = useOccurrenceAssignmentsData()
 
+  const childMemberIds = allMembers.filter((candidate) => candidate.role === 'child').map((candidate) => candidate.id)
+  const { accounts: childAccounts, refresh: refreshChildAccounts } = useChildAccounts(childMemberIds, isParentOrAdmin)
+
+  // members.user_id is the canonical access link and already arrives over
+  // Realtime, so a revoke performed by another adult flips the status here
+  // without a reload. Refetch the account rows too, for the login name and
+  // lifecycle timestamps that only child_accounts carries.
+  const childAccessSignature = allMembers
+    .filter((candidate) => candidate.role === 'child')
+    .map((candidate) => `${candidate.id}:${candidate.user_id ?? ''}:${candidate.status ?? 'active'}`)
+    .sort()
+    .join(',')
+  useEffect(() => {
+    void refreshChildAccounts()
+  }, [childAccessSignature, refreshChildAccounts])
+
   const loading = membersLoading || familyNameLoading
   const error = membersError || familyNameError
   async function refreshAll() {
-    await Promise.all([refreshMembers(), refreshChores(), refreshActivities(), refreshOccurrenceAssignments()])
+    await Promise.all([refreshMembers(), refreshChores(), refreshActivities(), refreshOccurrenceAssignments(), refreshChildAccounts()])
   }
 
   async function handleRemoveMember(memberId: string, replacementMemberId: string | null, taskStrategy: 'unassign' | 'reassign', activityStrategy: 'clear' | 'reassign') {
+    const target = allMembers.find((candidate) => candidate.id === memberId)
+    // remove_household_member already detaches members.user_id, revokes push,
+    // and blocks family access on its own — it is the trusted workflow here.
+    // Revoking first only adds what it cannot do: delete the orphaned Auth
+    // user, which keeps the login name reusable for a later re-provision.
+    //
+    // So this is best-effort. If the Edge Function is unreachable, removing
+    // the child still has to succeed: blocking it would leave an adult unable
+    // to remove a member while the function is down, and the removal itself
+    // is what actually cuts off access.
+    if (target?.role === 'child' && target.user_id) {
+      try {
+        await revokeChildAccount(memberId)
+      } catch (revokeError) {
+        console.error('Child Auth cleanup before removal did not complete:', revokeError instanceof Error ? revokeError.message : 'unknown')
+      }
+    }
     await removeMember(memberId, replacementMemberId, taskStrategy, activityStrategy)
-    await Promise.all([refreshChores(), refreshActivities(), refreshOccurrenceAssignments()])
+    await Promise.all([refreshChores(), refreshActivities(), refreshOccurrenceAssignments(), refreshChildAccounts()])
   }
 
   async function handleRestoreMember(memberId: string) {
@@ -169,9 +219,7 @@ export function FamilyScreen() {
                   <span className="row-meta">{roleLabel(m.role)}</span>
                 </span>
                 <span className="row-spacer" />
-                <span className={`badge ${m.user_id ? 'badge-done' : 'badge-pending'}`}>
-                  {m.user_id ? t.family.hasAccount : t.family.noAccount}
-                </span>
+                <MemberAccountBadge member={m} account={childAccounts.get(m.id) ?? null} />
                 {canEditMemberProfile(currentMember, m) && (
                   <button
                     type="button"
@@ -248,6 +296,8 @@ export function FamilyScreen() {
           member={editingMember}
           currentMember={currentMember}
           refreshMembers={refreshMembers}
+          childAccount={childAccounts.get(editingMember.id) ?? null}
+          onAccountChanged={async () => { await Promise.all([refreshMembers(), refreshChildAccounts()]) }}
           onRequestRemove={isParentOrAdmin && editingMember.id !== currentMember.id ? () => {
             setRemovingMember(editingMember)
             setEditingMember(null)

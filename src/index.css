@@ -957,6 +957,11 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
   color: var(--state-danger);
 }
 
+.badge-revoked {
+  background: var(--state-danger-soft);
+  color: var(--state-danger);
+}
+
 .badge-today {
   background: var(--state-info-soft);
   color: var(--state-info);
@@ -5441,4 +5446,88 @@ button.danger-action:focus-visible:not(:disabled) {
   .feature-screen-header .header-actions > * { flex: 1 1 auto; }
   .more-settings-row { flex-wrap: wrap; }
   .more-family-name-edit { margin-left: 44px; }
+}
+
+/* ------------------------------------------------------------------ */
+/* Managed child accounts                                              */
+/* ------------------------------------------------------------------ */
+
+.child-account-section {
+  display: grid;
+  gap: 8px;
+}
+
+.child-account-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-weight: 700;
+}
+
+/* The dot repeats what the label already says; state is never carried by
+   colour alone. */
+.child-account-status .badge-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--state-warning);
+}
+
+.child-account-status.is-active .badge-dot { background: var(--state-success); }
+.child-account-status.is-revoked .badge-dot { background: var(--state-danger); }
+
+.child-account-meta {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.child-credential-card {
+  display: grid;
+  gap: 12px;
+}
+
+.child-credential-warning {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--state-danger-soft);
+  color: var(--state-danger);
+  font-weight: 700;
+}
+
+.child-credential-grid {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.child-credential-grid dt {
+  font-size: 0.8rem;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.child-credential-grid dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+}
+
+/* A generated passphrase is long and unbreakable at word boundaries; let it
+   wrap inside the card rather than pushing the dialog into a sideways scroll
+   on a narrow phone. */
+.child-credential-value {
+  flex: 1 1 12ch;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--sand, #f4efe6);
+  font-size: 1rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
