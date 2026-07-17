@@ -136,6 +136,46 @@ export function MessagesScreen() {
     ? conversationViews.find((c) => c.id === activeConversationId) ?? null
     : null
 
+  // Stabilize the handlers that feed ConversationDetail's useEffects.
+  // Inline arrows here would give the child a new reference every render;
+  // when those arrows appeared in dep arrays (e.g. `[loaded, onMarkRead]`)
+  // the effect refired every render, and the mark-as-read effect turned
+  // into an unbounded mark_conversation_read loop that exhausted the
+  // browser's connection pool and made send_message fail with
+  // "TypeError: Failed to fetch". Memoizing per-conversation-id keeps
+  // the child effects firing only when the conversation actually changes.
+  const activeId = activeConversation?.id
+  const handleLoadInitial = useCallback(
+    () => (activeId ? loadInitialMessages(activeId) : Promise.resolve()),
+    [activeId, loadInitialMessages],
+  )
+  const handleLoadOlder = useCallback(
+    () => (activeId ? loadOlderMessages(activeId) : Promise.resolve()),
+    [activeId, loadOlderMessages],
+  )
+  const handleSend = useCallback(
+    (payload: Parameters<typeof sendMessage>[1]) =>
+      activeId ? sendMessage(activeId, payload) : Promise.resolve(),
+    [activeId, sendMessage],
+  )
+  const handleRetry = useCallback(
+    (clientId: string) => (activeId ? retryFailedMessage(activeId, clientId) : Promise.resolve()),
+    [activeId, retryFailedMessage],
+  )
+  const handleDiscardFailed = useCallback(
+    (clientId: string) => { if (activeId) discardFailedMessage(activeId, clientId) },
+    [activeId, discardFailedMessage],
+  )
+  const handleMarkRead = useCallback(
+    () => (activeId ? markConversationRead(activeId) : Promise.resolve()),
+    [activeId, markConversationRead],
+  )
+  const handleMuteChange = useCallback(
+    (scope: ConversationMuteScope) =>
+      activeId ? setConversationMute(activeId, scope) : Promise.resolve(),
+    [activeId, setConversationMute],
+  )
+
   return (
     <div className="messages-screen" data-active={activeConversation ? 'detail' : 'list'}>
       <div className={`messages-pane messages-pane-list${activeConversation ? ' is-collapsed-mobile' : ''}`}>
@@ -177,17 +217,17 @@ export function MessagesScreen() {
             messages={getMessages(activeConversation.id)}
             loaded={isConversationLoaded(activeConversation.id)}
             olderExhausted={isOlderExhausted(activeConversation.id)}
-            loadInitial={() => loadInitialMessages(activeConversation.id)}
-            loadOlder={() => loadOlderMessages(activeConversation.id)}
-            onSend={(payload) => sendMessage(activeConversation.id, payload)}
+            loadInitial={handleLoadInitial}
+            loadOlder={handleLoadOlder}
+            onSend={handleSend}
             onEdit={editMessage}
             onDelete={deleteMessage}
             onReact={toggleReaction}
-            onRetry={(clientId) => retryFailedMessage(activeConversation.id, clientId)}
-            onDiscardFailed={(clientId) => discardFailedMessage(activeConversation.id, clientId)}
-            onMarkRead={() => markConversationRead(activeConversation.id)}
+            onRetry={handleRetry}
+            onDiscardFailed={handleDiscardFailed}
+            onMarkRead={handleMarkRead}
             onBack={closeConversation}
-            onMuteChange={(scope) => setConversationMute(activeConversation.id, scope)}
+            onMuteChange={handleMuteChange}
             getReactions={getMessageReactions}
             getAttachments={getMessageAttachments}
             getAttachmentUrl={getAttachmentUrl}
