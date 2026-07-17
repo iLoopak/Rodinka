@@ -80,8 +80,8 @@ export function MemberAvatarPhotoField({
 
   return (
     <>
-      <section className="form-section profile-photo-section" aria-labelledby="profile-photo-heading">
-        <h4 id="profile-photo-heading">{t.family.profilePhoto}</h4>
+      <section className="profile-photo-section" aria-labelledby="profile-photo-heading">
+        <h4 id="profile-photo-heading" className="visually-hidden">{t.family.profilePhoto}</h4>
         <button
           type="button"
           className="profile-avatar-button"
@@ -89,7 +89,7 @@ export function MemberAvatarPhotoField({
           disabled={disabled}
           aria-label={hasPhoto ? t.family.changePhoto : t.family.uploadPhoto}
         >
-          <MemberAvatar member={previewMember} size={112} decorative={false} />
+          <MemberAvatar member={previewMember} size={96} decorative={false} />
           <span>{t.family.cropEditBadge}</span>
         </button>
         <div className="profile-photo-actions">
@@ -107,7 +107,7 @@ export function MemberAvatarPhotoField({
               event.target.value = ''
             }}
           />
-          {hasPhoto && <button type="button" className="btn-secondary" onClick={onRemove} disabled={disabled}>{t.family.removePhoto}</button>}
+          {hasPhoto && <button type="button" className="btn-link destructive-link profile-photo-remove" onClick={onRemove} disabled={disabled}>{t.family.removePhoto}</button>}
         </div>
         {value && pendingUntilSubmit && <p className="field-hint">{t.family.photoPending}</p>}
         {hasExistingPhoto && !value && !removed && <p className="field-hint">{t.family.cropExistingHint}</p>}

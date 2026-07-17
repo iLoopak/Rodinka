@@ -54,6 +54,9 @@ import { FamilyScreen } from './FamilyScreen'
 async function startRemoval(childName: string) {
   render(createElement(FamilyScreen))
   fireEvent.click(screen.getByRole('button', { name: `${t.family.editProfile}: ${childName}` }))
+  // The remove-member action lives inside the editor's "Other" section rather
+  // than beside the profile save button.
+  fireEvent.click(screen.getByRole('button', { name: t.family.editor.sectionOther }))
   fireEvent.click(screen.getByRole('button', { name: t.family.removeMemberAction }))
   const confirm = await screen.findByRole('button', { name: t.family.removeMemberAction })
   fireEvent.click(confirm)

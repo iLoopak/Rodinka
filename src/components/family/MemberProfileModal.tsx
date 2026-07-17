@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { t } from '../../strings'
 import { getCurrentLanguage } from '../../i18n'
 import type { FamilyMember, GrammaticalGender, MemberColorKey } from '../../hooks/useFamilyMembers'
@@ -7,6 +7,8 @@ import { editableMemberProfileFields } from '../../utils/memberProfilePermission
 import { MEMBER_COLOR_KEYS, getMemberMainColor, getMemberColor, memberColorKey } from '../../utils/memberColor'
 import type { AvatarValidationError } from '../../utils/memberAvatarImage'
 import { Modal } from '../ui/Modal'
+import { MemberAvatar } from '../ui/MemberAvatar'
+import { ConfirmDestructiveActionDialog } from '../ui/DestructiveActions'
 import { MemberAvatarPhotoField } from './MemberAvatarPhotoField'
 import { getLocalizedAddressName } from '../../utils/personalizedName'
 import type { ChildAccount } from '../../hooks/useChildAccounts'
@@ -28,6 +30,10 @@ interface Props {
   childAccount?: ChildAccount | null
   onAccountChanged?: () => Promise<void> | void
 }
+
+type EditorSection = 'profile' | 'allowance' | 'access' | 'other'
+
+const FORM_ID = 'member-profile-form'
 
 function colorLabel(key: MemberColorKey) {
   const label = getMemberColor(key).label
@@ -65,6 +71,7 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
   // Adults have no allowance, and a child opening their own profile must not
   // be offered the parent's controls.
   const showAllowance = canManageAllowance(currentMember, member)
+  const showOther = Boolean(onRequestRemove || onRequestLeave)
   const { saveMemberProfile } = useMemberProfiles(refreshMembers)
   const [displayName, setDisplayName] = useState(member.display_name)
   const [birthDate, setBirthDate] = useState(member.birth_date ?? '')
@@ -78,11 +85,55 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
   const [removeAvatar, setRemoveAvatar] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [activeSection, setActiveSection] = useState<EditorSection>('profile')
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false)
+
   const vocativePreview = getLocalizedAddressName({
     firstName: displayName,
     manualVocative: vocativeName,
     locale: getCurrentLanguage(),
   })
+
+  // Section navigation adapts to what this actor is allowed to see. A child
+  // editing their own profile only sees "Profil"; a parent editing another
+  // adult never sees the allowance or child-access sections.
+  const sections = useMemo(() => {
+    const list: Array<{ id: EditorSection; label: string }> = [
+      { id: 'profile', label: t.family.editor.sectionProfile },
+    ]
+    if (showAllowance) list.push({ id: 'allowance', label: t.family.editor.sectionAllowance })
+    if (showAccountManagement) list.push({ id: 'access', label: t.family.editor.sectionAccess })
+    if (showOther) list.push({ id: 'other', label: t.family.editor.sectionOther })
+    return list
+  }, [showAllowance, showAccountManagement, showOther])
+
+  // The visible section list can shrink out from under us if the caller drops
+  // a permission — snap back to Profil rather than render an empty content
+  // area.
+  useEffect(() => {
+    if (!sections.some((s) => s.id === activeSection)) setActiveSection('profile')
+  }, [sections, activeSection])
+
+  // The photo is persisted immediately by the crop editor, so any local
+  // avatarFile that we've already committed doesn't count as dirty.
+  const isDirty = (
+    (fields.displayName && displayName !== member.display_name) ||
+    (fields.birthDate && birthDate !== (member.birth_date ?? '')) ||
+    colorKey !== memberColorKey(member) ||
+    grammaticalGender !== member.grammatical_gender ||
+    vocativeName !== (member.vocative_name ?? '') ||
+    (avatarFile !== null && !avatarPersisted) ||
+    removeAvatar
+  )
+
+  function requestClose() {
+    if (saving) return
+    if (isDirty) {
+      setConfirmingDiscard(true)
+      return
+    }
+    onClose()
+  }
 
   function handleRemoveAvatar() {
     setAvatarFile(null)
@@ -142,151 +193,226 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
     }
   }
 
+  const summaryMember: Pick<FamilyMember, 'id' | 'display_name' | 'color_key' | 'avatar_url'> = {
+    id: member.id,
+    display_name: displayName || member.display_name,
+    color_key: colorKey,
+    avatar_url: removeAvatar ? null : member.avatar_url,
+  }
+
   return (
-    <Modal title={t.family.profileTitle} onClose={saving ? () => undefined : onClose}>
-      <form className="member-profile-form sectioned-form" onSubmit={handleSubmit}>
-        <MemberAvatarPhotoField
-          displayName={displayName}
-          colorKey={colorKey}
-          existingAvatarUrl={member.avatar_url}
-          hasExistingPhoto={!!member.avatar_path}
-          value={avatarFile}
-          removed={removeAvatar}
-          disabled={saving}
-          onSave={handleSaveAvatar}
-          onRemove={handleRemoveAvatar}
-          onError={(validationError) => setError(avatarValidationMessage(validationError))}
-        />
+    <Modal
+      title={t.family.editor.title}
+      onClose={requestClose}
+      closeOnBackdrop={false}
+      className="member-editor-sheet"
+    >
+      <div className="member-editor-summary">
+        <MemberAvatar member={summaryMember} size={44} decorative={false} />
+        <div className="member-editor-summary-copy">
+          <p className="member-editor-summary-role">
+            {member.role === 'admin' ? t.family.roleAdmin : member.role === 'parent' ? t.family.roleParent : t.family.roleChild}
+          </p>
+          <p className="member-editor-summary-name">{member.display_name}</p>
+        </div>
+      </div>
 
-        <section className="form-section">
-          <label>
-            {t.family.nameLabel}
-            <input
-              value={displayName}
-              onChange={(event) => setDisplayName(event.target.value)}
-              readOnly={!fields.displayName}
-              required={fields.displayName}
-              disabled={saving}
-            />
-          </label>
-          {!fields.displayName && <p className="field-hint">{t.family.parentManagedField}</p>}
+      <div className="member-editor-main">
+        {sections.length > 1 && (
+          <nav className="member-editor-nav" aria-label={t.family.editor.sectionsLabel}>
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                type="button"
+                className={`member-editor-nav-item${activeSection === section.id ? ' is-active' : ''}`}
+                aria-current={activeSection === section.id ? 'page' : undefined}
+                onClick={() => setActiveSection(section.id)}
+              >
+                {section.label}
+              </button>
+            ))}
+          </nav>
+        )}
 
-          <label>
-            {t.family.vocativeNameLabel}
-            <input
-              value={vocativeName}
-              onChange={(event) => setVocativeName(event.target.value)}
-              readOnly={!fields.vocativeName}
-              disabled={saving}
-              maxLength={120}
-            />
-          </label>
-          <p className="field-hint">{fields.vocativeName ? t.family.vocativeNameHelp : t.family.parentManagedField}</p>
-          {vocativePreview && (
-            <p className="vocative-preview" aria-live="polite">
-              {t.family.vocativePreview(vocativePreview)}
-            </p>
+        <div className="member-editor-content">
+          {activeSection === 'profile' && (
+            <form id={FORM_ID} className="member-profile-form" onSubmit={handleSubmit}>
+              <MemberAvatarPhotoField
+                displayName={displayName}
+                colorKey={colorKey}
+                existingAvatarUrl={member.avatar_url}
+                hasExistingPhoto={!!member.avatar_path}
+                value={avatarFile}
+                removed={removeAvatar}
+                disabled={saving}
+                onSave={handleSaveAvatar}
+                onRemove={handleRemoveAvatar}
+                onError={(validationError) => setError(avatarValidationMessage(validationError))}
+              />
+
+              <section className="member-editor-block" aria-label={t.family.editor.sectionProfile}>
+                <label>
+                  {t.family.nameLabel}
+                  <input
+                    value={displayName}
+                    onChange={(event) => setDisplayName(event.target.value)}
+                    readOnly={!fields.displayName}
+                    required={fields.displayName}
+                    disabled={saving}
+                  />
+                </label>
+                {!fields.displayName && <p className="field-hint">{t.family.parentManagedField}</p>}
+
+                <label>
+                  {t.family.vocativeNameLabel}
+                  <input
+                    value={vocativeName}
+                    onChange={(event) => setVocativeName(event.target.value)}
+                    readOnly={!fields.vocativeName}
+                    disabled={saving}
+                    maxLength={120}
+                  />
+                </label>
+                <p className="field-hint">{fields.vocativeName ? t.family.vocativeNameHelp : t.family.parentManagedField}</p>
+                {vocativePreview && (
+                  <p className="vocative-preview" aria-live="polite">
+                    {t.family.vocativePreview(vocativePreview)}
+                  </p>
+                )}
+
+                <label>
+                  {t.family.birthDateLabel}
+                  <input
+                    type="date"
+                    value={birthDate}
+                    onChange={(event) => setBirthDate(event.target.value)}
+                    readOnly={!fields.birthDate}
+                    disabled={saving}
+                  />
+                </label>
+                {!fields.birthDate && <p className="field-hint">{t.family.parentManagedField}</p>}
+
+                <dl className="profile-readonly-grid">
+                  <div>
+                    <dt>{t.family.roleLabel}</dt>
+                    <dd>{member.role === 'admin' ? t.family.roleAdmin : member.role === 'parent' ? t.family.roleParent : t.family.roleChild}</dd>
+                  </div>
+                  <div>
+                    <dt>{t.family.accountLabel}</dt>
+                    <dd>{member.role === 'child'
+                      ? childAccountStatusLabel(childAccountState(member, childAccount))
+                      : member.user_id ? t.family.hasAccount : t.family.noAccount}</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <fieldset className="member-editor-block profile-fieldset">
+                <legend>{t.family.memberColor}</legend>
+                <div className="member-color-picker">
+                  {MEMBER_COLOR_KEYS.map((key) => (
+                    <label
+                      key={key}
+                      className={`member-color-option${colorKey === key ? ' selected' : ''}`}
+                      title={colorLabel(key)}
+                    >
+                      <input
+                        className="visually-hidden"
+                        type="radio"
+                        name="member-color"
+                        value={key}
+                        checked={colorKey === key}
+                        disabled={saving}
+                        onChange={() => {
+                          setColorKey(key)
+                        }}
+                      />
+                      <span className="member-color-swatch" style={{ backgroundColor: getMemberMainColor(key) }}>
+                        {colorKey === key && <span aria-hidden="true">✓</span>}
+                      </span>
+                      <span className="visually-hidden">{colorLabel(key)}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
+              <fieldset className="member-editor-block profile-fieldset">
+                <legend>{t.family.grammarTitle}</legend>
+                <p className="field-hint">{t.family.grammarExplain}</p>
+                <div className="member-gender-options">
+                  {genderOptions().map((option) => {
+                    const value = option.value ?? 'unspecified'
+                    return (
+                      <label key={value} className="member-gender-option">
+                        <input
+                          type="radio"
+                          name="grammatical-gender"
+                          value={value}
+                          checked={grammaticalGender === option.value}
+                          disabled={saving}
+                          onChange={() => setGrammaticalGender(option.value)}
+                        />
+                        <span>{option.label}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </fieldset>
+            </form>
           )}
 
-          <label>
-            {t.family.birthDateLabel}
-            <input
-              type="date"
-              value={birthDate}
-              onChange={(event) => setBirthDate(event.target.value)}
-              readOnly={!fields.birthDate}
-              disabled={saving}
+          {activeSection === 'allowance' && showAllowance && (
+            <AllowanceSection child={member} />
+          )}
+
+          {activeSection === 'access' && showAccountManagement && (
+            <ChildAccountSection
+              child={member}
+              account={childAccount}
+              onChanged={() => onAccountChanged?.()}
             />
-          </label>
-          {!fields.birthDate && <p className="field-hint">{t.family.parentManagedField}</p>}
+          )}
 
-          <dl className="profile-readonly-grid">
-            <div>
-              <dt>{t.family.roleLabel}</dt>
-              <dd>{member.role === 'admin' ? t.family.roleAdmin : member.role === 'parent' ? t.family.roleParent : t.family.roleChild}</dd>
-            </div>
-            <div>
-              <dt>{t.family.accountLabel}</dt>
-              <dd>{member.role === 'child'
-                ? childAccountStatusLabel(childAccountState(member, childAccount))
-                : member.user_id ? t.family.hasAccount : t.family.noAccount}</dd>
-            </div>
-          </dl>
-        </section>
+          {activeSection === 'other' && showOther && (
+            <section className="member-danger-zone" aria-labelledby="member-danger-zone-title">
+              <h4 id="member-danger-zone-title">{t.family.dangerZone}</h4>
+              <p className="field-hint">{t.family.editor.dangerZoneExplain}</p>
+              {onRequestRemove && (
+                <div className="member-danger-action">
+                  <button type="button" className="btn-danger" disabled={saving} onClick={onRequestRemove}>{t.family.removeMemberAction}</button>
+                  <p className="field-hint">{t.family.editor.removeMemberHint}</p>
+                </div>
+              )}
+              {onRequestLeave && (
+                <div className="member-danger-action">
+                  <button type="button" className="btn-danger" disabled={saving} onClick={onRequestLeave}>{t.family.leaveHouseholdAction}</button>
+                  <p className="field-hint">{t.family.editor.leaveHouseholdHint}</p>
+                </div>
+              )}
+            </section>
+          )}
+        </div>
+      </div>
 
-        <fieldset className="form-section profile-fieldset">
-          <legend>{t.family.memberColor}</legend>
-          <div className="member-color-picker">
-            {MEMBER_COLOR_KEYS.map((key) => (
-              <label
-                key={key}
-                className={`member-color-option${colorKey === key ? ' selected' : ''}`}
-                title={colorLabel(key)}
-              >
-                <input
-                  className="visually-hidden"
-                  type="radio"
-                  name="member-color"
-                  value={key}
-                  checked={colorKey === key}
-                  disabled={saving}
-                  onChange={() => {
-                    setColorKey(key)
-                  }}
-                />
-                <span className="member-color-swatch" style={{ backgroundColor: getMemberMainColor(key) }}>
-                  {colorKey === key && <span aria-hidden="true">✓</span>}
-                </span>
-                <span className="visually-hidden">{colorLabel(key)}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
+      {activeSection === 'profile' && (
+        <div className="member-editor-footer">
+          {error && <p className="error" role="alert">{error}</p>}
+          <button type="submit" form={FORM_ID} disabled={saving}>
+            {saving ? t.family.savingProfile : t.family.saveProfile}
+          </button>
+        </div>
+      )}
 
-        <fieldset className="form-section profile-fieldset">
-          <legend>{t.family.grammarTitle}</legend>
-          <p className="field-hint">{t.family.grammarExplain}</p>
-          <div className="member-gender-options">
-            {genderOptions().map((option) => {
-              const value = option.value ?? 'unspecified'
-              return (
-                <label key={value} className="member-gender-option">
-                  <input
-                    type="radio"
-                    name="grammatical-gender"
-                    value={value}
-                    checked={grammaticalGender === option.value}
-                    disabled={saving}
-                    onChange={() => setGrammaticalGender(option.value)}
-                  />
-                  <span>{option.label}</span>
-                </label>
-              )
-            })}
-          </div>
-        </fieldset>
-
-        {error && <p className="error" role="alert">{error}</p>}
-        <button type="submit" disabled={saving}>
-          {saving ? t.family.savingProfile : t.family.saveProfile}
-        </button>
-        {(onRequestRemove || onRequestLeave) && <section className="member-danger-zone" aria-labelledby="member-danger-zone-title">
-          <h4 id="member-danger-zone-title">{t.family.dangerZone}</h4>
-          {onRequestRemove && <button type="button" className="btn-danger" disabled={saving} onClick={onRequestRemove}>{t.family.removeMemberAction}</button>}
-          {onRequestLeave && <button type="button" className="btn-danger" disabled={saving} onClick={onRequestLeave}>{t.family.leaveHouseholdAction}</button>}
-        </section>}
-      </form>
-
-      {/* Deliberately siblings of the profile form, not children of it: these
-          panels carry their own forms and dialogs, and this Modal renders
-          inline rather than through a portal. */}
-      {showAllowance && <AllowanceSection child={member} />}
-
-      {showAccountManagement && <ChildAccountSection
-        child={member}
-        account={childAccount}
-        onChanged={() => onAccountChanged?.()}
-      />}
+      <ConfirmDestructiveActionDialog
+        open={confirmingDiscard}
+        title={t.family.editor.discardTitle}
+        explanation={t.family.editor.discardExplain}
+        confirmLabel={t.family.editor.discardConfirm}
+        onCancel={() => setConfirmingDiscard(false)}
+        onConfirm={() => {
+          setConfirmingDiscard(false)
+          onClose()
+        }}
+      />
     </Modal>
   )
 }
