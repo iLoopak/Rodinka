@@ -24,10 +24,15 @@ describe('activity form implementation contract', () => {
     expect(formSource).toContain('reminderEnabled &&')
   })
 
-  it('uses one scrolling region, a viewport-height sheet and safe sticky action area', () => {
+  it('uses one vertical scrolling region, a viewport-height sheet and safe sticky action area', () => {
     expect(styles).toMatch(/\.modal-sheet\.activity-form-modal\s*\{[^}]*height:\s*100dvh/s)
-    expect(styles).toMatch(/\.activity-form-scroll\s*\{[^}]*overflow-y:\s*auto/s)
+    expect(styles).toMatch(/\.activity-form-scroll\s*\{[^}]*min-width:\s*0[^}]*overflow-x:\s*hidden[^}]*overflow-y:\s*auto/s)
     expect(styles).toMatch(/\.activity-form-footer\s*\{[^}]*safe-area-inset-bottom/s)
     expect(styles).toMatch(/\.activity-form-modal \.modal-header\s*\{[^}]*safe-area-inset-top/s)
+  })
+
+  it('wraps recurrence controls instead of horizontally scrolling on phones', () => {
+    expect(styles).toMatch(/@media \(max-width: 559px\)[\s\S]*?\.recurrence-chip-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)[^}]*overflow-x:\s*visible/s)
+    expect(styles).toMatch(/@media \(max-width: 559px\)[\s\S]*?\.weekday-picker\.compact\s*\{[^}]*grid-template-columns:\s*repeat\(7, minmax\(0, 1fr\)\)[^}]*overflow-x:\s*visible/s)
   })
 })
