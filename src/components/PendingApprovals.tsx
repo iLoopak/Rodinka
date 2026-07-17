@@ -61,7 +61,7 @@ export function PendingApprovals({ completions, chores, memberById, onApprove, o
       <ul className="section-list plain-list">
         {completions.map((completion) => {
           const chore = choreFor(completion.chore_id)
-          const completedBy = memberById(completion.completed_by)
+          const completedBy = completion.completed_by ? memberById(completion.completed_by) : undefined
           const busy = busyId === completion.id
           return (
             <li key={completion.id}>

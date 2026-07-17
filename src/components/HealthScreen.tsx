@@ -205,7 +205,7 @@ interface MedicalRowProps {
 
 function MedicalRow({ record, memberById, onClick }: MedicalRowProps) {
   const dueDate = record.record_type === 'vaccination' ? record.vaccine_next_dose_date : record.next_due_date
-  const patient = memberById(record.patient_id)
+  const patient = record.patient_id ? memberById(record.patient_id) : undefined
   const roles: PersonRole[] = [
     { member: patient, label: t.common.patient },
     ...(record.responsible_member_id ? [{ member: memberById(record.responsible_member_id), label: t.common.responsibleAdult }] : []),

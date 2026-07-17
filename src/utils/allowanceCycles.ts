@@ -130,7 +130,7 @@ interface RequirementInput {
 
 interface CompletionInput {
   chore_id: string
-  completed_by: string
+  completed_by: string | null
   completed_at: string
   status: 'pending_approval' | 'approved' | 'rejected'
 }

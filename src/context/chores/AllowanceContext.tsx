@@ -71,6 +71,7 @@ export function AllowanceProvider({ familyId, children }: ProviderProps) {
   const balances = useMemo(() => {
     const totals = new Map<string, number>()
     for (const entry of entries) {
+      if (!entry.member_id) continue
       totals.set(entry.member_id, (totals.get(entry.member_id) ?? 0) + Number(entry.amount))
     }
     return totals

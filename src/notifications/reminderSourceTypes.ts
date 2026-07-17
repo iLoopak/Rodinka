@@ -34,7 +34,7 @@ export interface ReminderActivity {
 
 export interface ReminderMedicalRecord {
   id: string
-  patient_id: string
+  patient_id: string | null
   responsible_member_id: string | null
   record_type: string
   record_date: string
