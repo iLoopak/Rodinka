@@ -11,4 +11,11 @@ describe('offline application shell', () => {
     expect(worker).toContain("url.pathname.startsWith('/assets/')")
     expect(worker).toContain("caches.match('/')")
   })
+
+  it('clones asset responses before asynchronous cache work can consume the body', () => {
+    const assetHandler = worker.match(/if \(url\.pathname\.startsWith\('\/assets\/'\)[\s\S]*?\n  }\n}\)/)?.[0] ?? ''
+    expect(assetHandler).toContain('const copy = response.clone()')
+    expect(assetHandler.indexOf('const copy = response.clone()')).toBeLessThan(assetHandler.indexOf('await caches.open(CACHE_NAME)'))
+    expect(assetHandler).not.toContain('cache.put(request, response.clone())')
+  })
 })
