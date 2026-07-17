@@ -267,7 +267,9 @@ export function CalendarScreen() {
           >
             +
           </button>
-          <button type="button" className="header-action-button" onClick={goToday}>
+          {/* Jumping to today navigates; it must not look like the create
+              action beside it. Create stays the one primary here. */}
+          <button type="button" className="header-action-button btn-secondary" onClick={goToday}>
             {t.calendar.today}
           </button>
         </div>
@@ -350,10 +352,14 @@ export function CalendarScreen() {
       )}
 
       {viewMode === 'agenda' && (
-        <section className="section">
+        <section className="page-section">
           {entries.length === 0 && hasFilters ? (
-            <EmptyState title={t.calendar.filtersNoResults} action={{ label: t.calendar.clearFilters, onClick: clearFilters }} />
+            <div className="panel is-quiet">
+              <EmptyState title={t.calendar.filtersNoResults} action={{ label: t.calendar.clearFilters, onClick: clearFilters }} />
+            </div>
           ) : (
+            /* Each date bucket owns its own panel (see .agenda-group-list), so
+               the list is not wrapped in a second surface here. */
             <AgendaList entries={deduplicateAgendaRanges(entries)} today={today} memberById={memberById} onSelectEntry={openEntry} />
           )}
         </section>

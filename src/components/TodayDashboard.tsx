@@ -125,12 +125,12 @@ export function TodayDashboard() {
       {approvalFeedback && <p className="success approval-feedback" role="status">{approvalFeedback}</p>}
 
       {needsAttention && (
-        <section className="today-section today-attention-section">
-          <h2 className="today-section-title">{t.today.attentionTitle}</h2>
-          <div className="today-panel is-attention">
+        <section className="page-section today-attention-section">
+          <h2 className="section-heading">{t.today.attentionTitle}</h2>
+          <div className="panel is-attention">
             {pendingCompletions.length > 0 && (
               <div className="today-attention-group">
-                <h3 className="today-section-subheading">{t.today.approvalsTitle}</h3>
+                <h3 className="page-section-subheading">{t.today.approvalsTitle}</h3>
                 <PendingApprovals
                   completions={pendingCompletions}
                   chores={chores}
@@ -143,7 +143,7 @@ export function TodayDashboard() {
             {attentionItems.length > 0 && (
               <div className="today-attention-group">
                 {pendingCompletions.length > 0 && (
-                  <h3 className="today-section-subheading">{t.today.otherAttentionTitle}</h3>
+                  <h3 className="page-section-subheading">{t.today.otherAttentionTitle}</h3>
                 )}
                 <TodayAttentionList items={attentionItems} memberById={memberById} />
               </div>
@@ -152,14 +152,14 @@ export function TodayDashboard() {
         </section>
       )}
 
-      <section className="today-section today-program-section">
-        <h2 className="today-section-title">{t.today.programTitle}</h2>
+      <section className="page-section today-program-section">
+        <h2 className="section-heading">{t.today.programTitle}</h2>
         {entries.length === 0 ? (
-          <div className="today-panel is-quiet">
+          <div className="panel is-quiet">
             <TodayProgramEmpty onAdd={() => setShowCreate(true)} />
           </div>
         ) : (
-          <div className="today-panel is-primary">
+          <div className="panel is-primary">
             <TodayAgendaList entries={entries} memberById={memberById} onSelectEntry={setSelectedEntry} />
           </div>
         )}
@@ -183,8 +183,8 @@ export function TodayDashboard() {
       />
 
       {kids.length === 0 && (
-        <section className="today-section today-setup-card">
-          <div className="today-panel is-quiet">
+        <section className="page-section today-setup-card">
+          <div className="panel is-quiet">
             <h2 className="today-setup-title">{t.today.optionalSetupTitle}</h2>
             <p>{t.today.optionalSetupBody}</p>
             <button type="button" className="btn-secondary" onClick={() => navigate('/family')}>

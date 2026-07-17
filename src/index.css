@@ -709,23 +709,28 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
   line-height: var(--line-height-meta);
 }
 
-/* Today's section system.
-   The heading sits directly on the warm canvas and exactly one paper surface
-   wraps the content, so no module is a bordered box inside a bordered box.
-   Hierarchy comes from type, whitespace and surface — not from outlines. */
-.today-section {
+/* ------------------------------------------------------------------ */
+/* The Rodinka section system — shared by every route                  */
+/* ------------------------------------------------------------------ */
+
+/* A section is a heading sitting directly on the warm canvas plus exactly one
+   paper surface around the content, so nothing is a bordered box inside a
+   bordered box. Hierarchy comes from type, whitespace and surface — never from
+   coloured outlines. Established on Today; this is the canonical version.
+   Legacy `.section` is the old primitive being retired route by route. */
+.page-section {
   display: grid;
   gap: 10px;
   margin-bottom: 26px;
 }
 
-.today-section-head {
+.page-section-head {
   display: flex;
   align-items: center;
   gap: 11px;
 }
 
-.today-section-title {
+.section-heading {
   display: flex;
   align-items: center;
   margin: 0;
@@ -736,48 +741,48 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
   letter-spacing: -0.03em;
 }
 
-.today-section-count {
+.section-count {
   color: var(--ink-muted);
   font-size: var(--font-size-meta);
   line-height: var(--line-height-meta);
 }
 
 /* One surface, one hairline. Elevation is reserved for the primary module. */
-.today-panel {
+.panel {
   overflow: hidden;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card);
   background: var(--paper);
 }
 
-.today-panel.is-primary {
+.panel.is-primary {
   box-shadow: var(--shadow-card);
 }
 
 /* Secondary modules stay lighter: a tinted surface carries the module accent
    instead of a full-strength pastel fill inside a coloured outline. */
-.today-panel.is-secondary {
+.panel.is-secondary {
   background: var(--paper);
   padding: 4px 14px 12px;
 }
 
-.today-panel.is-tasks {
+.panel.is-tasks {
   background: color-mix(in srgb, var(--brand-mint) 7%, var(--paper));
   border-color: color-mix(in srgb, var(--brand-mint) 24%, var(--border-subtle));
 }
 
-.today-panel.is-shopping {
+.panel.is-shopping {
   background: color-mix(in srgb, var(--brand-honey) 8%, var(--paper));
   border-color: color-mix(in srgb, var(--brand-honey) 26%, var(--border-subtle));
 }
 
-.today-panel.is-attention {
+.panel.is-attention {
   padding: 16px;
   background: color-mix(in srgb, var(--brand-honey) 9%, var(--paper));
   border-color: color-mix(in srgb, var(--state-warning) 22%, var(--border-subtle));
 }
 
-.today-panel.is-quiet {
+.panel.is-quiet {
   padding: 16px;
   border-style: dashed;
   background: transparent;
@@ -787,7 +792,7 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
   margin-top: 16px;
 }
 
-.today-section-subheading {
+.page-section-subheading {
   margin-bottom: 8px;
   color: var(--ink-muted);
   font-size: var(--font-size-caption);
@@ -832,7 +837,7 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
 /* Rows sit flush inside a clipped panel, so the focus ring has to be drawn
    inside the row or the panel's overflow would shave it off. Scoped to the
    panel to outrank the generic .clickable-row:focus-visible offset. */
-.today-panel .today-agenda-item:focus-visible {
+.panel .today-agenda-item:focus-visible {
   outline-offset: -3px;
   border-radius: var(--radius-row);
 }
@@ -2327,9 +2332,11 @@ label.member-gender-option {
   height: 22px;
 }
 
+/* Destinations are rows sharing one panel, not a grid of equally elevated
+   cards. The module accent lives in the icon surface only. */
 .planner-area-grid {
   display: grid;
-  gap: 10px;
+  gap: 0;
 }
 
 .planner-area-card {
@@ -2337,12 +2344,13 @@ label.member-gender-option {
   align-items: center;
   gap: 12px;
   min-width: 0;
-  min-height: 96px;
-  padding: 15px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  background: var(--paper);
-  box-shadow: var(--shadow-card);
+  min-height: 68px;
+  padding: 10px 14px;
+  background: transparent;
+}
+
+.planner-area-card + .planner-area-card {
+  border-top: 1px solid color-mix(in srgb, var(--border-subtle) 80%, transparent);
 }
 
 .planner-area-link {
@@ -2390,12 +2398,24 @@ label.member-gender-option {
 }
 
 .planner-area-create {
+  display: grid;
+  place-items: center;
   flex: 0 0 auto;
-  min-height: 44px;
-  padding: 9px 14px;
-  border-radius: 999px;
-  background: var(--area-accent);
-  color: white;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  font-size: 1.15rem;
+  font-weight: var(--font-weight-strong);
+  line-height: 1;
+  transition: background var(--motion-fast) var(--motion-ease);
+}
+
+.planner-area-create:hover {
+  background: color-mix(in srgb, var(--area-accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--area-accent) 34%, var(--border-subtle));
 }
 
 /* ------------------------------------------------------------------ */
@@ -3240,19 +3260,43 @@ button.btn-danger:hover:not(:disabled) {
 /* Calendar: agenda view                                                */
 /* ------------------------------------------------------------------ */
 
+/* A date bucket is a section: label on the warm canvas, one paper surface
+   around its rows, dividers between them — the same shape as Today. */
 .agenda-group {
-  margin-bottom: 18px;
+  display: grid;
+  gap: 10px;
+  margin-bottom: 22px;
 }
 
 .agenda-group:last-child { margin-bottom: 0; }
 
 .agenda-group-label {
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-muted);
-  margin-bottom: 8px;
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-emphasis);
+  line-height: var(--line-height-tight);
+  letter-spacing: -0.025em;
+}
+
+.section-list.agenda-group-list {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--paper);
+  box-shadow: var(--shadow-card);
+}
+
+.section-list.agenda-group-list > li {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.section-list.agenda-group-list > li + li {
+  border-top: 1px solid color-mix(in srgb, var(--border-subtle) 80%, transparent);
 }
 
 .calendar-entry-row-shell {
@@ -4232,7 +4276,7 @@ button.today-quick-todo-more {
   font-size: var(--font-size-action);
 }
 
-.today-attention-section > .today-section-title::before {
+.today-attention-section > .section-heading::before {
   content: '';
   display: inline-block;
   width: 9px;
@@ -4541,25 +4585,27 @@ button.today-shopping-open {
 }
 .planner-create-button:hover:not(:disabled) { background: var(--coral-mist); }
 
-.planner-area-grid { gap: 12px; }
 .planner-area-card {
-  min-height: 108px;
-  padding: 17px;
-  box-shadow: none;
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  transition: background var(--motion-fast) var(--motion-ease);
 }
 .planner-area-card:hover {
-  border-color: var(--coral-light);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 26px rgba(76, 56, 42, 0.06);
+  background: color-mix(in srgb, var(--surface-subtle) 55%, transparent);
 }
 .planner-area-icon {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
 }
-.planner-area-icon svg { width: 24px; height: 24px; }
-.planner-area-heading { color: var(--area-accent); font-size: var(--font-size-caption); font-weight: var(--font-weight-emphasis); letter-spacing: 0.04em; text-transform: uppercase; }
-.planner-area-summary { font-size: var(--font-size-body); line-height: var(--line-height-body); }
+.planner-area-icon svg { width: 22px; height: 22px; }
+/* A destination name is an ordinary label: dark ink, sentence case. The module
+   colour is carried by the icon surface beside it, not by shouting the title. */
+.planner-area-heading {
+  color: var(--ink);
+  font-size: var(--font-size-subsection-title);
+  font-weight: var(--font-weight-strong);
+  line-height: var(--line-height-tight);
+  letter-spacing: -0.015em;
+}
+.planner-area-summary { color: var(--ink-muted); font-size: var(--font-size-meta); font-weight: var(--font-weight-regular); line-height: var(--line-height-meta); }
 
 .filter-row {
   padding: 10px;
@@ -5218,11 +5264,8 @@ button.danger-action:focus-visible:not(:disabled) {
 .filter-disclosure-panel[hidden] { display: none; }
 .filter-disclosure-panel .filter-row { margin: 0; }
 
-.planner-area-card { overflow: hidden; border-color: color-mix(in srgb, var(--area-accent) 22%, var(--border-subtle)); }
-.planner-area-link { min-height: 112px; padding: 16px; }
-.planner-area-create { min-height: 44px; }
-.planner-area-card:focus-within { outline: 3px solid color-mix(in srgb, var(--area-accent) 42%, transparent); outline-offset: 2px; }
-.planner-area-link:active { background: color-mix(in srgb, var(--area-accent) 8%, transparent); }
+.planner-area-link { min-height: 0; padding: 4px 0; align-items: center; }
+.planner-area-link:focus-visible { outline-offset: -3px; border-radius: var(--radius-row); }
 
 .calendar-entry-assignment,
 .week-entry-assignment { min-width: 44px; min-height: 44px; }
