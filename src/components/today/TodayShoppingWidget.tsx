@@ -3,7 +3,6 @@ import { t } from '../../strings'
 import type { ShoppingAddResult, ShoppingItem } from '../../utils/shopping'
 import type { ShoppingSyncStatus } from '../../shopping/shoppingRepository'
 import { formatLocalizedShoppingQuantity } from '../../utils/shoppingLabels'
-import { ShoppingCategoryIcon } from '../shopping/ShoppingCategoryIcon'
 import { TodayQuickAddField } from './TodayQuickAddField'
 
 const PREVIEW_LIMIT = 3
@@ -50,9 +49,6 @@ export function TodayShoppingWidget({ items, loading, hasUsableData, syncStatus,
   return (
     <section className="page-section today-shopping-widget" aria-labelledby="today-shopping-title">
       <div className="page-section-head">
-        <span className="today-shopping-icon" aria-hidden="true">
-          <ShoppingCategoryIcon category="household" />
-        </span>
         <span className="today-shopping-heading">
           <h2 id="today-shopping-title" className="section-heading">{t.shopping.title}</h2>
           <span className="section-count">{loading || !hasUsableData ? t.shopping.loading : t.shopping.activeCount(items.length)}</span>

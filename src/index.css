@@ -755,6 +755,11 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
   border-color: color-mix(in srgb, var(--brand-honey) 26%, var(--border-subtle));
 }
 
+.today-quick-todo-widget .panel.is-secondary,
+.today-shopping-widget .panel.is-secondary {
+  padding-top: 12px;
+}
+
 .panel.is-attention {
   padding: 16px;
   background: color-mix(in srgb, var(--brand-honey) 9%, var(--paper));
