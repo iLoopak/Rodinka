@@ -5,7 +5,7 @@ import { isInitialFamilyDataLoad } from '../utils/familyDataLoading'
 
 export interface LedgerEntry {
   id: string
-  member_id: string
+  member_id: string | null
   amount: number
   reason: string | null
   created_at: string

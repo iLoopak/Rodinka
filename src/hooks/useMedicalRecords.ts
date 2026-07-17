@@ -17,7 +17,7 @@ export type MedicalStatus = 'planned' | 'completed' | 'cancelled'
 export interface MedicalRecord {
   id: string
   family_id: string
-  patient_id: string
+  patient_id: string | null
   responsible_member_id: string | null
   record_type: MedicalRecordType
   title: string

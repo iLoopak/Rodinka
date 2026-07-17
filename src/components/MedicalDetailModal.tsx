@@ -22,7 +22,7 @@ interface Props {
 
 export function recordToInput(record: MedicalRecord): MedicalRecordInput {
   return {
-    patientId: record.patient_id,
+    patientId: record.patient_id ?? '',
     responsibleMemberId: record.responsible_member_id,
     recordType: record.record_type,
     title: record.title,
@@ -87,12 +87,12 @@ export function MedicalDetailModal({ record, members, currentMemberId, memberNam
   ]
     .filter(Boolean)
     .join(' · ')
-  const patient = memberById(record.patient_id)
+  const patient = record.patient_id ? memberById(record.patient_id) : undefined
   const responsible = record.responsible_member_id
     ? memberById(record.responsible_member_id)
     : undefined
   const peopleRoles: PersonRole[] = [
-    { member: patient, fallbackName: memberName(record.patient_id), label: t.common.patient },
+    { member: patient, fallbackName: record.patient_id ? memberName(record.patient_id) : t.family.removedMemberBadge, label: t.common.patient },
     ...(record.responsible_member_id ? [{ member: responsible, fallbackName: memberName(record.responsible_member_id), label: t.common.responsibleAdult }] : []),
   ]
 

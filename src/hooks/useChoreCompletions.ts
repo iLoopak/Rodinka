@@ -6,7 +6,7 @@ import { isInitialFamilyDataLoad } from '../utils/familyDataLoading'
 export interface ChoreCompletion {
   id: string
   chore_id: string
-  completed_by: string
+  completed_by: string | null
   completed_at: string
   status: 'pending_approval' | 'approved' | 'rejected'
   approved_by: string | null

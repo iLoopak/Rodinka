@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { t } from '../strings'
 import { getCurrentLanguage } from '../i18n'
 import { useFamilyCore } from '../context/family/FamilyCoreContext'
@@ -17,7 +17,7 @@ import { canEditMemberProfile } from '../utils/memberProfilePermissions'
 import { FamilyMark } from './FamilyMark'
 import { MemberRemovalDialog } from './family/MemberRemovalDialog'
 import { ScreenHeader } from './ui/ScreenHeader'
-import { ArchivedItemBadge } from './ui/DestructiveActions'
+import { ArchivedItemBadge, ConfirmDestructiveActionDialog, DestructiveIconButton } from './ui/DestructiveActions'
 
 function roleLabel(role: FamilyMember['role']) {
   if (role === 'admin') return t.family.roleAdmin
@@ -32,7 +32,7 @@ function formatDate(iso: string) {
 export function FamilyScreen() {
   const { currentMember, isParentOrAdmin } = useFamilyCore()
   const {
-    members, allMembers, addChild, createInvite, removeMember, leaveHousehold: leaveHouseholdRaw, restoreMember,
+    members, allMembers, addChild, createInvite, removeMember, leaveHousehold: leaveHouseholdRaw, restoreMember, permanentlyDeleteRemovedMember,
     membersLoading, membersError, refreshMembers,
   } = useFamilyMembersData()
   const { familyName, familyNameLoading, familyNameError, updateFamilyName } = useFamilySettings()
@@ -66,11 +66,45 @@ export function FamilyScreen() {
   const [removingMember, setRemovingMember] = useState<FamilyMember | null>(null)
   const [leavingHousehold, setLeavingHousehold] = useState(false)
   const [restoringMemberId, setRestoringMemberId] = useState<string | null>(null)
+  const [permanentlyDeletingMember, setPermanentlyDeletingMember] = useState<FamilyMember | null>(null)
+  const [permanentDeleteBusy, setPermanentDeleteBusy] = useState(false)
+  const [permanentDeleteError, setPermanentDeleteError] = useState<string | null>(null)
+  const [permanentDeleteSuccess, setPermanentDeleteSuccess] = useState<string | null>(null)
+  const [isOnline, setIsOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine)
   const [memberActionError, setMemberActionError] = useState<string | null>(null)
   const [editingFamilyName, setEditingFamilyName] = useState(false)
   const [familyNameDraft, setFamilyNameDraft] = useState(familyName ?? '')
   const [familyNameSaving, setFamilyNameSaving] = useState(false)
   const [familyNameSaveError, setFamilyNameSaveError] = useState<string | null>(null)
+
+  useEffect(() => {
+    function updateOnlineState() { setIsOnline(typeof navigator === 'undefined' || navigator.onLine) }
+    window.addEventListener('online', updateOnlineState)
+    window.addEventListener('offline', updateOnlineState)
+    return () => {
+      window.removeEventListener('online', updateOnlineState)
+      window.removeEventListener('offline', updateOnlineState)
+    }
+  }, [])
+
+  async function handlePermanentDeleteMember() {
+    if (!permanentlyDeletingMember) return
+    setPermanentDeleteBusy(true)
+    setPermanentDeleteError(null)
+    try {
+      await permanentlyDeleteRemovedMember(permanentlyDeletingMember.id)
+      setPermanentDeleteSuccess(t.family.permanentDeleteSuccess(permanentlyDeletingMember.display_name))
+      setPermanentlyDeletingMember(null)
+      await Promise.all([refreshChores(), refreshActivities(), refreshOccurrenceAssignments()])
+    } catch (error) {
+      const message = error instanceof Error && /unsafe active references/i.test(error.message)
+        ? t.family.permanentDeleteUnsafeReferences
+        : t.family.permanentDeleteFailure
+      setPermanentDeleteError(message)
+    } finally {
+      setPermanentDeleteBusy(false)
+    }
+  }
 
   async function handleFamilyNameSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -157,6 +191,7 @@ export function FamilyScreen() {
       {isParentOrAdmin && allMembers.some((candidate) => candidate.status === 'removed') && <section className="page-section">
         <h2 className="section-heading">{t.family.removedMembersTitle}</h2>
         {memberActionError && <p className="error" role="alert">{memberActionError}</p>}
+        {permanentDeleteSuccess && <p className="more-setting-feedback" role="status">{permanentDeleteSuccess}</p>}
         <div className="panel is-primary">
           <ul className="section-list plain-list">
             {allMembers.filter((candidate) => candidate.status === 'removed').map((archived) => <li key={archived.id}>
@@ -167,8 +202,19 @@ export function FamilyScreen() {
               <button type="button" className="btn-secondary" disabled={restoringMemberId === archived.id} onClick={async () => {
                 setRestoringMemberId(archived.id)
                 setMemberActionError(null)
+                setPermanentDeleteSuccess(null)
                 try { await handleRestoreMember(archived.id) } catch { setMemberActionError(t.family.restoreError) } finally { setRestoringMemberId(null) }
               }}>{restoringMemberId === archived.id ? t.family.restoringMember : t.family.restoreMemberAction}</button>
+              <DestructiveIconButton
+                label={isOnline ? t.family.permanentDeleteAction : t.family.permanentDeleteOffline}
+                title={isOnline ? t.family.permanentDeleteAction : t.family.permanentDeleteOffline}
+                disabled={!isOnline || permanentDeleteBusy}
+                onClick={() => {
+                  setPermanentDeleteError(null)
+                  setPermanentDeleteSuccess(null)
+                  setPermanentlyDeletingMember(archived)
+                }}
+              />
             </li>)}
           </ul>
         </div>
@@ -222,6 +268,16 @@ export function FamilyScreen() {
         onConfirm={(replacementMemberId, taskStrategy, activityStrategy) => handleRemoveMember(removingMember.id, replacementMemberId, taskStrategy, activityStrategy)}
         onClose={() => setRemovingMember(null)}
       />}
+      <ConfirmDestructiveActionDialog
+        open={Boolean(permanentlyDeletingMember)}
+        title={permanentlyDeletingMember ? t.family.permanentDeleteConfirmTitle(permanentlyDeletingMember.display_name) : ''}
+        explanation={t.family.permanentDeleteConfirmDescription}
+        confirmLabel={t.family.permanentDeleteConfirmAction}
+        busy={permanentDeleteBusy}
+        error={permanentDeleteError}
+        onCancel={() => { if (!permanentDeleteBusy) setPermanentlyDeletingMember(null) }}
+        onConfirm={handlePermanentDeleteMember}
+      />
       {leavingHousehold && <MemberRemovalDialog
         member={currentMember}
         activeMembers={members}

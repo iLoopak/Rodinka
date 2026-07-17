@@ -25,7 +25,7 @@ export interface ActivityParticipantHistory {
   id: string
   family_id: string
   activity_id: string
-  member_id: string
+  member_id: string | null
   effective_from: string
   effective_to: string | null
 }
@@ -35,7 +35,7 @@ export function getEffectiveActivityParticipants(activityId: string, occurrenceD
   if (activityHistory.length === 0) return currentParticipantIds
   return activityHistory
     .filter((item) => item.effective_from <= occurrenceDate && (!item.effective_to || item.effective_to >= occurrenceDate))
-    .map((item) => item.member_id)
+    .flatMap((item) => item.member_id ? [item.member_id] : [])
 }
 
 export interface EffectiveOccurrenceMember {

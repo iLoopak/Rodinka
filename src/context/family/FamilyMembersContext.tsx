@@ -25,6 +25,7 @@ interface FamilyMembersContextValue {
   removeMember: (memberId: string, replacementMemberId: string | null, taskStrategy: 'unassign' | 'reassign', activityStrategy: 'clear' | 'reassign', reason?: string) => Promise<void>
   leaveHousehold: (currentMemberId: string, replacementMemberId: string | null, taskStrategy: 'unassign' | 'reassign', activityStrategy: 'clear' | 'reassign') => Promise<void>
   restoreMember: (memberId: string) => Promise<void>
+  permanentlyDeleteRemovedMember: (memberId: string) => Promise<void>
   createInvite: () => Promise<{ code: string; expiresAt: string | null }>
   refreshMembers: () => Promise<void>
 }
@@ -175,6 +176,17 @@ export function FamilyMembersProvider({ familyId, children }: ProviderProps) {
     await refreshMembers()
   }, [refreshMembers])
 
+  const permanentlyDeleteRemovedMember = useCallback(async (memberId: string) => {
+    const { data, error: deleteError } = await supabase.rpc('permanently_delete_removed_member', { p_member_id: memberId })
+    if (deleteError) throw friendly(deleteError)
+    const avatarPath = typeof data === 'object' && data && 'avatar_path' in data ? String(data.avatar_path ?? '') : ''
+    if (avatarPath) {
+      const { error: storageError } = await supabase.storage.from('member-avatars').remove([avatarPath])
+      if (storageError) console.error('Failed to delete member avatar after permanent member deletion:', storageError.message)
+    }
+    await refreshMembers()
+  }, [refreshMembers])
+
   const createInvite = useCallback(async () => {
     const { data: code, error } = await supabase.rpc('create_invite', { fid: familyId })
     if (error) throw friendly(error)
@@ -197,6 +209,7 @@ export function FamilyMembersProvider({ familyId, children }: ProviderProps) {
     removeMember,
     leaveHousehold,
     restoreMember,
+    permanentlyDeleteRemovedMember,
     createInvite,
     refreshMembers,
   }
