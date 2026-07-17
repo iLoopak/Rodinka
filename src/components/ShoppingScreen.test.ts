@@ -111,3 +111,34 @@ describe('ShoppingScreen', () => {
     expect(html).not.toMatch(/<button[^>]*class="shopping-item-main"/)
   })
 })
+
+describe('ShoppingScreen row layout', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  // .shopping-item is a three-column grid (drag handle, checkbox, content) and
+  // the handle only renders for a sortable adult row. Without a modifier the
+  // child's name lands in the 44px checkbox column and wraps one character per
+  // line.
+  it('marks a child active row as having no drag handle', () => {
+    mockContexts([baseItem], [], true)
+    const html = renderToStaticMarkup(createElement(ShoppingScreen))
+    const row = /<li class="([^"]*shopping-item[^"]*)"/.exec(html)?.[1] ?? ''
+    expect(row).toContain('no-drag-handle')
+    expect(html).not.toContain('list-drag-handle')
+  })
+
+  it('keeps the drag handle and full grid for an adult active row', () => {
+    mockContexts([baseItem])
+    const html = renderToStaticMarkup(createElement(ShoppingScreen))
+    const row = /<li class="([^"]*shopping-item[^"]*)"/.exec(html)?.[1] ?? ''
+    expect(row).not.toContain('no-drag-handle')
+    expect(html).toContain('list-drag-handle')
+  })
+
+  it('marks a purchased row as having no drag handle for either role', () => {
+    mockContexts([], [{ ...baseItem, purchased: true }])
+    const html = renderToStaticMarkup(createElement(ShoppingScreen))
+    const row = /<li class="([^"]*shopping-item[^"]*)"/.exec(html)?.[1] ?? ''
+    expect(row).toContain('no-drag-handle')
+  })
+})

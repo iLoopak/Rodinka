@@ -1461,7 +1461,10 @@ details.manage .add-child-form + .add-chore-form {
   min-height: 68px;
   border-top: 1px solid color-mix(in srgb, var(--shopping-border) 65%, transparent);
 }
-.shopping-item.purchased {
+/* Rows without a drag handle drop its 32px track, otherwise the name lands in
+   the checkbox column. Purchased rows never have one; neither does any row a
+   child sees, because nothing is reorderable for them. */
+.shopping-item.no-drag-handle {
   grid-template-columns: 44px minmax(0, 1fr);
 }
 

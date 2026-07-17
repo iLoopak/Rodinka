@@ -369,6 +369,11 @@ function ShoppingRow({ item, memberById, pending, onToggle, onEdit, sortable }: 
     transform: sortable.isDragging ? undefined : CSS.Transform.toString(sortable.transform),
     transition: sortable.transition,
   } : undefined
+  // The row is a fixed three-column grid whose first column is the drag
+  // handle. A child never gets a handle (nothing is reorderable for them), so
+  // the grid has to lose that column or the name is squeezed into the 44px
+  // checkbox track and wraps one character per line.
+  const dragHandle = item.purchased ? undefined : sortable
   const mainContent = <>
     <span className="shopping-item-top"><strong>{item.name}</strong>{pending && <span className="shopping-item-pending" title={t.shopping.pendingSync}><span className="sr-only">{t.shopping.pendingSync}</span></span>}{(item.quantity !== null || item.unit) && <b>{formatLocalizedShoppingQuantity(item.quantity, item.unit)}</b>}</span>
     {item.note && <span className="shopping-item-note">{item.note}</span>}
@@ -381,16 +386,16 @@ function ShoppingRow({ item, memberById, pending, onToggle, onEdit, sortable }: 
   </>
   return <li
     ref={sortable?.setNodeRef}
-    className={`shopping-item${item.purchased ? ' purchased' : ''}${sortable?.isDragging ? ' dragging' : ''}`}
+    className={`shopping-item${item.purchased ? ' purchased' : ''}${dragHandle ? '' : ' no-drag-handle'}${sortable?.isDragging ? ' dragging' : ''}`}
     data-shopping-item-id={item.id}
     style={rowStyle}
   >
-    {!item.purchased && sortable && <button
+    {dragHandle && <button
       type="button"
       className="list-drag-handle"
       aria-label={t.shopping.dragItem(item.name)}
-      {...sortable.attributes}
-      {...sortable.listeners}
+      {...dragHandle.attributes}
+      {...dragHandle.listeners}
     ><GripVertical size={20} aria-hidden="true" /></button>}
     <CompletionCheckbox checked={item.purchased} label={`${item.purchased ? t.shopping.purchasedTitle : t.shopping.activeTitle}: ${item.name}`} onClick={onToggle} />
     {onEdit ? <button type="button" className="shopping-item-main" onClick={onEdit}>{mainContent}</button>
