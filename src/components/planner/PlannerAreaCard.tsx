@@ -30,8 +30,11 @@ export function PlannerAreaCard({ to, icon, colorVar, title, summary, details, a
           {details.map((detail) => <span key={detail} className="planner-area-detail">{detail}</span>)}
         </span>
       </Link>
+      {/* Quiet on purpose: the hub header owns the one primary create action,
+          so five module creates must not read as five competing buttons. The
+          accessible name still carries the full "<action>: <area>" label. */}
       <button type="button" className="planner-area-create" onClick={onCreate} aria-label={`${createLabel}: ${title}`}>
-        <span aria-hidden="true">+</span> {createLabel}
+        <span aria-hidden="true">+</span>
       </button>
     </article>
   )

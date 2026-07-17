@@ -88,9 +88,9 @@ export function PlannerScreen() {
         </button>
       </div>
 
-      <section className="section planner-section">
-        <h2>{t.planner.overviewTitle}</h2>
-        <div className="planner-area-grid">
+      <section className="page-section planner-section">
+        <h2 className="section-heading">{t.planner.overviewTitle}</h2>
+        <div className="panel is-primary planner-area-grid">
           <PlannerAreaCard
             to="/chores"
             icon={choreStyle.icon}

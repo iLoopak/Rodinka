@@ -48,21 +48,21 @@ export function TodayShoppingWidget({ items, loading, hasUsableData, syncStatus,
   }
 
   return (
-    <section className="today-section today-shopping-widget" aria-labelledby="today-shopping-title">
-      <div className="today-section-head">
+    <section className="page-section today-shopping-widget" aria-labelledby="today-shopping-title">
+      <div className="page-section-head">
         <span className="today-shopping-icon" aria-hidden="true">
           <ShoppingCategoryIcon category="household" />
         </span>
         <span className="today-shopping-heading">
-          <h2 id="today-shopping-title" className="today-section-title">{t.shopping.title}</h2>
-          <span className="today-section-count">{loading || !hasUsableData ? t.shopping.loading : t.shopping.activeCount(items.length)}</span>
+          <h2 id="today-shopping-title" className="section-heading">{t.shopping.title}</h2>
+          <span className="section-count">{loading || !hasUsableData ? t.shopping.loading : t.shopping.activeCount(items.length)}</span>
         </span>
         <button type="button" className="link today-shopping-open" onClick={onOpen}>
           {t.today.shoppingOpenAction}<span aria-hidden="true">›</span>
         </button>
       </div>
 
-      <div className="today-panel is-secondary is-shopping">
+      <div className="panel is-secondary is-shopping">
       <TodayQuickAddField
         value={name}
         placeholder={t.today.quickShoppingPlaceholder}
