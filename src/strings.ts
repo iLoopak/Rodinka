@@ -31,6 +31,12 @@ export const strings = {
     },
     login: {
       title: 'Rodinka',
+      tabChild: 'Dětský účet',
+      submitChildSignIn: 'Přihlásit dítě',
+      childLoginNameLabel: 'Přihlašovací jméno',
+      childLoginNamePlaceholder: 'např. zofka-7',
+      childAccessUnavailableTitle: 'Přístup není aktivní',
+      childAccessUnavailableBody: 'Tento dětský účet není propojený s aktivním členem rodiny. Požádejte rodiče o obnovení přístupu.',
       tabSignIn: 'Přihlásit se',
       tabSignUp: 'Vytvořit účet',
       emailLabel: 'E-mail',
@@ -48,6 +54,8 @@ export const strings = {
       switchToSignUp: 'Nemáte účet? Vytvořit účet',
       switchToSignIn: 'Už máte účet? Přihlásit se',
       errors: {
+        invalidChildLoginName: 'Zadejte platné přihlašovací jméno.',
+        childCredentialsInvalid: 'Přihlašovací jméno nebo heslo není správné.',
         invalidEmail: 'Zadejte platnou e-mailovou adresu.',
         passwordTooShort: 'Heslo musí mít alespoň 8 znaků.',
         passwordMismatch: 'Hesla se neshodují.',
@@ -1194,6 +1202,12 @@ export const strings = {
     },
     login: {
       title: 'Rodinka',
+      tabChild: 'Child account',
+      submitChildSignIn: 'Sign in as child',
+      childLoginNameLabel: 'Login name',
+      childLoginNamePlaceholder: 'e.g. zofka-7',
+      childAccessUnavailableTitle: 'Access is not active',
+      childAccessUnavailableBody: 'This child account is not linked to an active family member. Ask a parent to restore access.',
       tabSignIn: 'Sign in',
       tabSignUp: 'Create account',
       emailLabel: 'Email',
@@ -1211,6 +1225,8 @@ export const strings = {
       switchToSignUp: "Don't have an account? Create one",
       switchToSignIn: 'Already have an account? Sign in',
       errors: {
+        invalidChildLoginName: 'Enter a valid login name.',
+        childCredentialsInvalid: 'The login name or password is incorrect.',
         invalidEmail: 'Enter a valid email address.',
         passwordTooShort: 'Password must be at least 8 characters.',
         passwordMismatch: 'Passwords do not match.',

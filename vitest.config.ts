@@ -1,10 +1,10 @@
 import { defineConfig } from 'vitest/config'
 
-// Separate from vite.config.ts on purpose: tests only exercise pure
-// utility functions (date/recurrence/calendar-projection logic), so no
-// plugins, JSX, or DOM environment are needed here.
+// Separate from vite.config.ts on purpose. Vitest/esbuild handles the small
+// React component tests directly; individual DOM tests opt into jsdom with
+// their file-level environment directive.
 export default defineConfig({
   test: {
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
   },
 })

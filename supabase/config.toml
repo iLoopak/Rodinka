@@ -388,6 +388,9 @@ verify_jwt = false
 [functions.send-notification-deliveries]
 verify_jwt = false
 
+[functions.manage-child-account]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

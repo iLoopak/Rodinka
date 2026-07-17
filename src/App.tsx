@@ -13,6 +13,8 @@ import { FamilyMark } from './components/FamilyMark'
 import { useLanguage } from './i18n/languageContext'
 import { OfflineFallbackScreen } from './components/OfflineFallbackScreen'
 import { useRouter } from './router'
+import { isManagedChildSession } from './lib/managedChildSession'
+import { UnlinkedChildAccountScreen } from './components/UnlinkedChildAccountScreen'
 
 function AppLoading({ label }: { label: string }) {
   return <div className="loading app-loading"><FamilyMark variant="static" size={32} />{label}</div>
@@ -45,6 +47,7 @@ export default function App() {
   }
 
   if (!member) {
+    if (isManagedChildSession(session)) return <UnlinkedChildAccountScreen />
     return <OnboardingScreen onDone={refresh} />
   }
 
