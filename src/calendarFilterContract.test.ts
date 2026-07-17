@@ -18,6 +18,16 @@ describe('calendar filter disclosure', () => {
     expect(screen.match(/className="filter-row"/g)).toHaveLength(1)
   })
 
+  it('puts the toggle in the screen header and leaves the panel with the content', () => {
+    // The toggle must sit beside the title alongside Dnes and +, not on a row of its own.
+    expect(screen).toMatch(/<ScreenHeader title=\{t\.calendar\.title\} actions=\{<>\s*<FilterDisclosureToggle \/>/)
+    expect(screen).toContain('<FilterDisclosurePanel>')
+    expect(screen).not.toContain('filter-disclosure-bar')
+    expect(styles).not.toContain('.filter-disclosure-bar')
+    // The panel wrapper must not reserve space while the filters are closed.
+    expect(styles).toContain('.filter-disclosure { display: contents; }')
+  })
+
   it('signals active filters and keeps clear inside the disclosure', () => {
     expect(screen).toContain('activeFilterCount')
     expect(disclosure).toContain('filter-active-count')

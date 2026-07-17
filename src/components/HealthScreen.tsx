@@ -18,7 +18,7 @@ import type { MedicalRecordInput } from '../domain/medical/types'
 import { useRouter } from '../router'
 import { resolveDeepLinkedItem } from '../utils/deepLinks'
 import { ScrollableTabs } from './ui/ScrollableTabs'
-import { FilterDisclosure } from './ui/FilterDisclosure'
+import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from './ui/FilterDisclosure'
 import { ScreenHeader } from './ui/ScreenHeader'
 import { PersonRoleGroup, type PersonRole } from './ui/PersonRoleGroup'
 
@@ -122,16 +122,18 @@ export function HealthScreen() {
 
   return (
     <>
-      <ScreenHeader title={t.medical.title} actions={isParentOrAdmin ? (
-          <button type="button" className="header-action-button" onClick={() => setShowAdd(true)}>
+      <FilterDisclosure id="health-filter-panel" open={filtersOpen} onOpenChange={setFiltersOpen}
+        activeCount={Number(Boolean(filterMember)) + Number(Boolean(filterType))} onClear={clearFilters}>
+      <ScreenHeader title={t.medical.title} actions={<>
+          <FilterDisclosureToggle />
+          {isParentOrAdmin && <button type="button" className="header-action-button" onClick={() => setShowAdd(true)}>
             <span aria-hidden="true">+</span> {t.medical.addAction}
-          </button>
-        ) : undefined} />
+          </button>}
+        </>} />
 
       {deepLinkError && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
 
-      <FilterDisclosure id="health-filter-panel" open={filtersOpen} onOpenChange={setFiltersOpen}
-        activeCount={Number(Boolean(filterMember)) + Number(Boolean(filterType))} onClear={clearFilters}>
+      <FilterDisclosurePanel>
       <div className="filter-row">
         <select value={filterMember} onChange={(e) => setFilterMember(e.target.value)} aria-label={t.medical.filterMemberLabel}>
           <option value="">
@@ -154,6 +156,7 @@ export function HealthScreen() {
           ))}
         </select>
       </div>
+      </FilterDisclosurePanel>
       </FilterDisclosure>
 
       <ScrollableTabs tabs={tabs} activeTab={tab} onChange={setTab} />

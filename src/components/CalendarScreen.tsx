@@ -18,7 +18,8 @@ import { useRouter } from '../router'
 import { isValidISODate, isValidUuid } from '../utils/deepLinks'
 import { getWeekDates, getWeekStart } from '../utils/weekCalendar'
 import { ScrollableTabs } from './ui/ScrollableTabs'
-import { FilterDisclosure } from './ui/FilterDisclosure'
+import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from './ui/FilterDisclosure'
+import { ScreenHeader } from './ui/ScreenHeader'
 import { useFamilyCore } from '../context/family/FamilyCoreContext'
 import { capabilitiesFor } from '../utils/uiCapabilities'
 
@@ -262,31 +263,30 @@ export function CalendarScreen() {
 
   return (
     <>
-      <div className="screen-header">
-        <h1 className="home-title">{t.calendar.title}</h1>
-        <div className="header-actions">
-          {capabilities.createPlannerItems && <button
-            type="button"
-            className="header-icon-button"
-            onClick={() => setCreateConfig({})}
-            aria-label={t.create.addAction}
-          >
-            +
-          </button>}
-          {/* Jumping to today navigates; it must not look like the create
-              action beside it. Create stays the one primary here. */}
-          <button type="button" className="header-action-button btn-secondary" onClick={goToday}>
-            {t.calendar.today}
-          </button>
-        </div>
-      </div>
+      <FilterDisclosure id="calendar-filter-panel" open={filtersOpen} onOpenChange={setFiltersOpen}
+        activeCount={activeFilterCount} onClear={clearFilters}>
+      <ScreenHeader title={t.calendar.title} actions={<>
+        <FilterDisclosureToggle />
+        {capabilities.createPlannerItems && <button
+          type="button"
+          className="header-icon-button"
+          onClick={() => setCreateConfig({})}
+          aria-label={t.create.addAction}
+        >
+          +
+        </button>}
+        {/* Jumping to today navigates; it must not look like the create
+            action beside it. Create stays the one primary here. */}
+        <button type="button" className="header-action-button btn-secondary" onClick={goToday}>
+          {t.calendar.today}
+        </button>
+      </>} />
 
       <ScrollableTabs tabs={viewTabs} activeTab={viewMode} onChange={changeView} />
 
       {deepLinkError && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
 
-      <FilterDisclosure id="calendar-filter-panel" open={filtersOpen} onOpenChange={setFiltersOpen}
-        activeCount={activeFilterCount} onClear={clearFilters}>
+      <FilterDisclosurePanel>
         <div className="filter-row">
           {!capabilities.isChild && <select value={filterPerson} onChange={(e) => setFilterPerson(e.target.value)} aria-label={t.calendar.filterPersonLabel}>
             <option value="">{t.calendar.filterPersonLabel}: {t.calendar.filterAll}</option>
@@ -297,6 +297,7 @@ export function CalendarScreen() {
             {ITEM_TYPES.map((type) => <option key={type} value={type}>{getItemTypeStyle(type).label}</option>)}
           </select>
         </div>
+      </FilterDisclosurePanel>
       </FilterDisclosure>
 
       {viewMode === 'month' && (

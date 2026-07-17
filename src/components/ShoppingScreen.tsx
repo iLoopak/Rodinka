@@ -22,7 +22,7 @@ import { ShoppingItemForm } from './shopping/ShoppingItemForm'
 import { CompletionCheckbox } from './ui/CompletionCheckbox'
 import { defaultShoppingCategorySettings, type ShoppingCategorySettings } from '../utils/shoppingCategorySettings'
 import { ScreenHeader } from './ui/ScreenHeader'
-import { FilterDisclosure } from './ui/FilterDisclosure'
+import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from './ui/FilterDisclosure'
 import { GripVertical } from 'lucide-react'
 
 export function ShoppingScreen() {
@@ -157,7 +157,11 @@ export function ShoppingScreen() {
 
   return (
     <>
-      <ScreenHeader className="shopping-header" title={t.shopping.title} subtitle={t.shopping.activeCount(visibleActiveItems.length)} />
+      <FilterDisclosure id="shopping-tools-panel" open={toolsOpen} onOpenChange={setToolsOpen}
+        activeCount={Number(Boolean(filterResponsible))} onClear={() => setFilterResponsible('')} label={t.shopping.toolsLabel}
+        showLabel={t.shopping.showTools} hideLabel={t.shopping.hideTools}>
+      <ScreenHeader className="shopping-header" title={t.shopping.title} subtitle={t.shopping.activeCount(visibleActiveItems.length)}
+        actions={isParentOrAdmin ? <FilterDisclosureToggle /> : undefined} />
 
       <form className="shopping-quick-add" onSubmit={quickAdd}>
         <input value={quickName} onChange={(event) => setQuickName(event.target.value)} placeholder={t.shopping.quickAddPlaceholder} aria-label={t.shopping.quickAddPlaceholder} />
@@ -180,9 +184,7 @@ export function ShoppingScreen() {
         {shoppingSyncStatus === 'error' && <button type="button" className="link" disabled={syncRetrying} onClick={() => void retrySync()}>{syncRetrying ? t.errors.retrying : t.shopping.syncRetry}</button>}
       </div>}
 
-      {isParentOrAdmin && <FilterDisclosure id="shopping-tools-panel" open={toolsOpen} onOpenChange={setToolsOpen}
-        activeCount={Number(Boolean(filterResponsible))} onClear={() => setFilterResponsible('')} label={t.shopping.toolsLabel}
-        showLabel={t.shopping.showTools} hideLabel={t.shopping.hideTools}>
+      {isParentOrAdmin && <FilterDisclosurePanel>
       <div className="shopping-tools-panel">
         <div className="shopping-toolbar">
           <button type="button" className="btn-secondary" onClick={() => setShowCommon(true)}>{t.shopping.commonAction}</button>
@@ -197,7 +199,8 @@ export function ShoppingScreen() {
           {filterResponsible && <button type="button" className="link shopping-filter-clear" onClick={() => setFilterResponsible('')}>{t.shopping.clearFilter}</button>}
         </div>}
       </div>
-      </FilterDisclosure>}
+      </FilterDisclosurePanel>}
+      </FilterDisclosure>
 
       {visibleActiveItems.length === 0 && purchasedShoppingItems.length === 0 ? (
         <EmptyState title={t.shopping.emptyTitle} body={t.shopping.emptyBody} />
