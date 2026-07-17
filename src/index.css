@@ -1280,9 +1280,6 @@ details.manage .add-child-form + .add-chore-form {
 .reminder-section h2 span { display: grid; place-items: center; min-width: 22px; height: 22px; border-radius: 999px; background: var(--neutral-soft); color: var(--ink-muted); font-size: .74rem; }
 .reminder-list { display: grid; }
 .reminder-history { margin-top: 18px; }
-.reminder-card + .reminder-card {
-  border-top: 1px solid color-mix(in srgb, var(--border-subtle) 80%, transparent);
-}
 .reminder-card.important { background: color-mix(in srgb, var(--coral-soft) 55%, transparent); }
 .reminder-card.read { opacity: .76; }
 .reminder-open { display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 15px; background: transparent; color: inherit; text-align: left; }
@@ -5405,6 +5402,11 @@ button.danger-action:focus-visible:not(:disabled) {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-large);
   background: var(--surface-paper);
+}
+.reminder-sections .reminder-list,
+.reminder-history .reminder-list {
+  border: 0;
+  border-radius: 0;
 }
 .reminder-card {
   border: 0;
