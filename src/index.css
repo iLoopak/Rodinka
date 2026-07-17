@@ -6306,8 +6306,10 @@ button.danger-action:focus-visible:not(:disabled) {
   margin-top: 14px;
 }
 
-/* Mobile: use a single column, and the detail pane takes over the whole
-   viewport (the list is hidden while the detail is open). */
+/* Mobile: the conversation detail is portaled to <body> (see
+   MobileChatPortal) and rendered as a true fullscreen overlay via
+   `.messages-fullscreen` below. The in-flow list is all that remains
+   inside the app shell. */
 @media (max-width: 720px) {
   .messages-screen {
     display: block;
@@ -6318,19 +6320,45 @@ button.danger-action:focus-visible:not(:disabled) {
   .messages-pane-list.is-collapsed-mobile {
     display: none;
   }
-  .messages-pane-detail {
-    position: fixed;
-    inset: 0;
-    z-index: 40;
-    padding-bottom: 0;
-    background: var(--surface-canvas);
-  }
-  .messages-conversation {
-    height: 100%;
-    border-radius: 0;
-    border: none;
-    box-shadow: none;
-  }
+}
+
+/* Fullscreen mobile chat overlay.
+
+   Portaled out of `.app-main` (an `overflow-y: auto` scroll container)
+   so `position: fixed` pins to the layout viewport on every engine —
+   including iOS standalone PWA, where a fixed element trapped inside a
+   scrolling ancestor was being clipped below the app-shell header. This
+   is the single owner of the fullscreen frame: it fills the dynamic
+   viewport and the chat's own header/composer handle the safe-area
+   insets, so there is no doubled top padding. */
+.messages-fullscreen {
+  position: fixed;
+  inset: 0;
+  /* 100dvh (not 100vh) so iOS dynamic browser toolbars and the PWA
+     status bar don't leave a gap or force a document scroll. */
+  height: 100vh;
+  height: 100dvh;
+  /* Sits above the app header (z 12) and bottom nav; below modals/sheets
+     (which use their own higher layer) so entity sheets can still open
+     over the chat. */
+  z-index: 60;
+  display: flex;
+  background: var(--surface-canvas);
+  overscroll-behavior: contain;
+}
+.messages-fullscreen .messages-conversation {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+/* The chat header is the ONLY top bar in fullscreen mode, so it absorbs
+   the top safe-area inset (notch / status bar). The app-shell header is
+   not in this subtree, so there's no doubled inset. */
+.messages-fullscreen .messages-conversation-header {
+  padding-top: calc(12px + env(safe-area-inset-top));
 }
 
 /* Desktop / tablet: keep both panes side by side. */

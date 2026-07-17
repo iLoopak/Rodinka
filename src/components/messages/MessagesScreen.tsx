@@ -30,6 +30,8 @@ import { ReactionsRow } from './ReactionsRow'
 import { EmojiPicker, COMMON_REACTIONS } from './EmojiPicker'
 import { Composer, type ComposerReplyContext } from './Composer'
 import { AttachmentLightbox } from './AttachmentLightbox'
+import { MobileChatPortal } from './MobileChatPortal'
+import { useMediaQuery, MOBILE_CHAT_QUERY } from '../../hooks/useMediaQuery'
 
 const CONVERSATION_QUERY_KEY = 'c'
 const LONG_PRESS_MS = 500
@@ -176,6 +178,37 @@ export function MessagesScreen() {
     [activeId, setConversationMute],
   )
 
+  // On mobile the detail is portaled to <body> as a true fullscreen
+  // overlay; on desktop it stays inline as the second column. Building
+  // the element once keeps both paths identical.
+  const isMobile = useMediaQuery(MOBILE_CHAT_QUERY)
+  const detail = activeConversation ? (
+    <ConversationDetail
+      key={activeConversation.id}
+      conversation={activeConversation}
+      currentMember={currentMember}
+      memberById={memberById}
+      memberName={memberName}
+      messages={getMessages(activeConversation.id)}
+      loaded={isConversationLoaded(activeConversation.id)}
+      olderExhausted={isOlderExhausted(activeConversation.id)}
+      loadInitial={handleLoadInitial}
+      loadOlder={handleLoadOlder}
+      onSend={handleSend}
+      onEdit={editMessage}
+      onDelete={deleteMessage}
+      onReact={toggleReaction}
+      onRetry={handleRetry}
+      onDiscardFailed={handleDiscardFailed}
+      onMarkRead={handleMarkRead}
+      onBack={closeConversation}
+      onMuteChange={handleMuteChange}
+      getReactions={getMessageReactions}
+      getAttachments={getMessageAttachments}
+      getAttachmentUrl={getAttachmentUrl}
+    />
+  ) : null
+
   return (
     <div className="messages-screen" data-active={activeConversation ? 'detail' : 'list'}>
       <div className={`messages-pane messages-pane-list${activeConversation ? ' is-collapsed-mobile' : ''}`}>
@@ -206,33 +239,14 @@ export function MessagesScreen() {
         />
       </div>
 
-      {activeConversation && (
-        <div className="messages-pane messages-pane-detail">
-          <ConversationDetail
-            key={activeConversation.id}
-            conversation={activeConversation}
-            currentMember={currentMember}
-            memberById={memberById}
-            memberName={memberName}
-            messages={getMessages(activeConversation.id)}
-            loaded={isConversationLoaded(activeConversation.id)}
-            olderExhausted={isOlderExhausted(activeConversation.id)}
-            loadInitial={handleLoadInitial}
-            loadOlder={handleLoadOlder}
-            onSend={handleSend}
-            onEdit={editMessage}
-            onDelete={deleteMessage}
-            onReact={toggleReaction}
-            onRetry={handleRetry}
-            onDiscardFailed={handleDiscardFailed}
-            onMarkRead={handleMarkRead}
-            onBack={closeConversation}
-            onMuteChange={handleMuteChange}
-            getReactions={getMessageReactions}
-            getAttachments={getMessageAttachments}
-            getAttachmentUrl={getAttachmentUrl}
-          />
-        </div>
+      {activeConversation && !isMobile && (
+        <div className="messages-pane messages-pane-detail">{detail}</div>
+      )}
+
+      {activeConversation && isMobile && (
+        <MobileChatPortal>
+          <div className="messages-fullscreen">{detail}</div>
+        </MobileChatPortal>
       )}
 
       {pickerOpen && (
