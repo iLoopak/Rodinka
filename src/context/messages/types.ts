@@ -3,6 +3,7 @@
 // without pulling in Supabase-touching modules.
 
 export type ConversationKind = 'group' | 'direct' | 'system'
+export type ConversationMuteScope = 'none' | 'messages' | 'all'
 
 export interface ConversationRow {
   id: string
@@ -24,10 +25,13 @@ export interface ConversationMemberRow {
   joined_at: string
   last_read_at: string
   muted_at: string | null
+  muted_until: string | null
+  mute_scope: ConversationMuteScope
   archived_at: string | null
 }
 
-export type MessageContentType = 'text' | 'system'
+export type MessageContentType = 'text' | 'system' | 'image'
+export type MessageDeliveryStatus = 'sent' | 'sending' | 'failed'
 
 export interface MessageRow {
   id: string
@@ -41,6 +45,32 @@ export interface MessageRow {
   system_kind: string | null
   edited_at: string | null
   deleted_at: string | null
+  has_attachments: boolean
+  created_at: string
+  // Client-only. Not persisted; the server never sees these fields.
+  deliveryStatus?: MessageDeliveryStatus
+  deliveryError?: string | null
+}
+
+export interface MessageReactionRow {
+  message_id: string
+  member_id: string
+  emoji: string
+  family_id: string
+  created_at: string
+}
+
+export interface MessageAttachmentRow {
+  id: string
+  message_id: string
+  family_id: string
+  conversation_id: string
+  storage_bucket: string
+  storage_path: string
+  mime_type: string
+  byte_size: number
+  width: number | null
+  height: number | null
   created_at: string
 }
 
@@ -57,4 +87,5 @@ export interface ConversationView {
   unreadCount: number
   lastReadAt: string
   otherMemberId: string | null
+  muteScope: ConversationMuteScope
 }
