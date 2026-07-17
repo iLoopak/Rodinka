@@ -1,15 +1,16 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { t } from '../strings'
 
-const rpc = vi.fn()
+const rpc = vi.hoisted(() => vi.fn())
 vi.mock('../supabaseClient', () => ({ supabase: { rpc } }))
 
 import { OnboardingScreen } from './OnboardingScreen'
 
 describe('OnboardingScreen release states', () => {
   beforeEach(() => vi.clearAllMocks())
+  afterEach(cleanup)
 
   it('communicates progress and never renders a raw create-family error', async () => {
     rpc.mockResolvedValue({ error: { message: 'duplicate key violates families_pkey (family_id=uuid)' } })

@@ -13,7 +13,9 @@ describe('offline application shell', () => {
   })
 
   it('clones asset responses before asynchronous cache work can consume the body', () => {
-    const assetHandler = worker.match(/if \(url\.pathname\.startsWith\('\/assets\/'\)[\s\S]*?\n  }\n}\)/)?.[0] ?? ''
+    const start = worker.indexOf("if (url.pathname.startsWith('/assets/')")
+    const end = worker.indexOf('\nfunction safeDeepLink', start)
+    const assetHandler = worker.slice(start, end)
     expect(assetHandler).toContain('const copy = response.clone()')
     expect(assetHandler.indexOf('const copy = response.clone()')).toBeLessThan(assetHandler.indexOf('await caches.open(CACHE_NAME)'))
     expect(assetHandler).not.toContain('cache.put(request, response.clone())')

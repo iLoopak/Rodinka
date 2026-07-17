@@ -5,6 +5,7 @@ const root = process.cwd()
 const entries = [
   'supabase/functions/process-reminders/index.ts',
   'supabase/functions/send-notification-deliveries/index.ts',
+  'supabase/functions/manage-child-account/index.ts',
 ]
 const forbiddenSegments = [
   `${resolve(root, 'src/hooks')}${sep}`,

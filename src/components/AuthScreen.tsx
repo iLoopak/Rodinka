@@ -4,8 +4,9 @@ import { t } from '../strings'
 import { FamilyMark } from './FamilyMark'
 import { translateAuthError } from '../lib/authErrors'
 import { getAuthRedirectUrl } from '../lib/authRedirect'
+import { childLoginNameToInternalEmail, isValidChildLoginName, normalizeChildLoginName } from '../lib/childAccountIdentity'
 
-type Mode = 'signIn' | 'signUp'
+type Mode = 'signIn' | 'signUp' | 'child'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MIN_PASSWORD_LENGTH = 8
@@ -13,6 +14,7 @@ const MIN_PASSWORD_LENGTH = 8
 export function AuthScreen() {
   const [mode, setMode] = useState<Mode>('signIn')
   const [email, setEmail] = useState('')
+  const [childLoginName, setChildLoginName] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -20,6 +22,7 @@ export function AuthScreen() {
   const [googleSubmitting, setGoogleSubmitting] = useState(false)
   const signInTabRef = useRef<HTMLButtonElement>(null)
   const signUpTabRef = useRef<HTMLButtonElement>(null)
+  const childTabRef = useRef<HTMLButtonElement>(null)
 
   const busy = submitting || googleSubmitting
 
@@ -32,20 +35,28 @@ export function AuthScreen() {
 
   function handleTabKeyDown(event: React.KeyboardEvent, current: Mode) {
     let next: Mode | null = null
-    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') next = current === 'signIn' ? 'signUp' : 'signIn'
+    const modes: Mode[] = ['signIn', 'signUp', 'child']
+    const currentIndex = modes.indexOf(current)
+    if (event.key === 'ArrowRight') next = modes[(currentIndex + 1) % modes.length]
+    if (event.key === 'ArrowLeft') next = modes[(currentIndex + modes.length - 1) % modes.length]
     if (event.key === 'Home') next = 'signIn'
-    if (event.key === 'End') next = 'signUp'
+    if (event.key === 'End') next = 'child'
     if (!next) return
     event.preventDefault()
     switchMode(next)
-    ;(next === 'signIn' ? signInTabRef : signUpTabRef).current?.focus()
+    ;(next === 'signIn' ? signInTabRef : next === 'signUp' ? signUpTabRef : childTabRef).current?.focus()
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (busy) return
 
-    if (!EMAIL_RE.test(email)) {
+    const childLogin = normalizeChildLoginName(childLoginName)
+    if (mode === 'child' && !isValidChildLoginName(childLogin)) {
+      setError(t.login.errors.invalidChildLoginName)
+      return
+    }
+    if (mode !== 'child' && !EMAIL_RE.test(email)) {
       setError(t.login.errors.invalidEmail)
       return
     }
@@ -61,14 +72,15 @@ export function AuthScreen() {
     setSubmitting(true)
     setError(null)
 
-    const { error } =
-      mode === 'signIn'
+    const { error } = mode === 'child'
+      ? await supabase.auth.signInWithPassword({ email: childLoginNameToInternalEmail(childLogin), password })
+      : mode === 'signIn'
         ? await supabase.auth.signInWithPassword({ email, password })
         : await supabase.auth.signUp({ email, password })
 
     setSubmitting(false)
     if (error) {
-      setError(translateAuthError(error))
+      setError(mode === 'child' ? t.login.errors.childCredentialsInvalid : translateAuthError(error))
     }
     // On success the session listener (useSession) picks up the new
     // session and App.tsx moves on — nothing else to do here.
@@ -129,26 +141,58 @@ export function AuthScreen() {
         >
           {t.login.tabSignUp}
         </button>
+        <button
+          ref={childTabRef}
+          id="auth-tab-child"
+          type="button"
+          role="tab"
+          aria-selected={mode === 'child'}
+          aria-controls="auth-panel"
+          tabIndex={mode === 'child' ? 0 : -1}
+          className={`auth-tab${mode === 'child' ? ' active' : ''}`}
+          onClick={() => switchMode('child')}
+          onKeyDown={(event) => handleTabKeyDown(event, 'child')}
+        >
+          {t.login.tabChild}
+        </button>
       </div>
 
-      <form id="auth-panel" role="tabpanel" aria-labelledby={mode === 'signIn' ? 'auth-tab-sign-in' : 'auth-tab-sign-up'} aria-describedby={error ? 'auth-form-error' : undefined} aria-busy={busy} onSubmit={handleSubmit}>
-        <label>
-          {t.login.emailLabel}
-          <input
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={t.login.emailPlaceholder}
-          />
-        </label>
+      <form id="auth-panel" role="tabpanel" aria-labelledby={mode === 'signIn' ? 'auth-tab-sign-in' : mode === 'signUp' ? 'auth-tab-sign-up' : 'auth-tab-child'} aria-describedby={error ? 'auth-form-error' : undefined} aria-busy={busy} onSubmit={handleSubmit}>
+        {mode === 'child' ? (
+          <label>
+            {t.login.childLoginNameLabel}
+            <input
+              type="text"
+              required
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              autoComplete="username"
+              value={childLoginName}
+              onChange={(e) => setChildLoginName(e.target.value)}
+              onBlur={() => setChildLoginName(normalizeChildLoginName(childLoginName))}
+              placeholder={t.login.childLoginNamePlaceholder}
+            />
+          </label>
+        ) : (
+          <label>
+            {t.login.emailLabel}
+            <input
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t.login.emailPlaceholder}
+            />
+          </label>
+        )}
         <label>
           {t.login.passwordLabel}
           <input
             type="password"
             required
-            autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
+            autoComplete={mode === 'signUp' ? 'new-password' : 'current-password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder={t.login.passwordPlaceholder}
@@ -172,20 +216,24 @@ export function AuthScreen() {
             ? t.login.submitting
             : mode === 'signIn'
               ? t.login.submitSignIn
+              : mode === 'child'
+                ? t.login.submitChildSignIn
               : t.login.submitSignUp}
         </button>
       </form>
 
       {error && <p id="auth-form-error" className="error" role="alert">{error}</p>}
 
-      <div className="auth-divider">
-        <span>{t.login.orDivider}</span>
-      </div>
+      {mode !== 'child' && <>
+        <div className="auth-divider">
+          <span>{t.login.orDivider}</span>
+        </div>
 
-      <button type="button" className="google-button" onClick={handleGoogle} disabled={busy}>
-        <GoogleIcon />
-        {googleSubmitting ? t.login.googleSubmitting : t.login.googleButton}
-      </button>
+        <button type="button" className="google-button" onClick={handleGoogle} disabled={busy}>
+          <GoogleIcon />
+          {googleSubmitting ? t.login.googleSubmitting : t.login.googleButton}
+        </button>
+      </>}
     </div>
   )
 }
