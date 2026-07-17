@@ -9,7 +9,16 @@ const active: FamilyMember = { id: 'active', family_id: 'family', display_name: 
 const removed: FamilyMember = { id: 'removed', family_id: 'family', display_name: 'Testovací Viktor', role: 'child', user_id: null, birth_date: null, color_key: null, avatar_path: 'avatars/viktor.webp', avatar_url: null, grammatical_gender: null, vocative_name: null, status: 'removed' }
 
 const permanentlyDeleteRemovedMember = vi.fn()
-vi.mock('../supabaseClient', () => ({ supabase: { rpc: vi.fn(), storage: { from: vi.fn() }, auth: { signOut: vi.fn() } } }))
+vi.mock('../supabaseClient', () => ({
+  supabase: {
+    rpc: vi.fn(),
+    // The screen loads child_accounts for the account badges.
+    from: () => ({ select: () => ({ in: () => Promise.resolve({ data: [], error: null }) }) }),
+    functions: { invoke: vi.fn() },
+    storage: { from: vi.fn() },
+    auth: { signOut: vi.fn() },
+  },
+}))
 const restoreMember = vi.fn()
 
 vi.mock('../context/family/FamilyCoreContext', () => ({

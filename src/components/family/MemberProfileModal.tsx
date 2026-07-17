@@ -9,6 +9,9 @@ import type { AvatarValidationError } from '../../utils/memberAvatarImage'
 import { Modal } from '../ui/Modal'
 import { MemberAvatarPhotoField } from './MemberAvatarPhotoField'
 import { getLocalizedAddressName } from '../../utils/personalizedName'
+import type { ChildAccount } from '../../hooks/useChildAccounts'
+import { canManageChildAccount, childAccountState, childAccountStatusLabel } from '../../utils/childAccountStatus'
+import { ChildAccountSection } from './ChildAccountSection'
 
 interface Props {
   member: FamilyMember
@@ -17,6 +20,11 @@ interface Props {
   onClose: () => void
   onRequestRemove?: () => void
   onRequestLeave?: () => void
+  // Only supplied by surfaces that manage accounts (the family screen). A
+  // child editing their own profile never receives these, so the management
+  // panel cannot render there.
+  childAccount?: ChildAccount | null
+  onAccountChanged?: () => Promise<void> | void
 }
 
 function colorLabel(key: MemberColorKey) {
@@ -49,8 +57,9 @@ function mutationErrorMessage(error: unknown): string {
   return t.family.errors.profileSaveFailed
 }
 
-export function MemberProfileModal({ member, currentMember, refreshMembers, onClose, onRequestRemove, onRequestLeave }: Props) {
+export function MemberProfileModal({ member, currentMember, refreshMembers, onClose, onRequestRemove, onRequestLeave, childAccount = null, onAccountChanged }: Props) {
   const fields = editableMemberProfileFields(currentMember, member)
+  const showAccountManagement = Boolean(onAccountChanged) && canManageChildAccount(currentMember, member)
   const { saveMemberProfile } = useMemberProfiles(refreshMembers)
   const [displayName, setDisplayName] = useState(member.display_name)
   const [birthDate, setBirthDate] = useState(member.birth_date ?? '')
@@ -193,7 +202,9 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
             </div>
             <div>
               <dt>{t.family.accountLabel}</dt>
-              <dd>{member.user_id ? t.family.hasAccount : t.family.noAccount}</dd>
+              <dd>{member.role === 'child'
+                ? childAccountStatusLabel(childAccountState(member, childAccount))
+                : member.user_id ? t.family.hasAccount : t.family.noAccount}</dd>
             </div>
           </dl>
         </section>
@@ -260,6 +271,15 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
           {onRequestLeave && <button type="button" className="btn-danger" disabled={saving} onClick={onRequestLeave}>{t.family.leaveHouseholdAction}</button>}
         </section>}
       </form>
+
+      {/* Deliberately a sibling of the profile form, not a child of it: the
+          account dialogs carry their own forms, and this Modal renders inline
+          rather than through a portal. */}
+      {showAccountManagement && <ChildAccountSection
+        child={member}
+        account={childAccount}
+        onChanged={() => onAccountChanged?.()}
+      />}
     </Modal>
   )
 }
