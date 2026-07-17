@@ -5,7 +5,7 @@ type Actor = Pick<FamilyMember, 'id' | 'family_id' | 'role'>
 type TargetMember = Pick<FamilyMember, 'id' | 'family_id'>
 
 const CHILD_ROUTES = new Set<Route>([
-  '/', '/calendar', '/chores', '/activities', '/meals', '/shopping', '/more', '/reminders',
+  '/', '/calendar', '/chores', '/activities', '/meals', '/shopping', '/messages', '/more', '/reminders',
 ])
 
 export const ADULT_PRIMARY_ROUTES = ['/', '/calendar', '/plan', '/family', '/more'] as const satisfies readonly Route[]
@@ -19,6 +19,7 @@ export function childPrimaryRouteForPath(route: Route): (typeof CHILD_PRIMARY_RO
   if (route === '/activities' || route === '/meals' || route === '/reminders') return '/more'
   if (route === '/plan') return '/chores'
   if (route === '/health' || route === '/family') return '/more'
+  if (route === '/messages') return '/more'
   if (route === '/calendar' || route === '/chores' || route === '/shopping' || route === '/more') return route
   return '/'
 }
@@ -68,5 +69,6 @@ export function capabilitiesFor(actor: Actor | null | undefined): UiCapabilities
 export function childRouteFallback(route: Route): Route {
   if (route === '/plan') return '/chores'
   if (route === '/health' || route === '/family') return '/more'
+  if (route === '/messages') return '/more'
   return '/'
 }

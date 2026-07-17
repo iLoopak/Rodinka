@@ -86,6 +86,15 @@ Rodinka není zdravotnický informační systém. Zdravotní modul slouží k ro
 - osobní nastavení kategorií, tichých hodin a souhrnů,
 - serverové zpracování a web push po dokončení provozní konfigurace.
 
+### Zprávy
+
+- rodinný chat pro celou domácnost jako výchozí konverzace,
+- přímé konverzace mezi dvěma členy rodiny,
+- real-time doručení nových zpráv bez obnovení stránky,
+- unread počty a označení konverzace jako přečtené při otevření,
+- základní seskupení po sobě jdoucích zpráv stejného autora,
+- bezpečnostní hranice na úrovni databáze — rodina nikdy nevidí konverzaci jiné rodiny a rodič nevidí přímý chat mezi dvěma sourozenci.
+
 ## Rodina podle vás
 
 - vlastní název domácnosti,
@@ -213,6 +222,7 @@ Aplikace nemá jeden sdílený "god" kontext. Každá doména má vlastní React
 | `health/MedicalContext.tsx` | `useMedicalData()` | zdravotní záznamy včetně očkování |
 | `meals/MealsContext.tsx` | `useMealsDataContext()` | jídla, hlasování, jídelní plán |
 | `shopping/ShoppingContext.tsx` | `useShopping()` | nákupní seznam — tenká obálka nad offline-first repozitářem v `src/shopping` |
+| `messages/MessagesContext.tsx` | `useMessagesData()` | rodinné zprávy — konverzace, členové, zprávy, unread počty, `send_message`/`mark_conversation_read` RPC a realtime pro `conversations`/`conversation_members`/`messages` |
 
 `src/context/AppDataProviders.tsx` tyto providery skládá do jednoho stromu. Až na dvě výjimky (kapesné čerpá ID úkolů od domény úkolů; schválení úkolu smí dobít i žebříček kapesného, viz níže) každý provider potřebuje jen `familyId`/`userId` předané jako prop — providery mezi sebou navzájem neimportují svůj kontext.
 

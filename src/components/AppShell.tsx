@@ -11,8 +11,10 @@ import { HealthScreen } from './HealthScreen'
 import { MealPlanScreen } from './meals/MealPlanScreen'
 import { InstallAppBanner } from './InstallAppBanner'
 import { ShoppingScreen } from './ShoppingScreen'
+import { MessagesScreen } from './messages/MessagesScreen'
 import { ReminderBell } from './reminders/ReminderBell'
 import { ReminderCenter } from './reminders/ReminderCenter'
+import { MessagesBell } from './messages/MessagesBell'
 import { useFamilySettings } from '../context/family/FamilySettingsContext'
 import { FamilyBrand } from './FamilyBrand'
 import { useActiveFamilyMark } from '../hooks/useActiveFamilyMark'
@@ -46,6 +48,7 @@ export function AppShell() {
         />
         <div className="app-header-actions">
           <RealtimeStatusBadge status={realtimeStatus} />
+          <MessagesBell />
           <ReminderBell />
         </div>
       </header>
@@ -62,6 +65,7 @@ export function AppShell() {
         {!offlineBlocked && routeAllowed && path === '/meals' && <MealPlanScreen />}
         {routeAllowed && path === '/shopping' && <ShoppingScreen />}
         {!offlineBlocked && routeAllowed && path === '/family' && <FamilyScreen />}
+        {!offlineBlocked && routeAllowed && path === '/messages' && <MessagesScreen />}
         {!offlineBlocked && routeAllowed && path === '/more' && <MoreScreen />}
         {!offlineBlocked && routeAllowed && path === '/reminders' && <ReminderCenter />}
       </main>

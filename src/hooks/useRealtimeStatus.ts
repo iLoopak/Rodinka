@@ -6,6 +6,7 @@ import { useActivitiesData } from '../context/activities/ActivitiesContext'
 import { useOccurrenceAssignmentsData } from '../context/activities/OccurrenceAssignmentsContext'
 import { useMedicalData } from '../context/health/MedicalContext'
 import { useMealsDataContext } from '../context/meals/MealsContext'
+import { useMessagesData } from '../context/messages/MessagesContext'
 import { worstConnectionState, type RealtimeConnectionState } from '../realtime/connectionState'
 
 // A single app-wide "is realtime healthy" signal, composed from every
@@ -22,6 +23,7 @@ export function useRealtimeStatus(): RealtimeConnectionState {
   const { occurrenceAssignmentsRealtimeStatus } = useOccurrenceAssignmentsData()
   const { medicalRealtimeStatus } = useMedicalData()
   const { mealsRealtimeStatus } = useMealsDataContext()
+  const { messagesRealtimeStatus } = useMessagesData()
 
   return worstConnectionState([
     membersRealtimeStatus,
@@ -32,5 +34,6 @@ export function useRealtimeStatus(): RealtimeConnectionState {
     occurrenceAssignmentsRealtimeStatus,
     medicalRealtimeStatus,
     mealsRealtimeStatus,
+    messagesRealtimeStatus,
   ])
 }

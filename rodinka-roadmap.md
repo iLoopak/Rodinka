@@ -42,6 +42,19 @@
 - Lower priority, lighter build — good filler feature once core loop (Phase 1)
   is proven with real usage
 
+## Phase 3.5 — Family Messaging (batch 1 landed)
+- Family group conversation + 1:1 direct conversations between two family
+  members (`conversations`, `conversation_members`, `messages` in Supabase)
+- Real-time delivery via a single `family:<id>:messages` channel; RPCs
+  `send_message`, `mark_conversation_read`, `ensure_family_group_conversation`,
+  `ensure_direct_conversation` are the only write path
+- RLS scoped to actual conversation participants (a parent does *not* see a
+  sibling-to-sibling direct chat); direct threads locked at two members and
+  same-family-only
+- Batch 2 (next): attachments (images/files), reactions, reply-to-message,
+  system messages, sharing a task/event/shopping item into a chat, mute and
+  archive UI, push-notification delivery
+
 ## Phase 4 — Calendar Sync (planned, later)
 - Google Calendar API first (clean REST API, two-way sync)
 - Apple/iCloud via CalDAV — more effort, lower priority, may be optional
