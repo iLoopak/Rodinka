@@ -19,7 +19,7 @@ import type { ActivityInput } from '../domain/activities/types'
 import { useRouter } from '../router'
 import { resolveDeepLinkedItem } from '../utils/deepLinks'
 import { ScrollableTabs } from './ui/ScrollableTabs'
-import { FilterDisclosure } from './ui/FilterDisclosure'
+import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from './ui/FilterDisclosure'
 import { ScreenHeader } from './ui/ScreenHeader'
 import { PersonRoleGroup, type PersonRole } from './ui/PersonRoleGroup'
 
@@ -79,11 +79,12 @@ export function ActivitiesScreen() {
   }
 
   const header = (
-    <ScreenHeader title={t.activities.title} actions={isParentOrAdmin ? (
-        <button type="button" className="header-action-button" onClick={() => setShowAdd(true)}>
+    <ScreenHeader title={t.activities.title} actions={<>
+        <FilterDisclosureToggle />
+        {isParentOrAdmin && <button type="button" className="header-action-button" onClick={() => setShowAdd(true)}>
           <span aria-hidden="true">+</span> {t.activities.addAction}
-        </button>
-      ) : undefined} />
+        </button>}
+      </>} />
   )
 
   const hasFilters = filterChild !== '' || filterCategory !== '' || filterKind !== ''
@@ -123,12 +124,13 @@ export function ActivitiesScreen() {
 
   return (
     <>
+      <FilterDisclosure id="activities-filter-panel" open={filtersOpen} onOpenChange={setFiltersOpen}
+        activeCount={Number(Boolean(filterChild)) + Number(Boolean(filterCategory)) + Number(Boolean(filterKind))} onClear={clearFilters}>
       {header}
 
       {deepLinkError && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
 
-      <FilterDisclosure id="activities-filter-panel" open={filtersOpen} onOpenChange={setFiltersOpen}
-        activeCount={Number(Boolean(filterChild)) + Number(Boolean(filterCategory)) + Number(Boolean(filterKind))} onClear={clearFilters}>
+      <FilterDisclosurePanel>
       <div className="filter-row">
         <select value={filterChild} onChange={(e) => setFilterChild(e.target.value)} aria-label={t.activities.filterChildLabel}>
           <option value="">
@@ -160,6 +162,7 @@ export function ActivitiesScreen() {
           ))}
         </select>
       </div>
+      </FilterDisclosurePanel>
       </FilterDisclosure>
 
       <ScrollableTabs tabs={tabs} activeTab={tab} onChange={setTab} />

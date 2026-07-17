@@ -12,7 +12,7 @@ import { AddMealForm } from './AddMealForm'
 import { MealDetailModal } from './MealDetailModal'
 import type { Meal } from '../../hooks/useMeals'
 import type { MealInput } from '../../context/meals/MealsContext'
-import { FilterDisclosure } from '../ui/FilterDisclosure'
+import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from '../ui/FilterDisclosure'
 
 interface Props {
   onAddToPlan?: (meal: Meal) => void
@@ -56,13 +56,18 @@ export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
 
   return (
     <>
-      {isParentOrAdmin && (
-        <div className="tab-toolbar">
+      <FilterDisclosure id="meal-library-filter-panel" open={filtersOpen} onOpenChange={setFiltersOpen}
+        activeCount={Number(Boolean(filterCategory)) + Number(Boolean(filterTag)) + Number(showArchived)} onClear={clearFilters}>
+      <div className="tab-toolbar">
+        {isParentOrAdmin && (
           <button type="button" className="header-action-button" onClick={() => setShowAdd(true)}>
             <span aria-hidden="true">+</span> {t.mealLibrary.addAction}
           </button>
+        )}
+        <div className="header-actions tab-toolbar-actions">
+          <FilterDisclosureToggle />
         </div>
-      )}
+      </div>
 
       <div className="filter-row meal-search-row">
         <input
@@ -72,8 +77,7 @@ export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
           aria-label={t.mealLibrary.searchPlaceholder}
         />
       </div>
-      <FilterDisclosure id="meal-library-filter-panel" open={filtersOpen} onOpenChange={setFiltersOpen}
-        activeCount={Number(Boolean(filterCategory)) + Number(Boolean(filterTag)) + Number(showArchived)} onClear={clearFilters}>
+      <FilterDisclosurePanel>
       <div className="filter-row">
         <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} aria-label={t.mealLibrary.filterCategoryLabel}>
           <option value="">
@@ -100,6 +104,7 @@ export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
         <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
         {t.mealLibrary.showArchived}
       </label>
+      </FilterDisclosurePanel>
       </FilterDisclosure>
 
       {filtered.length === 0 ? (
