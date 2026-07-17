@@ -112,27 +112,29 @@ export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
           />
         )
       ) : (
-        <ul className="section-list">
-          {filtered.map((meal) => (
-            <li
-              key={meal.id}
-              className="clickable-row"
-              role="button"
-              tabIndex={0}
-              onClick={() => setSelectedMeal(meal)}
-              onKeyDown={onActivateKey(() => setSelectedMeal(meal))}
-            >
-              <span className="row-title">{meal.name}</span>
-              <span className="row-meta">{mealCategoryLabel(meal.category)}</span>
-              <span className="row-spacer" />
-              {getMealBadges(meal, badgeCtx).map((badge) => (
-                <span key={badge} className="badge badge-pending">
-                  {mealBadgeLabel(badge)}
-                </span>
-              ))}
-            </li>
-          ))}
-        </ul>
+        <div className="panel is-primary">
+          <ul className="section-list plain-list">
+            {filtered.map((meal) => (
+              <li
+                key={meal.id}
+                className="clickable-row"
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedMeal(meal)}
+                onKeyDown={onActivateKey(() => setSelectedMeal(meal))}
+              >
+                <span className="row-title">{meal.name}</span>
+                <span className="row-meta">{mealCategoryLabel(meal.category)}</span>
+                <span className="row-spacer" />
+                {getMealBadges(meal, badgeCtx).map((badge) => (
+                  <span key={badge} className="badge badge-pending">
+                    {mealBadgeLabel(badge)}
+                  </span>
+                ))}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {showAdd && (

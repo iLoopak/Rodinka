@@ -59,7 +59,7 @@ export function AllowanceBalances({ kids, balances, onPayout, chores, completion
   }
 
   return (
-    <ul className="section-list">
+    <ul className="section-list plain-list">
       {kids.map((kid) => {
         const plan = plans.find((item) => item.member_id === kid.id && item.status !== 'archived')
         let payoutDate: string | null = null

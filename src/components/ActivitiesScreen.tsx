@@ -165,7 +165,7 @@ export function ActivitiesScreen() {
       <ScrollableTabs tabs={tabs} activeTab={tab} onChange={setTab} />
 
       {tab === 'upcoming' && (
-        <section className="section">
+        <section className="page-section">
           {upcoming.length === 0 ? (
             hasFilters ? (
               <EmptyState title={t.activities.filtersNoResults} action={{ label: t.activities.clearFilters, onClick: clearFilters }} />
@@ -173,68 +173,74 @@ export function ActivitiesScreen() {
               <p className="empty-state">{t.activities.noActivities}</p>
             )
           ) : (
-            <ul className="section-list">
-              {upcoming.map((activity) => (
-                <ActivityRow
-                  key={activity.id}
-                  activity={activity}
-                  memberById={memberById}
-                  onClick={() => openActivity(activity)}
-                />
-              ))}
-            </ul>
+            <div className="panel is-primary">
+              <ul className="section-list plain-list">
+                {upcoming.map((activity) => (
+                  <ActivityRow
+                    key={activity.id}
+                    activity={activity}
+                    memberById={memberById}
+                    onClick={() => openActivity(activity)}
+                  />
+                ))}
+              </ul>
+            </div>
           )}
         </section>
       )}
 
       {tab === 'payments' && (
-        <section className="section">
+        <section className="page-section">
           {withPayments.length === 0 ? (
             <p className="empty-state">{t.activities.noUpcomingPayments}</p>
           ) : (
-            <ul className="section-list">
-              {withPayments.map((activity) => {
-                const child = memberById(activity.participant_ids[0] ?? '')
-                return (
-                  <li
-                    key={activity.id}
-                    className="clickable-row"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => openActivity(activity)}
-                    onKeyDown={onActivateKey(() => openActivity(activity))}
-                  >
-                    <MemberAvatar member={child} />
-                    <span className="row-title">{activity.title}</span>
-                    <span className="row-meta">{child?.display_name ?? '?'}</span>
-                    <span className="row-spacer" />
-                    <DueBadge dueDate={activity.next_payment_due_date} />
-                    {activity.payment_amount != null && (
-                      <span className="row-amount">{t.chores.formatAmount(activity.payment_amount)}</span>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
+            <div className="panel is-primary">
+              <ul className="section-list plain-list">
+                {withPayments.map((activity) => {
+                  const child = memberById(activity.participant_ids[0] ?? '')
+                  return (
+                    <li
+                      key={activity.id}
+                      className="clickable-row"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openActivity(activity)}
+                      onKeyDown={onActivateKey(() => openActivity(activity))}
+                    >
+                      <MemberAvatar member={child} />
+                      <span className="row-title">{activity.title}</span>
+                      <span className="row-meta">{child?.display_name ?? '?'}</span>
+                      <span className="row-spacer" />
+                      <DueBadge dueDate={activity.next_payment_due_date} />
+                      {activity.payment_amount != null && (
+                        <span className="row-amount">{t.chores.formatAmount(activity.payment_amount)}</span>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
           )}
         </section>
       )}
 
       {tab === 'archived' && (
-        <section className="section">
+        <section className="page-section">
           {archived.length === 0 ? (
             <p className="empty-state">{t.activities.noArchived}</p>
           ) : (
-            <ul className="section-list">
-              {archived.map((activity) => (
-                <ActivityRow
-                  key={activity.id}
-                  activity={activity}
-                  memberById={memberById}
-                  onClick={() => openActivity(activity)}
-                />
-              ))}
-            </ul>
+            <div className="panel is-primary">
+              <ul className="section-list plain-list">
+                {archived.map((activity) => (
+                  <ActivityRow
+                    key={activity.id}
+                    activity={activity}
+                    memberById={memberById}
+                    onClick={() => openActivity(activity)}
+                  />
+                ))}
+              </ul>
+            </div>
           )}
         </section>
       )}
@@ -278,6 +284,11 @@ function ActivityRow({ activity, memberById, onClick }: ActivityRowProps) {
   return (
     <li className="clickable-row" role="button" tabIndex={0} onClick={onClick} onKeyDown={onActivateKey(onClick)}>
       <span className="row-title">{activity.title}</span>
+      {activity.status !== 'active' && (
+        <span className="badge badge-neutral">
+          {activity.status === 'paused' ? t.activities.statusPaused : t.activities.statusFinished}
+        </span>
+      )}
       <PersonRoleGroup roles={peopleRoles} compact />
       <span className="row-spacer" />
       {next ? (

@@ -158,7 +158,7 @@ export function HealthScreen() {
 
       <ScrollableTabs tabs={tabs} activeTab={tab} onChange={setTab} />
 
-      <section className="section">
+      <section className="page-section">
         {currentList.length === 0 ? (
           hasFilters ? (
             <EmptyState title={t.medical.filtersNoResults} action={{ label: t.medical.clearFilters, onClick: clearFilters }} />
@@ -166,11 +166,13 @@ export function HealthScreen() {
             <p className="empty-state">{emptyByTab[tab]}</p>
           )
         ) : (
-          <ul className="section-list">
-            {currentList.map((record) => (
-              <MedicalRow key={record.id} record={record} memberById={memberById} onClick={() => openRecord(record)} />
-            ))}
-          </ul>
+          <div className="panel is-primary">
+            <ul className="section-list plain-list">
+              {currentList.map((record) => (
+                <MedicalRow key={record.id} record={record} memberById={memberById} onClick={() => openRecord(record)} />
+              ))}
+            </ul>
+          </div>
         )}
       </section>
 

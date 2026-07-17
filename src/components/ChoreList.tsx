@@ -40,7 +40,7 @@ export function ChoreList({ chores, memberById, latestCompletionFor, onMarkDone,
   return (
     <div>
       {error && <p className="error">{error}</p>}
-      <ul className="section-list">
+      <ul className="section-list plain-list">
         {chores.map((chore) => {
           const assignee = chore.assigned_to ? memberById(chore.assigned_to) : undefined
           const latest = latestCompletionFor(chore.id)

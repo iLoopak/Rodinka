@@ -23,6 +23,7 @@ import { isQuickTodo } from '../utils/todayQuickAdd'
 import { QuickTodoPriorityList } from './chores/QuickTodoPriorityList'
 import { ScrollableTabs } from './ui/ScrollableTabs'
 import { ScreenHeader } from './ui/ScreenHeader'
+import { ArchivedItemBadge } from './ui/DestructiveActions'
 
 type Tab = 'active' | 'pending' | 'allowance' | 'manage'
 
@@ -168,69 +169,79 @@ export function ChoresScreen() {
 
       {tab === 'active' && (
         <>
-        {quickTodos.length > 0 && <section className="section quick-todo-priority-section">
+        {quickTodos.length > 0 && <section className="page-section">
           <div className="quick-todo-priority-heading">
-            <h2>{t.chores.quickTasksTitle}</h2>
+            <h2 className="section-heading">{t.chores.quickTasksTitle}</h2>
             <p>{t.chores.quickTasksBody}</p>
           </div>
-          <QuickTodoPriorityList
-            tasks={quickTodos}
-            onComplete={(taskId) => markDone(taskId)}
-            onPromote={promoteQuickTodo}
-            onReorder={reorderQuickTodos}
-          />
+          <div className="panel is-secondary is-tasks">
+            <QuickTodoPriorityList
+              tasks={quickTodos}
+              onComplete={(taskId) => markDone(taskId)}
+              onPromote={promoteQuickTodo}
+              onReorder={reorderQuickTodos}
+            />
+          </div>
         </section>}
-        <section className="section full-task-list-section">
-          {quickTodos.length > 0 && <h2>{t.chores.fullTasksTitle}</h2>}
-          <ChoreList
-            chores={fullTasks}
-            memberById={memberById}
-            latestCompletionFor={latestCompletionFor}
-            onMarkDone={markDone}
-            onSelect={openChore}
-          />
+        <section className="page-section">
+          {quickTodos.length > 0 && <h2 className="section-heading">{t.chores.fullTasksTitle}</h2>}
+          <div className={`panel ${fullTasks.length === 0 ? 'is-quiet' : 'is-primary'}`}>
+            <ChoreList
+              chores={fullTasks}
+              memberById={memberById}
+              latestCompletionFor={latestCompletionFor}
+              onMarkDone={markDone}
+              onSelect={openChore}
+            />
+          </div>
         </section>
         </>
       )}
 
       {tab === 'pending' && (
-        <section className="section">
+        <section className="page-section">
           {pendingCompletions.length === 0 ? (
             <p className="empty-state">{t.chores.noPendingApprovals}</p>
           ) : (
-            <PendingApprovals
-              completions={pendingCompletions}
-              chores={chores}
-              memberById={memberById}
-              onApprove={handleApprove}
-              onReject={reject}
-            />
+            <div className="panel is-primary">
+              <PendingApprovals
+                completions={pendingCompletions}
+                chores={chores}
+                memberById={memberById}
+                onApprove={handleApprove}
+                onReject={reject}
+              />
+            </div>
           )}
         </section>
       )}
 
       {tab === 'allowance' && (
-        <section className="section">
-          <AllowanceBalances kids={kids} balances={balances} onPayout={payout} chores={chores}
-            completions={completions} plans={allowancePlans} cycles={allowanceCycles}
-            canManage={isParentOrAdmin} onSavePlan={saveAllowancePlan} onCredit={creditAllowance} onSkip={skipAllowance} />
+        <section className="page-section">
+          <div className="panel is-primary">
+            <AllowanceBalances kids={kids} balances={balances} onPayout={payout} chores={chores}
+              completions={completions} plans={allowancePlans} cycles={allowanceCycles}
+              canManage={isParentOrAdmin} onSavePlan={saveAllowancePlan} onCredit={creditAllowance} onSkip={skipAllowance} />
+          </div>
         </section>
       )}
 
       {tab === 'manage' && (
-        <section className="section">
-          <p>{t.chores.manageIntro}</p>
+        <section className="page-section">
+          <p className="home-subtitle">{t.chores.manageIntro}</p>
           {chores.length === 0 ? <p className="empty-state">{t.chores.managementEmpty}</p> : (
-            <ul className="section-list">
-              {chores.map((chore) => <li key={chore.id}>
-                <span className="row-title">{chore.title}</span>
-                <span className="row-meta">{chore.assigned_to ? memberById(chore.assigned_to)?.display_name ?? '?' : t.chores.unassigned}</span>
-                <span className="row-description">{choreRecurrenceSummary(chore)}</span>
-                <span className="row-spacer" />
-                {chore.status === 'archived' && <span className="badge">{t.chores.archivedBadge}</span>}
-                <button type="button" className="btn-secondary" onClick={() => openChore(chore)}>{t.deepLinks.openDetail}</button>
-              </li>)}
-            </ul>
+            <div className="panel is-primary">
+              <ul className="section-list plain-list">
+                {chores.map((chore) => <li key={chore.id}>
+                  <span className="row-title">{chore.title}</span>
+                  <span className="row-meta">{chore.assigned_to ? memberById(chore.assigned_to)?.display_name ?? '?' : t.chores.unassigned}</span>
+                  <span className="row-description">{choreRecurrenceSummary(chore)}</span>
+                  <span className="row-spacer" />
+                  {chore.status === 'archived' && <ArchivedItemBadge>{t.chores.archivedBadge}</ArchivedItemBadge>}
+                  <button type="button" className="btn-secondary" onClick={() => openChore(chore)}>{t.deepLinks.openDetail}</button>
+                </li>)}
+              </ul>
+            </div>
           )}
         </section>
       )}
