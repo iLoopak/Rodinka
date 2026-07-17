@@ -6206,7 +6206,13 @@ button.danger-action:focus-visible:not(:disabled) {
 }
 
 .messages-composer {
+  /* Explicit row: the global `form { flex-direction: column }` reset
+     would otherwise stack the plus button, textarea, and send button
+     vertically. That layout not only looked broken, it pushed the plus
+     against the right edge where the popup menu clipped out of the
+     viewport — the bug this rule fixes. */
   display: flex;
+  flex-direction: row;
   align-items: flex-end;
   gap: 10px;
   padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
@@ -6742,24 +6748,43 @@ button.danger-action:focus-visible:not(:disabled) {
   font-size: 0.75rem;
 }
 
-.messages-composer-plus-wrapper { position: relative; }
+.messages-composer-plus-wrapper { position: relative; flex: 0 0 auto; }
+/* Match the send button's dimensions and shape so the two circles
+   read as a matched pair either side of the input. The explicit
+   overrides for padding/min-height are needed because the global
+   `button { padding: 12px 22px; min-height: 48px }` reset would
+   otherwise stretch this into an oblong pill. */
 .messages-composer-plus-button {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
   background: var(--paper);
   color: var(--ink);
   cursor: pointer;
   flex: 0 0 auto;
 }
+.messages-composer-plus-button:hover:not(:disabled) {
+  background: var(--canvas);
+}
 .messages-composer-plus-menu {
   position: absolute;
   bottom: calc(100% + 6px);
+  /* Anchor to the LEFT of the wrapper, which sits at the left of the
+     composer. Explicit `right: auto` guards against any inherited
+     right value that would otherwise stretch the menu across the
+     composer. */
   left: 0;
+  right: auto;
   min-width: 160px;
+  /* Cap so a very long localized menu item can't push the menu past
+     the viewport edge on narrow phones. */
+  max-width: calc(100vw - 24px);
   padding: 4px;
   background: var(--paper-raised);
   border: 1px solid var(--border);

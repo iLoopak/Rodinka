@@ -69,6 +69,11 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
   activeFamilyIdRef.current = familyId
   const messagesByConversationRef = useRef(messagesByConversation)
   messagesByConversationRef.current = messagesByConversation
+  // In-flight guard so React state batching can't let two initial loads
+  // race and clobber each other (see loadInitialMessages below). Held
+  // outside state on purpose — it must update synchronously with the
+  // fetch call, not on the next render.
+  const initialLoadInFlightRef = useRef<Set<string>>(new Set())
 
   // ------------------------------------------------------------
   // Initial load: everything the caller can already see (RLS scopes).
@@ -288,34 +293,52 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
   const loadInitialMessages = useCallback(
     async (conversationId: string) => {
       if (loadedConversations.has(conversationId)) return
-      const { data, error: loadError } = await supabase
-        .from('messages')
-        .select(MESSAGE_SELECT_COLUMNS)
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: false })
-        .order('id', { ascending: false })
-        .limit(INITIAL_MESSAGES_LIMIT)
-      if (loadError) {
-        console.error('Failed to load messages:', loadError.message)
-        return
-      }
-      const rows = (data ?? []) as MessageRow[]
-      const ascending = [...rows].sort((a, b) => compareMessages(a, b))
-      setMessagesByConversation((current) => ({ ...current, [conversationId]: ascending }))
-      setLoadedConversations((current) => {
-        const next = new Set(current)
-        next.add(conversationId)
-        return next
-      })
-      if (rows.length < INITIAL_MESSAGES_LIMIT) {
-        setOlderExhausted((current) => {
-          if (current.has(conversationId)) return current
+      // The loaded-state check above is not enough on its own — React
+      // batches state updates and the useEffect that drives this call
+      // in ConversationDetail re-fires on every parent render because
+      // its `loadInitial` prop is an inline arrow. Without a synchronous
+      // in-flight guard, two or three initial loads can be in flight for
+      // the same conversation, and any of them returning AFTER a send
+      // would blindly replace the message list and drop the just-sent
+      // message. That is exactly the "message appears briefly then
+      // disappears" symptom this fix is chasing.
+      if (initialLoadInFlightRef.current.has(conversationId)) return
+      initialLoadInFlightRef.current.add(conversationId)
+      try {
+        const { data, error: loadError } = await supabase
+          .from('messages')
+          .select(MESSAGE_SELECT_COLUMNS)
+          .eq('conversation_id', conversationId)
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: false })
+          .limit(INITIAL_MESSAGES_LIMIT)
+        if (loadError) {
+          console.error('Failed to load messages:', loadError.message)
+          return
+        }
+        const rows = (data ?? []) as MessageRow[]
+        const ascending = [...rows].sort((a, b) => compareMessages(a, b))
+        setMessagesByConversation((current) => ({
+          ...current,
+          [conversationId]: mergeInitialLoad(current[conversationId], ascending),
+        }))
+        setLoadedConversations((current) => {
           const next = new Set(current)
           next.add(conversationId)
           return next
         })
+        if (rows.length < INITIAL_MESSAGES_LIMIT) {
+          setOlderExhausted((current) => {
+            if (current.has(conversationId)) return current
+            const next = new Set(current)
+            next.add(conversationId)
+            return next
+          })
+        }
+        await hydrateMessageExtras(rows.map((r) => r.id))
+      } finally {
+        initialLoadInFlightRef.current.delete(conversationId)
       }
-      await hydrateMessageExtras(rows.map((r) => r.id))
     },
     [loadedConversations]
   )
@@ -752,22 +775,56 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
     if (rpcError) throw friendly(rpcError)
   }, [currentMemberId])
 
+  // Coalescing guard: any code path that calls markConversationRead in
+  // a hot loop (e.g. a useEffect whose deps churn every render, which
+  // is precisely how this used to catch fire — see the ConversationDetail
+  // fix in MessagesScreen) will otherwise fire an unbounded stream of
+  // RPCs. The browser eventually exhausts the connection pool to the
+  // Supabase host and every subsequent request — including send_message
+  // — starts failing with `TypeError: Failed to fetch`, which surfaces
+  // in the UI as "sending messages always fails". Belt-and-braces: the
+  // useEffect side is stabilized too; this ref is defence in depth so a
+  // future caller can't reintroduce the loop.
+  const markReadInFlightRef = useRef<Set<string>>(new Set())
+  const lastMarkReadAtRef = useRef<Record<string, number>>({})
+
   const markConversationRead = useCallback(async (conversationId: string) => {
     if (!currentMemberId) return
-    const now = new Date().toISOString()
-    setMembers((current) =>
-      current.map((m) =>
-        m.conversation_id === conversationId && m.member_id === currentMemberId
-          ? { ...m, last_read_at: now }
-          : m
-      )
-    )
-    const { error: rpcError } = await supabase.rpc('mark_conversation_read', {
-      p_conversation_id: conversationId,
-      p_up_to: now,
-    })
-    if (rpcError) {
-      console.error('Failed to mark conversation read:', rpcError.message)
+    if (markReadInFlightRef.current.has(conversationId)) return
+    // Coalesce bursts within 500ms — normal "user is actively reading"
+    // patterns cross this threshold, so a truly new mark still lands,
+    // but a runaway effect is capped at ~2 RPCs/sec instead of
+    // hundreds/sec.
+    const nowMs = Date.now()
+    const lastAt = lastMarkReadAtRef.current[conversationId]
+    if (lastAt !== undefined && nowMs - lastAt < 500) return
+    lastMarkReadAtRef.current[conversationId] = nowMs
+    markReadInFlightRef.current.add(conversationId)
+    const now = new Date(nowMs).toISOString()
+    try {
+      let didAdvance = false
+      setMembers((current) => {
+        const target = current.find(
+          (m) => m.conversation_id === conversationId && m.member_id === currentMemberId,
+        )
+        if (!target) return current
+        // Never move the cursor backwards — protects against a
+        // realtime UPDATE that arrives with an older last_read_at
+        // interleaved with a local advance.
+        if (target.last_read_at >= now) return current
+        didAdvance = true
+        return current.map((m) => (m === target ? { ...m, last_read_at: now } : m))
+      })
+      if (!didAdvance) return
+      const { error: rpcError } = await supabase.rpc('mark_conversation_read', {
+        p_conversation_id: conversationId,
+        p_up_to: now,
+      })
+      if (rpcError) {
+        console.error('Failed to mark conversation read:', rpcError.message)
+      }
+    } finally {
+      markReadInFlightRef.current.delete(conversationId)
     }
   }, [currentMemberId])
 
@@ -910,9 +967,15 @@ function compareMessages(a: MessageRow, b: MessageRow) {
   return a.created_at < b.created_at ? -1 : 1
 }
 
-function mergeIncomingMessage(current: Record<string, MessageRow[]>, next: MessageRow): Record<string, MessageRow[]> {
-  const existing = current[next.conversation_id]
-  if (!existing) return current
+export function mergeIncomingMessage(current: Record<string, MessageRow[]>, next: MessageRow): Record<string, MessageRow[]> {
+  // `existing === undefined` used to short-circuit here and drop the
+  // realtime insert, on the assumption that "conversation not loaded →
+  // caller has no view to update". That's wrong: initial load can be
+  // in flight when the insert arrives, and its snapshot was taken
+  // BEFORE this row landed, so returning early would lose the message
+  // until the next full refresh. Treat missing as empty so the row is
+  // captured and the pending initial-load merge picks it up.
+  const existing = current[next.conversation_id] ?? []
   // Dedup by id or client_id — optimistic insert path uses client_id
   // before the server round-trip, and the realtime echo carries the
   // same client_id back. Falling back to id covers the plain "same
@@ -928,6 +991,31 @@ function mergeIncomingMessage(current: Record<string, MessageRow[]>, next: Messa
     }
   }
   return { ...current, [next.conversation_id]: [...existing, next] }
+}
+
+// Fold the initial page of server rows into whatever the client already
+// has locally. Blindly replacing (the previous behaviour) drops
+// optimistic sends and any realtime rows that landed while the load
+// was in flight — that's the source of the "message appears briefly
+// then disappears" bug.
+export function mergeInitialLoad(existing: MessageRow[] | undefined, serverRows: MessageRow[]): MessageRow[] {
+  if (!existing || existing.length === 0) return serverRows
+  const serverIds = new Set(serverRows.map((m) => m.id))
+  const serverClientIds = new Set(
+    serverRows.map((m) => m.client_id).filter((cid): cid is string => Boolean(cid)),
+  )
+  const preserved: MessageRow[] = []
+  for (const m of existing) {
+    // Server row wins for anything the server already knows about.
+    if (serverIds.has(m.id)) continue
+    if (m.client_id && serverClientIds.has(m.client_id)) continue
+    // Keep everything else: pending optimistic sends, failed sends the
+    // user hasn't retried, and real rows that arrived via realtime
+    // while this load was in flight.
+    preserved.push(m)
+  }
+  if (preserved.length === 0) return serverRows
+  return [...serverRows, ...preserved].sort(compareMessages)
 }
 
 export type MessagesDataSource = ReturnType<typeof useMessagesDataSource>
