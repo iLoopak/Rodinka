@@ -77,6 +77,28 @@ Passwords are generated in the browser (`src/lib/childPassphrase.ts`) because th
 - **Restoring a member never restores credentials.** An adult must create access again explicitly.
 - A revoked child's open browser reconciles on its next member query, clears the cached offline identity and lands on the signed-in-without-family recovery screen.
 
+## Authorization test suite
+
+`supabase/tests/child_account_authorization.sql` is the executable authorization matrix: cross-family and cross-member denials, service-role-only lifecycle primitives, child limited-profile restrictions, and the occurrence-replay regression. It simulates each actor the way PostgREST does — `authenticated` role plus JWT claims — so the real policies run under the real planner.
+
+It needs a local stack, and it writes synthetic `auth.users` and `members` rows. The runner refuses any non-loopback database URL and has no override flag, because pointing it at a live project would write fixtures into a real household.
+
+```powershell
+npx supabase start
+npx supabase db reset
+npm run test:db
+```
+
+> **Status: written but never executed.** The machine it was authored on has no Docker and no local Postgres, so the suite has not been run even once and must be treated as unverified until it is. Expect to fix mechanical faults (fixture columns, `auth.users` defaults) on the first run. Until it passes, the Batch 4 findings below rest on code reading, not execution.
+
+## Known findings
+
+| Finding | Status |
+|---|---|
+| A child could replay `complete_household_task` across arbitrary occurrence dates and mint unbounded allowance credit | Fixed in `20260717233000_child_occurrence_completion_guard.sql`; **fix is unexecuted** |
+| `children.rodinka.invalid` appears in the frontend bundle | Accepted. The child sign-in flow builds the internal email client-side, so the scheme is public by construction. It is a constant, not a credential: a login name and password are still required. |
+| `cleanupPending: true` leaves an orphaned Auth user holding the login name | Open; see above |
+
 ## Rollback
 
 Deleting or reverting the function blocks all account management but does not touch existing access: children who already have credentials keep signing in, because that path is plain Supabase Auth. To cut off a specific child without the function, detach the link directly and let the trigger mark the account revoked:
