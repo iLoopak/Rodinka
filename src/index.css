@@ -1283,9 +1283,7 @@ details.manage .add-child-form + .add-chore-form {
 .reminder-card + .reminder-card {
   border-top: 1px solid color-mix(in srgb, var(--border-subtle) 80%, transparent);
 }
-.reminder-card.unread { border-left: 4px solid var(--state-info); }
 .reminder-card.important { background: color-mix(in srgb, var(--coral-soft) 55%, transparent); }
-.reminder-card.important.unread { border-left-color: var(--brick-dark); }
 .reminder-card.read { opacity: .76; }
 .reminder-open { display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 15px; background: transparent; color: inherit; text-align: left; }
 .reminder-icon { display: grid; place-items: center; flex: 0 0 38px; height: 38px; border-radius: 13px; background: var(--neutral-soft); color: var(--brick-dark); font-weight: 800; }
@@ -5416,8 +5414,8 @@ button.danger-action:focus-visible:not(:disabled) {
   box-shadow: none;
 }
 .reminder-card:last-child { border-bottom: 0; }
-.reminder-card.unread { border-left: 4px solid var(--state-info); }
 .reminder-card.important { background: var(--coral-soft); }
+.reminder-card.important .unread-dot { background: var(--brick-dark); }
 .reminder-card.quiet { background: transparent; box-shadow: none; }
 .reminder-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; }
 
