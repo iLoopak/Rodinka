@@ -3,13 +3,14 @@ import { supabase } from '../supabaseClient'
 import { t } from '../strings'
 
 export type MemberColorKey =
-  | 'brick'
   | 'coral'
-  | 'sky'
-  | 'sage'
   | 'honey'
+  | 'mint'
+  | 'blue'
   | 'lavender'
   | 'berry'
+  | 'peach'
+  | 'sage'
 
 export type GrammaticalGender = 'masculine' | 'feminine' | 'neutral'
 export type MemberRole = 'admin' | 'parent' | 'child'

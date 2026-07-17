@@ -1,5 +1,5 @@
 import type { FamilyMember, MemberRole } from '../hooks/useFamilyMembers'
-import { markColorVar } from '../utils/memberColor'
+import { getMemberMainColor, memberColorKey } from '../utils/memberColor'
 import {
   createFamilyMarkModel,
   createFamilyMarkSlots,
@@ -89,7 +89,7 @@ export function FamilyMark(props: FamilyMarkProps) {
     {dynamic && !loading && model.members.map((member, index) => <Petal
       key={member.id}
       slot={model.slots[index]}
-      fill={`var(${markColorVar(member)})`}
+      fill={getMemberMainColor(memberColorKey(member))}
       className="family-mark-petal"
     />)}
   </svg>
