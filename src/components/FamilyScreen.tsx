@@ -17,6 +17,7 @@ import { canEditMemberProfile } from '../utils/memberProfilePermissions'
 import { FamilyMark } from './FamilyMark'
 import { MemberRemovalDialog } from './family/MemberRemovalDialog'
 import { ScreenHeader } from './ui/ScreenHeader'
+import { ArchivedItemBadge } from './ui/DestructiveActions'
 
 function roleLabel(role: FamilyMember['role']) {
   if (role === 'admin') return t.family.roleAdmin
@@ -122,55 +123,59 @@ export function FamilyScreen() {
           </form>
         )}
 
-      <section className="section">
-        <h2>{t.family.membersTitle}</h2>
-        <ul className="section-list">
-          {members.map((m) => (
-            <li key={m.id} className="family-member-row">
-              <MemberAvatar member={m} size={42} />
-              <span className="family-member-copy">
-                <span className="row-title">{m.display_name}</span>
-                <span className="row-meta">{roleLabel(m.role)}</span>
-              </span>
-              <span className="row-spacer" />
-              <span className={`badge ${m.user_id ? 'badge-done' : 'badge-pending'}`}>
-                {m.user_id ? t.family.hasAccount : t.family.noAccount}
-              </span>
-              {canEditMemberProfile(currentMember, m) && (
-                <button
-                  type="button"
-                  className="btn-secondary member-edit-button"
-                  onClick={() => setEditingMember(m)}
-                  aria-label={`${t.family.editProfile}: ${m.display_name}`}
-                >
-                  {t.family.editProfile}
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
+      <section className="page-section">
+        <h2 className="section-heading">{t.family.membersTitle}</h2>
+        <div className="panel is-primary">
+          <ul className="section-list plain-list">
+            {members.map((m) => (
+              <li key={m.id} className="family-member-row">
+                <MemberAvatar member={m} size={42} />
+                <span className="family-member-copy">
+                  <span className="row-title">{m.display_name}</span>
+                  <span className="row-meta">{roleLabel(m.role)}</span>
+                </span>
+                <span className="row-spacer" />
+                <span className={`badge ${m.user_id ? 'badge-done' : 'badge-pending'}`}>
+                  {m.user_id ? t.family.hasAccount : t.family.noAccount}
+                </span>
+                {canEditMemberProfile(currentMember, m) && (
+                  <button
+                    type="button"
+                    className="btn-secondary member-edit-button"
+                    onClick={() => setEditingMember(m)}
+                    aria-label={`${t.family.editProfile}: ${m.display_name}`}
+                  >
+                    {t.family.editProfile}
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
-      {isParentOrAdmin && allMembers.some((candidate) => candidate.status === 'removed') && <section className="section">
-        <h2>{t.family.removedMembersTitle}</h2>
+      {isParentOrAdmin && allMembers.some((candidate) => candidate.status === 'removed') && <section className="page-section">
+        <h2 className="section-heading">{t.family.removedMembersTitle}</h2>
         {memberActionError && <p className="error" role="alert">{memberActionError}</p>}
-        <ul className="section-list">
-          {allMembers.filter((candidate) => candidate.status === 'removed').map((archived) => <li key={archived.id}>
-            <MemberAvatar member={archived} size={42} />
-            <span className="row-title">{archived.display_name}</span>
-            <span className="badge">{t.family.removedMemberBadge}</span>
-            <span className="row-spacer" />
-            <button type="button" className="btn-secondary" disabled={restoringMemberId === archived.id} onClick={async () => {
-              setRestoringMemberId(archived.id)
-              setMemberActionError(null)
-              try { await handleRestoreMember(archived.id) } catch { setMemberActionError(t.family.restoreError) } finally { setRestoringMemberId(null) }
-            }}>{restoringMemberId === archived.id ? t.family.restoringMember : t.family.restoreMemberAction}</button>
-          </li>)}
-        </ul>
+        <div className="panel is-primary">
+          <ul className="section-list plain-list">
+            {allMembers.filter((candidate) => candidate.status === 'removed').map((archived) => <li key={archived.id}>
+              <MemberAvatar member={archived} size={42} />
+              <span className="row-title">{archived.display_name}</span>
+              <ArchivedItemBadge>{t.family.removedMemberBadge}</ArchivedItemBadge>
+              <span className="row-spacer" />
+              <button type="button" className="btn-secondary" disabled={restoringMemberId === archived.id} onClick={async () => {
+                setRestoringMemberId(archived.id)
+                setMemberActionError(null)
+                try { await handleRestoreMember(archived.id) } catch { setMemberActionError(t.family.restoreError) } finally { setRestoringMemberId(null) }
+              }}>{restoringMemberId === archived.id ? t.family.restoringMember : t.family.restoreMemberAction}</button>
+            </li>)}
+          </ul>
+        </div>
       </section>}
 
       {isParentOrAdmin && (
-        <section className="section">
+        <section className="page-section">
           <div className="family-actions">
             <button className="btn-secondary" onClick={() => setShowInvite(true)}>
               {t.family.inviteParentAction}

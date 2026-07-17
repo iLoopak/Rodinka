@@ -142,6 +142,7 @@ export function PlanTab({ prefill, onPrefillConsumed }: Props) {
               <div className="day-plan-header">
                 <span className="day-plan-weekday">{weekdayLabels()[index]}</span>
                 <span className="day-plan-date">{formatShortDate(date)}</span>
+                {date === today && <span className="today-badge">{t.calendar.todayBadge}</span>}
               </div>
 
               {entries.length === 0 ? (

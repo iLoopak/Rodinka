@@ -602,23 +602,6 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
 /* Cards & sections                                                     */
 /* ------------------------------------------------------------------ */
 
-.card {
-  background: var(--paper);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  padding: 18px;
-  box-shadow: var(--shadow-card);
-}
-
-.section {
-  background: var(--paper);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  padding: 18px;
-  margin-bottom: 16px;
-  animation: rise 220ms ease both;
-}
-
 .section-list {
   list-style: none;
   margin: 0;
@@ -629,10 +612,6 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
 }
 
 .section-list li {
-  background: var(--canvas);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-row);
-  padding: 12px 14px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -968,6 +947,11 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
   color: var(--state-info);
 }
 
+.badge-neutral {
+  background: var(--neutral-soft);
+  color: var(--ink-muted);
+}
+
 /* ------------------------------------------------------------------ */
 /* Item type icon                                                       */
 /* ------------------------------------------------------------------ */
@@ -1069,6 +1053,9 @@ details.manage .add-child-form + .add-chore-form {
 /* ------------------------------------------------------------------ */
 
 .auth-screen {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   max-width: 380px;
   margin: 8vh auto 0;
   padding: 32px 26px;
@@ -1078,6 +1065,26 @@ details.manage .add-child-form + .add-chore-form {
   box-shadow: var(--shadow-float);
   text-align: center;
   animation: rise 260ms ease both;
+}
+
+/* The one organic touch connecting the sign-in card back to the landing
+   page: the same soft honey blob used behind Today's photo-less hero,
+   scaled up and tucked behind the top corner. Decorative only. */
+.auth-screen::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -70px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 47% 53% 56% 44% / 49% 51% 49% 51%;
+  background: radial-gradient(
+    circle at 40% 35%,
+    color-mix(in srgb, var(--brand-honey) 24%, transparent) 0%,
+    color-mix(in srgb, var(--brand-honey) 16%, transparent) 62%,
+    transparent 100%
+  );
 }
 
 .auth-screen .brand-lockup {
@@ -1251,16 +1258,18 @@ details.manage .add-child-form + .add-chore-form {
 .reminder-center .tab-button { flex: 1 1 0; min-width: 0; padding-inline: 12px; white-space: normal; }
 .reminder-center-header { align-items: flex-start; }
 .reminder-center-header .home-subtitle { max-width: 430px; }
-.reminder-sections { display: grid; gap: 24px; margin-top: 20px; }
-.reminder-section h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 1rem; }
+.reminder-sections { display: grid; padding: 10px 0; }
+.reminder-section + .reminder-section { margin-top: 18px; }
+.reminder-section h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; padding-inline: 15px; font-size: 1rem; }
 .reminder-section h2 span { display: grid; place-items: center; min-width: 22px; height: 22px; border-radius: 999px; background: var(--neutral-soft); color: var(--ink-muted); font-size: .74rem; }
-.reminder-list { display: grid; gap: 10px; }
+.reminder-list { display: grid; }
 .reminder-history { margin-top: 18px; }
-.reminder-card { overflow: hidden; border: 1px solid var(--border-soft); border-radius: 18px; background: var(--paper-raised); box-shadow: var(--shadow-card); }
+.reminder-card + .reminder-card {
+  border-top: 1px solid color-mix(in srgb, var(--border-subtle) 80%, transparent);
+}
 .reminder-card.unread { border-left: 4px solid var(--state-info); }
-.reminder-card.important { background: linear-gradient(135deg, var(--paper-raised), var(--coral-soft)); }
+.reminder-card.important { background: color-mix(in srgb, var(--coral-soft) 55%, transparent); }
 .reminder-card.important.unread { border-left-color: var(--brick-dark); }
-.reminder-card.quiet { box-shadow: none; background: rgba(255,255,255,.66); }
 .reminder-card.read { opacity: .76; }
 .reminder-open { display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 15px; background: transparent; color: inherit; text-align: left; }
 .reminder-icon { display: grid; place-items: center; flex: 0 0 38px; height: 38px; border-radius: 13px; background: var(--neutral-soft); color: var(--brick-dark); font-weight: 800; }
@@ -1275,9 +1284,9 @@ details.manage .add-child-form + .add-chore-form {
 .reminder-empty > span { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--state-success-soft); color: var(--state-success); font-size: 1.5rem; }
 .reminder-empty h2 { margin: 8px 0 0; font-size: 1.12rem; }
 .reminder-empty p { margin: 0; color: var(--ink-muted); }
-.reminder-settings { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 14px; margin-top: 18px; }
-.reminder-settings .section { width: 100%; min-width: 0; margin: 0; }
-.setting-row { display: flex; align-items: center; justify-content: space-between; min-width: 0; gap: 18px; padding: 12px 0; border-bottom: 1px solid var(--border-soft); }
+.reminder-settings { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; margin-top: 18px; }
+.reminder-settings-panel { width: 100%; min-width: 0; padding: 4px 16px; }
+.setting-row { display: flex; flex-direction: row; align-items: center; justify-content: space-between; min-width: 0; gap: 18px; padding: 12px 0; border-bottom: 1px solid var(--border-soft); }
 .setting-row:last-child { border-bottom: 0; }
 .setting-row > span { display: grid; flex: 1 1 auto; min-width: 0; gap: 3px; overflow-wrap: anywhere; }
 .setting-row small { color: var(--ink-muted); line-height: 1.35; }
@@ -1307,10 +1316,9 @@ details.manage .add-child-form + .add-chore-form {
   gap: 8px;
   margin-bottom: 8px;
   padding: 8px;
-  border: 1px solid var(--category-family-border);
+  border: 1px solid color-mix(in srgb, var(--brand-honey) 26%, var(--border-subtle));
   border-radius: 20px;
-  background: linear-gradient(135deg, var(--category-family-soft), var(--paper));
-  box-shadow: var(--shadow-card);
+  background: color-mix(in srgb, var(--brand-honey) 8%, var(--paper));
 }
 
 .shopping-quick-add input { min-height: 48px; border-color: transparent; background: var(--paper-raised); }
@@ -1384,15 +1392,20 @@ details.manage .add-child-form + .add-chore-form {
 }
 .shopping-category-settings-actions { flex-wrap: wrap; }
 
-.shopping-category-groups { display: grid; gap: 14px; }
+.shopping-category-groups { display: grid; }
 .shopping-category {
   --shopping-accent: var(--category-family);
   --shopping-soft: var(--category-family-soft);
   --shopping-border: var(--category-family-border);
-  overflow: hidden;
-  border: 1px solid var(--shopping-border);
-  border-radius: var(--radius-card);
-  background: linear-gradient(145deg, var(--shopping-soft), rgba(255, 253, 249, 0.94));
+}
+
+.shopping-category + .shopping-category {
+  border-top: 1px solid color-mix(in srgb, var(--border-subtle) 80%, transparent);
+}
+
+/* A transient cue while dragging, not a permanent per-category identity. */
+.shopping-category.drop-enabled {
+  background: color-mix(in srgb, var(--shopping-accent) 6%, transparent);
 }
 .shopping-category-produce { --shopping-accent: var(--category-tasks); --shopping-soft: var(--category-tasks-soft); --shopping-border: var(--category-tasks-border); }
 .shopping-category-bakery, .shopping-category-meat { --shopping-accent: var(--category-meals); --shopping-soft: var(--category-meals-soft); --shopping-border: var(--category-meals-border); }
@@ -1410,7 +1423,7 @@ details.manage .add-child-form + .add-chore-form {
   letter-spacing: 0.025em;
   text-transform: uppercase;
 }
-.shopping-category > h2 > span { margin-left: auto; min-width: 24px; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,.66); text-align: center; font-size: .72rem; }
+.shopping-category > h2 > span { margin-left: auto; min-width: 24px; padding: 2px 7px; border-radius: 999px; background: color-mix(in srgb, var(--shopping-accent) 14%, var(--paper)); text-align: center; font-size: .72rem; }
 
 .shopping-list, .shopping-template-list, .ingredient-list { list-style: none; margin: 0; padding: 0; }
 .shopping-item {
@@ -1419,7 +1432,6 @@ details.manage .add-child-form + .add-chore-form {
   align-items: stretch;
   min-height: 68px;
   border-top: 1px solid color-mix(in srgb, var(--shopping-border) 65%, transparent);
-  background: rgba(255,255,255,.58);
 }
 .shopping-item.purchased {
   grid-template-columns: 44px minmax(0, 1fr);
@@ -2276,7 +2288,10 @@ label.member-gender-option {
   margin-bottom: 10px;
 }
 
-.plain-list li {
+/* Specificity has to beat the legacy `.section-list li` card rule (and its
+   duplicate further below) regardless of source order, since every consumer
+   keeps the base `section-list` class alongside this modifier. */
+.section-list.plain-list li {
   background: transparent;
   border: none;
   border-bottom: 1px solid var(--border);
@@ -2284,8 +2299,18 @@ label.member-gender-option {
   padding: 12px 2px;
 }
 
-.plain-list li:last-child {
+.section-list.plain-list li:last-child {
   border-bottom: none;
+}
+
+/* A plain-list flush inside an unpadded `.panel.is-primary` needs its own
+   horizontal padding, since that panel variant carries none (rows go edge to
+   edge). Padded panel variants (is-attention, is-secondary, is-tasks, is-quiet)
+   keep the smaller default so their own padding plus the row padding doesn't
+   double up. */
+.panel.is-primary .section-list.plain-list li {
+  padding: 12px 14px;
+  border-bottom-color: color-mix(in srgb, var(--border-subtle) 80%, transparent);
 }
 
 .disabled-row {
@@ -2460,6 +2485,12 @@ label.member-gender-option {
 .clickable-row:focus-visible {
   outline: 2px solid var(--brick);
   outline-offset: 2px;
+}
+
+/* Inside a clipped `.panel` an outward-offset ring gets shaved off; draw it
+   inward instead, same fix already applied to `.today-agenda-item`. */
+.panel .clickable-row:focus-visible {
+  outline-offset: -2px;
 }
 
 /* ------------------------------------------------------------------ */
@@ -3386,14 +3417,10 @@ button.btn-danger:hover:not(:disabled) {
 
 .day-plan-card {
   background: var(--paper);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card);
   padding: 14px;
   min-width: 0;
-}
-
-.day-plan-card.today {
-  border-color: var(--brick);
 }
 
 .day-plan-header {
@@ -3432,17 +3459,18 @@ button.btn-danger:hover:not(:disabled) {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
-/* Multiple meals in a day stack as their own compact cards instead of
-   reserving a slot for every theoretical meal type. */
+/* Multiple meals in a day stack as divider-separated rows, not their own
+   nested cards inside the day's paper surface. */
 .day-plan-meal {
-  background: var(--canvas);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-row);
-  padding: 10px 12px;
+  padding: 10px 2px;
   cursor: pointer;
+}
+
+.day-plan-meal + .day-plan-meal,
+.day-plan-meal + li {
+  border-top: 1px solid color-mix(in srgb, var(--border-subtle) 80%, transparent);
 }
 
 /* Meal type is metadata, not a heading — small, muted, only rendered at
@@ -3510,14 +3538,14 @@ button.btn-danger:hover:not(:disabled) {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 
 .vote-candidate-card {
-  background: var(--canvas);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-row);
   padding: 12px 14px;
+}
+
+.vote-candidate-card + .vote-candidate-card {
+  border-top: 1px solid color-mix(in srgb, var(--border-subtle) 80%, transparent);
 }
 
 .vote-candidate-header {
@@ -3705,11 +3733,9 @@ button.btn-danger:hover:not(:disabled) {
   margin: 0;
 }
 
-/* Settings rows on the More screen deliberately stay visually quiet. The
-   explicit selector also prevents the generic notebook list surface below
-   from turning each plain row into a separate filled card. */
-.section.more-settings-section,
-.section.more-links-section {
+/* Settings rows on the More screen deliberately stay visually quiet. */
+.more-settings-section,
+.more-links-section {
   padding: 4px 20px;
 }
 
@@ -3858,28 +3884,11 @@ button.btn-danger:hover:not(:disabled) {
   padding: 8px 2px 2px;
 }
 
-.section,
-.card {
-  border-color: var(--border-soft);
-  background: rgba(255, 253, 249, 0.88);
-}
-
-.section {
-  padding: 20px;
-  box-shadow: var(--shadow-card);
-}
-
-.section > h2,
 .planner-section > h2 {
   font-size: var(--font-size-section-title);
   font-weight: var(--font-weight-strong);
   line-height: var(--line-height-tight);
   letter-spacing: -0.02em;
-}
-
-.section-list li {
-  border-color: transparent;
-  background: var(--neutral-soft);
 }
 
 /* Two deliberate hero modes.
@@ -3950,9 +3959,11 @@ button.btn-danger:hover:not(:disabled) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-rows: auto minmax(0, 1fr);
+  /* Fill the same content-column width as the panels below and let the 16:7
+     crop the family chose set the height. No max-height cap — it was pinning
+     the photo narrower than the sections beneath it. */
   aspect-ratio: 16 / 7;
   min-height: 150px;
-  max-height: 230px;
   padding: 0;
   border-color: color-mix(in srgb, var(--ink) 14%, transparent);
   background: var(--surface-subtle);
@@ -4162,11 +4173,6 @@ button.today-quick-todo-more {
   border-bottom: 1px solid color-mix(in srgb, var(--category-tasks-border) 55%, transparent);
 }
 
-.quick-todo-priority-section {
-  border-color: var(--category-tasks-border);
-  background: linear-gradient(145deg, var(--category-tasks-soft), rgba(255, 253, 249, 0.96));
-}
-
 .quick-todo-priority-heading {
   margin-bottom: 10px;
 }
@@ -4184,7 +4190,6 @@ button.today-quick-todo-more {
 .quick-todo-priority-list {
   margin: 0;
   padding: 0;
-  border-top: 1px solid var(--category-tasks-border);
   list-style: none;
 }
 
@@ -4193,7 +4198,12 @@ button.today-quick-todo-more {
   grid-template-columns: 32px 44px minmax(0, 1fr) auto;
   align-items: center;
   min-height: 54px;
+  padding-inline: 6px 14px;
   border-bottom: 1px solid color-mix(in srgb, var(--category-tasks-border) 62%, transparent);
+}
+
+.quick-todo-priority-list li:last-child {
+  border-bottom: none;
 }
 
 .quick-todo-priority-list li:last-child {
@@ -4867,7 +4877,7 @@ button.today-shopping-open {
   min-height: 100dvh;
   padding: 24px;
   gap: 18px;
-  background: linear-gradient(135deg, var(--category-meals-soft), var(--paper));
+  background: linear-gradient(155deg, #fffaf4 0%, var(--canvas) 52%, #f8f1e9 100%);
 }
 .offline-card,
 .offline-module-state {

@@ -62,19 +62,21 @@ export function VoteTab({ onAddWinnerToPlan, prefillMealId, onPrefillConsumed }:
       )}
 
       {activeRound ? (
-        <section className="section">
-          <VoteRoundResults
-            round={activeRound}
-            members={members}
-            isParentOrAdmin={isParentOrAdmin}
-            onVote={castVote}
-            onOpenRound={openRound}
-            onCloseRound={closeRound}
-            onAddWinnerToPlan={onAddWinnerToPlan}
-          />
+        <section className="page-section">
+          <div className="panel is-primary">
+            <VoteRoundResults
+              round={activeRound}
+              members={members}
+              isParentOrAdmin={isParentOrAdmin}
+              onVote={castVote}
+              onOpenRound={openRound}
+              onCloseRound={closeRound}
+              onAddWinnerToPlan={onAddWinnerToPlan}
+            />
+          </div>
         </section>
       ) : (
-        <section className="section">
+        <section className="page-section">
           <EmptyState
             title={t.mealVoting.noOpenRound}
             action={isParentOrAdmin ? { label: t.mealVoting.startVoteAction, onClick: () => setShowCreate(true) } : undefined}
@@ -83,24 +85,26 @@ export function VoteTab({ onAddWinnerToPlan, prefillMealId, onPrefillConsumed }:
       )}
 
       {closedRounds.length > 0 && (
-        <section className="section">
-          <h2>{t.mealVoting.pastRoundsTitle}</h2>
-          <ul className="section-list plain-list">
-            {closedRounds.map((round) => (
-              <li key={round.id}>
-                <details>
-                  <summary>{round.title}</summary>
-                  <VoteRoundResults
-                    round={round}
-                    members={members}
-                    isParentOrAdmin={isParentOrAdmin}
-                    onVote={castVote}
-                    onAddWinnerToPlan={onAddWinnerToPlan}
-                  />
-                </details>
-              </li>
-            ))}
-          </ul>
+        <section className="page-section">
+          <h2 className="section-heading">{t.mealVoting.pastRoundsTitle}</h2>
+          <div className="panel is-primary">
+            <ul className="section-list plain-list">
+              {closedRounds.map((round) => (
+                <li key={round.id}>
+                  <details>
+                    <summary>{round.title}</summary>
+                    <VoteRoundResults
+                      round={round}
+                      members={members}
+                      isParentOrAdmin={isParentOrAdmin}
+                      onVote={castVote}
+                      onAddWinnerToPlan={onAddWinnerToPlan}
+                    />
+                  </details>
+                </li>
+              ))}
+            </ul>
+          </div>
         </section>
       )}
 

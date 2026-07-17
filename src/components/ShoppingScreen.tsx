@@ -213,7 +213,7 @@ export function ShoppingScreen() {
           onDragCancel={() => setDraggedItemId(null)}
           onDragEnd={handleShoppingDragEnd}
         >
-          <div className="shopping-category-groups">
+          <div className="panel is-primary shopping-category-groups">
             {groups.map((group) => <ShoppingSortableGroup
               key={group.category}
               group={group}

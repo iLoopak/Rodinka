@@ -97,7 +97,8 @@ export function MoreScreen() {
     <>
       <ScreenHeader title={t.more.title} />
 
-      <section className="section more-settings-section">
+      <section className="page-section">
+        <div className="panel is-primary more-settings-section">
         <ul className="section-list plain-list more-settings-list">
           <li className="more-settings-group-heading"><h2>{t.more.accountSection}</h2></li>
           <li className="more-settings-row">
@@ -214,6 +215,7 @@ export function MoreScreen() {
             </button>
           )}
         </div>
+        </div>
       </section>
 
       {showSetPassword && (
@@ -240,15 +242,17 @@ export function MoreScreen() {
         onConfirm={removeFamilyPhoto}
       />
 
-      <section className="section more-links-section">
-        <ul className="section-list plain-list more-settings-list">
-          <li>
-            <Link to="/reminders" hash="#settings" className="row-link more-navigation-row">
-              <span className="row-title">{t.more.remindersAction}</span>
-              <span className="more-navigation-chevron" aria-hidden="true">›</span>
-            </Link>
-          </li>
-        </ul>
+      <section className="page-section">
+        <div className="panel is-primary more-links-section">
+          <ul className="section-list plain-list more-settings-list">
+            <li>
+              <Link to="/reminders" hash="#settings" className="row-link more-navigation-row">
+                <span className="row-title">{t.more.remindersAction}</span>
+                <span className="more-navigation-chevron" aria-hidden="true">›</span>
+              </Link>
+            </li>
+          </ul>
+        </div>
       </section>
 
       <button className="btn-secondary sign-out-button" onClick={() => supabase.auth.signOut()}>
