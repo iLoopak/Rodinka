@@ -33,6 +33,11 @@ describe('Reminder Center mobile layout contract', () => {
     expect(css).toContain('.reminder-center .tab-button { flex: 0 0 auto;')
   })
 
+  it('keeps reminder lists to one border when they are nested in a panel', () => {
+    expect(css).toMatch(/\.reminder-sections \.reminder-list,\s*\.reminder-history \.reminder-list\s*\{[^}]*border:\s*0;[^}]*border-radius:\s*0;/s)
+    expect(css).not.toMatch(/\.reminder-card \+ \.reminder-card\s*\{[^}]*border-top:/s)
+  })
+
   it('does not mask layout regressions by clipping the app wrapper', () => {
     const appMainRule = css.match(/\.app-main\s*\{([^}]*)\}/)?.[1] ?? ''
     expect(appMainRule).not.toContain('overflow-x')
