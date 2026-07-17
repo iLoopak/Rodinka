@@ -4,11 +4,12 @@ import type { FamilyMember } from '../hooks/useFamilyMembers'
 import { MemberAvatar } from './ui/MemberAvatar'
 import type { Chore } from '../hooks/useChores'
 import type { ChoreCompletion } from '../hooks/useChoreCompletions'
-import type { AllowanceCycle, AllowancePlan, AllowancePlanInput } from '../hooks/useAllowancePlans'
+import type { AllowanceCycle, AllowancePlan } from '../hooks/useAllowancePlans'
 import { allowanceCycleForPayout, evaluateAllowanceRequirements, nextPayoutDate, unsettledDuePayoutDates } from '../utils/allowanceCycles'
 import { addDays, formatFullDate, formatShortDate, todayISODate } from '../utils/dueDate'
-import { Modal } from './ui/Modal'
-import { AllowancePlanForm } from './AllowancePlanForm'
+import { activeAllowancePlanFor } from '../utils/allowancePlans'
+import { allowancePlanSummary } from '../utils/allowanceSummary'
+import { AllowancePlanDialog } from './allowance/AllowancePlanDialog'
 import type { LedgerEntry } from '../hooks/useAllowanceLedger'
 
 interface Props {
@@ -21,12 +22,11 @@ interface Props {
   cycles: AllowanceCycle[]
   entries?: LedgerEntry[]
   canManage: boolean
-  onSavePlan: (input: AllowancePlanInput, planId?: string) => Promise<void>
   onCredit: (planId: string, payoutDate: string) => Promise<void>
   onSkip: (planId: string, payoutDate: string) => Promise<void>
 }
 
-export function AllowanceBalances({ kids, balances, onPayout, chores, completions, plans, cycles, entries, canManage, onSavePlan, onCredit, onSkip }: Props) {
+export function AllowanceBalances({ kids, balances, onPayout, chores, completions, plans, cycles, entries, canManage, onCredit, onSkip }: Props) {
   const [payoutFor, setPayoutFor] = useState<string | null>(null)
   const [amount, setAmount] = useState('')
   const [reason, setReason] = useState('')
@@ -63,13 +63,13 @@ export function AllowanceBalances({ kids, balances, onPayout, chores, completion
   return (
     <ul className="section-list plain-list">
       {kids.map((kid) => {
-        const plan = plans.find((item) => item.member_id === kid.id && item.status !== 'archived')
+        const plan = activeAllowancePlanFor(plans, kid.id)
         let payoutDate: string | null = null
         let evaluation: ReturnType<typeof evaluateAllowanceRequirements> | null = null
         if (plan?.status === 'active') {
           const today = todayISODate()
           const dueDates = unsettledDuePayoutDates(plan, cycles.filter((cycle) => cycle.plan_id === plan.id).map((cycle) => cycle.payout_date), today)
-          payoutDate = dueDates[0] ?? nextPayoutDate(addDays(today, 1), plan.payout_day)
+          payoutDate = dueDates[0] ?? nextPayoutDate(addDays(today, 1), plan)
           const cycle = allowanceCycleForPayout(plan, payoutDate)
           evaluation = evaluateAllowanceRequirements(plan.member_id, plan.condition_mode, plan.requirements, completions, cycle)
         }
@@ -84,8 +84,9 @@ export function AllowanceBalances({ kids, balances, onPayout, chores, completion
             {t.chores.payoutButton}
           </button>}
           {plan && <div className="allowance-plan-summary">
-            <strong>{t.allowance.monthly}: {t.chores.formatAmount(plan.amount)}</strong>
-            <span>{t.allowance.payoutDay}: {plan.payout_day}. · {plan.condition_mode === 'none' ? t.allowance.unconditional : t.allowance.byChores}</span>
+            <strong>{allowancePlanSummary(plan)}</strong>
+            {plan.status === 'paused' && <span className="allowance-paused-badge">{t.allowance.statusPaused}</span>}
+            <span>{plan.condition_mode === 'none' ? t.allowance.unconditional : t.allowance.byChores}</span>
             {payoutDate && <span>{t.allowance.nextPayout}: {formatFullDate(payoutDate)}</span>}
             {evaluation && plan.condition_mode === 'chores' && <ul className="compact-list">{evaluation.progress.map((progress) => <li key={progress.choreId}>
               {chores.find((chore) => chore.id === progress.choreId)?.title ?? '?'}: {progress.approvedCount}/{progress.requiredCount}
@@ -124,9 +125,7 @@ export function AllowanceBalances({ kids, balances, onPayout, chores, completion
               {error && <p className="error" role="alert">{error}</p>}
             </form>
           )}
-          {editingFor === kid.id && <Modal title={t.allowance.setUp} onClose={() => setEditingFor(null)}>
-            <AllowancePlanForm child={kid} chores={chores} initial={plan} onSubmit={async (input) => { await onSavePlan(input, plan?.id); setEditingFor(null) }} />
-          </Modal>}
+          {editingFor === kid.id && <AllowancePlanDialog child={kid} onClose={() => setEditingFor(null)} />}
           {!canManage && entries && <div className="allowance-history">
             <strong>{t.allowance.historyTitle}</strong>
             {entries.length === 0 ? <span className="row-meta">{t.allowance.historyEmpty}</span> : <ul className="compact-list">

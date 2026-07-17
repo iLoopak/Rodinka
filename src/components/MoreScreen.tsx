@@ -18,11 +18,14 @@ import { capabilitiesFor } from '../utils/uiCapabilities'
 import { internalEmailToChildLoginName } from '../lib/childAccountIdentity'
 import { useFamilyMembersData } from '../context/family/FamilyMembersContext'
 import { MemberProfileModal } from './family/MemberProfileModal'
+import { FamilyAllowanceSettings } from './allowance/FamilyAllowanceSettings'
+import { AllowancePlanDialog } from './allowance/AllowancePlanDialog'
+import type { FamilyMember } from '../hooks/useFamilyMembers'
 
 export function MoreScreen() {
   const { currentMember, userEmail } = useFamilyCore()
   const capabilities = capabilitiesFor(currentMember)
-  const { refreshMembers } = useFamilyMembersData()
+  const { members, refreshMembers } = useFamilyMembersData()
   const { familyName, familyHeroImageUrl, updateFamilyName, updateFamilyHeroImage } = useFamilySettings()
   const familyMark = useActiveFamilyMark()
   const { language, changeLanguage } = useLanguage()
@@ -37,6 +40,8 @@ export function MoreScreen() {
   const [familyPhotoError, setFamilyPhotoError] = useState<string | null>(null)
   const [confirmPhotoRemoval, setConfirmPhotoRemoval] = useState(false)
   const [editingOwnProfile, setEditingOwnProfile] = useState(false)
+  const [allowanceChild, setAllowanceChild] = useState<FamilyMember | null>(null)
+  const childMembers = members.filter((member) => member.role === 'child')
   const { canPrompt, showIOSInstructions, isStandalone, isNative, promptInstall } = useInstallPrompt()
 
   function startEditingFamilyName() {
@@ -184,7 +189,11 @@ export function MoreScreen() {
             </span>
             {familyPhotoFeedback && <p className="more-setting-feedback" role="status">{familyPhotoFeedback}</p>}
             {familyPhotoError && <p className="error more-setting-feedback" role="alert">{familyPhotoError}</p>}
-          </li>}</>}
+          </li>}
+          {/* Only parents and admins reach this branch at all, which matches
+              the is_family_parent check behind every allowance write. */}
+          <li className="more-settings-group-heading"><h2>{t.allowance.familySectionTitle}</h2></li>
+          <FamilyAllowanceSettings childMembers={childMembers} onEdit={setAllowanceChild} /></>}
           <li className="more-settings-group-heading"><h2>{t.more.appSection}</h2></li>
           <li className="language-setting-row more-settings-row">
             <label htmlFor="app-language">
@@ -241,6 +250,11 @@ export function MoreScreen() {
         currentMember={currentMember}
         refreshMembers={refreshMembers}
         onClose={() => setEditingOwnProfile(false)}
+      />}
+
+      {allowanceChild && <AllowancePlanDialog
+        child={allowanceChild}
+        onClose={() => setAllowanceChild(null)}
       />}
 
       {familyPhotoSource && <FamilyHeroCropEditor

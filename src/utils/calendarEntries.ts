@@ -254,7 +254,7 @@ export function buildCalendarEntries({
 
   for (const plan of allowancePlans) {
     if (plan.status !== 'active') continue
-    const payoutDate = nextPayoutDate(rangeStart, plan.payout_day)
+    const payoutDate = nextPayoutDate(rangeStart, plan)
     if (!withinRange(payoutDate, rangeStart, rangeEnd) || payoutDate < plan.starts_on) continue
     entries.push({
       id: `allowance:${plan.id}:${payoutDate}`,

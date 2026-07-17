@@ -19,7 +19,7 @@ describe('AllowanceBalances child view', () => {
         created_at: '2026-07-16T10:00:00Z', entry_type: 'chore_reward',
         source_chore_completion_id: null, source_allowance_cycle_id: null,
       }],
-      canManage: false, onPayout: vi.fn(), onSavePlan: vi.fn(), onCredit: vi.fn(), onSkip: vi.fn(),
+      canManage: false, onPayout: vi.fn(), onCredit: vi.fn(), onSkip: vi.fn(),
     }))
 
     expect(html).toContain(t.allowance.historyTitle)

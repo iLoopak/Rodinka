@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { t } from '../strings'
-import type { AllowanceConditionMode, AllowancePlanStatus, AllowanceRequirementType } from '../utils/allowanceCycles'
+import type { AllowanceConditionMode, AllowanceFrequency, AllowancePlanStatus, AllowanceRequirementType } from '../utils/allowanceCycles'
 
 export interface AllowanceRequirement {
   id: string
@@ -17,7 +17,12 @@ export interface AllowancePlan {
   family_id: string
   member_id: string
   amount: number
-  payout_day: number
+  frequency: AllowanceFrequency
+  /** Set for monthly plans only; weekly plans anchor on payout_weekday. */
+  payout_day: number | null
+  /** ISO weekday (1 = Monday … 7 = Sunday). Set for weekly plans only. */
+  payout_weekday: number | null
+  note: string | null
   starts_on: string
   status: AllowancePlanStatus
   condition_mode: AllowanceConditionMode
@@ -41,7 +46,10 @@ export interface AllowanceCycle {
 export interface AllowancePlanInput {
   memberId: string
   amount: number
-  payoutDay: number
+  frequency: AllowanceFrequency
+  payoutDay: number | null
+  payoutWeekday: number | null
+  note: string | null
   startsOn: string
   status: AllowancePlanStatus
   conditionMode: AllowanceConditionMode
@@ -65,7 +73,7 @@ export function useAllowancePlans(familyId: string | undefined) {
     setLoading(true)
     const [plansResult, cyclesResult] = await Promise.all([
       supabase.from('allowance_plans')
-        .select('id, family_id, member_id, amount, payout_day, starts_on, status, condition_mode, created_at, updated_at, allowance_plan_requirements(id, plan_id, chore_id, requirement_type, required_count, created_at)')
+        .select('id, family_id, member_id, amount, frequency, payout_day, payout_weekday, note, starts_on, status, condition_mode, created_at, updated_at, allowance_plan_requirements(id, plan_id, chore_id, requirement_type, required_count, created_at)')
         .eq('family_id', familyId).order('created_at'),
       supabase.from('allowance_cycles')
         .select('id, plan_id, payout_date, period_start, period_end, status, credited_amount, ledger_entry_id, evaluated_at, allowance_plans!inner(family_id)')

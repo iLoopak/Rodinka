@@ -5464,6 +5464,52 @@ button.danger-action:focus-visible:not(:disabled) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Allowance                                                           */
+/* ------------------------------------------------------------------ */
+
+.allowance-section {
+  display: grid;
+  gap: 8px;
+}
+
+.allowance-section-status { margin: 0; font-weight: 700; }
+
+.allowance-summary-line {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.allowance-summary-line.is-unset { color: var(--text-muted); font-weight: var(--font-weight-emphasis); }
+
+/* Paused repeats the word rather than tinting the row, so the state does not
+   depend on colour. */
+.allowance-paused-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-paper);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+  color: var(--text-muted);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-emphasis);
+  white-space: nowrap;
+}
+
+.allowance-paused-banner {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-medium);
+  background: var(--surface-paper);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+  font-weight: var(--font-weight-emphasis);
+}
+
+.allowance-plan-lifecycle { flex-wrap: wrap; }
+
+.allowance-settings-row .allowance-summary-line { font-weight: inherit; }
+
+/* ------------------------------------------------------------------ */
 /* Managed child accounts                                              */
 /* ------------------------------------------------------------------ */
 

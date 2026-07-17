@@ -37,6 +37,14 @@ vi.mock('../context/family/FamilySettingsContext', () => ({
   useFamilySettings: () => ({ familyName: 'Rodinka', familyNameLoading: false, familyNameError: null, updateFamilyName: vi.fn() }),
 }))
 vi.mock('../context/chores/ChoresContext', () => ({ useChoresData: () => ({ chores: [], refreshChores: vi.fn() }) }))
+// A child's profile now carries the allowance panel, so this screen reaches
+// allowance context even when the test is only about removing a member.
+vi.mock('../context/chores/AllowanceContext', () => ({
+  useAllowanceData: () => ({
+    allowancePlans: [], allowanceLoading: false, allowanceError: null,
+    saveAllowancePlan: vi.fn(), deleteAllowancePlan: vi.fn(),
+  }),
+}))
 vi.mock('../context/activities/ActivitiesContext', () => ({ useActivitiesData: () => ({ activities: [], refreshActivities: vi.fn() }) }))
 vi.mock('../context/activities/OccurrenceAssignmentsContext', () => ({ useOccurrenceAssignmentsData: () => ({ refreshOccurrenceAssignments: vi.fn() }) }))
 vi.mock('./ui/MemberAvatar', () => ({ MemberAvatar: ({ member }: { member: FamilyMember }) => createElement('span', null, member.display_name.slice(0, 1)) }))
