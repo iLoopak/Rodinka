@@ -102,7 +102,7 @@ export function PlannerScreen() {
               ...(overdueChores.length > 0 ? [t.planner.choresOverdue(overdueChores.length)] : []),
             ]}
             ariaLabel={t.planner.openArea(t.planner.choresTitle)}
-            createLabel={t.create.addAction}
+            createLabel={t.planner.addChore}
             onCreate={() => setCreateConfig({ type: 'chore' })}
           />
           <PlannerAreaCard
@@ -124,7 +124,7 @@ export function PlannerScreen() {
               ...(overduePayments.length > 0 ? [t.planner.paymentsOverdue(overduePayments.length)] : []),
             ]}
             ariaLabel={t.planner.openArea(t.planner.activitiesTitle)}
-            createLabel={t.create.addAction}
+            createLabel={t.planner.addActivity}
             onCreate={() => setCreateConfig({ type: 'activity' })}
           />
           <PlannerAreaCard
@@ -142,7 +142,7 @@ export function PlannerScreen() {
             }
             details={overdueMedical.length > 0 ? [t.planner.healthOverdue(overdueMedical.length)] : []}
             ariaLabel={t.planner.openArea(t.planner.healthTitle)}
-            createLabel={t.create.addAction}
+            createLabel={t.planner.addMedical}
             onCreate={() => setCreateConfig({ type: 'medical' })}
           />
           <PlannerAreaCard
@@ -160,7 +160,7 @@ export function PlannerScreen() {
             }
             details={openVotes.length > 0 ? [t.planner.mealsVoting(openVotes.length)] : []}
             ariaLabel={t.planner.openArea(t.planner.mealsTitle)}
-            createLabel={t.create.addAction}
+            createLabel={t.planner.addMeal}
             onCreate={() => setCreateConfig({ type: 'meal' })}
           />
           <PlannerAreaCard
@@ -171,7 +171,7 @@ export function PlannerScreen() {
             summary={t.shopping.activeCount(activeShoppingItems.length)}
             details={[]}
             ariaLabel={t.planner.openArea(t.shopping.title)}
-            createLabel={t.planner.openShopping}
+            createLabel={t.planner.addShopping}
             onCreate={() => navigate('/shopping')}
           />
         </div>

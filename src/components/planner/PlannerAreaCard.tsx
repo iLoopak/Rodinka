@@ -1,4 +1,5 @@
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties, MouseEvent, ReactNode } from 'react'
+import { Plus } from 'lucide-react'
 import { Link, type Route } from '../../router'
 
 interface Props {
@@ -14,6 +15,11 @@ interface Props {
 }
 
 export function PlannerAreaCard({ to, icon, colorVar, title, summary, details, ariaLabel, createLabel, onCreate }: Props) {
+  function handleCreateClick(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation()
+    onCreate()
+  }
+
   return (
     <article
       className="planner-area-card"
@@ -31,10 +37,9 @@ export function PlannerAreaCard({ to, icon, colorVar, title, summary, details, a
         </span>
       </Link>
       {/* Quiet on purpose: the hub header owns the one primary create action,
-          so five module creates must not read as five competing buttons. The
-          accessible name still carries the full "<action>: <area>" label. */}
-      <button type="button" className="planner-area-create" onClick={onCreate} aria-label={`${createLabel}: ${title}`}>
-        <span aria-hidden="true">+</span>
+          so five module creates must not read as five competing buttons. */}
+      <button type="button" className="planner-area-create" onClick={handleCreateClick} aria-label={createLabel}>
+        <Plus aria-hidden="true" strokeWidth={2.4} />
       </button>
     </article>
   )
