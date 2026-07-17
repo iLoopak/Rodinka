@@ -10,6 +10,8 @@ import { Modal } from './ui/Modal'
 import { AddActivityForm } from './AddActivityForm'
 import { ShareLinkButton } from './ui/ShareLinkButton'
 import { PersonRoleGroup, type PersonRole } from './ui/PersonRoleGroup'
+import { useFamilyCore } from '../context/family/FamilyCoreContext'
+import { capabilitiesFor } from '../utils/uiCapabilities'
 
 interface Props {
   activity: Activity
@@ -32,10 +34,12 @@ export function ActivityDetailModal({
   onMarkPaymentPaid,
   onClose,
 }: Props) {
+  const { currentMember } = useFamilyCore()
+  const capabilities = capabilitiesFor(currentMember)
   const [editing, setEditing] = useState(false)
   const [paymentBusy, setPaymentBusy] = useState(false)
 
-  if (editing) {
+  if (editing && capabilities.manageActivities) {
     return (
       <Modal title={t.activities.editTitle} onClose={onClose} className="activity-form-modal">
         <AddActivityForm
@@ -85,7 +89,7 @@ export function ActivityDetailModal({
         {activity.location && <p className="row-meta">{activity.location}</p>}
         {activity.kind === 'club' && coachParts.length > 0 && <p className="row-meta">{coachParts.join(' · ')}</p>}
 
-        {activity.kind === 'club' && (activity.payment_amount ? (
+        {capabilities.manageActivities && activity.kind === 'club' && (activity.payment_amount ? (
           <p className="row-meta">
             {t.chores.formatAmount(activity.payment_amount)}
             {activity.next_payment_due_date ? ` · ${formatFullDate(activity.next_payment_due_date)}` : ''}
@@ -97,10 +101,10 @@ export function ActivityDetailModal({
         {activity.notes && <p className="row-description">{activity.notes}</p>}
       </div>
       <div className="family-actions">
-        {activity.next_payment_due_date && activity.payment_paid_for_date !== activity.next_payment_due_date && <button className="btn-secondary" disabled={paymentBusy} onClick={async () => { setPaymentBusy(true); try { await onMarkPaymentPaid(activity.id); onClose() } finally { setPaymentBusy(false) } }}>{t.activities.markPaymentPaid}</button>}
-        <button className="btn-secondary" onClick={() => setEditing(true)}>
+        {capabilities.manageActivities && activity.next_payment_due_date && activity.payment_paid_for_date !== activity.next_payment_due_date && <button className="btn-secondary" disabled={paymentBusy} onClick={async () => { setPaymentBusy(true); try { await onMarkPaymentPaid(activity.id); onClose() } finally { setPaymentBusy(false) } }}>{t.activities.markPaymentPaid}</button>}
+        {capabilities.manageActivities && <button className="btn-secondary" onClick={() => setEditing(true)}>
           {t.activities.edit}
-        </button>
+        </button>}
         <ShareLinkButton route="/activities" param="activity" id={activity.id} title={activity.title} />
       </div>
     </Modal>

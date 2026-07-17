@@ -6,7 +6,7 @@ import type { MealPlanEntry, MealSlot } from '../hooks/useMealPlanEntries'
 import type { MealVoteRound } from '../hooks/useMealVoteRounds'
 import type { MedicalRecord } from '../hooks/useMedicalRecords'
 import { t } from '../strings'
-import { buildCalendarEntries, type CalendarEntry } from './calendarEntries'
+import { buildCalendarEntries, entryMatchesMember, type CalendarEntry } from './calendarEntries'
 import { getChoreState } from './choreState'
 import { compareISODates, todayISODate } from './dueDate'
 import { isMedicalRecordOverdue } from './medicalDueState'
@@ -14,6 +14,7 @@ import type { CalendarItemType } from './itemTypeStyle'
 import type { AllowancePlan } from '../hooks/useAllowancePlans'
 import type { AllowanceCycle } from '../hooks/useAllowancePlans'
 import { allowanceCycleForPayout, evaluateAllowanceRequirements, unsettledDuePayoutDates } from './allowanceCycles'
+import { getEffectiveOccurrenceMember, type ActivityParticipantHistory, type OccurrenceOverride, type SeriesAssignmentHistory } from './occurrenceAssignments'
 
 const MEAL_SLOT_ORDER: Record<MealSlot, number> = {
   breakfast: 0,
@@ -43,12 +44,19 @@ export function compareTodayEntries(a: CalendarEntry, b: CalendarEntry): number 
   return a.title.localeCompare(b.title)
 }
 
+export function isChildTodayEntryVisible(entry: CalendarEntry, childId: string): boolean {
+  return entry.type !== 'payment' && (entry.type === 'meal' || entryMatchesMember(entry, childId))
+}
+
 interface TodayEntriesInput {
   chores: Chore[]
   activities: Activity[]
   medicalRecords: MedicalRecord[]
   mealPlanEntries: MealPlanEntry[]
   allowancePlans?: AllowancePlan[]
+  occurrenceOverrides?: OccurrenceOverride[]
+  assignmentHistory?: SeriesAssignmentHistory[]
+  participantHistory?: ActivityParticipantHistory[]
   latestCompletionFor: (choreId: string) => ChoreCompletion | null
   today?: string
 }
@@ -59,6 +67,9 @@ export function buildTodayEntries({
   medicalRecords,
   mealPlanEntries,
   allowancePlans = [],
+  occurrenceOverrides = [],
+  assignmentHistory = [],
+  participantHistory = [],
   latestCompletionFor,
   today = todayISODate(),
 }: TodayEntriesInput): CalendarEntry[] {
@@ -73,6 +84,9 @@ export function buildTodayEntries({
     medicalRecords: visibleMedicalRecords,
     mealPlanEntries,
     allowancePlans,
+    occurrenceOverrides,
+    assignmentHistory,
+    participantHistory,
     rangeStart: today,
     rangeEnd: today,
   }).sort(compareTodayEntries)
@@ -92,6 +106,10 @@ export interface TodayAttentionItem {
   hash?: string
 }
 
+export function isChildTodayAttentionVisible(item: TodayAttentionItem, childId: string): boolean {
+  return item.kind === 'meal_vote' || (item.kind === 'overdue_chore' && item.personId === childId)
+}
+
 interface TodayAttentionInput {
   chores: Chore[]
   activities: Activity[]
@@ -101,6 +119,8 @@ interface TodayAttentionInput {
   allowanceCycles?: AllowanceCycle[]
   completions?: ChoreCompletion[]
   currentMemberId: string
+  occurrenceOverrides?: OccurrenceOverride[]
+  assignmentHistory?: SeriesAssignmentHistory[]
   latestCompletionFor: (choreId: string) => ChoreCompletion | null
   today?: string
 }
@@ -123,6 +143,8 @@ export function buildTodayAttentionItems({
   allowanceCycles = [],
   completions = [],
   currentMemberId,
+  occurrenceOverrides = [],
+  assignmentHistory = [],
   latestCompletionFor,
   today = todayISODate(),
 }: TodayAttentionInput): TodayAttentionItem[] {
@@ -157,13 +179,17 @@ export function buildTodayAttentionItems({
     if (!chore.due_date) continue
     if (chore.due_date >= today) continue
     if (getChoreState(chore, latestCompletionFor(chore.id)) !== 'actionable') continue
+    const effectiveAssignee = getEffectiveOccurrenceMember({
+      seriesType: 'task', seriesId: chore.id, occurrenceDate: chore.due_date,
+      defaultMemberId: chore.assigned_to, overrides: occurrenceOverrides, assignmentHistory,
+    }).memberId
     items.push({
       id: `overdue-chore:${chore.id}`,
       kind: 'overdue_chore',
       itemType: 'chore',
       title: chore.title,
-      personId: chore.assigned_to,
-      responsibleMemberId: chore.assigned_to,
+      personId: effectiveAssignee,
+      responsibleMemberId: effectiveAssignee,
       date: chore.due_date,
       route: '/chores',
     })

@@ -5,7 +5,7 @@ import { t } from '../strings'
 import { getCurrentLanguage } from '../i18n'
 import type { CalendarEntry } from '../utils/calendarEntries'
 import { formatFullDate, todayISODate } from '../utils/dueDate'
-import { buildTodayAttentionItems, buildTodayEntries } from '../utils/todayAgenda'
+import { buildTodayAttentionItems, buildTodayEntries, isChildTodayAttentionVisible, isChildTodayEntryVisible } from '../utils/todayAgenda'
 import { CalendarEntryDetailModal } from './calendar/CalendarEntryDetailModal'
 import { PendingApprovals } from './PendingApprovals'
 import { UniversalCreateModal } from './planner/UniversalCreateModal'
@@ -20,6 +20,7 @@ import { createQuickShoppingItemInput, createQuickTaskInput, isQuickTodo } from 
 import { getChoreState } from '../utils/choreState'
 import { ChoreDetailModal } from './ChoreDetailModal'
 import { closeTodayChoreEditor, openTodayChoreEditor } from './today/todayChoreEditor'
+import { capabilitiesFor } from '../utils/uiCapabilities'
 
 export function TodayDashboard() {
   const [showCreate, setShowCreate] = useState(false)
@@ -32,6 +33,9 @@ export function TodayDashboard() {
     kids,
     chores,
     activities,
+    occurrenceOverrides,
+    assignmentHistory,
+    participantHistory,
     medicalRecords,
     planEntries,
     allowancePlans,
@@ -58,6 +62,7 @@ export function TodayDashboard() {
     refresh,
   } = useTodayDashboardData()
   const { navigate, searchParams, setQueryParam, removeQueryParam } = useRouter()
+  const capabilities = capabilitiesFor(currentMember)
 
   if (loading) return <p className="loading">{t.loading.generic}</p>
   if (error) return <ErrorState message={error} onRetry={refresh} />
@@ -66,12 +71,15 @@ export function TodayDashboard() {
   const entries = buildTodayEntries({
     chores,
     activities,
-    medicalRecords,
+    medicalRecords: capabilities.isChild ? [] : medicalRecords,
     mealPlanEntries: planEntries,
-    allowancePlans,
+    allowancePlans: capabilities.isChild ? [] : allowancePlans,
+    occurrenceOverrides,
+    assignmentHistory,
+    participantHistory,
     latestCompletionFor,
     today,
-  })
+  }).filter((entry) => !capabilities.isChild || isChildTodayEntryVisible(entry, currentMember.id))
   const attentionItems = buildTodayAttentionItems({
     chores,
     activities,
@@ -81,10 +89,13 @@ export function TodayDashboard() {
     allowanceCycles,
     completions,
     currentMemberId: currentMember.id,
+    occurrenceOverrides,
+    assignmentHistory,
     latestCompletionFor,
     today,
-  })
-  const needsAttention = pendingCompletions.length > 0 || attentionItems.length > 0
+  }).filter((item) => !capabilities.isChild || isChildTodayAttentionVisible(item, currentMember.id))
+  const visiblePendingCompletions = capabilities.approveTaskCompletions ? pendingCompletions : []
+  const needsAttention = visiblePendingCompletions.length > 0 || attentionItems.length > 0
   const quickTodos = chores.filter((chore) => isQuickTodo(chore) && getChoreState(chore, latestCompletionFor(chore.id)) === 'actionable')
   const choreParam = searchParams.get('chore')
   const editParam = searchParams.get('edit') === '1'
@@ -119,7 +130,7 @@ export function TodayDashboard() {
         date={today}
         itemCount={entries.length}
         familyHeroImageUrl={familyHeroImageUrl}
-        onAdd={() => setShowCreate(true)}
+        onAdd={capabilities.createPlannerItems ? () => setShowCreate(true) : undefined}
       />
 
       {approvalFeedback && <p className="success approval-feedback" role="status">{approvalFeedback}</p>}
@@ -128,11 +139,11 @@ export function TodayDashboard() {
         <section className="page-section today-attention-section">
           <h2 className="section-heading">{t.today.attentionTitle}</h2>
           <div className="panel is-attention">
-            {pendingCompletions.length > 0 && (
+            {visiblePendingCompletions.length > 0 && (
               <div className="today-attention-group">
                 <h3 className="page-section-subheading">{t.today.approvalsTitle}</h3>
                 <PendingApprovals
-                  completions={pendingCompletions}
+                  completions={visiblePendingCompletions}
                   chores={chores}
                   memberById={memberById}
                   onApprove={handleApprove}
@@ -142,7 +153,7 @@ export function TodayDashboard() {
             )}
             {attentionItems.length > 0 && (
               <div className="today-attention-group">
-                {pendingCompletions.length > 0 && (
+                {visiblePendingCompletions.length > 0 && (
                   <h3 className="page-section-subheading">{t.today.otherAttentionTitle}</h3>
                 )}
                 <TodayAttentionList items={attentionItems} memberById={memberById} />
@@ -156,7 +167,7 @@ export function TodayDashboard() {
         <h2 className="section-heading">{t.today.programTitle}</h2>
         {entries.length === 0 ? (
           <div className="panel is-quiet">
-            <TodayProgramEmpty onAdd={() => setShowCreate(true)} />
+            <TodayProgramEmpty onAdd={capabilities.createPlannerItems ? () => setShowCreate(true) : undefined} />
           </div>
         ) : (
           <div className="panel is-primary">
@@ -182,7 +193,7 @@ export function TodayDashboard() {
         onAddItem={(name) => addShoppingItem(createQuickShoppingItemInput(name))}
       />
 
-      {kids.length === 0 && (
+      {!capabilities.isChild && kids.length === 0 && (
         <section className="page-section today-setup-card">
           <div className="panel is-quiet">
             <h2 className="today-setup-title">{t.today.optionalSetupTitle}</h2>
@@ -199,7 +210,7 @@ export function TodayDashboard() {
         <CalendarEntryDetailModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} />
       )}
 
-      {showCreate && (
+      {showCreate && capabilities.createPlannerItems && (
         <UniversalCreateModal initialDate={today} onClose={() => setShowCreate(false)} />
       )}
 
@@ -228,7 +239,7 @@ interface HeaderProps {
   date: string
   itemCount: number
   familyHeroImageUrl: string | null
-  onAdd: () => void
+  onAdd?: () => void
 }
 
 function TodayHeader({ name, date, itemCount, familyHeroImageUrl, onAdd }: HeaderProps) {
@@ -243,9 +254,9 @@ function TodayHeader({ name, date, itemCount, familyHeroImageUrl, onAdd }: Heade
         <p className="today-date">{formatFullDate(date)}</p>
         <p className="today-summary">{t.today.itemsSummary(itemCount)}</p>
       </div>
-      <button type="button" className="hero-action-button" onClick={onAdd}>
+      {onAdd && <button type="button" className="hero-action-button" onClick={onAdd}>
         <span aria-hidden="true">+</span> {t.create.addAction}
-      </button>
+      </button>}
     </div>
   )
 }

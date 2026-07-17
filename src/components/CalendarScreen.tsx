@@ -19,6 +19,8 @@ import { isValidISODate, isValidUuid } from '../utils/deepLinks'
 import { getWeekDates, getWeekStart } from '../utils/weekCalendar'
 import { ScrollableTabs } from './ui/ScrollableTabs'
 import { FilterDisclosure } from './ui/FilterDisclosure'
+import { useFamilyCore } from '../context/family/FamilyCoreContext'
+import { capabilitiesFor } from '../utils/uiCapabilities'
 
 type ViewMode = 'month' | 'week' | 'agenda'
 
@@ -35,6 +37,8 @@ function storedCalendarView(): ViewMode {
 }
 
 export function CalendarScreen() {
+  const { currentMember } = useFamilyCore()
+  const capabilities = capabilitiesFor(currentMember)
   const [viewMode, setViewMode] = useState<ViewMode>(storedCalendarView)
   const [monthAnchor, setMonthAnchor] = useState(todayISODate())
   const [weekStart, setWeekStart] = useState(() => getWeekStart(todayISODate()))
@@ -105,18 +109,18 @@ export function CalendarScreen() {
           (sourceActivity
             ? sourceActivity.recurrence_type === 'one_off' ? sourceActivity.start_date : todayISODate()
             : null) ??
-          medicalRecords.find((item) => item.id === eventParam)?.record_date ??
+          (!capabilities.isChild ? medicalRecords.find((item) => item.id === eventParam)?.record_date : null) ??
           planEntries.find((item) => item.id === eventParam)?.entry_date ??
-          allowancePlans.find((item) => item.id === eventParam)?.starts_on ??
+          (!capabilities.isChild ? allowancePlans.find((item) => item.id === eventParam)?.starts_on : null) ??
           null
 
         const entry = sourceDate
           ? buildCalendarEntries({
               chores,
               activities,
-              medicalRecords,
+              medicalRecords: capabilities.isChild ? [] : medicalRecords,
               mealPlanEntries: planEntries,
-              allowancePlans,
+              allowancePlans: capabilities.isChild ? [] : allowancePlans,
               occurrenceOverrides,
               assignmentHistory,
               participantHistory,
@@ -140,7 +144,7 @@ export function CalendarScreen() {
     }
 
     setDeepLinkError(invalid)
-  }, [activities, allowancePlans, assignmentHistory, chores, dateParam, error, eventParam, loading, medicalRecords, occurrenceOverrides, participantHistory, planEntries])
+  }, [activities, allowancePlans, assignmentHistory, capabilities.isChild, chores, dateParam, error, eventParam, loading, medicalRecords, occurrenceOverrides, participantHistory, planEntries])
 
   const today = todayISODate()
   const range =
@@ -158,17 +162,19 @@ export function CalendarScreen() {
       const state = getChoreState(chore, latestCompletionFor(chore.id))
       return state !== 'done' && state !== 'archived'
     })
-    const visibleMedical = medicalRecords.filter((record) => record.status !== 'cancelled')
+    const visibleMedical = capabilities.isChild ? [] : medicalRecords.filter((record) => record.status !== 'cancelled')
     let projected = buildCalendarEntries({
       chores: visibleChores, activities, medicalRecords: visibleMedical, mealPlanEntries: planEntries,
-      allowancePlans, rangeStart: range.start, rangeEnd: range.end,
+      allowancePlans: capabilities.isChild ? [] : allowancePlans, rangeStart: range.start, rangeEnd: range.end,
       occurrenceOverrides, assignmentHistory,
       participantHistory,
     })
-    if (filterPerson) projected = projected.filter((entry) => entryMatchesMember(entry, filterPerson))
+    if (capabilities.isChild) projected = projected.filter((entry) => !['payment', 'allowance', 'medical', 'vaccination'].includes(entry.type))
+    if (capabilities.isChild) projected = projected.filter((entry) => entry.type === 'meal' || entryMatchesMember(entry, currentMember.id))
+    else if (filterPerson) projected = projected.filter((entry) => entry.type === 'meal' || entryMatchesMember(entry, filterPerson))
     if (filterType) projected = projected.filter((entry) => entry.type === filterType)
     return projected
-  }, [activities, allowancePlans, assignmentHistory, chores, filterPerson, filterType, latestCompletionFor, medicalRecords, occurrenceOverrides, participantHistory, planEntries, range.end, range.start])
+  }, [activities, allowancePlans, assignmentHistory, capabilities.isChild, chores, currentMember.id, filterPerson, filterType, latestCompletionFor, medicalRecords, occurrenceOverrides, participantHistory, planEntries, range.end, range.start])
 
   if (loading) return <p className="loading">{t.loading.generic}</p>
   if (error) return <ErrorState message={error} onRetry={refresh} />
@@ -259,14 +265,14 @@ export function CalendarScreen() {
       <div className="screen-header">
         <h1 className="home-title">{t.calendar.title}</h1>
         <div className="header-actions">
-          <button
+          {capabilities.createPlannerItems && <button
             type="button"
             className="header-icon-button"
             onClick={() => setCreateConfig({})}
             aria-label={t.create.addAction}
           >
             +
-          </button>
+          </button>}
           {/* Jumping to today navigates; it must not look like the create
               action beside it. Create stays the one primary here. */}
           <button type="button" className="header-action-button btn-secondary" onClick={goToday}>
@@ -282,10 +288,10 @@ export function CalendarScreen() {
       <FilterDisclosure id="calendar-filter-panel" open={filtersOpen} onOpenChange={setFiltersOpen}
         activeCount={activeFilterCount} onClear={clearFilters}>
         <div className="filter-row">
-          <select value={filterPerson} onChange={(e) => setFilterPerson(e.target.value)} aria-label={t.calendar.filterPersonLabel}>
+          {!capabilities.isChild && <select value={filterPerson} onChange={(e) => setFilterPerson(e.target.value)} aria-label={t.calendar.filterPersonLabel}>
             <option value="">{t.calendar.filterPersonLabel}: {t.calendar.filterAll}</option>
             {members.map((m) => <option key={m.id} value={m.id}>{m.display_name}</option>)}
-          </select>
+          </select>}
           <select value={filterType} onChange={(e) => setFilterType(e.target.value as CalendarItemType | '')} aria-label={t.calendar.filterTypeLabel}>
             <option value="">{t.calendar.filterTypeLabel}: {t.calendar.filterAll}</option>
             {ITEM_TYPES.map((type) => <option key={type} value={type}>{getItemTypeStyle(type).label}</option>)}
@@ -323,8 +329,8 @@ export function CalendarScreen() {
               today={today}
               memberById={memberById}
               onSelectEntry={openEntry}
-              onChangeAssignment={openAssignment}
-              onAddDay={(date) => setCreateConfig({ initialDate: date })}
+              onChangeAssignment={capabilities.manageTaskDefinitions ? openAssignment : undefined}
+              onAddDay={capabilities.createPlannerItems ? (date) => setCreateConfig({ initialDate: date }) : undefined}
               onClose={closeDay}
             />
           )}
@@ -346,8 +352,8 @@ export function CalendarScreen() {
           }}
           onSelectDay={setSelectedWeekDay}
           onSelectEntry={openEntry}
-          onChangeAssignment={openAssignment}
-          onAddDay={(date) => setCreateConfig({ initialDate: date })}
+          onChangeAssignment={capabilities.manageTaskDefinitions ? openAssignment : undefined}
+          onAddDay={capabilities.createPlannerItems ? (date) => setCreateConfig({ initialDate: date }) : undefined}
         />
       )}
 
@@ -373,7 +379,7 @@ export function CalendarScreen() {
         />
       )}
 
-      {createConfig && (
+      {createConfig && capabilities.createPlannerItems && (
         <UniversalCreateModal
           initialDate={createConfig.initialDate}
           onClose={() => setCreateConfig(null)}

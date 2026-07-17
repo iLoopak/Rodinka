@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CalendarEntry } from './calendarEntries'
-import { buildTodayAttentionItems, buildTodayEntries, compareTodayEntries } from './todayAgenda'
+import { buildTodayAttentionItems, buildTodayEntries, compareTodayEntries, isChildTodayAttentionVisible, isChildTodayEntryVisible } from './todayAgenda'
 import {
   makeActivity,
   makeChore,
@@ -128,6 +128,20 @@ describe('buildTodayEntries', () => {
       })
     ).toEqual([])
   })
+
+  it('uses a one-off assignee override in the daily program', () => {
+    const entries = buildTodayEntries({
+      chores: [makeChore({ id: 'chore-1', assigned_to: 'child-a', due_date: TODAY })],
+      activities: [], medicalRecords: [], mealPlanEntries: [], latestCompletionFor: noCompletion, today: TODAY,
+      occurrenceOverrides: [{
+        id: 'override-1', family_id: 'family-1', series_type: 'task', series_id: 'chore-1',
+        occurrence_date: TODAY, companion_member_id: null, assignee_member_id: 'child-b',
+        cancelled: false, updated_at: '2026-07-12T10:00:00Z',
+      }],
+    })
+
+    expect(entries[0]).toMatchObject({ childOrPatientId: 'child-b', responsibleMemberId: 'child-b', assignmentOverridden: true })
+  })
 })
 
 describe('buildTodayAttentionItems', () => {
@@ -177,5 +191,36 @@ describe('buildTodayAttentionItems', () => {
       'overdue_medical',
       'meal_vote',
     ])
+  })
+
+  it('uses the effective assignee for an overdue overridden chore', () => {
+    const items = buildTodayAttentionItems({
+      chores: [makeChore({ id: 'chore-1', assigned_to: 'child-a', due_date: '2026-07-12' })],
+      activities: [], medicalRecords: [], voteRounds: [], currentMemberId: 'child-b', latestCompletionFor: noCompletion, today: TODAY,
+      occurrenceOverrides: [{
+        id: 'override-1', family_id: 'family-1', series_type: 'task', series_id: 'chore-1',
+        occurrence_date: '2026-07-12', companion_member_id: null, assignee_member_id: 'child-b',
+        cancelled: false, updated_at: '2026-07-12T10:00:00Z',
+      }],
+    })
+
+    expect(items[0]).toMatchObject({ kind: 'overdue_chore', personId: 'child-b', responsibleMemberId: 'child-b' })
+  })
+})
+
+describe('child Today visibility', () => {
+  it('shows own tasks and household meals, but not sibling tasks or payments', () => {
+    expect(isChildTodayEntryVisible(entry({ responsibleMemberId: 'child-a' }), 'child-a')).toBe(true)
+    expect(isChildTodayEntryVisible(entry({ responsibleMemberId: 'child-b' }), 'child-a')).toBe(false)
+    expect(isChildTodayEntryVisible(entry({ type: 'meal', sourceType: 'meal' }), 'child-a')).toBe(true)
+    expect(isChildTodayEntryVisible(entry({ type: 'payment', sourceType: 'activity_payment', responsibleMemberId: 'child-a' }), 'child-a')).toBe(false)
+  })
+
+  it('keeps only own overdue chores and meal voting in attention', () => {
+    const base = { id: 'attention', itemType: 'chore' as const, title: 'Task', responsibleMemberId: 'child-a', date: TODAY, route: '/chores' as const }
+    expect(isChildTodayAttentionVisible({ ...base, kind: 'overdue_chore', personId: 'child-a' }, 'child-a')).toBe(true)
+    expect(isChildTodayAttentionVisible({ ...base, kind: 'overdue_chore', personId: 'child-b' }, 'child-a')).toBe(false)
+    expect(isChildTodayAttentionVisible({ ...base, kind: 'meal_vote', personId: 'child-a' }, 'child-a')).toBe(true)
+    expect(isChildTodayAttentionVisible({ ...base, kind: 'overdue_payment', personId: 'child-a' }, 'child-a')).toBe(false)
   })
 })

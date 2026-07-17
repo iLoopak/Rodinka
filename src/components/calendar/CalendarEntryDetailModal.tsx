@@ -16,6 +16,7 @@ import { Modal } from '../ui/Modal'
 import { MemberAvatar } from '../ui/MemberAvatar'
 import { ShareLinkButton } from '../ui/ShareLinkButton'
 import { eligibleOccurrenceMembers } from '../../utils/occurrenceAssignments'
+import { capabilitiesFor } from '../../utils/uiCapabilities'
 
 interface Props {
   entry: CalendarEntry
@@ -24,7 +25,8 @@ interface Props {
 }
 
 export function CalendarEntryDetailModal({ entry, onClose, openAssignmentInitially = false }: Props) {
-  const { isParentOrAdmin } = useFamilyCore()
+  const { currentMember, isParentOrAdmin } = useFamilyCore()
+  const capabilities = capabilitiesFor(currentMember)
   const { members, memberById } = useFamilyMembersData()
   const { chores, latestCompletionFor, markDone, refreshChores } = useChoresData()
   const { medicalRecords, updateMedicalRecord } = useMedicalData()
@@ -45,7 +47,8 @@ export function CalendarEntryDetailModal({ entry, onClose, openAssignmentInitial
       : undefined
 
   const canMarkChoreDone = chore && getChoreState(chore, latestCompletionFor(chore.id)) === 'actionable'
-  const canMarkMedicalDone = medicalRecord && medicalRecord.status === 'planned'
+    && capabilities.completeTaskFor(chore.family_id, displayMemberId ?? chore.assigned_to)
+  const canMarkMedicalDone = capabilities.manageMedicalRecords && medicalRecord && medicalRecord.status === 'planned'
 
   const sourceRoute: Route =
     entry.sourceType === 'chore'

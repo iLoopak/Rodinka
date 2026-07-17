@@ -14,9 +14,15 @@ import { FamilyHeroCropEditor } from './family/FamilyHeroCropEditor'
 import { validateFamilyHeroFile } from '../utils/familyHeroImage'
 import { ScreenHeader } from './ui/ScreenHeader'
 import { ConfirmDestructiveActionDialog } from './ui/DestructiveActions'
+import { capabilitiesFor } from '../utils/uiCapabilities'
+import { internalEmailToChildLoginName } from '../lib/childAccountIdentity'
+import { useFamilyMembersData } from '../context/family/FamilyMembersContext'
+import { MemberProfileModal } from './family/MemberProfileModal'
 
 export function MoreScreen() {
   const { currentMember, userEmail } = useFamilyCore()
+  const capabilities = capabilitiesFor(currentMember)
+  const { refreshMembers } = useFamilyMembersData()
   const { familyName, familyHeroImageUrl, updateFamilyName, updateFamilyHeroImage } = useFamilySettings()
   const familyMark = useActiveFamilyMark()
   const { language, changeLanguage } = useLanguage()
@@ -30,6 +36,7 @@ export function MoreScreen() {
   const [familyPhotoFeedback, setFamilyPhotoFeedback] = useState<string | null>(null)
   const [familyPhotoError, setFamilyPhotoError] = useState<string | null>(null)
   const [confirmPhotoRemoval, setConfirmPhotoRemoval] = useState(false)
+  const [editingOwnProfile, setEditingOwnProfile] = useState(false)
   const { canPrompt, showIOSInstructions, isStandalone, isNative, promptInstall } = useInstallPrompt()
 
   function startEditingFamilyName() {
@@ -105,10 +112,15 @@ export function MoreScreen() {
             <span className="more-setting-copy">
               <span className="more-setting-label">{t.more.signedInAs}</span>
               <strong className="more-setting-value">{currentMember.display_name}</strong>
-              <span className="more-setting-detail">{userEmail}</span>
+              <span className="more-setting-detail">{capabilities.isChild
+                ? `${t.more.childLoginLabel}: ${internalEmailToChildLoginName(userEmail) ?? t.more.childLoginUnavailable}`
+                : userEmail}</span>
             </span>
           </li>
-          <li className="more-settings-group-heading"><h2>{t.more.familySection}</h2></li>
+          {capabilities.isChild && <li className="more-settings-row">
+            <button type="button" className="btn-secondary" onClick={() => setEditingOwnProfile(true)}>{t.more.editMyProfile}</button>
+          </li>}
+          {!capabilities.isChild && <><li className="more-settings-group-heading"><h2>{t.more.familySection}</h2></li>
           <li className="family-settings-brand-row more-settings-row">
             <FamilyMark variant="dynamic" members={familyMark.members} size={32} loading={familyMark.loading} />
             {editingFamilyName ? (
@@ -172,7 +184,7 @@ export function MoreScreen() {
             </span>
             {familyPhotoFeedback && <p className="more-setting-feedback" role="status">{familyPhotoFeedback}</p>}
             {familyPhotoError && <p className="error more-setting-feedback" role="alert">{familyPhotoError}</p>}
-          </li>}
+          </li>}</>}
           <li className="more-settings-group-heading"><h2>{t.more.appSection}</h2></li>
           <li className="language-setting-row more-settings-row">
             <label htmlFor="app-language">
@@ -224,6 +236,13 @@ export function MoreScreen() {
         </Modal>
       )}
 
+      {editingOwnProfile && <MemberProfileModal
+        member={currentMember}
+        currentMember={currentMember}
+        refreshMembers={refreshMembers}
+        onClose={() => setEditingOwnProfile(false)}
+      />}
+
       {familyPhotoSource && <FamilyHeroCropEditor
         file={familyPhotoSource}
         onApply={(file) => void saveFamilyPhoto(file)}
@@ -245,6 +264,12 @@ export function MoreScreen() {
       <section className="page-section">
         <div className="panel is-primary more-links-section">
           <ul className="section-list plain-list more-settings-list">
+            {capabilities.isChild && <>
+              <li className="more-settings-group-heading"><h2>{t.more.childLinksSection}</h2></li>
+              <li><Link to="/activities" className="row-link more-navigation-row"><span className="row-title">{t.more.activitiesAction}</span><span className="more-navigation-chevron" aria-hidden="true">›</span></Link></li>
+              <li><Link to="/meals" className="row-link more-navigation-row"><span className="row-title">{t.more.mealsAction}</span><span className="more-navigation-chevron" aria-hidden="true">›</span></Link></li>
+              <li><Link to="/chores" hash="#allowance" className="row-link more-navigation-row"><span className="row-title">{t.more.allowanceAction}</span><span className="more-navigation-chevron" aria-hidden="true">›</span></Link></li>
+            </>}
             <li>
               <Link to="/reminders" hash="#settings" className="row-link more-navigation-row">
                 <span className="row-title">{t.more.remindersAction}</span>

@@ -64,7 +64,8 @@ export function ShoppingScreen() {
   const filteredActive = useMemo(() => filterResponsible
     ? visibleActiveItems.filter((item) => item.responsible_member_id === filterResponsible)
     : visibleActiveItems, [visibleActiveItems, filterResponsible])
-  const groups = useMemo(() => groupShoppingItems(filteredActive, draggedItemId !== null), [draggedItemId, filteredActive])
+  const childSafeActive = isParentOrAdmin ? filteredActive : visibleActiveItems
+  const groups = useMemo(() => groupShoppingItems(childSafeActive, isParentOrAdmin && draggedItemId !== null), [childSafeActive, draggedItemId, isParentOrAdmin])
 
   async function saveShoppingOrder(movedId: string, category: ShoppingCategory, orderedIds: string[]) {
     setFeedback(null)
@@ -179,7 +180,7 @@ export function ShoppingScreen() {
         {shoppingSyncStatus === 'error' && <button type="button" className="link" disabled={syncRetrying} onClick={() => void retrySync()}>{syncRetrying ? t.errors.retrying : t.shopping.syncRetry}</button>}
       </div>}
 
-      <FilterDisclosure id="shopping-tools-panel" open={toolsOpen} onOpenChange={setToolsOpen}
+      {isParentOrAdmin && <FilterDisclosure id="shopping-tools-panel" open={toolsOpen} onOpenChange={setToolsOpen}
         activeCount={Number(Boolean(filterResponsible))} onClear={() => setFilterResponsible('')} label={t.shopping.toolsLabel}
         showLabel={t.shopping.showTools} hideLabel={t.shopping.hideTools}>
       <div className="shopping-tools-panel">
@@ -196,16 +197,16 @@ export function ShoppingScreen() {
           {filterResponsible && <button type="button" className="link shopping-filter-clear" onClick={() => setFilterResponsible('')}>{t.shopping.clearFilter}</button>}
         </div>}
       </div>
-      </FilterDisclosure>
+      </FilterDisclosure>}
 
       {visibleActiveItems.length === 0 && purchasedShoppingItems.length === 0 ? (
         <EmptyState title={t.shopping.emptyTitle} body={t.shopping.emptyBody} />
-      ) : filteredActive.length === 0 ? (
+      ) : childSafeActive.length === 0 ? (
         <EmptyState
           title={filterResponsible ? t.shopping.filterEmpty : t.shopping.activeEmpty}
           action={filterResponsible ? { label: t.shopping.clearFilter, onClick: () => setFilterResponsible('') } : undefined}
         />
-      ) : (
+      ) : isParentOrAdmin ? (
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -234,15 +235,26 @@ export function ShoppingScreen() {
             })()}
           </DragOverlay>
         </DndContext>
+      ) : (
+        <div className="panel is-primary shopping-category-groups">
+          {groups.map((group) => <ShoppingStaticGroup
+            key={group.category}
+            group={group}
+            appearance={shoppingCategorySettings[group.category]}
+            memberById={memberById}
+            pendingItemIds={pendingShoppingItemIds}
+            onToggle={toggleShoppingPurchased}
+          />)}
+        </div>
       )}
 
       {purchasedShoppingItems.length > 0 && <details className="shopping-purchased">
         <summary>{t.shopping.purchasedCount(purchasedShoppingItems.length)}</summary>
-        <ul className="shopping-list purchased">{purchasedShoppingItems.map((item) => <ShoppingRow key={item.id} item={item} memberById={memberById} pending={pendingShoppingItemIds.has(item.id)} onToggle={() => toggleShoppingPurchased(item.id, false)} onEdit={() => setSelectedItem(item)} />)}</ul>
-        <button type="button" className="link danger-action" onClick={() => setConfirmClearPurchased(true)}>{t.shopping.clearPurchased}</button>
+        <ul className="shopping-list purchased">{purchasedShoppingItems.map((item) => <ShoppingRow key={item.id} item={item} memberById={memberById} pending={pendingShoppingItemIds.has(item.id)} onToggle={() => toggleShoppingPurchased(item.id, false)} onEdit={isParentOrAdmin ? () => setSelectedItem(item) : undefined} />)}</ul>
+        {isParentOrAdmin && <button type="button" className="link danger-action" onClick={() => setConfirmClearPurchased(true)}>{t.shopping.clearPurchased}</button>}
       </details>}
 
-      {selectedItem && <Modal title={t.shopping.editTitle} onClose={() => setSelectedItem(null)}><ShoppingItemForm
+      {isParentOrAdmin && selectedItem && <Modal title={t.shopping.editTitle} onClose={() => setSelectedItem(null)}><ShoppingItemForm
         initial={selectedItem} members={members} categorySettings={shoppingCategorySettings}
         onSubmit={async (input) => { await updateShoppingItem(selectedItem.id, input); setSelectedItem(null) }}
         onDelete={async () => scheduleDeleteShoppingItem(selectedItem)}
@@ -256,8 +268,8 @@ export function ShoppingScreen() {
         onCancel={() => setConfirmClearPurchased(false)}
         onConfirm={async () => { await archivePurchasedShoppingItems(); setConfirmClearPurchased(false) }}
       />
-      {showCommon && <CommonItemsModal items={commonShoppingItems} onAdd={addTemplate} onClose={() => setShowCommon(false)} />}
-      {showHistory && <HistoryModal sessions={shoppingSessions} onCopy={copySession} onClose={() => setShowHistory(false)} />}
+      {isParentOrAdmin && showCommon && <CommonItemsModal items={commonShoppingItems} onAdd={addTemplate} onClose={() => setShowCommon(false)} />}
+      {isParentOrAdmin && showHistory && <HistoryModal sessions={shoppingSessions} onCopy={copySession} onClose={() => setShowHistory(false)} />}
       {showCategorySettings && <ShoppingCategorySettingsModal
         settings={shoppingCategorySettings}
         onSave={async (settings) => {
@@ -308,6 +320,33 @@ function ShoppingSortableGroup({ group, appearance, memberById, pendingItemIds, 
   </section>
 }
 
+function ShoppingStaticGroup({ group, appearance, memberById, pendingItemIds, onToggle }: {
+  group: ReturnType<typeof groupShoppingItems>[number]
+  appearance: ShoppingCategorySettings[ShoppingCategory]
+  memberById: ReturnType<typeof useFamilyMembersData>['memberById']
+  pendingItemIds: Set<string>
+  onToggle: (itemId: string, purchased: boolean) => Promise<void>
+}) {
+  return <section
+    data-shopping-category={group.category}
+    className={`shopping-category shopping-category-${group.category}`}
+    style={{
+      '--shopping-accent': appearance.color,
+      '--shopping-soft': `color-mix(in srgb, ${appearance.color} 11%, white)`,
+      '--shopping-border': `color-mix(in srgb, ${appearance.color} 34%, white)`,
+    } as CSSProperties}
+  >
+    <h2><ShoppingCategoryIcon category={group.category} />{appearance.label ?? shoppingCategoryLabel(group.category)}<span>{group.items.length}</span></h2>
+    <ul className="shopping-list">{group.items.map((item) => <ShoppingRow
+      key={item.id}
+      item={item}
+      memberById={memberById}
+      pending={pendingItemIds.has(item.id)}
+      onToggle={() => onToggle(item.id, true)}
+    />)}</ul>
+  </section>
+}
+
 function SortableShoppingRow(props: Omit<ShoppingRowProps, 'sortable'>) {
   const sortable = useSortable({ id: props.item.id, data: { type: 'item', category: props.item.category } })
   return <ShoppingRow {...props} sortable={sortable} />
@@ -318,7 +357,7 @@ interface ShoppingRowProps {
   memberById: ReturnType<typeof useFamilyMembersData>['memberById']
   pending: boolean
   onToggle: () => Promise<void>
-  onEdit: () => void
+  onEdit?: () => void
   sortable?: ReturnType<typeof useSortable>
 }
 
@@ -330,6 +369,16 @@ function ShoppingRow({ item, memberById, pending, onToggle, onEdit, sortable }: 
     transform: sortable.isDragging ? undefined : CSS.Transform.toString(sortable.transform),
     transition: sortable.transition,
   } : undefined
+  const mainContent = <>
+    <span className="shopping-item-top"><strong>{item.name}</strong>{pending && <span className="shopping-item-pending" title={t.shopping.pendingSync}><span className="sr-only">{t.shopping.pendingSync}</span></span>}{(item.quantity !== null || item.unit) && <b>{formatLocalizedShoppingQuantity(item.quantity, item.unit)}</b>}</span>
+    {item.note && <span className="shopping-item-note">{item.note}</span>}
+    <span className="shopping-item-meta">
+      {creator && <><MemberAvatar member={creator} size={20} /><span>{t.shopping.createdBy(creator.display_name)}</span></>}
+      {responsible && <span className="shopping-responsible">{t.shopping.responsibleFor(responsible.display_name)}</span>}
+      {purchaser && <span>{t.shopping.purchasedBy(purchaser.display_name)}</span>}
+      {item.purchased_at && <span>{formatShortDate(item.purchased_at.slice(0, 10))}</span>}
+    </span>
+  </>
   return <li
     ref={sortable?.setNodeRef}
     className={`shopping-item${item.purchased ? ' purchased' : ''}${sortable?.isDragging ? ' dragging' : ''}`}
@@ -344,16 +393,8 @@ function ShoppingRow({ item, memberById, pending, onToggle, onEdit, sortable }: 
       {...sortable.listeners}
     ><GripVertical size={20} aria-hidden="true" /></button>}
     <CompletionCheckbox checked={item.purchased} label={`${item.purchased ? t.shopping.purchasedTitle : t.shopping.activeTitle}: ${item.name}`} onClick={onToggle} />
-    <button type="button" className="shopping-item-main" onClick={onEdit}>
-      <span className="shopping-item-top"><strong>{item.name}</strong>{pending && <span className="shopping-item-pending" title={t.shopping.pendingSync}><span className="sr-only">{t.shopping.pendingSync}</span></span>}{(item.quantity !== null || item.unit) && <b>{formatLocalizedShoppingQuantity(item.quantity, item.unit)}</b>}</span>
-      {item.note && <span className="shopping-item-note">{item.note}</span>}
-      <span className="shopping-item-meta">
-        {creator && <><MemberAvatar member={creator} size={20} /><span>{t.shopping.createdBy(creator.display_name)}</span></>}
-        {responsible && <span className="shopping-responsible">{t.shopping.responsibleFor(responsible.display_name)}</span>}
-        {purchaser && <span>{t.shopping.purchasedBy(purchaser.display_name)}</span>}
-        {item.purchased_at && <span>{formatShortDate(item.purchased_at.slice(0, 10))}</span>}
-      </span>
-    </button>
+    {onEdit ? <button type="button" className="shopping-item-main" onClick={onEdit}>{mainContent}</button>
+      : <span className="shopping-item-main">{mainContent}</span>}
   </li>
 }
 

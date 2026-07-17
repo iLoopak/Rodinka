@@ -7,6 +7,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { Modal } from '../ui/Modal'
 import { CreateRoundForm } from './CreateRoundForm'
 import { VoteRoundResults } from './VoteRoundResults'
+import { capabilitiesFor } from '../../utils/uiCapabilities'
 
 interface WinnerRef {
   mealId: string | null
@@ -21,8 +22,10 @@ interface Props {
 }
 
 export function VoteTab({ onAddWinnerToPlan, prefillMealId, onPrefillConsumed }: Props) {
-  const { isParentOrAdmin } = useFamilyCore()
+  const { currentMember, isParentOrAdmin } = useFamilyCore()
+  const capabilities = capabilitiesFor(currentMember)
   const { members } = useFamilyMembersData()
+  const votingMembers = members.filter(capabilities.voteFor)
   const { meals, voteRounds, createVoteRound, openRound, closeRound, castVote } = useMealsDataContext()
   const [showCreate, setShowCreate] = useState(false)
 
@@ -66,7 +69,7 @@ export function VoteTab({ onAddWinnerToPlan, prefillMealId, onPrefillConsumed }:
           <div className="panel is-primary">
             <VoteRoundResults
               round={activeRound}
-              members={members}
+              members={votingMembers}
               isParentOrAdmin={isParentOrAdmin}
               onVote={castVote}
               onOpenRound={openRound}
@@ -95,7 +98,7 @@ export function VoteTab({ onAddWinnerToPlan, prefillMealId, onPrefillConsumed }:
                     <summary>{round.title}</summary>
                     <VoteRoundResults
                       round={round}
-                      members={members}
+                      members={votingMembers}
                       isParentOrAdmin={isParentOrAdmin}
                       onVote={castVote}
                       onAddWinnerToPlan={onAddWinnerToPlan}
@@ -108,7 +111,7 @@ export function VoteTab({ onAddWinnerToPlan, prefillMealId, onPrefillConsumed }:
         </section>
       )}
 
-      {showCreate && (
+      {showCreate && isParentOrAdmin && (
         <Modal title={t.mealVoting.createRoundTitle} onClose={closeCreate}>
           <CreateRoundForm meals={meals} initialMealId={prefillMealId} onSubmit={handleCreate} />
         </Modal>

@@ -20,15 +20,20 @@ import { useRealtimeStatus } from '../hooks/useRealtimeStatus'
 import { RealtimeStatusBadge } from './ui/RealtimeStatusBadge'
 import { useShopping } from '../context/shopping/ShoppingContext'
 import { t } from '../strings'
+import { useFamilyCore } from '../context/family/FamilyCoreContext'
+import { capabilitiesFor, childRouteFallback } from '../utils/uiCapabilities'
 
 export function AppShell() {
-  const { path } = useRouter()
+  const { path, navigate } = useRouter()
+  const { currentMember } = useFamilyCore()
+  const capabilities = capabilitiesFor(currentMember)
   const { familyName, familyNameLoading } = useFamilySettings()
   const familyMark = useActiveFamilyMark()
   const realtimeStatus = useRealtimeStatus()
   const { shoppingSyncStatus } = useShopping()
   const shoppingOnlyOffline = shoppingSyncStatus === 'offline'
   const offlineBlocked = shoppingOnlyOffline && path !== '/shopping'
+  const routeAllowed = capabilities.accessRoute(path)
 
   return (
     <div className={`app-shell${path === '/' ? ' is-today' : ''}`}>
@@ -47,21 +52,30 @@ export function AppShell() {
       <InstallAppBanner />
       <main className="app-main">
         {offlineBlocked && <OfflineModuleState />}
-        {!offlineBlocked && path === '/' && <TodayDashboard />}
-        {!offlineBlocked && path === '/calendar' && <CalendarScreen />}
-        {!offlineBlocked && path === '/plan' && <PlannerScreen />}
-        {!offlineBlocked && path === '/chores' && <ChoresScreen />}
-        {!offlineBlocked && path === '/activities' && <ActivitiesScreen />}
-        {!offlineBlocked && path === '/health' && <HealthScreen />}
-        {!offlineBlocked && path === '/meals' && <MealPlanScreen />}
-        {path === '/shopping' && <ShoppingScreen />}
-        {!offlineBlocked && path === '/family' && <FamilyScreen />}
-        {!offlineBlocked && path === '/more' && <MoreScreen />}
-        {!offlineBlocked && path === '/reminders' && <ReminderCenter />}
+        {!offlineBlocked && !routeAllowed && <RestrictedChildRoute onContinue={() => navigate(childRouteFallback(path))} />}
+        {!offlineBlocked && routeAllowed && path === '/' && <TodayDashboard />}
+        {!offlineBlocked && routeAllowed && path === '/calendar' && <CalendarScreen />}
+        {!offlineBlocked && routeAllowed && path === '/plan' && <PlannerScreen />}
+        {!offlineBlocked && routeAllowed && path === '/chores' && <ChoresScreen />}
+        {!offlineBlocked && routeAllowed && path === '/activities' && <ActivitiesScreen />}
+        {!offlineBlocked && routeAllowed && path === '/health' && <HealthScreen />}
+        {!offlineBlocked && routeAllowed && path === '/meals' && <MealPlanScreen />}
+        {routeAllowed && path === '/shopping' && <ShoppingScreen />}
+        {!offlineBlocked && routeAllowed && path === '/family' && <FamilyScreen />}
+        {!offlineBlocked && routeAllowed && path === '/more' && <MoreScreen />}
+        {!offlineBlocked && routeAllowed && path === '/reminders' && <ReminderCenter />}
       </main>
       <BottomNavigation />
     </div>
   )
+}
+
+function RestrictedChildRoute({ onContinue }: { onContinue: () => void }) {
+  return <section className="empty-state restricted-child-route">
+    <h1>{t.childShell.restrictedTitle}</h1>
+    <p>{t.childShell.restrictedBody}</p>
+    <button type="button" onClick={onContinue}>{t.childShell.restrictedAction}</button>
+  </section>
 }
 
 function OfflineModuleState() {

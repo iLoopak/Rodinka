@@ -12,6 +12,7 @@ import type { RealtimeConnectionState } from '../../realtime/connectionState'
 export type { AllowancePlanInput } from '../../hooks/useAllowancePlans'
 
 interface AllowanceContextValue {
+  allowanceEntries: LedgerEntry[]
   allowancePlans: AllowancePlan[]
   allowanceCycles: AllowanceCycle[]
   balances: Map<string, number>
@@ -126,6 +127,7 @@ export function AllowanceProvider({ familyId, children }: ProviderProps) {
   }, [refreshAllowancePlans])
 
   const value: AllowanceContextValue = {
+    allowanceEntries: entries,
     allowancePlans,
     allowanceCycles,
     balances,

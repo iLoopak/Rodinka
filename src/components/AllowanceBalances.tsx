@@ -6,9 +6,10 @@ import type { Chore } from '../hooks/useChores'
 import type { ChoreCompletion } from '../hooks/useChoreCompletions'
 import type { AllowanceCycle, AllowancePlan, AllowancePlanInput } from '../hooks/useAllowancePlans'
 import { allowanceCycleForPayout, evaluateAllowanceRequirements, nextPayoutDate, unsettledDuePayoutDates } from '../utils/allowanceCycles'
-import { addDays, formatFullDate, todayISODate } from '../utils/dueDate'
+import { addDays, formatFullDate, formatShortDate, todayISODate } from '../utils/dueDate'
 import { Modal } from './ui/Modal'
 import { AllowancePlanForm } from './AllowancePlanForm'
+import type { LedgerEntry } from '../hooks/useAllowanceLedger'
 
 interface Props {
   kids: FamilyMember[]
@@ -18,13 +19,14 @@ interface Props {
   completions: ChoreCompletion[]
   plans: AllowancePlan[]
   cycles: AllowanceCycle[]
+  entries?: LedgerEntry[]
   canManage: boolean
   onSavePlan: (input: AllowancePlanInput, planId?: string) => Promise<void>
   onCredit: (planId: string, payoutDate: string) => Promise<void>
   onSkip: (planId: string, payoutDate: string) => Promise<void>
 }
 
-export function AllowanceBalances({ kids, balances, onPayout, chores, completions, plans, cycles, canManage, onSavePlan, onCredit, onSkip }: Props) {
+export function AllowanceBalances({ kids, balances, onPayout, chores, completions, plans, cycles, entries, canManage, onSavePlan, onCredit, onSkip }: Props) {
   const [payoutFor, setPayoutFor] = useState<string | null>(null)
   const [amount, setAmount] = useState('')
   const [reason, setReason] = useState('')
@@ -78,9 +80,9 @@ export function AllowanceBalances({ kids, balances, onPayout, chores, completion
           <span className="row-spacer" />
           <span className="row-amount">{t.chores.formatAmount(balances.get(kid.id) ?? 0)}</span>
           {canManage && <button className="btn-secondary" onClick={() => setEditingFor(kid.id)}>{plan ? t.allowance.manage : t.allowance.setUp}</button>}
-          <button className="btn-secondary" disabled={!canManage} onClick={() => openPayout(kid.id)}>
+          {canManage && <button className="btn-secondary" onClick={() => openPayout(kid.id)}>
             {t.chores.payoutButton}
-          </button>
+          </button>}
           {plan && <div className="allowance-plan-summary">
             <strong>{t.allowance.monthly}: {t.chores.formatAmount(plan.amount)}</strong>
             <span>{t.allowance.payoutDay}: {plan.payout_day}. · {plan.condition_mode === 'none' ? t.allowance.unconditional : t.allowance.byChores}</span>
@@ -125,6 +127,16 @@ export function AllowanceBalances({ kids, balances, onPayout, chores, completion
           {editingFor === kid.id && <Modal title={t.allowance.setUp} onClose={() => setEditingFor(null)}>
             <AllowancePlanForm child={kid} chores={chores} initial={plan} onSubmit={async (input) => { await onSavePlan(input, plan?.id); setEditingFor(null) }} />
           </Modal>}
+          {!canManage && entries && <div className="allowance-history">
+            <strong>{t.allowance.historyTitle}</strong>
+            {entries.length === 0 ? <span className="row-meta">{t.allowance.historyEmpty}</span> : <ul className="compact-list">
+              {entries.map((entry) => <li key={entry.id}>
+                <span>{formatShortDate(entry.created_at.slice(0, 10))}</span>
+                <span>{entry.reason || t.allowance.historyEntry}</span>
+                <strong>{t.chores.formatAmount(entry.amount)}</strong>
+              </li>)}
+            </ul>}
+          </div>}
         </li>
       })}
     </ul>

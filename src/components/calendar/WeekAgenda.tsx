@@ -29,8 +29,8 @@ interface Props {
   onChangeWeek: (weekStart: string) => void
   onSelectDay: (date: string) => void
   onSelectEntry: (entry: CalendarEntry) => void
-  onChangeAssignment: (entry: CalendarEntry) => void
-  onAddDay: (date: string) => void
+  onChangeAssignment?: (entry: CalendarEntry) => void
+  onAddDay?: (date: string) => void
 }
 
 export function WeekAgenda({ weekStart, entries, today, selectedDay, scrollVersion, memberById, onChangeWeek, onSelectDay, onSelectEntry, onChangeAssignment, onAddDay }: Props) {

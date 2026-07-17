@@ -161,7 +161,7 @@ export function VoteRoundResults({ round, members, isParentOrAdmin, onVote, onOp
                 )
               })}
 
-              {round.status === 'closed' && rank === 1 && onAddWinnerToPlan && (
+              {round.status === 'closed' && rank === 1 && isParentOrAdmin && onAddWinnerToPlan && (
                 <button
                   className="btn-secondary"
                   onClick={() => onAddWinnerToPlan({ mealId: candidate.meal_id, title: candidate.meal_title })}

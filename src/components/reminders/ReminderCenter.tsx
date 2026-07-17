@@ -10,12 +10,16 @@ import { getCurrentLanguage } from '../../i18n'
 import { ScrollableTabs } from '../ui/ScrollableTabs'
 import { ScreenHeader } from '../ui/ScreenHeader'
 import { CheckCircle, Coins, Dumbbell, FileText, ShoppingCart, Stethoscope, Syringe, Utensils, Vote } from 'lucide-react'
+import { useFamilyCore } from '../../context/family/FamilyCoreContext'
+import { capabilitiesFor } from '../../utils/uiCapabilities'
 
 type Tab = 'active' | 'history' | 'settings'
 const sourceIcons = {
   chore: CheckCircle, activity: Dumbbell, 'activity-payment': Coins, 'medical-appointment': Stethoscope,
   vaccination: Syringe, voting: Vote, 'meal-plan': Utensils, allowance: Coins, document: FileText, shopping: ShoppingCart,
 } satisfies Record<ReminderRecord['source'], typeof CheckCircle>
+const CHILD_HIDDEN_SOURCES: ReminderRecord['source'][] = ['activity-payment', 'medical-appointment', 'vaccination', 'allowance', 'document']
+const CHILD_REMINDER_CATEGORIES = REMINDER_CATEGORIES.filter((category) => !['medical', 'allowance', 'documents'].includes(category))
 
 function sectionLabel(section: ReminderSection) {
   return { overdue: t.reminders.sectionOverdue, today: t.reminders.sectionToday, upcoming: t.reminders.sectionUpcoming, earlier: t.reminders.sectionEarlier }[section]
@@ -41,20 +45,25 @@ function canDismiss(item: ReminderRecord) {
 }
 
 export function ReminderCenter() {
-  const { active, history, unreadCount, preferences, loading, error, markRead, markAllRead, dismiss, savePreferences } = useReminders()
+  const { active, history, preferences, loading, error, markRead, markAllRead, dismiss, savePreferences } = useReminders()
+  const { currentMember } = useFamilyCore()
+  const capabilities = capabilitiesFor(currentMember)
   const { navigateHref } = useRouter()
   const [tab, setTab] = useState<Tab>(() => window.location.hash === '#settings' ? 'settings' : 'active')
   const [saving, setSaving] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
-  const digest = useMemo(() => buildDigest(active, preferences.dailyDigestEnabled ? 'daily' : 'weekly', new Date(), preferences.timezone), [active, preferences.dailyDigestEnabled, preferences.timezone])
+  const visibleActive = capabilities.isChild ? active.filter((item) => !CHILD_HIDDEN_SOURCES.includes(item.source)) : active
+  const visibleHistory = capabilities.isChild ? history.filter((item) => !CHILD_HIDDEN_SOURCES.includes(item.source)) : history
+  const visibleUnreadCount = visibleActive.filter((item) => !item.readAt).length
+  const digest = useMemo(() => buildDigest(visibleActive, preferences.dailyDigestEnabled ? 'daily' : 'weekly', new Date(), preferences.timezone), [visibleActive, preferences.dailyDigestEnabled, preferences.timezone])
   const sections = useMemo(() => {
     const result = new Map<ReminderSection, ReminderRecord[]>()
-    for (const item of active) {
+    for (const item of visibleActive) {
       const section = reminderSection(item, new Date(), preferences.timezone)
       result.set(section, [...(result.get(section) ?? []), item])
     }
     return result
-  }, [active, preferences.timezone])
+  }, [visibleActive, preferences.timezone])
 
   async function open(item: ReminderRecord) {
     if (!item.readAt) await markRead(item.id)
@@ -71,18 +80,18 @@ export function ReminderCenter() {
 
   if (loading) return <p className="loading">{t.reminders.loading}</p>
 
-  const tabs: { id: Tab; label: string }[] = [{ id: 'active', label: t.reminders.tabActive(unreadCount) }, { id: 'history', label: t.reminders.tabHistory }, { id: 'settings', label: t.reminders.tabSettings }]
+  const tabs: { id: Tab; label: string }[] = [{ id: 'active', label: t.reminders.tabActive(visibleUnreadCount) }, { id: 'history', label: t.reminders.tabHistory }, { id: 'settings', label: t.reminders.tabSettings }]
   return <div className="reminder-center">
     <ScreenHeader className="reminder-center-header" title={t.reminders.title} subtitle={t.reminders.subtitle} titleTabIndex={-1}
-      actions={tab === 'active' && unreadCount > 0 ? <button className="btn-secondary" onClick={() => markAllRead()}>{t.reminders.markAllRead}</button> : undefined} />
+      actions={tab === 'active' && visibleUnreadCount > 0 ? <button className="btn-secondary" onClick={() => markAllRead()}>{t.reminders.markAllRead}</button> : undefined} />
     <ScrollableTabs tabs={tabs} activeTab={tab} onChange={setTab} />
     {error && <p className="form-error" role="alert">{t.errors.generic}</p>}
-    {tab === 'active' && <>{(preferences.dailyDigestEnabled || preferences.weeklyDigestEnabled) && <section className="digest-preview reminder-digest"><span><strong>{preferences.dailyDigestEnabled ? t.reminders.dailyDigest : t.reminders.weeklyDigest}</strong><small>{t.reminders.digestCounts(digest.items.length, digest.important)}</small></span><button className="link" onClick={() => setTab('settings')}>{t.reminders.tabSettings}</button></section>}{active.length === 0 ? <div className="reminder-empty"><span aria-hidden="true"><CheckCircle size={24} /></span><h2>{t.reminders.allDoneTitle}</h2><p>{t.reminders.allDoneBody}</p><button className="link" onClick={() => setTab('settings')}>{t.reminders.reminderSettings}</button></div> : <div className="panel is-primary reminder-sections">{(['overdue', 'today', 'upcoming', 'earlier'] as ReminderSection[]).map((section) => {
+    {tab === 'active' && <>{(preferences.dailyDigestEnabled || preferences.weeklyDigestEnabled) && <section className="digest-preview reminder-digest"><span><strong>{preferences.dailyDigestEnabled ? t.reminders.dailyDigest : t.reminders.weeklyDigest}</strong><small>{t.reminders.digestCounts(digest.items.length, digest.important)}</small></span><button className="link" onClick={() => setTab('settings')}>{t.reminders.tabSettings}</button></section>}{visibleActive.length === 0 ? <div className="reminder-empty"><span aria-hidden="true"><CheckCircle size={24} /></span><h2>{t.reminders.allDoneTitle}</h2><p>{t.reminders.allDoneBody}</p><button className="link" onClick={() => setTab('settings')}>{t.reminders.reminderSettings}</button></div> : <div className="panel is-primary reminder-sections">{(['overdue', 'today', 'upcoming', 'earlier'] as ReminderSection[]).map((section) => {
       const items = sections.get(section); if (!items?.length) return null
       return <section key={section} className="reminder-section"><h2>{sectionLabel(section)} <span>{items.length}</span></h2><ul className="reminder-list">{items.map((item) => <ReminderCard key={item.id} item={item} onOpen={() => open(item)} onRead={() => markRead(item.id)} onDismiss={() => dismiss(item.id)} />)}</ul></section>
     })}</div>}</>}
-    {tab === 'history' && (history.length === 0 ? <div className="reminder-empty"><h2>{t.reminders.historyEmpty}</h2></div> : <div className="panel is-primary reminder-history"><ul className="reminder-list">{history.map((item) => <ReminderCard key={item.id} item={item} onOpen={() => open(item)} onRead={() => markRead(item.id)} onDismiss={() => dismiss(item.id)} />)}</ul></div>)}
-    {tab === 'settings' && <ReminderSettings preferences={preferences} reminders={active} saving={saving} feedback={feedback} onChange={changePreferences} />}
+    {tab === 'history' && (visibleHistory.length === 0 ? <div className="reminder-empty"><h2>{t.reminders.historyEmpty}</h2></div> : <div className="panel is-primary reminder-history"><ul className="reminder-list">{visibleHistory.map((item) => <ReminderCard key={item.id} item={item} onOpen={() => open(item)} onRead={() => markRead(item.id)} onDismiss={() => dismiss(item.id)} />)}</ul></div>)}
+    {tab === 'settings' && <ReminderSettings preferences={preferences} reminders={visibleActive} saving={saving} feedback={feedback} categories={capabilities.isChild ? CHILD_REMINDER_CATEGORIES : REMINDER_CATEGORIES} onChange={changePreferences} />}
   </div>
 }
 
@@ -95,7 +104,7 @@ function ReminderCard({ item, onOpen, onRead, onDismiss }: { item: ReminderRecor
   </li>
 }
 
-function ReminderSettings({ preferences, reminders, saving, feedback, onChange }: { preferences: NotificationPreferences; reminders: ReminderRecord[]; saving: boolean; feedback: string | null; onChange: (next: NotificationPreferences) => Promise<void> }) {
+function ReminderSettings({ preferences, reminders, saving, feedback, categories, onChange }: { preferences: NotificationPreferences; reminders: ReminderRecord[]; saving: boolean; feedback: string | null; categories: readonly (typeof REMINDER_CATEGORIES)[number][]; onChange: (next: NotificationPreferences) => Promise<void> }) {
   const digestKind = preferences.dailyDigestEnabled ? 'daily' : 'weekly'
   const digest = buildDigest(reminders, digestKind, new Date(), preferences.timezone)
   const toggle = (key: keyof NotificationPreferences, value: boolean) => onChange({ ...preferences, [key]: value })
@@ -105,7 +114,7 @@ function ReminderSettings({ preferences, reminders, saving, feedback, onChange }
   return <div className="reminder-settings">
     <section className="page-section"><h2 className="section-heading">{t.reminders.deliveryTitle}</h2><div className="panel is-primary reminder-settings-panel"><label className="setting-row"><span><strong>{t.reminders.inAppTitle}</strong><small>{t.reminders.inAppBody}</small></span><input type="checkbox" checked={preferences.inAppEnabled} onChange={(event) => toggle('inAppEnabled', event.target.checked)} disabled={saving} /></label><label className="setting-row"><span><strong>{t.reminders.quietPushTitle}</strong><small>{t.reminders.quietPushBody}</small></span><input type="checkbox" checked={preferences.quietPushEnabled} onChange={(event) => toggle('quietPushEnabled', event.target.checked)} disabled={saving} /></label><PushSettings preferences={preferences} saving={saving} onChange={onChange} /></div></section>
     <section className="page-section"><h2 className="section-heading">{t.reminders.summariesTitle}</h2><div className="panel is-primary reminder-settings-panel"><p className="row-meta">{t.reminders.summariesBody}</p><label className="setting-row"><span><strong>{t.reminders.dailyDigest}</strong><small>{t.reminders.dailyDigestBody}</small></span><input type="checkbox" checked={preferences.dailyDigestEnabled} onChange={(event) => onChange({ ...preferences, dailyDigestEnabled: event.target.checked, weeklyDigestEnabled: event.target.checked ? false : preferences.weeklyDigestEnabled })} disabled={saving} /></label><label className="setting-row"><span><strong>{t.reminders.weeklyDigest}</strong><small>{t.reminders.weeklyDigestBody}</small></span><input type="checkbox" checked={preferences.weeklyDigestEnabled} onChange={(event) => onChange({ ...preferences, weeklyDigestEnabled: event.target.checked, dailyDigestEnabled: event.target.checked ? false : preferences.dailyDigestEnabled })} disabled={saving} /></label>{(preferences.dailyDigestEnabled || preferences.weeklyDigestEnabled) && <div className="digest-preview"><strong>{t.reminders.digestPreview}</strong><span>{t.reminders.digestCounts(digest.items.length, digest.important)}</span></div>}</div></section>
-    <section className="page-section"><h2 className="section-heading">{t.reminders.categoriesTitle}</h2><div className="panel is-primary reminder-settings-panel"><div className="category-settings">{REMINDER_CATEGORIES.map((category) => <label className="setting-row" key={category}><span>{categoryLabel(category)}</span><input type="checkbox" checked={preferences.categories[category]} onChange={(event) => onChange({ ...preferences, categories: { ...preferences.categories, [category]: event.target.checked } })} disabled={saving} /></label>)}</div></div></section>
+    <section className="page-section"><h2 className="section-heading">{t.reminders.categoriesTitle}</h2><div className="panel is-primary reminder-settings-panel"><div className="category-settings">{categories.map((category) => <label className="setting-row" key={category}><span>{categoryLabel(category)}</span><input type="checkbox" checked={preferences.categories[category]} onChange={(event) => onChange({ ...preferences, categories: { ...preferences.categories, [category]: event.target.checked } })} disabled={saving} /></label>)}</div></div></section>
     <section className="page-section"><h2 className="section-heading">{t.reminders.timeTitle}</h2><div className="panel is-primary reminder-settings-panel"><label className="setting-row"><span><strong>{t.reminders.timezoneAuto}</strong><small>{t.reminders.timezoneDetected(detectedTimezone)}</small></span><input type="checkbox" checked={preferences.timezoneMode === 'auto'} onChange={(event) => onChange({ ...preferences, timezoneMode: event.target.checked ? 'auto' : 'explicit', timezone: event.target.checked ? detectedTimezone : preferences.timezone })} disabled={saving} /></label>{preferences.timezoneMode === 'explicit' && <label className="setting-row"><span><strong>{t.reminders.timezoneCustom}</strong><small>{t.reminders.timezoneCustomBody}</small></span><select value={preferences.timezone} onChange={(event) => onChange({ ...preferences, timezone: event.target.value })} disabled={saving}>{timezoneOptions.map((timezone) => <option key={timezone} value={timezone}>{timezone}</option>)}</select></label>}<label className="setting-row"><span><strong>{t.reminders.quietHoursTitle}</strong><small>{t.reminders.quietHoursBody}</small></span><input type="checkbox" checked={preferences.quietHoursEnabled} onChange={(event) => toggle('quietHoursEnabled', event.target.checked)} disabled={saving} /></label>{preferences.quietHoursEnabled && <div className="quiet-hours"><label>{t.reminders.quietFrom} <input type="time" value={preferences.quietHoursStart} onChange={(event) => onChange({ ...preferences, quietHoursStart: event.target.value })} /></label><label>{t.reminders.quietTo} <input type="time" value={preferences.quietHoursEnd} onChange={(event) => onChange({ ...preferences, quietHoursEnd: event.target.value })} /></label></div>}<p className="row-meta">{t.reminders.timezoneUsed(preferences.timezone)}</p></div></section>
     {feedback && <p className="shopping-feedback" role="status">{feedback}</p>}
   </div>

@@ -2,6 +2,8 @@ import type { ReactNode } from 'react'
 import { Link, useRouter, type Route } from '../router'
 import { t } from '../strings'
 import { isNavigationItemActive } from '../utils/navigation'
+import { useFamilyCore } from '../context/family/FamilyCoreContext'
+import { childPrimaryRouteForPath, capabilitiesFor, primaryNavigationRoutes } from '../utils/uiCapabilities'
 
 interface NavigationItem {
   to: Route
@@ -43,6 +45,26 @@ const items: NavigationItem[] = [
     ),
   },
   {
+    to: '/chores',
+    label: () => t.nav.myTasks,
+    icon: () => (
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M7 4h10a2 2 0 0 1 2 2v14H5V6a2 2 0 0 1 2-2Z" strokeLinejoin="round" />
+        <path d="m8 10 1.5 1.5L12 9M8 15l1.5 1.5L12 14M14 10h2M14 15h2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    to: '/shopping',
+    label: () => t.nav.shopping,
+    icon: () => (
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M4 5h2l2 10h9l2-7H7" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="10" cy="19" r="1.4" /><circle cx="17" cy="19" r="1.4" />
+      </svg>
+    ),
+  },
+  {
     to: '/family',
     label: () => t.nav.family,
     icon: () => (
@@ -69,11 +91,16 @@ const items: NavigationItem[] = [
 
 export function BottomNavigation() {
   const { path } = useRouter()
+  const { currentMember } = useFamilyCore()
+  const capabilities = capabilitiesFor(currentMember)
+  const visibleRoutes = new Set(primaryNavigationRoutes(currentMember))
 
   return (
     <nav className="bottom-nav" aria-label={t.common.primaryNavigation}>
-      {items.map((item) => {
-        const active = isNavigationItemActive(item, path)
+      {items.filter((item) => visibleRoutes.has(item.to)).map((item) => {
+        const active = capabilities.isChild
+          ? item.to === childPrimaryRouteForPath(path)
+          : isNavigationItemActive(item, path)
         return (
           <Link
             key={item.to}
