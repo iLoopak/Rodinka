@@ -30,8 +30,31 @@ export interface ConversationMemberRow {
   archived_at: string | null
 }
 
-export type MessageContentType = 'text' | 'system' | 'image'
+export type MessageContentType = 'text' | 'system' | 'image' | 'entity'
 export type MessageDeliveryStatus = 'sent' | 'sending' | 'failed'
+
+// Shared-entity references (batch 3). A message can carry a live pointer
+// to a real planner entity; the card renders resolved current state.
+export type SharedEntityType = 'task' | 'shopping_item' | 'event' | 'reminder'
+
+export type EntitySystemKind =
+  | 'task_completed'
+  | 'item_purchased'
+  | 'responsible_changed'
+  | 'entity_removed'
+
+// The resolved shape returned by resolve_message_entities. `state` is a
+// type-tagged bag of the entity's current fields (see the RPC); the card
+// components narrow it per entity_type. `exists=false` means the entity
+// was deleted and only fallback data is available.
+export interface MessageEntityResolution {
+  refId: string
+  messageId: string
+  entityType: SharedEntityType
+  entityId: string
+  exists: boolean
+  state: Record<string, unknown>
+}
 
 export interface MessageRow {
   id: string
