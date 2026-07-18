@@ -8,7 +8,6 @@ import { formatFullDate, todayISODate } from '../utils/dueDate'
 import { buildTodayAttentionItems, buildTodayEntries, isChildTodayAttentionVisible, isChildTodayEntryVisible } from '../utils/todayAgenda'
 import { CalendarEntryDetailModal } from './calendar/CalendarEntryDetailModal'
 import { PendingApprovals } from './PendingApprovals'
-import { UniversalCreateModal } from './planner/UniversalCreateModal'
 import { TodayAgendaList } from './today/TodayAgendaList'
 import { TodayAttentionList } from './today/TodayAttentionList'
 import { TodayProgramEmpty } from './today/TodayProgramEmpty'
@@ -21,9 +20,10 @@ import { getChoreState } from '../utils/choreState'
 import { ChoreDetailModal } from './ChoreDetailModal'
 import { closeTodayChoreEditor, openTodayChoreEditor } from './today/todayChoreEditor'
 import { capabilitiesFor } from '../utils/uiCapabilities'
+import { useCreateRecord } from '../context/create-record/CreateRecordContext'
 
 export function TodayDashboard() {
-  const [showCreate, setShowCreate] = useState(false)
+  const { openCreateRecord } = useCreateRecord()
   const [selectedEntry, setSelectedEntry] = useState<CalendarEntry | null>(null)
   const [approvalFeedback, setApprovalFeedback] = useState<string | null>(null)
   const {
@@ -130,7 +130,7 @@ export function TodayDashboard() {
         date={today}
         itemCount={entries.length}
         familyHeroImageUrl={familyHeroImageUrl}
-        onAdd={capabilities.createPlannerItems ? () => setShowCreate(true) : undefined}
+        onAdd={capabilities.createPlannerItems ? () => openCreateRecord({ date: today, source: 'today' }) : undefined}
       />
 
       {approvalFeedback && <p className="success approval-feedback" role="status">{approvalFeedback}</p>}
@@ -167,7 +167,7 @@ export function TodayDashboard() {
         <h2 className="section-heading">{t.today.programTitle}</h2>
         {entries.length === 0 ? (
           <div className="panel is-quiet">
-            <TodayProgramEmpty onAdd={capabilities.createPlannerItems ? () => setShowCreate(true) : undefined} />
+            <TodayProgramEmpty onAdd={capabilities.createPlannerItems ? () => openCreateRecord({ date: today, source: 'today-empty' }) : undefined} />
           </div>
         ) : (
           <div className="panel is-primary">
@@ -208,10 +208,6 @@ export function TodayDashboard() {
 
       {selectedEntry && (
         <CalendarEntryDetailModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} />
-      )}
-
-      {showCreate && capabilities.createPlannerItems && (
-        <UniversalCreateModal initialDate={today} onClose={() => setShowCreate(false)} />
       )}
 
       {selectedChore && editParam && isParentOrAdmin && <ChoreDetailModal

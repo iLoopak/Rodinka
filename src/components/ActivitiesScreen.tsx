@@ -3,9 +3,7 @@ import { t } from '../strings'
 import { useFamilyCore } from '../context/family/FamilyCoreContext'
 import { useFamilyMembersData } from '../context/family/FamilyMembersContext'
 import { useActivitiesData } from '../context/activities/ActivitiesContext'
-import { AddActivityForm } from './AddActivityForm'
 import { ActivityDetailModal } from './ActivityDetailModal'
-import { Modal } from './ui/Modal'
 import { ErrorState } from './ui/ErrorState'
 import { EmptyState } from './ui/EmptyState'
 import { DueBadge } from './ui/DueBadge'
@@ -15,19 +13,18 @@ import { nextOccurrenceDate } from '../utils/recurrence'
 import { formatFullDate } from '../utils/dueDate'
 import { onActivateKey } from '../utils/a11y'
 import type { Activity } from '../hooks/useActivities'
-import type { ActivityInput } from '../domain/activities/types'
 import { useRouter } from '../router'
 import { resolveDeepLinkedItem } from '../utils/deepLinks'
 import { ScrollableTabs } from './ui/ScrollableTabs'
 import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from './ui/FilterDisclosure'
 import { ScreenHeader } from './ui/ScreenHeader'
 import { PersonRoleGroup, type PersonRole } from './ui/PersonRoleGroup'
+import { useCreateRecord } from '../context/create-record/CreateRecordContext'
 
 type Tab = 'upcoming' | 'payments' | 'archived'
 
 export function ActivitiesScreen() {
   const [tab, setTab] = useState<Tab>(() => window.location.hash === '#payments' ? 'payments' : 'upcoming')
-  const [showAdd, setShowAdd] = useState(false)
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null)
   const [filterChild, setFilterChild] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
@@ -35,13 +32,13 @@ export function ActivitiesScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [deepLinkError, setDeepLinkError] = useState(false)
   const { searchParams, setQueryParam, removeQueryParam } = useRouter()
+  const { openCreateRecord } = useCreateRecord()
   const activityParam = searchParams.get('activity')
 
   const { isParentOrAdmin } = useFamilyCore()
   const { kids, members, memberName, memberById } = useFamilyMembersData()
   const {
     activities,
-    addActivity,
     updateActivity,
     markActivityPaymentPaid,
     activitiesLoading: loading,
@@ -73,15 +70,10 @@ export function ActivitiesScreen() {
     return <ErrorState message={error} onRetry={refreshAll} />
   }
 
-  async function handleAdd(input: ActivityInput) {
-    await addActivity(input)
-    setShowAdd(false)
-  }
-
   const header = (
     <ScreenHeader title={t.activities.title} actions={<>
         <FilterDisclosureToggle />
-        {isParentOrAdmin && <button type="button" className="header-action-button" onClick={() => setShowAdd(true)}>
+        {isParentOrAdmin && <button type="button" className="header-action-button" onClick={() => openCreateRecord({ type: 'activity', source: 'activities' })}>
           <span aria-hidden="true">+</span> {t.activities.addAction}
         </button>}
       </>} />
@@ -246,12 +238,6 @@ export function ActivitiesScreen() {
             </div>
           )}
         </section>
-      )}
-
-      {showAdd && (
-        <Modal title={t.activities.addTitle} onClose={() => setShowAdd(false)} className="activity-form-modal">
-          <AddActivityForm members={members} kids={kids} onSubmit={handleAdd} />
-        </Modal>
       )}
 
       {selectedActivity && (

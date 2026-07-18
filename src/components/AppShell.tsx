@@ -26,6 +26,7 @@ import { useFamilyCore } from '../context/family/FamilyCoreContext'
 import { capabilitiesFor, childRouteFallback } from '../utils/uiCapabilities'
 import { useMessagesData } from '../context/messages/MessagesContext'
 import { useConversationPushBridge } from '../hooks/useConversationPushBridge'
+import { CreateRecordWizard } from './create-record/CreateRecordWizard'
 
 export function AppShell() {
   const { path, navigate } = useRouter()
@@ -77,6 +78,7 @@ export function AppShell() {
         {!offlineBlocked && routeAllowed && path === '/reminders' && <ReminderCenter />}
       </main>
       <BottomNavigation />
+      <CreateRecordWizard />
     </div>
   )
 }

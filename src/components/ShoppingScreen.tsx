@@ -25,11 +25,13 @@ import { defaultShoppingCategorySettings, type ShoppingCategorySettings } from '
 import { ScreenHeader } from './ui/ScreenHeader'
 import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from './ui/FilterDisclosure'
 import { GripVertical } from 'lucide-react'
+import { useCreateRecord } from '../context/create-record/CreateRecordContext'
 
 export function ShoppingScreen() {
   const { currentMember, isParentOrAdmin } = useFamilyCore()
   const { members, memberById } = useFamilyMembersData()
   const { shoppingCategorySettings, updateShoppingCategorySettings } = useFamilySettings()
+  const { openCreateRecord } = useCreateRecord()
   const {
     activeShoppingItems, purchasedShoppingItems, commonShoppingItems, shoppingSessions,
     shoppingLoading, shoppingError, refreshShopping, addShoppingItem, updateShoppingItem, deleteShoppingItem,
@@ -162,7 +164,12 @@ export function ShoppingScreen() {
         activeCount={Number(Boolean(filterResponsible))} onClear={() => setFilterResponsible('')} label={t.shopping.toolsLabel}
         showLabel={t.shopping.showTools} hideLabel={t.shopping.hideTools}>
       <ScreenHeader className="shopping-header" title={t.shopping.title} subtitle={t.shopping.activeCount(visibleActiveItems.length)}
-        actions={isParentOrAdmin ? <FilterDisclosureToggle /> : undefined} />
+        actions={<>
+          {isParentOrAdmin && <FilterDisclosureToggle />}
+          <button type="button" className="header-action-button" onClick={() => openCreateRecord({ type: 'shopping-item', source: 'shopping-list' })}>
+            <span aria-hidden="true">+</span> {t.create.addAction}
+          </button>
+        </>} />
 
       <form className="shopping-quick-add" onSubmit={quickAdd}>
         <input value={quickName} onChange={(event) => setQuickName(event.target.value)} placeholder={t.shopping.quickAddPlaceholder} aria-label={t.shopping.quickAddPlaceholder} />

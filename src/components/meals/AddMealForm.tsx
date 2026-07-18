@@ -3,16 +3,19 @@ import { t } from '../../strings'
 import { MEAL_CATEGORY_VALUES, mealCategoryLabel, suggestedTagLabel, SUGGESTED_MEAL_TAGS } from '../../utils/mealLabels'
 import type { MealInput } from '../../context/meals/MealsContext'
 import type { Meal, MealCategory } from '../../hooks/useMeals'
+import { GuidedDisclosure, GuidedLead } from '../create-record/GuidedCreateFields'
 
 const CATEGORY_OPTIONS = MEAL_CATEGORY_VALUES.map((value) => ({ value, label: mealCategoryLabel(value) }))
 
 interface Props {
   initial?: Meal
+  initialName?: string
+  variant?: 'standard' | 'guided'
   onSubmit: (input: MealInput) => Promise<void>
 }
 
-export function AddMealForm({ initial, onSubmit }: Props) {
-  const [name, setName] = useState(initial?.name ?? '')
+export function AddMealForm({ initial, initialName, variant = 'standard', onSubmit }: Props) {
+  const [name, setName] = useState(initial?.name ?? initialName ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [category, setCategory] = useState<MealCategory>(initial?.category ?? 'dinner')
   const [tags, setTags] = useState<string[]>(initial?.tags ?? [])
@@ -23,6 +26,7 @@ export function AddMealForm({ initial, onSubmit }: Props) {
 
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   function toggleTag(tag: string) {
     setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
@@ -63,6 +67,70 @@ export function AddMealForm({ initial, onSubmit }: Props) {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (variant === 'guided' && !initial) {
+    return <form className="guided-create-form" onSubmit={handleSubmit}>
+      <div className="guided-create-scroll">
+        <GuidedLead />
+        <section className="guided-primary-section">
+          <label className="guided-hero-field">
+            <span>{t.create.guided.libraryPrompt}</span>
+            <input autoFocus required value={name} onChange={(event) => setName(event.target.value)} placeholder={t.mealLibrary.namePlaceholder} />
+          </label>
+          <fieldset className="guided-choice-fieldset">
+            <legend>{t.mealLibrary.categoryLabel}</legend>
+            <div className="guided-option-grid compact">
+              {CATEGORY_OPTIONS.map((option) => <button
+                key={option.value}
+                type="button"
+                className={category === option.value ? 'selected' : ''}
+                aria-pressed={category === option.value}
+                onClick={() => setCategory(option.value)}
+              >{option.label}</button>)}
+            </div>
+          </fieldset>
+        </section>
+
+        <GuidedDisclosure open={detailsOpen} onToggle={() => setDetailsOpen((open) => !open)}>
+          <label><span>{t.mealLibrary.descriptionLabel}</span><input value={description} onChange={(event) => setDescription(event.target.value)} /></label>
+          <label><span>{t.mealLibrary.prepMinutesLabel}</span><input type="number" min="0" step="1" inputMode="numeric" value={prepMinutes} onChange={(event) => setPrepMinutes(event.target.value)} /></label>
+          <fieldset className="guided-choice-fieldset">
+            <legend>{t.mealLibrary.tagsLabel}</legend>
+            <div className="guided-suggestion-row wrap">
+              {SUGGESTED_MEAL_TAGS.map((tag) => <button
+                key={tag}
+                type="button"
+                className={tags.includes(tag) ? 'selected' : ''}
+                aria-pressed={tags.includes(tag)}
+                onClick={() => toggleTag(tag)}
+              >{suggestedTagLabel(tag)}</button>)}
+              {tags.filter((tag) => !(SUGGESTED_MEAL_TAGS as readonly string[]).includes(tag)).map((tag) => <button key={tag} type="button" className="selected" aria-pressed="true" onClick={() => toggleTag(tag)}>{tag}</button>)}
+            </div>
+          </fieldset>
+          <div className="guided-inline-add">
+            <input
+              value={customTagInput}
+              onChange={(event) => setCustomTagInput(event.target.value)}
+              placeholder={t.mealLibrary.customTagPlaceholder}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault()
+                  addCustomTag()
+                }
+              }}
+            />
+            <button type="button" className="btn-secondary" onClick={addCustomTag}>{t.mealLibrary.addCustomTagAction}</button>
+          </div>
+          <label><span>{t.mealLibrary.notesLabel}</span><textarea rows={2} value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
+          <label><span>{t.mealLibrary.sourceUrlLabel}</span><input type="url" value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} /></label>
+        </GuidedDisclosure>
+      </div>
+      <div className="guided-create-footer">
+        {error && <p className="error" role="alert">{error}</p>}
+        <button type="submit" disabled={loading}>{loading ? t.mealLibrary.submitting : t.mealLibrary.submitAdd}</button>
+      </div>
+    </form>
   }
 
   return (

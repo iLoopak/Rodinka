@@ -8,10 +8,12 @@ const useFamilyCoreMock = vi.hoisted(() => vi.fn())
 const useFamilyMembersDataMock = vi.hoisted(() => vi.fn())
 const useFamilySettingsMock = vi.hoisted(() => vi.fn())
 const useShoppingMock = vi.hoisted(() => vi.fn())
+const openCreateRecordMock = vi.hoisted(() => vi.fn())
 vi.mock('../context/family/FamilyCoreContext', () => ({ useFamilyCore: useFamilyCoreMock }))
 vi.mock('../context/family/FamilyMembersContext', () => ({ useFamilyMembersData: useFamilyMembersDataMock }))
 vi.mock('../context/family/FamilySettingsContext', () => ({ useFamilySettings: useFamilySettingsMock }))
 vi.mock('../context/shopping/ShoppingContext', () => ({ useShopping: useShoppingMock }))
+vi.mock('../context/create-record/CreateRecordContext', () => ({ useCreateRecord: () => ({ openCreateRecord: openCreateRecordMock }) }))
 
 import { ShoppingScreen } from './ShoppingScreen'
 

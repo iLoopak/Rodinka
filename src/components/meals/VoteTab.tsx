@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { t } from '../../strings'
 import { useFamilyCore } from '../../context/family/FamilyCoreContext'
 import { useFamilyMembersData } from '../../context/family/FamilyMembersContext'
 import { useMealsDataContext } from '../../context/meals/MealsContext'
 import { EmptyState } from '../ui/EmptyState'
-import { Modal } from '../ui/Modal'
-import { CreateRoundForm } from './CreateRoundForm'
 import { VoteRoundResults } from './VoteRoundResults'
 import { capabilitiesFor } from '../../utils/uiCapabilities'
+import { useCreateRecord } from '../../context/create-record/CreateRecordContext'
 
 interface WinnerRef {
   mealId: string | null
@@ -26,8 +25,8 @@ export function VoteTab({ onAddWinnerToPlan, prefillMealId, onPrefillConsumed }:
   const capabilities = capabilitiesFor(currentMember)
   const { members } = useFamilyMembersData()
   const votingMembers = members.filter(capabilities.voteFor)
-  const { meals, voteRounds, createVoteRound, openRound, closeRound, castVote } = useMealsDataContext()
-  const [showCreate, setShowCreate] = useState(false)
+  const { voteRounds, openRound, closeRound, castVote } = useMealsDataContext()
+  const { openCreateRecord } = useCreateRecord()
 
   const requestedRoundId = new URLSearchParams(window.location.search).get('round')
   const requestedRound = voteRounds.find((round) => round.id === requestedRoundId && round.status !== 'closed')
@@ -39,26 +38,17 @@ export function VoteTab({ onAddWinnerToPlan, prefillMealId, onPrefillConsumed }:
   // already-in-progress round isn't supported in this phase.
   useEffect(() => {
     if (prefillMealId && !activeRound) {
-      setShowCreate(true)
+      openCreateRecord({ type: 'meal-vote', mealId: prefillMealId, source: 'meal-library' })
+      onPrefillConsumed?.()
     }
-  }, [prefillMealId, activeRound])
-
-  function closeCreate() {
-    setShowCreate(false)
-    onPrefillConsumed?.()
-  }
-
-  async function handleCreate(input: Parameters<typeof createVoteRound>[0], openImmediately: boolean) {
-    await createVoteRound(input, openImmediately)
-    closeCreate()
-  }
+  }, [prefillMealId, activeRound, onPrefillConsumed, openCreateRecord])
 
   return (
     <>
       {requestedRoundId && !requestedRound && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
       {isParentOrAdmin && !activeRound && (
         <div className="tab-toolbar">
-          <button type="button" className="header-action-button" onClick={() => setShowCreate(true)}>
+          <button type="button" className="header-action-button" onClick={() => openCreateRecord({ type: 'meal-vote', source: 'meal-vote' })}>
             <span aria-hidden="true">+</span> {t.mealVoting.startVoteAction}
           </button>
         </div>
@@ -82,7 +72,7 @@ export function VoteTab({ onAddWinnerToPlan, prefillMealId, onPrefillConsumed }:
         <section className="page-section">
           <EmptyState
             title={t.mealVoting.noOpenRound}
-            action={isParentOrAdmin ? { label: t.mealVoting.startVoteAction, onClick: () => setShowCreate(true) } : undefined}
+            action={isParentOrAdmin ? { label: t.mealVoting.startVoteAction, onClick: () => openCreateRecord({ type: 'meal-vote', source: 'meal-vote-empty' }) } : undefined}
           />
         </section>
       )}
@@ -111,11 +101,6 @@ export function VoteTab({ onAddWinnerToPlan, prefillMealId, onPrefillConsumed }:
         </section>
       )}
 
-      {showCreate && isParentOrAdmin && (
-        <Modal title={t.mealVoting.createRoundTitle} onClose={closeCreate}>
-          <CreateRoundForm meals={meals} initialMealId={prefillMealId} onSubmit={handleCreate} />
-        </Modal>
-      )}
     </>
   )
 }

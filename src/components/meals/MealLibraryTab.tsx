@@ -6,13 +6,11 @@ import { todayISODate } from '../../utils/dueDate'
 import { MEAL_CATEGORY_VALUES, mealBadgeLabel, mealCategoryLabel, suggestedTagLabel, SUGGESTED_MEAL_TAGS } from '../../utils/mealLabels'
 import { getMealBadges } from '../../utils/mealSuggestions'
 import { onActivateKey } from '../../utils/a11y'
-import { Modal } from '../ui/Modal'
 import { EmptyState } from '../ui/EmptyState'
-import { AddMealForm } from './AddMealForm'
 import { MealDetailModal } from './MealDetailModal'
 import type { Meal } from '../../hooks/useMeals'
-import type { MealInput } from '../../context/meals/MealsContext'
 import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from '../ui/FilterDisclosure'
+import { useCreateRecord } from '../../context/create-record/CreateRecordContext'
 
 interface Props {
   onAddToPlan?: (meal: Meal) => void
@@ -21,8 +19,8 @@ interface Props {
 
 export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
   const { isParentOrAdmin } = useFamilyCore()
-  const { meals, planEntries, voteRounds, addMeal, updateMeal } = useMealsDataContext()
-  const [showAdd, setShowAdd] = useState(false)
+  const { meals, planEntries, voteRounds, updateMeal } = useMealsDataContext()
+  const { openCreateRecord } = useCreateRecord()
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null)
   const [search, setSearch] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
@@ -49,18 +47,13 @@ export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
     setShowArchived(false)
   }
 
-  async function handleAdd(input: MealInput) {
-    await addMeal(input)
-    setShowAdd(false)
-  }
-
   return (
     <>
       <FilterDisclosure id="meal-library-filter-panel" open={filtersOpen} onOpenChange={setFiltersOpen}
         activeCount={Number(Boolean(filterCategory)) + Number(Boolean(filterTag)) + Number(showArchived)} onClear={clearFilters}>
       <div className="tab-toolbar">
         {isParentOrAdmin && (
-          <button type="button" className="header-action-button" onClick={() => setShowAdd(true)}>
+          <button type="button" className="header-action-button" onClick={() => openCreateRecord({ type: 'meal-library', source: 'meal-library' })}>
             <span aria-hidden="true">+</span> {t.mealLibrary.addAction}
           </button>
         )}
@@ -113,7 +106,7 @@ export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
         ) : (
           <EmptyState
             title={t.mealLibrary.noMeals}
-            action={isParentOrAdmin ? { label: t.mealLibrary.noMealsAction, onClick: () => setShowAdd(true) } : undefined}
+            action={isParentOrAdmin ? { label: t.mealLibrary.noMealsAction, onClick: () => openCreateRecord({ type: 'meal-library', source: 'meal-library-empty' }) } : undefined}
           />
         )
       ) : (
@@ -140,12 +133,6 @@ export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
             ))}
           </ul>
         </div>
-      )}
-
-      {showAdd && (
-        <Modal title={t.mealLibrary.addTitle} onClose={() => setShowAdd(false)}>
-          <AddMealForm onSubmit={handleAdd} />
-        </Modal>
       )}
 
       {selectedMeal && (

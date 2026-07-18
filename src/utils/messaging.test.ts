@@ -54,8 +54,11 @@ describe('formatConversationTimestamp', () => {
 describe('formatDayDivider', () => {
   it('reports Today/Yesterday and falls back to a date otherwise', () => {
     const now = new Date('2026-07-17T09:00:00Z')
+    const yesterday = new Date(now)
+    yesterday.setDate(now.getDate() - 1)
+    yesterday.setHours(12, 0, 0, 0)
     expect(formatDayDivider('2026-07-17T05:00:00Z', now, { today: 'TODAY', yesterday: 'Y' })).toBe('TODAY')
-    expect(formatDayDivider('2026-07-16T22:00:00Z', now, { today: 'T', yesterday: 'Y' })).toBe('Y')
+    expect(formatDayDivider(yesterday.toISOString(), now, { today: 'T', yesterday: 'Y' })).toBe('Y')
     expect(formatDayDivider('2026-05-01T09:00:00Z', now, { today: 'T', yesterday: 'Y' })).not.toBe('T')
     expect(formatDayDivider('2026-05-01T09:00:00Z', now, { today: 'T', yesterday: 'Y' })).not.toBe('Y')
   })

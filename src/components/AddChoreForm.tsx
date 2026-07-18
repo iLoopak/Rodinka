@@ -4,6 +4,7 @@ import { todayISODate } from '../utils/dueDate'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
 import { TASK_CATEGORIES, type Chore, type ChoreInput, type ChoreRecurrenceType, type TaskCategory, type TaskPriority } from '../utils/choreModel'
 import { choreRecurrenceSummary } from '../utils/choreRecurrence'
+import { DateShortcutField, GuidedDisclosure, GuidedLead, MemberChoicePicker } from './create-record/GuidedCreateFields'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7]
 
@@ -14,7 +15,9 @@ interface Props {
   /** Prefill the title when creating from elsewhere (e.g. a chat message). Ignored when `initial` is given. */
   initialTitle?: string
   initialDueDate?: string
+  initialMemberId?: string
   requiresNewDueDate?: boolean
+  variant?: 'standard' | 'guided'
   onSubmit: (input: ChoreInput) => Promise<void>
 }
 
@@ -22,8 +25,10 @@ function dayOfMonth(date: string): number {
   return Number(date.slice(8, 10))
 }
 
-export function AddChoreForm({ members, currentMemberId, initial, initialTitle, initialDueDate, requiresNewDueDate = false, onSubmit }: Props) {
-  const defaultAssignee = members.some((member) => member.id === currentMemberId) ? currentMemberId : ''
+export function AddChoreForm({ members, currentMemberId, initial, initialTitle, initialDueDate, initialMemberId, requiresNewDueDate = false, variant = 'standard', onSubmit }: Props) {
+  const defaultAssignee = initialMemberId && members.some((member) => member.id === initialMemberId)
+    ? initialMemberId
+    : members.some((member) => member.id === currentMemberId) ? currentMemberId : ''
 
   const [title, setTitle] = useState(initial?.title ?? initialTitle ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
@@ -123,6 +128,103 @@ export function AddChoreForm({ members, currentMemberId, initial, initialTitle, 
     } finally {
       setLoading(false)
     }
+  }
+
+  if (variant === 'guided' && !initial) {
+    return <form className="guided-create-form" onSubmit={handleSubmit}>
+      <div className="guided-create-scroll">
+        <GuidedLead />
+        <section className="guided-primary-section">
+          <label className="guided-hero-field">
+            <span>{t.create.guided.taskPrompt}</span>
+            <input autoFocus required value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t.chores.titlePlaceholder} />
+          </label>
+        </section>
+
+        <MemberChoicePicker
+          label={t.create.guided.taskAssignee}
+          members={members}
+          value={assignedTo}
+          emptyLabel={t.chores.unassigned}
+          onChange={setAssignedTo}
+        />
+
+        <DateShortcutField
+          label={t.create.guided.taskDue}
+          value={hasDueDate ? dueDate : ''}
+          allowEmpty
+          onChange={(date) => {
+            setHasDueDate(Boolean(date))
+            setDueDate(date || todayISODate())
+            if (!date) setRecurrenceType('none')
+          }}
+        />
+
+        <GuidedDisclosure open={advanced} onToggle={() => setAdvanced((value) => !value)}>
+          <label>
+            {t.chores.descriptionLabel}
+            <textarea rows={2} value={description} onChange={(event) => setDescription(event.target.value)} placeholder={t.chores.descriptionPlaceholder} />
+          </label>
+          {hasDueDate && <>
+            <label>
+              {t.chores.recurrenceLabel}
+              <select value={recurrenceType} onChange={(event) => changeRecurrence(event.target.value as ChoreRecurrenceType)}>
+                <option value="none">{t.chores.recurrenceNone}</option>
+                <option value="daily">{t.chores.recurrenceDaily}</option>
+                <option value="weekly">{t.chores.recurrenceWeekly}</option>
+                <option value="monthly">{t.chores.recurrenceMonthly}</option>
+              </select>
+            </label>
+            {recurrenceType === 'daily' && <>
+              <span className="guided-field-label" id="guided-chore-weekdays">{t.chores.weekdaysLabel}</span>
+              <div className="weekday-picker" role="group" aria-labelledby="guided-chore-weekdays">
+                {WEEKDAYS.map((day) => <button
+                  key={day}
+                  type="button"
+                  className={`weekday-toggle${weekdays.includes(day) ? ' active' : ''}`}
+                  aria-pressed={weekdays.includes(day)}
+                  onClick={() => toggleWeekday(day)}
+                >{t.chores.weekdayShortNames[day - 1]}</button>)}
+              </div>
+            </>}
+            {recurrenceType !== 'none' && <p className="guided-summary">{recurrenceSummary}</p>}
+          </>}
+          <div className="guided-two-column">
+            <label>
+              {t.chores.categoryLabel}
+              <select value={category} onChange={(event) => setCategory(event.target.value as TaskCategory | '')}>
+                <option value="">—</option>
+                {TASK_CATEGORIES.map((value, index) => <option key={value} value={value}>{t.chores.categoryLabels[index]}</option>)}
+              </select>
+            </label>
+            <label>
+              {t.chores.priorityLabel}
+              <select value={priority} onChange={(event) => setPriority(event.target.value as TaskPriority)}>
+                <option value="low">{t.chores.priorityLow}</option>
+                <option value="normal">{t.chores.priorityNormal}</option>
+                <option value="high">{t.chores.priorityHigh}</option>
+              </select>
+            </label>
+          </div>
+          <label className="guided-switch">
+            <input type="checkbox" checked={rewardEnabled} onChange={(event) => setRewardEnabled(event.target.checked)} />
+            <span>{t.chores.addReward}</span>
+          </label>
+          {rewardEnabled && <label>
+            {t.chores.rewardAmountLabel}
+            <input required type="number" min="0" step="0.01" inputMode="decimal" value={rewardAmount} onChange={(event) => setRewardAmount(event.target.value)} />
+          </label>}
+          <label className="guided-switch">
+            <input type="checkbox" checked={requiresApproval} onChange={(event) => setRequiresApproval(event.target.checked)} />
+            <span>{t.chores.requiresApproval}</span>
+          </label>
+        </GuidedDisclosure>
+      </div>
+      <div className="guided-create-footer">
+        {error && <p className="error" role="alert">{error}</p>}
+        <button type="submit" disabled={loading}>{loading ? t.chores.saving : t.chores.addSubmit}</button>
+      </div>
+    </form>
   }
 
   return (

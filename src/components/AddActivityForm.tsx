@@ -22,6 +22,7 @@ import type { Activity, ActivityCategory, ActivityKind, ActivityPaymentFrequency
 import type { FamilyMember } from '../hooks/useFamilyMembers'
 import { ActivityParticipantPicker } from './activities/ActivityParticipantPicker'
 import { ActivityRecurrencePicker } from './activities/ActivityRecurrencePicker'
+import { DateShortcutField, GuidedDisclosure, GuidedLead, MemberChoicePicker } from './create-record/GuidedCreateFields'
 
 const CATEGORY_OPTIONS = ACTIVITY_CATEGORY_VALUES.map((value) => ({ value, label: activityCategoryLabel(value) }))
 const PAYMENT_FREQUENCY_OPTIONS = ACTIVITY_PAYMENT_FREQUENCY_VALUES.map((value) => ({
@@ -37,6 +38,8 @@ interface Props {
   /** Prefill the title when creating from elsewhere (e.g. a chat message). Ignored when `initial` is given. */
   initialTitle?: string
   initialStartDate?: string
+  initialMemberId?: string
+  variant?: 'standard' | 'guided'
   onSubmit: (input: ActivityInput) => Promise<void>
 }
 
@@ -48,12 +51,16 @@ interface FieldErrors {
   endDate?: string
 }
 
-export function AddActivityForm({ members, kids, initial, initialTitle, initialStartDate, onSubmit }: Props) {
+export function AddActivityForm({ members, kids, initial, initialTitle, initialStartDate, initialMemberId, variant = 'standard', onSubmit }: Props) {
   const [title, setTitle] = useState(initial?.title ?? initialTitle ?? '')
   const [kind, setKind] = useState<ActivityKind>(initial?.kind ?? 'club')
   const [category, setCategory] = useState<ActivityCategory>(initial?.category ?? 'other')
   const [participantIds, setParticipantIds] = useState<string[]>(
-    initial?.participant_ids ?? (initial?.child_id ? [initial.child_id] : kids[0]?.id ? [kids[0].id] : [])
+    initial?.participant_ids ?? (initial?.child_id
+      ? [initial.child_id]
+      : initialMemberId && members.some((member) => member.id === initialMemberId)
+        ? [initialMemberId]
+        : kids[0]?.id ? [kids[0].id] : [])
   )
   const [responsibleMemberId, setResponsibleMemberId] = useState(initial?.responsible_member_id ?? '')
   const [secondaryResponsibleMemberId, setSecondaryResponsibleMemberId] = useState(initial?.secondary_responsible_member_id ?? '')
@@ -161,6 +168,133 @@ export function AddActivityForm({ members, kids, initial, initialTitle, initialS
     } finally {
       setLoading(false)
     }
+  }
+
+  if (variant === 'guided' && !initial) {
+    return <form className="guided-create-form" onSubmit={handleSubmit}>
+      <div className="guided-create-scroll">
+        <GuidedLead />
+        <section className="guided-primary-section">
+          <div className="guided-segmented" role="group" aria-label={t.activities.kindLabel}>
+            <button type="button" className={kind === 'club' ? 'selected' : ''} aria-pressed={kind === 'club'} onClick={() => changeKind('club')}>{t.activities.kindClub}</button>
+            <button type="button" className={kind === 'event' ? 'selected' : ''} aria-pressed={kind === 'event'} onClick={() => changeKind('event')}>{t.activities.kindEvent}</button>
+          </div>
+          <label className="guided-hero-field">
+            <span>{t.create.guided.activityPrompt}</span>
+            <input
+              autoFocus
+              required
+              value={title}
+              aria-invalid={Boolean(fieldErrors.title) || undefined}
+              onChange={(event) => {
+                setTitle(event.target.value)
+                setFieldErrors((previous) => ({ ...previous, title: undefined }))
+              }}
+              placeholder={kind === 'event' ? t.activities.eventTitlePlaceholder : t.activities.titlePlaceholder}
+            />
+          </label>
+          {fieldErrors.title && <p className="field-error" role="alert">{fieldErrors.title}</p>}
+        </section>
+
+        <ActivityParticipantPicker
+          members={members}
+          selectedIds={participantIds}
+          invalid={Boolean(fieldErrors.participants)}
+          onChange={(ids) => {
+            setParticipantIds(ids)
+            setFieldErrors((previous) => ({ ...previous, participants: undefined }))
+          }}
+        />
+        {fieldErrors.participants && <p className="field-error" role="alert">{fieldErrors.participants}</p>}
+
+        <DateShortcutField
+          label={t.create.guided.activityDate}
+          value={startDate}
+          required
+          onChange={(date) => {
+            setStartDate(date)
+            setScheduleTouched(true)
+            setFieldErrors((previous) => ({ ...previous, startDate: undefined, endDate: undefined }))
+          }}
+        />
+        {fieldErrors.startDate && <p className="field-error" role="alert">{fieldErrors.startDate}</p>}
+        <div className="guided-time-row">
+          <label>
+            <span>{t.activities.startTimeCompactLabel}</span>
+            <input type="time" disabled={allDay} value={startTime} onChange={(event) => { setStartTime(event.target.value); setScheduleTouched(true) }} />
+          </label>
+          <label>
+            <span>{t.activities.endTimeCompactLabel}</span>
+            <input type="time" disabled={allDay} value={endTime} onChange={(event) => { setEndTime(event.target.value); setScheduleTouched(true) }} />
+          </label>
+          <label className="guided-switch guided-all-day">
+            <input type="checkbox" checked={allDay} onChange={(event) => { setAllDay(event.target.checked); setScheduleTouched(true) }} />
+            <span>{t.activities.allDayLabel}</span>
+          </label>
+        </div>
+
+        <GuidedDisclosure open={advancedOpen} onToggle={() => setAdvancedOpen((open) => !open)}>
+          <ActivityRecurrencePicker
+            value={recurrenceType}
+            startDate={startDate}
+            weekdays={weekdays}
+            invalid={Boolean(fieldErrors.weekdays)}
+            onChange={changeRecurrence}
+            onToggleWeekday={(day) => {
+              setWeekdays((previous) => toggleRecurrenceWeekday(previous, day))
+              setScheduleTouched(true)
+              setFieldErrors((previous) => ({ ...previous, weekdays: undefined }))
+            }}
+          />
+          {fieldErrors.weekdays && <p className="field-error" role="alert">{fieldErrors.weekdays}</p>}
+          <label>
+            <span>{recurrenceType === 'one_off' ? t.activities.eventEndDateLabel : t.activities.recurrenceEndCompactLabel}</span>
+            <input type="date" value={endDate} aria-invalid={Boolean(fieldErrors.endDate) || undefined} onChange={(event) => { setEndDate(event.target.value); setScheduleTouched(true); setFieldErrors((previous) => ({ ...previous, endDate: undefined })) }} />
+          </label>
+          {fieldErrors.endDate && <p className="field-error" role="alert">{fieldErrors.endDate}</p>}
+          <label>
+            <span>{t.activities.locationLabel}</span>
+            <input value={location} onChange={(event) => setLocation(event.target.value)} placeholder={t.activities.locationPlaceholder} />
+          </label>
+          <label>
+            <span>{t.activities.categoryLabel}</span>
+            <select value={category} onChange={(event) => { setCategory(event.target.value as ActivityCategory); setCategoryTouched(true) }}>
+              {CATEGORY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </label>
+          <div className="guided-two-column">
+            <MemberChoicePicker label={t.activities.responsibleCompactLabel} members={members} value={responsibleMemberId} emptyLabel={t.activities.responsibleNone} onChange={setResponsibleMemberId} />
+            <MemberChoicePicker label={t.activities.secondaryResponsibleCompactLabel} members={members} value={secondaryResponsibleMemberId} emptyLabel={t.activities.responsibleNone} onChange={setSecondaryResponsibleMemberId} />
+          </div>
+          <button type="button" className="guided-inline-disclosure" aria-expanded={contactOpen} onClick={() => setContactOpen((open) => !open)} data-create-ignore-dirty>
+            <span>{contactOpen ? t.activities.contactAdded : t.activities.addContact}</span><span aria-hidden="true">{contactOpen ? '−' : '+'}</span>
+          </button>
+          {contactOpen && <div className="guided-two-column">
+            <label><span>{t.activities.coachNameLabel}</span><input value={coachName} onChange={(event) => setCoachName(event.target.value)} /></label>
+            <label><span>{t.activities.coachPhoneLabel}</span><input type="tel" value={coachPhone} onChange={(event) => setCoachPhone(event.target.value)} /></label>
+            <label className="guided-full-width"><span>{t.activities.coachEmailLabel}</span><input type="email" value={coachEmail} onChange={(event) => setCoachEmail(event.target.value)} /></label>
+          </div>}
+          <button type="button" className="guided-inline-disclosure" aria-expanded={paymentOpen} onClick={() => setPaymentOpen((open) => !open)} data-create-ignore-dirty>
+            <span>{t.activities.trackPayments}</span><span aria-hidden="true">{paymentOpen ? '−' : '+'}</span>
+          </button>
+          {paymentOpen && <div className="guided-two-column">
+            <label><span>{t.activities.paymentAmountLabel}</span><input type="number" min="0" step="0.01" inputMode="decimal" value={paymentAmount} onChange={(event) => setPaymentAmount(event.target.value)} /></label>
+            <label><span>{t.activities.paymentFrequencyLabel}</span><select value={paymentFrequency} onChange={(event) => setPaymentFrequency(event.target.value as ActivityPaymentFrequency | '')}><option value="">{t.activities.noPaymentFrequency}</option>{PAYMENT_FREQUENCY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+            <label className="guided-full-width"><span>{t.activities.nextPaymentDueDateLabel}</span><input type="date" value={nextPaymentDueDate} onChange={(event) => setNextPaymentDueDate(event.target.value)} /></label>
+          </div>}
+          <label className="guided-switch">
+            <input type="checkbox" checked={reminderEnabled} onChange={(event) => setReminderEnabled(event.target.checked)} />
+            <span>{t.activities.reminderCompactLabel}</span>
+          </label>
+          {reminderEnabled && <label><span>{t.activities.reminderDaysBeforeLabel}</span><input type="number" min="0" step="1" inputMode="numeric" value={reminderDaysBefore} onChange={(event) => setReminderDaysBefore(event.target.value)} /></label>}
+          <label><span>{t.activities.notesLabel}</span><textarea rows={3} value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
+        </GuidedDisclosure>
+      </div>
+      <div className="guided-create-footer">
+        {submitError && <p className="error" role="alert">{submitError}</p>}
+        <button type="submit" disabled={loading}>{loading ? t.activities.submitting : t.activities.submitAdd}</button>
+      </div>
+    </form>
   }
 
   return <form className="activity-form" onSubmit={handleSubmit}>

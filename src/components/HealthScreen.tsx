@@ -3,9 +3,7 @@ import { t } from '../strings'
 import { useFamilyCore } from '../context/family/FamilyCoreContext'
 import { useFamilyMembersData } from '../context/family/FamilyMembersContext'
 import { useMedicalData } from '../context/health/MedicalContext'
-import { AddMedicalRecordForm } from './AddMedicalRecordForm'
 import { MedicalDetailModal } from './MedicalDetailModal'
-import { Modal } from './ui/Modal'
 import { ErrorState } from './ui/ErrorState'
 import { EmptyState } from './ui/EmptyState'
 import { DueBadge } from './ui/DueBadge'
@@ -14,32 +12,31 @@ import { formatFullDate, todayISODate } from '../utils/dueDate'
 import { isMedicalRecordOverdue } from '../utils/medicalDueState'
 import { onActivateKey } from '../utils/a11y'
 import type { MedicalRecord } from '../hooks/useMedicalRecords'
-import type { MedicalRecordInput } from '../domain/medical/types'
 import { useRouter } from '../router'
 import { resolveDeepLinkedItem } from '../utils/deepLinks'
 import { ScrollableTabs } from './ui/ScrollableTabs'
 import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from './ui/FilterDisclosure'
 import { ScreenHeader } from './ui/ScreenHeader'
 import { PersonRoleGroup, type PersonRole } from './ui/PersonRoleGroup'
+import { useCreateRecord } from '../context/create-record/CreateRecordContext'
 
 type Tab = 'upcoming' | 'history' | 'vaccinations' | 'overdue'
 
 export function HealthScreen() {
   const [tab, setTab] = useState<Tab>('upcoming')
-  const [showAdd, setShowAdd] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null)
   const [filterMember, setFilterMember] = useState('')
   const [filterType, setFilterType] = useState('')
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [deepLinkError, setDeepLinkError] = useState(false)
   const { searchParams, setQueryParam, removeQueryParam } = useRouter()
+  const { openCreateRecord } = useCreateRecord()
   const recordParam = searchParams.get('record')
 
   const { currentMember, isParentOrAdmin } = useFamilyCore()
   const { members, memberName, memberById } = useFamilyMembersData()
   const {
     medicalRecords,
-    addMedicalRecord,
     updateMedicalRecord,
     medicalLoading: loading,
     medicalError: error,
@@ -68,11 +65,6 @@ export function HealthScreen() {
 
   if (error) {
     return <ErrorState message={error} onRetry={refreshAll} />
-  }
-
-  async function handleAdd(input: MedicalRecordInput) {
-    await addMedicalRecord(input)
-    setShowAdd(false)
   }
 
   const hasFilters = filterMember !== '' || filterType !== ''
@@ -126,7 +118,7 @@ export function HealthScreen() {
         activeCount={Number(Boolean(filterMember)) + Number(Boolean(filterType))} onClear={clearFilters}>
       <ScreenHeader title={t.medical.title} actions={<>
           <FilterDisclosureToggle />
-          {isParentOrAdmin && <button type="button" className="header-action-button" onClick={() => setShowAdd(true)}>
+          {isParentOrAdmin && <button type="button" className="header-action-button" onClick={() => openCreateRecord({ type: 'medical', source: 'health' })}>
             <span aria-hidden="true">+</span> {t.medical.addAction}
           </button>}
         </>} />
@@ -178,12 +170,6 @@ export function HealthScreen() {
           </div>
         )}
       </section>
-
-      {showAdd && (
-        <Modal title={t.medical.addTitle} onClose={() => setShowAdd(false)}>
-          <AddMedicalRecordForm members={members} currentMemberId={currentMember.id} onSubmit={handleAdd} />
-        </Modal>
-      )}
 
       {selectedRecord && (
         <MedicalDetailModal
