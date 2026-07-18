@@ -105,7 +105,12 @@ function TaskCard({ resolution, onAfterAction, onSystemNotice }: Props) {
     setBusy(true)
     setError(false)
     try {
-      await chores.markDone(resolution.entityId, assignedTo ?? undefined, dueDate ?? undefined)
+      // Match the rest of the app (ChoreList / ChoreDetailModal): complete
+      // by (choreId, assignedTo) and let the RPC resolve the current
+      // occurrence. Passing an explicit occurrence date trips a latent
+      // ambiguous-column bug in complete_household_task, and no other
+      // caller does it.
+      await chores.markDone(resolution.entityId, assignedTo ?? undefined)
       onSystemNotice('task_completed', t.messages.entityCard.systemTaskCompleted(memberName(currentMember.id), title))
       onAfterAction()
     } catch (e) {
@@ -114,7 +119,7 @@ function TaskCard({ resolution, onAfterAction, onSystemNotice }: Props) {
     } finally {
       setBusy(false)
     }
-  }, [chores, resolution.entityId, assignedTo, dueDate, onSystemNotice, memberName, currentMember.id, title, onAfterAction])
+  }, [chores, resolution.entityId, assignedTo, onSystemNotice, memberName, currentMember.id, title, onAfterAction])
 
   if (!resolution.exists) {
     return <CardShell type={t.messages.entityCard.typeTask} icon={<TaskIcon />} title={str(s.fallback_label) ?? title} deleted>
