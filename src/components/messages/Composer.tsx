@@ -7,6 +7,14 @@ import {
 } from '../../utils/messageAttachment'
 import type { MessageAttachmentRow } from '../../context/messages/types'
 import type { CreateFromMessageKind } from './CreateFromMessageDialog'
+import {
+  applyMention,
+  findMentionQuery,
+  matchMentionCandidates,
+  mentionedMemberIds,
+  type MentionCandidate,
+  type MentionQuery,
+} from '../../utils/mentions'
 
 export interface ComposerReplyContext {
   messageId: string
@@ -23,9 +31,12 @@ interface Props {
     replyToMessageId?: string | null
     attachmentIds?: string[]
     attachments?: MessageAttachmentRow[]
+    mentionMemberIds?: string[]
   }) => Promise<void>
   /** Open the compact creation flow for a new planner entity. */
   onCreateEntity: (kind: CreateFromMessageKind) => void
+  /** Participants of this conversation, offered by the "@" autocomplete. */
+  mentionCandidates: MentionCandidate[]
 }
 
 interface DraftAttachment {
@@ -42,9 +53,11 @@ interface DraftAttachment {
 // only "Foto" today — other affordances (task, shopping, event,
 // reminder) are held back until they wire to real flows so we don't
 // ship a menu full of disabled placeholder buttons.
-export function Composer({ conversationId, replyingTo, onCancelReply, onSend, onCreateEntity }: Props) {
+export function Composer({ conversationId, replyingTo, onCancelReply, onSend, onCreateEntity, mentionCandidates }: Props) {
   const { uploadAttachment, discardPendingAttachment } = useMessagesData()
   const [value, setValue] = useState('')
+  const [mentionQuery, setMentionQuery] = useState<MentionQuery | null>(null)
+  const [mentionIndex, setMentionIndex] = useState(0)
   const [sending, setSending] = useState(false)
   const [drafts, setDrafts] = useState<DraftAttachment[]>([])
   const [plusOpen, setPlusOpen] = useState(false)
@@ -130,6 +143,38 @@ export function Composer({ conversationId, replyingTo, onCancelReply, onSend, on
     fileInputRef.current?.click()
   }, [])
 
+  const mentionMatches = useMemo(
+    () => (mentionQuery ? matchMentionCandidates(mentionCandidates, mentionQuery.query) : []),
+    [mentionQuery, mentionCandidates],
+  )
+
+  // Re-derived from the text on every change rather than accumulated as the
+  // user picks from the dropdown: if they delete or edit a name by hand, the
+  // mention disappears with it and no stale ping is sent.
+  const syncMentionQuery = useCallback((text: string, caret: number) => {
+    const next = findMentionQuery(text, caret)
+    setMentionQuery(next)
+    setMentionIndex(0)
+  }, [])
+
+  const selectMention = useCallback((member: MentionCandidate) => {
+    const textarea = textareaRef.current
+    if (!textarea || !mentionQuery) return
+    const caret = textarea.selectionStart ?? value.length
+    const result = applyMention(value, mentionQuery, caret, member)
+    setValue(result.text)
+    setMentionQuery(null)
+    setMentionIndex(0)
+    // Restore the caret after React has written the new value back.
+    requestAnimationFrame(() => {
+      const element = textareaRef.current
+      if (!element) return
+      element.focus()
+      element.setSelectionRange(result.caret, result.caret)
+      autosize(element)
+    })
+  }, [value, mentionQuery, autosize])
+
   const submit = useCallback(async () => {
     const trimmed = value.trim()
     if (!trimmed && readyIds.length === 0) return
@@ -141,8 +186,10 @@ export function Composer({ conversationId, replyingTo, onCancelReply, onSend, on
         replyToMessageId: replyingTo?.messageId ?? null,
         attachmentIds: readyIds,
         attachments: readyAttachments,
+        mentionMemberIds: mentionedMemberIds(trimmed, mentionCandidates),
       })
       setValue('')
+      setMentionQuery(null)
       setDrafts((current) => {
         for (const d of current) URL.revokeObjectURL(d.previewUrl)
         return []
@@ -153,14 +200,38 @@ export function Composer({ conversationId, replyingTo, onCancelReply, onSend, on
     } finally {
       setSending(false)
     }
-  }, [value, readyIds, readyAttachments, sending, uploading, onSend, replyingTo])
+  }, [value, readyIds, readyAttachments, sending, uploading, onSend, replyingTo, mentionCandidates])
 
   const handleKeyDown = useCallback((event: KeyboardEvent<HTMLTextAreaElement>) => {
+    // While the autocomplete is open it owns the arrows, Enter/Tab and
+    // Escape; Enter must not send a half-typed "@pe".
+    if (mentionQuery && mentionMatches.length > 0) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault()
+        setMentionIndex((index) => (index + 1) % mentionMatches.length)
+        return
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault()
+        setMentionIndex((index) => (index - 1 + mentionMatches.length) % mentionMatches.length)
+        return
+      }
+      if (event.key === 'Enter' || event.key === 'Tab') {
+        event.preventDefault()
+        selectMention(mentionMatches[Math.min(mentionIndex, mentionMatches.length - 1)])
+        return
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setMentionQuery(null)
+        return
+      }
+    }
     if (event.key === 'Enter' && !event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
       event.preventDefault()
       void submit()
     }
-  }, [submit])
+  }, [submit, mentionQuery, mentionMatches, mentionIndex, selectMention])
 
   return (
     <div className="messages-composer-shell">
@@ -202,6 +273,32 @@ export function Composer({ conversationId, replyingTo, onCancelReply, onSend, on
       )}
       {uploadError && (
         <p className="messages-composer-error" role="alert">{uploadError}</p>
+      )}
+      {mentionMatches.length > 0 && (
+        <ul
+          className="messages-mention-list"
+          id={`messages-mention-list-${conversationId}`}
+          role="listbox"
+          aria-label={t.messages.mentionListLabel}
+        >
+          {mentionMatches.map((member, index) => (
+            <li key={member.id} role="presentation">
+              <button
+                type="button"
+                id={`messages-mention-option-${conversationId}-${index}`}
+                role="option"
+                aria-selected={index === Math.min(mentionIndex, mentionMatches.length - 1)}
+                className={`messages-mention-option${index === Math.min(mentionIndex, mentionMatches.length - 1) ? ' is-active' : ''}`}
+                // Pointer-down beats the textarea blur, so the click lands.
+                onMouseDown={(event) => { event.preventDefault(); selectMention(member) }}
+                onMouseEnter={() => setMentionIndex(index)}
+              >
+                <span className="messages-mention-option-at" aria-hidden="true">@</span>
+                {member.name}
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
       <form
         className="messages-composer"
@@ -296,9 +393,35 @@ export function Composer({ conversationId, replyingTo, onCancelReply, onSend, on
           value={value}
           rows={1}
           placeholder={t.messages.composerPlaceholder}
+          role="combobox"
+          aria-expanded={mentionMatches.length > 0}
+          aria-controls={`messages-mention-list-${conversationId}`}
+          aria-autocomplete="list"
+          aria-activedescendant={
+            mentionMatches.length > 0
+              ? `messages-mention-option-${conversationId}-${Math.min(mentionIndex, mentionMatches.length - 1)}`
+              : undefined
+          }
           onChange={(event) => {
             setValue(event.target.value)
+            syncMentionQuery(event.target.value, event.target.selectionStart ?? event.target.value.length)
             autosize(event.currentTarget)
+          }}
+          onKeyUp={(event) => {
+            // Arrow/click caret moves can leave or enter a mention token
+            // without changing the text.
+            if (!mentionQuery && event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+            const target = event.currentTarget
+            syncMentionQuery(target.value, target.selectionStart ?? target.value.length)
+          }}
+          onClick={(event) => {
+            const target = event.currentTarget
+            syncMentionQuery(target.value, target.selectionStart ?? target.value.length)
+          }}
+          onBlur={() => {
+            // Delayed so a pointer click on an option is not cancelled by
+            // the dropdown unmounting first.
+            window.setTimeout(() => setMentionQuery(null), 120)
           }}
           onKeyDown={handleKeyDown}
           disabled={sending}

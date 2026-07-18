@@ -64,6 +64,17 @@ function mapPreferences(row: Record<string, unknown> | null, memberId: string, f
     timezoneMode: row.timezone_mode === 'explicit' ? 'explicit' : 'auto',
     locale: row.locale === 'en' ? 'en' : 'cs',
     categories: { ...DEFAULT_CATEGORY_PREFERENCES, ...((row.category_preferences as Partial<Record<ReminderCategory, boolean>> | null) ?? {}) },
+    // A row written before the batch 4 migration has these columns as SQL
+    // defaults (true); `!== false` keeps a missing column reading as on.
+    messages: {
+      direct: row.message_direct_enabled !== false,
+      group: row.message_group_enabled !== false,
+      replyMention: row.message_reply_mention_enabled !== false,
+      task: row.message_task_enabled !== false,
+      entity: row.message_entity_enabled !== false,
+      sound: row.message_sound_enabled !== false,
+      preview: row.message_preview_enabled !== false,
+    },
   }
 }
 
@@ -284,7 +295,15 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       quiet_hours_start: normalized.quietHoursStart, quiet_hours_end: normalized.quietHoursEnd,
       timezone: normalized.timezone, timezone_mode: normalized.timezoneMode,
       locale: normalized.locale,
-      category_preferences: normalized.categories, updated_at: new Date().toISOString(),
+      category_preferences: normalized.categories,
+      message_direct_enabled: normalized.messages.direct,
+      message_group_enabled: normalized.messages.group,
+      message_reply_mention_enabled: normalized.messages.replyMention,
+      message_task_enabled: normalized.messages.task,
+      message_entity_enabled: normalized.messages.entity,
+      message_sound_enabled: normalized.messages.sound,
+      message_preview_enabled: normalized.messages.preview,
+      updated_at: new Date().toISOString(),
     })
     if (saveError) throw new Error(t.reminders.settingsSaveFailed)
     setPreferences(normalized)

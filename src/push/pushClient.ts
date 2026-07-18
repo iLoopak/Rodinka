@@ -175,6 +175,33 @@ export async function unsubscribeCurrentDevice(deviceId: string | null) {
   if (subscription) await subscription.unsubscribe()
 }
 
+/**
+ * Called immediately before `supabase.auth.signOut()`.
+ *
+ * Without this, the server row keeps pointing at the signed-out user and
+ * that device would go on receiving their family's messages after someone
+ * else signs in on it. We revoke the server row but deliberately keep the
+ * browser subscription: `register_push_subscription` clears `revoked_at` on
+ * conflict, so the next sign-in on this device re-activates the same
+ * endpoint instead of burning a new one.
+ *
+ * Best-effort by design — a failure here must never block sign-out.
+ */
+export async function releasePushOnSignOut() {
+  try {
+    if (!('serviceWorker' in navigator)) return false
+    const registration = await navigator.serviceWorker.getRegistration()
+    const subscription = await registration?.pushManager.getSubscription()
+    if (!subscription) return false
+    const { error } = await supabase.rpc('revoke_push_subscription_by_endpoint', {
+      p_endpoint: subscription.endpoint,
+    })
+    return !error
+  } catch {
+    return false
+  }
+}
+
 export async function sendTestPush(familyId: string) {
   const { data, error } = await supabase.functions.invoke('send-notification-deliveries', {
     body: { mode: 'test', familyId },

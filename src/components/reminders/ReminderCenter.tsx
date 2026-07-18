@@ -115,9 +115,60 @@ function ReminderSettings({ preferences, reminders, saving, feedback, categories
     <section className="page-section"><h2 className="section-heading">{t.reminders.deliveryTitle}</h2><div className="panel is-primary reminder-settings-panel"><label className="setting-row"><span><strong>{t.reminders.inAppTitle}</strong><small>{t.reminders.inAppBody}</small></span><input type="checkbox" checked={preferences.inAppEnabled} onChange={(event) => toggle('inAppEnabled', event.target.checked)} disabled={saving} /></label><label className="setting-row"><span><strong>{t.reminders.quietPushTitle}</strong><small>{t.reminders.quietPushBody}</small></span><input type="checkbox" checked={preferences.quietPushEnabled} onChange={(event) => toggle('quietPushEnabled', event.target.checked)} disabled={saving} /></label><PushSettings preferences={preferences} saving={saving} onChange={onChange} /></div></section>
     <section className="page-section"><h2 className="section-heading">{t.reminders.summariesTitle}</h2><div className="panel is-primary reminder-settings-panel"><p className="row-meta">{t.reminders.summariesBody}</p><label className="setting-row"><span><strong>{t.reminders.dailyDigest}</strong><small>{t.reminders.dailyDigestBody}</small></span><input type="checkbox" checked={preferences.dailyDigestEnabled} onChange={(event) => onChange({ ...preferences, dailyDigestEnabled: event.target.checked, weeklyDigestEnabled: event.target.checked ? false : preferences.weeklyDigestEnabled })} disabled={saving} /></label><label className="setting-row"><span><strong>{t.reminders.weeklyDigest}</strong><small>{t.reminders.weeklyDigestBody}</small></span><input type="checkbox" checked={preferences.weeklyDigestEnabled} onChange={(event) => onChange({ ...preferences, weeklyDigestEnabled: event.target.checked, dailyDigestEnabled: event.target.checked ? false : preferences.dailyDigestEnabled })} disabled={saving} /></label>{(preferences.dailyDigestEnabled || preferences.weeklyDigestEnabled) && <div className="digest-preview"><strong>{t.reminders.digestPreview}</strong><span>{t.reminders.digestCounts(digest.items.length, digest.important)}</span></div>}</div></section>
     <section className="page-section"><h2 className="section-heading">{t.reminders.categoriesTitle}</h2><div className="panel is-primary reminder-settings-panel"><div className="category-settings">{categories.map((category) => <label className="setting-row" key={category}><span>{categoryLabel(category)}</span><input type="checkbox" checked={preferences.categories[category]} onChange={(event) => onChange({ ...preferences, categories: { ...preferences.categories, [category]: event.target.checked } })} disabled={saving} /></label>)}</div></div></section>
+    <MessageNotificationSettings preferences={preferences} saving={saving} onChange={onChange} />
     <section className="page-section"><h2 className="section-heading">{t.reminders.timeTitle}</h2><div className="panel is-primary reminder-settings-panel"><label className="setting-row"><span><strong>{t.reminders.timezoneAuto}</strong><small>{t.reminders.timezoneDetected(detectedTimezone)}</small></span><input type="checkbox" checked={preferences.timezoneMode === 'auto'} onChange={(event) => onChange({ ...preferences, timezoneMode: event.target.checked ? 'auto' : 'explicit', timezone: event.target.checked ? detectedTimezone : preferences.timezone })} disabled={saving} /></label>{preferences.timezoneMode === 'explicit' && <label className="setting-row"><span><strong>{t.reminders.timezoneCustom}</strong><small>{t.reminders.timezoneCustomBody}</small></span><select value={preferences.timezone} onChange={(event) => onChange({ ...preferences, timezone: event.target.value })} disabled={saving}>{timezoneOptions.map((timezone) => <option key={timezone} value={timezone}>{timezone}</option>)}</select></label>}<label className="setting-row"><span><strong>{t.reminders.quietHoursTitle}</strong><small>{t.reminders.quietHoursBody}</small></span><input type="checkbox" checked={preferences.quietHoursEnabled} onChange={(event) => toggle('quietHoursEnabled', event.target.checked)} disabled={saving} /></label>{preferences.quietHoursEnabled && <div className="quiet-hours"><label>{t.reminders.quietFrom} <input type="time" value={preferences.quietHoursStart} onChange={(event) => onChange({ ...preferences, quietHoursStart: event.target.value })} /></label><label>{t.reminders.quietTo} <input type="time" value={preferences.quietHoursEnd} onChange={(event) => onChange({ ...preferences, quietHoursEnd: event.target.value })} /></label></div>}<p className="row-meta">{t.reminders.timezoneUsed(preferences.timezone)}</p></div></section>
     {feedback && <p className="shopping-feedback" role="status">{feedback}</p>}
   </div>
+}
+
+// "Zprávy a upozornění" — the per-type switches for messaging push.
+//
+// Every switch here sits under the account-level push toggle above, so when
+// push is off the whole section is shown disabled with an explanation
+// rather than hidden: a user looking for "why am I not getting messages"
+// should find the answer here, not have the controls vanish.
+function MessageNotificationSettings({ preferences, saving, onChange }: {
+  preferences: NotificationPreferences
+  saving: boolean
+  onChange: (next: NotificationPreferences) => Promise<void>
+}) {
+  const messages = preferences.messages
+  const set = (key: keyof typeof messages, value: boolean) =>
+    onChange({ ...preferences, messages: { ...messages, [key]: value } })
+  const locked = !preferences.pushEnabled || saving
+
+  const rows: { key: keyof typeof messages; title: string; body: string }[] = [
+    { key: 'direct', title: t.reminders.messageDirectTitle, body: t.reminders.messageDirectBody },
+    { key: 'group', title: t.reminders.messageGroupTitle, body: t.reminders.messageGroupBody },
+    { key: 'replyMention', title: t.reminders.messageReplyMentionTitle, body: t.reminders.messageReplyMentionBody },
+    { key: 'task', title: t.reminders.messageTaskTitle, body: t.reminders.messageTaskBody },
+    { key: 'entity', title: t.reminders.messageEntityTitle, body: t.reminders.messageEntityBody },
+  ]
+
+  return <section className="page-section">
+    <h2 className="section-heading">{t.reminders.messagesTitle}</h2>
+    <div className="panel is-primary reminder-settings-panel">
+      <p className="row-meta">{t.reminders.messagesBody}</p>
+      {!preferences.pushEnabled && <p className="row-meta push-warning">{t.reminders.messagesRequirePush}</p>}
+      {rows.map((row) => <label className="setting-row" key={row.key}>
+        <span><strong>{row.title}</strong><small>{row.body}</small></span>
+        <input type="checkbox" checked={messages[row.key]} disabled={locked} onChange={(event) => set(row.key, event.target.checked)} />
+      </label>)}
+      <label className="setting-row">
+        <span><strong>{t.reminders.messageSoundTitle}</strong><small>{t.reminders.messageSoundBody}</small></span>
+        <input type="checkbox" checked={messages.sound} disabled={locked} onChange={(event) => set('sound', event.target.checked)} />
+      </label>
+      <label className="setting-row">
+        <span><strong>{t.reminders.messagePreviewTitle}</strong><small>{t.reminders.messagePreviewBody}</small></span>
+        <input type="checkbox" checked={messages.preview} disabled={locked} onChange={(event) => set('preview', event.target.checked)} />
+      </label>
+      {/* Shows the user exactly what a locked screen will reveal. */}
+      <div className="digest-preview">
+        <strong>{t.reminders.messagePreviewExampleTitle}</strong>
+        <span>{messages.preview ? t.reminders.messagePreviewExampleOn : t.reminders.messagePreviewExampleOff}</span>
+      </div>
+    </div>
+  </section>
 }
 
 function PushSettings({ preferences, saving, onChange }: { preferences: NotificationPreferences; saving: boolean; onChange: (next: NotificationPreferences) => Promise<void> }) {

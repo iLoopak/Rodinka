@@ -10,6 +10,8 @@ import { EmptyState } from '../ui/EmptyState'
 import { ErrorState } from '../ui/ErrorState'
 import { ConfirmDestructiveActionDialog } from '../ui/DestructiveActions'
 import { memberColorStyle } from '../../utils/memberColor'
+import { splitMentionText, type MentionCandidate } from '../../utils/mentions'
+import { muteUntil, type MuteDuration } from '../../utils/muteDuration'
 import type {
   ConversationMuteScope,
   ConversationView,
@@ -35,9 +37,13 @@ import { EmojiPicker, COMMON_REACTIONS } from './EmojiPicker'
 import { Composer, type ComposerReplyContext } from './Composer'
 import { AttachmentLightbox } from './AttachmentLightbox'
 import { MobileChatPortal } from './MobileChatPortal'
+import { MessagePushPrompt } from './MessagePushPrompt'
 import { useMediaQuery, MOBILE_CHAT_QUERY } from '../../hooks/useMediaQuery'
 
 const CONVERSATION_QUERY_KEY = 'c'
+// Set by a push deep link so the app can scroll straight to the message the
+// notification was about.
+const MESSAGE_QUERY_KEY = 'm'
 const LONG_PRESS_MS = 500
 
 export function MessagesScreen() {
@@ -180,8 +186,8 @@ export function MessagesScreen() {
     [activeId, markConversationRead],
   )
   const handleMuteChange = useCallback(
-    (scope: ConversationMuteScope) =>
-      activeId ? setConversationMute(activeId, scope) : Promise.resolve(),
+    (scope: ConversationMuteScope, until: string | null) =>
+      activeId ? setConversationMute(activeId, scope, until) : Promise.resolve(),
     [activeId, setConversationMute],
   )
 
@@ -362,6 +368,7 @@ interface ConversationDetailProps {
     replyToMessageId?: string | null
     attachmentIds?: string[]
     attachments?: MessageAttachmentRow[]
+    mentionMemberIds?: string[]
   }) => Promise<void>
   onEdit: (messageId: string, body: string) => Promise<void>
   onDelete: (messageId: string) => Promise<void>
@@ -370,7 +377,7 @@ interface ConversationDetailProps {
   onDiscardFailed: (clientId: string) => void
   onMarkRead: () => void | Promise<void>
   onBack: () => void
-  onMuteChange: (scope: ConversationMuteScope) => Promise<void>
+  onMuteChange: (scope: ConversationMuteScope, until: string | null) => Promise<void>
   getReactions: (messageId: string) => MessageReactionRow[]
   getAttachments: (messageId: string) => MessageAttachmentRow[]
   getAttachmentUrl: (attachmentId: string) => string | null
@@ -415,6 +422,53 @@ function ConversationDetail(props: ConversationDetailProps) {
   const [muteDialogOpen, setMuteDialogOpen] = useState(false)
   const [createFrom, setCreateFrom] = useState<{ kind: CreateFromMessageKind; text: string } | null>(null)
   const [showJumpButton, setShowJumpButton] = useState(false)
+
+  // Only real participants can be mentioned — the RPC enforces the same
+  // thing server-side, so offering anyone else would just produce a
+  // highlighted name that never pings.
+  const mentionCandidates = useMemo<MentionCandidate[]>(
+    () => conversation.memberIds
+      .filter((id) => id !== currentMember.id)
+      .map((id) => ({ id, name: memberName(id) }))
+      .filter((candidate) => candidate.name.trim() !== ''),
+    [conversation.memberIds, currentMember.id, memberName],
+  )
+
+  // The rendering list also includes the reader, so a mention of *you* can
+  // be styled differently from a mention of someone else.
+  const renderCandidates = useMemo<MentionCandidate[]>(
+    () => conversation.memberIds
+      .map((id) => ({ id, name: memberName(id) }))
+      .filter((candidate) => candidate.name.trim() !== ''),
+    [conversation.memberIds, memberName],
+  )
+
+  // Scroll-to-message for push deep links (`?m=<id>`). If the message is
+  // older than the initially loaded page it simply is not in the DOM yet —
+  // the conversation still opens at the bottom, which is the sane fallback.
+  const { searchParams: detailParams, removeQueryParam: dropDetailParam } = useRouter()
+  const requestedMessageId = detailParams.get(MESSAGE_QUERY_KEY)
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!requestedMessageId || !loaded) return
+    const node = scrollRef.current?.querySelector(`[data-message-id="${CSS.escape(requestedMessageId)}"]`)
+    // Consume the param either way, so a reload does not re-trigger this.
+    dropDetailParam(MESSAGE_QUERY_KEY, 'replace')
+    if (!node) return
+    node.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    stickToBottomRef.current = false
+    setHighlightedMessageId(requestedMessageId)
+  }, [requestedMessageId, loaded, dropDetailParam])
+
+  // Separate effect: clearing the param above re-runs the effect that set
+  // the highlight, so the timer cannot live there or it would be cancelled
+  // on the very next render.
+  useEffect(() => {
+    if (!highlightedMessageId) return
+    const timer = window.setTimeout(() => setHighlightedMessageId(null), 2500)
+    return () => window.clearTimeout(timer)
+  }, [highlightedMessageId])
 
   useEffect(() => {
     void loadInitial()
@@ -625,7 +679,11 @@ function ConversationDetail(props: ConversationDetailProps) {
                     ? messages.find((m) => m.id === message.reply_to_message_id) ?? null
                     : null
                   return (
-                    <div key={message.id}>
+                    <div
+                      key={message.id}
+                      data-message-id={message.id}
+                      className={message.id === highlightedMessageId ? 'messages-row is-push-target' : undefined}
+                    >
                       {divider && (
                         <div className="messages-day-divider" role="separator">
                           <span>{divider}</span>
@@ -666,6 +724,7 @@ function ConversationDetail(props: ConversationDetailProps) {
                         onEntitySystemNotice={onEntitySystemNotice}
                         currentMemberId={currentMember.id}
                         memberName={memberName}
+                        renderCandidates={renderCandidates}
                         onOpenContextMenu={openContextMenu}
                         onOpenEmojiPicker={openEmojiPicker}
                         onQuickReaction={(emoji) => { void onReact(message.id, emoji) }}
@@ -699,6 +758,9 @@ function ConversationDetail(props: ConversationDetailProps) {
           </svg>
         </button>
       )}
+      <MessagePushPrompt
+        hasReceivedMessage={messages.some((m) => m.sender_member_id && m.sender_member_id !== currentMember.id && !m.deleted_at)}
+      />
       <Composer
         conversationId={conversation.id}
         replyingTo={replyingTo}
@@ -708,6 +770,7 @@ function ConversationDetail(props: ConversationDetailProps) {
           setReplyingTo(null)
         }}
         onCreateEntity={(kind) => setCreateFrom({ kind, text: '' })}
+        mentionCandidates={mentionCandidates}
       />
       {contextMenu && (
         <MessageContextMenu
@@ -786,10 +849,11 @@ function ConversationDetail(props: ConversationDetailProps) {
       {muteDialogOpen && (
         <MuteConversationDialog
           currentScope={conversation.muteScope}
-          onSelect={async (scope) => {
+          mutedUntil={conversation.mutedUntil}
+          onSelect={async (scope, until) => {
             setMuteDialogOpen(false)
             try {
-              await onMuteChange(scope)
+              await onMuteChange(scope, until)
             } catch (e) {
               console.error('Failed to update mute:', e)
             }
@@ -829,6 +893,8 @@ interface MessageRowViewProps {
   onEntitySystemNotice: (kind: string, summary: string, entityType: SharedEntityType, entityId: string) => void
   currentMemberId: string
   memberName: (id: string) => string
+  /** Everyone whose "@Name" should highlight, including the reader. */
+  renderCandidates: MentionCandidate[]
   onOpenContextMenu: (message: MessageRow, position: { x: number; y: number }) => void
   onOpenEmojiPicker: (message: MessageRow, position: { x: number; y: number }) => void
   onQuickReaction: (emoji: string) => void
@@ -842,7 +908,7 @@ function MessageRowView({
   message, mine, sender, replySource, editing,
   onEditChange, onEditSave, onEditCancel,
   reactions, attachments, entity, conversationId, onEntityAfterAction, onEntitySystemNotice,
-  currentMemberId, memberName,
+  currentMemberId, memberName, renderCandidates,
   onOpenContextMenu, onOpenEmojiPicker, onQuickReaction,
   onRetryFailed, onDiscardFailed, onOpenLightbox, getAttachmentUrl,
 }: MessageRowViewProps) {
@@ -971,7 +1037,11 @@ function MessageRowView({
             onCancel={onEditCancel}
           />
         ) : (
-          message.body && <p className="messages-bubble-body">{message.body}</p>
+          message.body && (
+            <p className="messages-bubble-body">
+              <MentionText body={message.body} candidates={renderCandidates} currentMemberId={currentMemberId} />
+            </p>
+          )
         )}
         <div className="messages-bubble-meta">
           {message.edited_at && !isDeleted && (
@@ -1028,6 +1098,33 @@ function MessageRowView({
   )
 }
 
+// Highlights "@Name" runs using exactly the rule the server uses to decide
+// who gets a mention push, so highlighted == notified.
+function MentionText({ body, candidates, currentMemberId }: {
+  body: string
+  candidates: MentionCandidate[]
+  currentMemberId: string
+}) {
+  const segments = useMemo(() => splitMentionText(body, candidates), [body, candidates])
+  if (segments.length === 1 && !segments[0].member) return <>{body}</>
+  return (
+    <>
+      {segments.map((segment, index) => (
+        segment.member
+          ? (
+            <span
+              key={`${index}-${segment.member.id}`}
+              className={`messages-mention${segment.member.id === currentMemberId ? ' is-self' : ''}`}
+            >
+              {segment.text}
+            </span>
+          )
+          : <span key={index}>{segment.text}</span>
+      ))}
+    </>
+  )
+}
+
 function EditInline({ body, busy, error, onChange, onSave, onCancel }: {
   body: string
   busy?: boolean
@@ -1058,12 +1155,29 @@ function EditInline({ body, busy, error, onChange, onSave, onCancel }: {
   )
 }
 
-function MuteConversationDialog({ currentScope, onSelect, onClose }: { currentScope: ConversationMuteScope; onSelect: (scope: ConversationMuteScope) => void | Promise<void>; onClose: () => void }) {
+function MuteConversationDialog({ currentScope, mutedUntil, onSelect, onClose }: {
+  currentScope: ConversationMuteScope
+  mutedUntil: string | null
+  onSelect: (scope: ConversationMuteScope, until: string | null) => void | Promise<void>
+  onClose: () => void
+}) {
+  // Scope answers "how much", duration answers "how long". Keeping them
+  // separate avoids a six-item list of every combination.
+  const [scope, setScope] = useState<Exclude<ConversationMuteScope, 'none'>>(
+    currentScope === 'all' ? 'all' : 'messages',
+  )
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
+
+  const durations: { id: MuteDuration; label: string }[] = [
+    { id: 'hour', label: t.messages.muteForHour },
+    { id: 'tomorrow', label: t.messages.muteUntilTomorrow },
+    { id: 'forever', label: t.messages.muteForever },
+  ]
 
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" onClick={onClose}>
@@ -1072,27 +1186,60 @@ function MuteConversationDialog({ currentScope, onSelect, onClose }: { currentSc
           <h2>{t.messages.muteScopeTitle}</h2>
           <button type="button" className="modal-close" onClick={onClose} aria-label={t.common.close}>×</button>
         </div>
-        <div className="messages-mute-options">
-          {(['none', 'messages', 'all'] as ConversationMuteScope[]).map((scope) => (
-            <label key={scope} className={`messages-mute-option${currentScope === scope ? ' is-selected' : ''}`}>
+
+        {currentScope !== 'none' && (
+          <p className="messages-mute-current" role="status">
+            {mutedUntil ? t.messages.muteActiveUntil(formatMuteUntil(mutedUntil)) : t.messages.muteActiveForever}
+          </p>
+        )}
+
+        <fieldset className="messages-mute-scope">
+          <legend>{t.messages.muteScopeLegend}</legend>
+          {(['messages', 'all'] as const).map((option) => (
+            <label key={option} className={`messages-mute-option${scope === option ? ' is-selected' : ''}`}>
               <input
                 type="radio"
                 name="mute-scope"
-                value={scope}
-                checked={currentScope === scope}
-                onChange={() => void onSelect(scope)}
+                value={option}
+                checked={scope === option}
+                onChange={() => setScope(option)}
               />
-              <span>
-                {scope === 'none' && t.messages.muteScopeNone}
-                {scope === 'messages' && t.messages.muteScopeMessages}
-                {scope === 'all' && t.messages.muteScopeAll}
-              </span>
+              <span>{option === 'messages' ? t.messages.muteScopeMessages : t.messages.muteScopeAll}</span>
             </label>
           ))}
+        </fieldset>
+
+        <div className="messages-mute-options">
+          {durations.map((duration) => (
+            <button
+              key={duration.id}
+              type="button"
+              className="messages-mute-duration"
+              onClick={() => void onSelect(scope, muteUntil(duration.id))}
+            >
+              {duration.label}
+            </button>
+          ))}
         </div>
+
+        {currentScope !== 'none' && (
+          <button
+            type="button"
+            className="btn-secondary messages-mute-unmute"
+            onClick={() => void onSelect('none', null)}
+          >
+            {t.messages.muteScopeNone}
+          </button>
+        )}
       </div>
     </div>
   )
+}
+
+function formatMuteUntil(value: string) {
+  const date = new Date(value)
+  return new Intl.DateTimeFormat('cs-CZ', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })
+    .format(date)
 }
 
 function ConversationAvatar({ conversation, memberById, currentMemberId }: { conversation: ConversationView; memberById: (id: string) => FamilyMember | undefined; currentMemberId: string }) {

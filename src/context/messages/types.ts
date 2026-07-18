@@ -111,4 +111,6 @@ export interface ConversationView {
   lastReadAt: string
   otherMemberId: string | null
   muteScope: ConversationMuteScope
+  /** ISO timestamp when a timed mute lapses; null means indefinite. */
+  mutedUntil: string | null
 }

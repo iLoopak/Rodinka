@@ -83,6 +83,33 @@ export interface NotificationPreferences {
   timezoneMode: 'auto' | 'explicit'
   locale: ReminderLocale
   categories: ReminderCategoryPreferences
+  /**
+   * Messaging push switches (batch 4). They sit under `pushEnabled`: with
+   * push off for the account none of them do anything, which is why they
+   * can all default to on without becoming noisy.
+   */
+  messages: MessageNotificationPreferences
+}
+
+export interface MessageNotificationPreferences {
+  direct: boolean
+  group: boolean
+  replyMention: boolean
+  task: boolean
+  entity: boolean
+  sound: boolean
+  /** Off means the push payload never carries real message text. */
+  preview: boolean
+}
+
+export const DEFAULT_MESSAGE_PREFERENCES: MessageNotificationPreferences = {
+  direct: true,
+  group: true,
+  replyMention: true,
+  task: true,
+  entity: true,
+  sound: true,
+  preview: true,
 }
 
 export const DEFAULT_CATEGORY_PREFERENCES: ReminderCategoryPreferences = {
@@ -112,6 +139,7 @@ export function defaultNotificationPreferences(memberId: string, familyId: strin
     timezoneMode: 'auto',
     locale,
     categories: { ...DEFAULT_CATEGORY_PREFERENCES },
+    messages: { ...DEFAULT_MESSAGE_PREFERENCES },
   }
 }
 

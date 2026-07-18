@@ -3,6 +3,7 @@ import { t } from '../strings'
 import { useFamilyCore } from '../context/family/FamilyCoreContext'
 import { useFamilySettings } from '../context/family/FamilySettingsContext'
 import { supabase } from '../supabaseClient'
+import { releasePushOnSignOut } from '../push/pushClient'
 import { useInstallPrompt } from '../hooks/useInstallPrompt'
 import { Modal } from './ui/Modal'
 import { SetPasswordForm } from './SetPasswordForm'
@@ -300,7 +301,15 @@ export function MoreScreen() {
         </div>
       </section>
 
-      <button className="btn-secondary sign-out-button" onClick={() => supabase.auth.signOut()}>
+      <button
+        className="btn-secondary sign-out-button"
+        onClick={async () => {
+          // Deactivate this device's push row first, so it cannot keep
+          // receiving this family's messages after sign-out.
+          await releasePushOnSignOut()
+          await supabase.auth.signOut()
+        }}
+      >
         {t.dashboard.signOut}
       </button>
     </>
