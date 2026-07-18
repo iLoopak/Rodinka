@@ -634,6 +634,10 @@ function ConversationDetail(props: ConversationDetailProps) {
                           <span>{t.messages.newMessagesDivider}</span>
                         </div>
                       )}
+                      {message.content_type === 'system' ? (
+                        <p className="messages-system-row">{message.body}</p>
+                      ) : (
+                      <>
                       {showHeader && sender && (
                         <div className="messages-cluster-header">
                           <MemberAvatar member={sender} size={22} />
@@ -671,6 +675,8 @@ function ConversationDetail(props: ConversationDetailProps) {
                         }}
                         getAttachmentUrl={getAttachmentUrl}
                       />
+                      </>
+                      )}
                     </div>
                   )
                 })}

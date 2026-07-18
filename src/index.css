@@ -6855,7 +6855,6 @@ button.danger-action:focus-visible:not(:disabled) {
   margin: 2px 0;
   padding: 10px 12px;
   border: 1px solid var(--border-soft);
-  border-left: 3px solid var(--entity-accent);
   border-radius: var(--radius-row, 12px);
   background: var(--paper);
 }
@@ -6969,6 +6968,19 @@ button.danger-action:focus-visible:not(:disabled) {
   color: var(--ink-muted);
 }
 .messages-entity-card-error { color: var(--state-danger); }
+
+/* System notices: deliberately quieter than a normal message — a small
+   centred line, never a bubble, so they never dominate the thread. */
+.messages-system-row {
+  margin: 6px auto;
+  max-width: 80%;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  color: var(--ink-muted);
+  font-size: 0.74rem;
+  text-align: center;
+}
 
 /* Mute dialog */
 .messages-mute-sheet {
