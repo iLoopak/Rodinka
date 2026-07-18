@@ -7,6 +7,9 @@ import { releasePushOnSignOut } from '../push/pushClient'
 import { useInstallPrompt } from '../hooks/useInstallPrompt'
 import { Modal } from './ui/Modal'
 import { SetPasswordForm } from './SetPasswordForm'
+import { ChangeEmailForm } from './ChangeEmailForm'
+import { useAuthAccount } from '../hooks/useAuthAccount'
+import { landedFromEmailChangeConfirmation } from '../lib/emailChange'
 import { Link } from '../router'
 import { FamilyMark } from './FamilyMark'
 import { useActiveFamilyMark } from '../hooks/useActiveFamilyMark'
@@ -30,7 +33,12 @@ export function MoreScreen() {
   const { familyName, familyHeroImageUrl, updateFamilyName, updateFamilyHeroImage } = useFamilySettings()
   const familyMark = useActiveFamilyMark()
   const { language, changeLanguage } = useLanguage()
+  const { account, refresh: refreshAccount } = useAuthAccount()
   const [showSetPassword, setShowSetPassword] = useState(false)
+  const [showChangeEmail, setShowChangeEmail] = useState(false)
+  // Only meaningful on the render right after the confirmation redirect; the
+  // banner disappears on the next navigation, which is the intent.
+  const [emailChangeConfirmed] = useState(landedFromEmailChangeConfirmation)
   const [editingFamilyName, setEditingFamilyName] = useState(false)
   const [familyNameDraft, setFamilyNameDraft] = useState('')
   const [familyNameSaving, setFamilyNameSaving] = useState(false)
@@ -114,14 +122,46 @@ export function MoreScreen() {
         <div className="panel is-primary more-settings-section">
         <ul className="section-list plain-list more-settings-list">
           <li className="more-settings-group-heading"><h2>{t.more.accountSection}</h2></li>
-          <li className="more-settings-row">
+          <li className="more-settings-row account-email-row">
             <span className="more-setting-copy">
               <span className="more-setting-label">{t.more.signedInAs}</span>
               <strong className="more-setting-value">{currentMember.display_name}</strong>
-              <span className="more-setting-detail">{capabilities.isChild
-                ? `${t.more.childLoginLabel}: ${internalEmailToChildLoginName(userEmail) ?? t.more.childLoginUnavailable}`
-                : userEmail}</span>
+              {capabilities.isChild ? (
+                <span className="more-setting-detail">
+                  {`${t.more.childLoginLabel}: ${internalEmailToChildLoginName(userEmail) ?? t.more.childLoginUnavailable}`}
+                </span>
+              ) : (
+                <span className="account-email-status">
+                  {/* Prefer the live auth user; fall back to the session email
+                      captured at login only while getUser is still in flight. */}
+                  <span className="more-setting-detail">{account.email || userEmail}</span>
+                  {account.pendingEmail
+                    ? <span className="badge badge-pending">{t.more.emailPendingBadge}</span>
+                    : account.emailVerified
+                      ? <span className="badge badge-done">{t.more.emailVerifiedBadge}</span>
+                      : <span className="badge badge-neutral">{t.more.emailUnverifiedBadge}</span>}
+                </span>
+              )}
             </span>
+            {account.canChangeEmail && !capabilities.isChild && (
+              <button
+                type="button"
+                className="btn-link account-email-edit"
+                onClick={() => setShowChangeEmail(true)}
+              >
+                {t.more.changeEmailAction}
+              </button>
+            )}
+            {account.pendingEmail && (
+              <p className="more-setting-feedback account-email-note" role="status">
+                {t.more.emailPendingDetail(account.pendingEmail)}
+              </p>
+            )}
+            {emailChangeConfirmed && !account.pendingEmail && (
+              <p className="success more-setting-feedback account-email-note" role="status">
+                {t.more.changeEmailConfirmed}
+              </p>
+            )}
           </li>
           {capabilities.isChild && <li className="more-settings-row">
             <button type="button" className="btn-secondary" onClick={() => setEditingOwnProfile(true)}>{t.more.editMyProfile}</button>
@@ -243,6 +283,17 @@ export function MoreScreen() {
       {showSetPassword && (
         <Modal title={t.more.setPasswordTitle} onClose={() => setShowSetPassword(false)}>
           <SetPasswordForm onDone={() => setShowSetPassword(false)} />
+        </Modal>
+      )}
+
+      {showChangeEmail && (
+        <Modal title={t.more.changeEmailTitle} onClose={() => setShowChangeEmail(false)}>
+          <ChangeEmailForm
+            currentEmail={account.email || userEmail}
+            hasGoogleIdentity={account.hasGoogleIdentity}
+            onSubmitted={() => void refreshAccount()}
+            onDone={() => setShowChangeEmail(false)}
+          />
         </Modal>
       )}
 

@@ -4197,6 +4197,63 @@ button.btn-danger:hover:not(:disabled) {
   gap: 2px;
 }
 
+/* Account email row: the address truncates so a long mailbox cannot push the
+   row sideways, the status badge keeps its full width, and the pending or
+   confirmed note wraps onto its own full-width line below both. */
+.account-email-status {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+}
+
+.account-email-status .more-setting-detail {
+  min-width: 0;
+}
+
+.account-email-status .badge {
+  flex: 0 0 auto;
+}
+
+/* Specificity has to match `.section-list.more-settings-list > li`, which
+   pins every settings row to nowrap. */
+.section-list.more-settings-list > li.account-email-row {
+  flex-wrap: wrap;
+}
+
+.account-email-edit {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 9px 16px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.account-email-note {
+  flex: 1 0 100%;
+  margin-top: 8px;
+}
+
+/* Narrow screens: the action takes its own line instead of squeezing the copy
+   column, which would otherwise truncate the address down to a few characters. */
+@media (max-width: 480px) {
+  .account-email-row .more-setting-copy {
+    flex: 1 1 100%;
+  }
+
+  .account-email-edit {
+    margin-top: 4px;
+    padding-left: 0;
+  }
+}
+
+.change-email-current {
+  display: grid;
+  min-width: 0;
+  margin: 0 0 16px;
+  gap: 2px;
+}
+
 .more-setting-label,
 .more-setting-detail,
 .language-setting-row small {

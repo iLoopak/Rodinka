@@ -97,6 +97,45 @@ dashboard.
       dev/family use as long as every real user's Google account is added
       as a test user.
 
+## 6. Changing the login email (More → Account → "Změnit e-mail")
+
+The app changes the signed-in user's login email with
+`supabase.auth.updateUser({ email })`, i.e. the normal user-scoped Supabase
+flow — no admin API, no service role, no SQL against `auth.users`. Supabase
+Auth stays the only source of truth; nothing mirrors the address into
+`members` or a profile table, and `family_member_emails` reads it live from
+`auth.users`.
+
+**The behaviour depends on section 1's "Confirm email" setting**, so be aware
+which one you're running:
+
+- **"Confirm email" OFF (current setting)** — the change applies
+  **immediately**, with no confirmation email. The UI detects this from the
+  returned user and says the address *has been changed*.
+- **"Confirm email" ON** — Supabase parks the address in `new_email` and mails
+  a confirmation link. The UI then says a link was sent, shows a "Čeká na
+  potvrzení" badge on the account row, and keeps the old address active until
+  the link is clicked.
+
+The app handles both correctly and never claims a link was sent when it
+wasn't. Turn "Confirm email" ON if you want a changed address to be proven
+before it can be used to sign in — worth it, since the login email is a
+credential. Note this also re-enables the sign-up confirmation round-trip that
+section 1 deliberately turned off, so treat it as a product decision.
+
+- [ ] Optional: **Authentication → Providers → Email → "Secure email change"**.
+      With it enabled Supabase asks for confirmation in **both** the old and
+      the new mailbox. The UI's wording already allows for this ("může být
+      potřeba potvrdit odkaz v původní i nové e-mailové schránce").
+- [ ] **Redirect URLs** — the confirmation link comes back to `<origin>/more`.
+      The existing `/**` wildcards from section 3 already cover it; no new
+      entry is needed. Without those wildcards, add `http://localhost:5173/more`
+      and `https://<your-prod-domain>/more`.
+- [ ] **Email templates** — no change required. The default "Change Email
+      Address" template works. If you customize it, keep `{{ .ConfirmationURL }}`
+      intact, and note the template is in English by default while the app UI
+      is Czech.
+
 ## Verifying it all works
 
 1. Sign up with a brand-new email + password → should land in the app
