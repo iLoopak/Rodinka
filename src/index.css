@@ -2237,6 +2237,22 @@ button.profile-email-copy {
   font-style: italic;
 }
 
+.profile-account {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-account-status {
+  color: var(--ink-muted);
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-regular);
+}
+
+.profile-account-hint {
+  margin: 0;
+}
+
 .profile-fieldset {
   min-width: 0;
   margin-inline: 0;
