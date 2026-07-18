@@ -11,6 +11,8 @@ interface Props {
   members: FamilyMember[]
   currentMemberId: string
   initial?: Chore
+  /** Prefill the title when creating from elsewhere (e.g. a chat message). Ignored when `initial` is given. */
+  initialTitle?: string
   initialDueDate?: string
   requiresNewDueDate?: boolean
   onSubmit: (input: ChoreInput) => Promise<void>
@@ -20,10 +22,10 @@ function dayOfMonth(date: string): number {
   return Number(date.slice(8, 10))
 }
 
-export function AddChoreForm({ members, currentMemberId, initial, initialDueDate, requiresNewDueDate = false, onSubmit }: Props) {
+export function AddChoreForm({ members, currentMemberId, initial, initialTitle, initialDueDate, requiresNewDueDate = false, onSubmit }: Props) {
   const defaultAssignee = members.some((member) => member.id === currentMemberId) ? currentMemberId : ''
 
-  const [title, setTitle] = useState(initial?.title ?? '')
+  const [title, setTitle] = useState(initial?.title ?? initialTitle ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [assignedTo, setAssignedTo] = useState(initial ? initial.assigned_to ?? '' : defaultAssignee)
   const [hasDueDate, setHasDueDate] = useState(initial ? Boolean(initial.due_date) : true)

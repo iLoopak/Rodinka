@@ -34,6 +34,8 @@ interface Props {
   members: FamilyMember[]
   kids: FamilyMember[]
   initial?: Activity
+  /** Prefill the title when creating from elsewhere (e.g. a chat message). Ignored when `initial` is given. */
+  initialTitle?: string
   initialStartDate?: string
   onSubmit: (input: ActivityInput) => Promise<void>
 }
@@ -46,8 +48,8 @@ interface FieldErrors {
   endDate?: string
 }
 
-export function AddActivityForm({ members, kids, initial, initialStartDate, onSubmit }: Props) {
-  const [title, setTitle] = useState(initial?.title ?? '')
+export function AddActivityForm({ members, kids, initial, initialTitle, initialStartDate, onSubmit }: Props) {
+  const [title, setTitle] = useState(initial?.title ?? initialTitle ?? '')
   const [kind, setKind] = useState<ActivityKind>(initial?.kind ?? 'club')
   const [category, setCategory] = useState<ActivityCategory>(initial?.category ?? 'other')
   const [participantIds, setParticipantIds] = useState<string[]>(

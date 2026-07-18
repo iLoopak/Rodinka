@@ -20,6 +20,7 @@ import type {
   SharedEntityType,
 } from '../../context/messages/types'
 import { EntityCard } from './EntityCard'
+import { CreateFromMessageDialog, type CreateFromMessageKind } from './CreateFromMessageDialog'
 import type { FamilyMember } from '../../hooks/useFamilyMembers'
 import {
   clusterMessages,
@@ -412,6 +413,7 @@ function ConversationDetail(props: ConversationDetailProps) {
   const [pendingDeletion, setPendingDeletion] = useState<{ messageId: string; busy: boolean; error: string | null } | null>(null)
   const [lightbox, setLightbox] = useState<LightboxState | null>(null)
   const [muteDialogOpen, setMuteDialogOpen] = useState(false)
+  const [createFrom, setCreateFrom] = useState<{ kind: CreateFromMessageKind; text: string } | null>(null)
   const [showJumpButton, setShowJumpButton] = useState(false)
 
   useEffect(() => {
@@ -705,6 +707,7 @@ function ConversationDetail(props: ConversationDetailProps) {
           await onSend(payload)
           setReplyingTo(null)
         }}
+        onCreateEntity={(kind) => setCreateFrom({ kind, text: '' })}
       />
       {contextMenu && (
         <MessageContextMenu
@@ -738,6 +741,25 @@ function ConversationDetail(props: ConversationDetailProps) {
           onDelete={() => {
             const target = messages.find((m) => m.id === contextMenu.messageId)
             if (target) requestDelete(target)
+          }}
+          canCreateEntities={(() => {
+            const target = messages.find((m) => m.id === contextMenu.messageId)
+            return Boolean(target && !target.deleted_at && target.body.trim())
+          })()}
+          onCreateTask={() => {
+            const target = messages.find((m) => m.id === contextMenu.messageId)
+            setContextMenu(null)
+            if (target) setCreateFrom({ kind: 'task', text: target.body.trim() })
+          }}
+          onCreateShopping={() => {
+            const target = messages.find((m) => m.id === contextMenu.messageId)
+            setContextMenu(null)
+            if (target) setCreateFrom({ kind: 'shopping_item', text: target.body.trim() })
+          }}
+          onCreateEvent={() => {
+            const target = messages.find((m) => m.id === contextMenu.messageId)
+            setContextMenu(null)
+            if (target) setCreateFrom({ kind: 'event', text: target.body.trim() })
           }}
           onClose={() => setContextMenu(null)}
         />
@@ -777,6 +799,14 @@ function ConversationDetail(props: ConversationDetailProps) {
       )}
       {lightbox && (
         <AttachmentLightbox url={lightbox.url} alt={lightbox.alt} onClose={() => setLightbox(null)} />
+      )}
+      {createFrom && (
+        <CreateFromMessageDialog
+          kind={createFrom.kind}
+          sourceText={createFrom.text}
+          conversationId={conversation.id}
+          onClose={() => setCreateFrom(null)}
+        />
       )}
     </section>
   )

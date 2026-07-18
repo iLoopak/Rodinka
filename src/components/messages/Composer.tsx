@@ -6,6 +6,7 @@ import {
   validateMessageAttachmentFile,
 } from '../../utils/messageAttachment'
 import type { MessageAttachmentRow } from '../../context/messages/types'
+import type { CreateFromMessageKind } from './CreateFromMessageDialog'
 
 export interface ComposerReplyContext {
   messageId: string
@@ -23,6 +24,8 @@ interface Props {
     attachmentIds?: string[]
     attachments?: MessageAttachmentRow[]
   }) => Promise<void>
+  /** Open the compact creation flow for a new planner entity. */
+  onCreateEntity: (kind: CreateFromMessageKind) => void
 }
 
 interface DraftAttachment {
@@ -39,7 +42,7 @@ interface DraftAttachment {
 // only "Foto" today — other affordances (task, shopping, event,
 // reminder) are held back until they wire to real flows so we don't
 // ship a menu full of disabled placeholder buttons.
-export function Composer({ conversationId, replyingTo, onCancelReply, onSend }: Props) {
+export function Composer({ conversationId, replyingTo, onCancelReply, onSend, onCreateEntity }: Props) {
   const { uploadAttachment, discardPendingAttachment } = useMessagesData()
   const [value, setValue] = useState('')
   const [sending, setSending] = useState(false)
@@ -237,6 +240,43 @@ export function Composer({ conversationId, replyingTo, onCancelReply, onSend }: 
                   <path d="m4 18 6-5 5 4 4-3 1 1" strokeLinejoin="round" />
                 </svg>
                 {t.messages.composerPlusPhoto}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="messages-composer-plus-menu-item"
+                onClick={() => { setPlusOpen(false); onCreateEntity('task') }}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M9 11l3 3 8-8" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {t.messages.composerPlusTask}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="messages-composer-plus-menu-item"
+                onClick={() => { setPlusOpen(false); onCreateEntity('shopping_item') }}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M6 6h15l-1.5 9h-12z" strokeLinejoin="round" />
+                  <path d="M6 6 5 3H3" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="9" cy="20" r="1.4" /><circle cx="17" cy="20" r="1.4" />
+                </svg>
+                {t.messages.composerPlusShopping}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="messages-composer-plus-menu-item"
+                onClick={() => { setPlusOpen(false); onCreateEntity('event') }}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="16" rx="2" />
+                  <path d="M3 9h18M8 3v4M16 3v4" strokeLinecap="round" />
+                </svg>
+                {t.messages.composerPlusEvent}
               </button>
             </div>
           )}

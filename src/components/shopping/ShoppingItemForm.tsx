@@ -8,14 +8,16 @@ import { DestructiveIconButton } from '../ui/DestructiveActions'
 
 interface Props {
   initial?: ShoppingItem
+  /** Prefill the name when creating from elsewhere (e.g. a chat message). Ignored when `initial` is given. */
+  initialName?: string
   members: FamilyMember[]
   categorySettings?: ShoppingCategorySettings
   onSubmit: (input: ShoppingItemInput) => Promise<void>
   onDelete?: () => Promise<void>
 }
 
-export function ShoppingItemForm({ initial, members, categorySettings, onSubmit, onDelete }: Props) {
-  const [name, setName] = useState(initial?.name ?? '')
+export function ShoppingItemForm({ initial, initialName, members, categorySettings, onSubmit, onDelete }: Props) {
+  const [name, setName] = useState(initial?.name ?? initialName ?? '')
   const [quantity, setQuantity] = useState(initial?.quantity === null || initial?.quantity === undefined ? '' : String(initial.quantity))
   const [unit, setUnit] = useState<ShoppingUnit | ''>(initial?.unit ?? '')
   const [category, setCategory] = useState<ShoppingCategory>(initial?.category ?? 'other')
