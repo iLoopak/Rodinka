@@ -6,7 +6,7 @@ import {
   validateMessageAttachmentFile,
 } from '../../utils/messageAttachment'
 import type { MessageAttachmentRow } from '../../context/messages/types'
-import type { CreateFromMessageKind } from './CreateFromMessageDialog'
+import type { ShareableEntityKind } from './ShareExistingEntityDialog'
 import {
   applyMention,
   findMentionQuery,
@@ -33,8 +33,8 @@ interface Props {
     attachments?: MessageAttachmentRow[]
     mentionMemberIds?: string[]
   }) => Promise<void>
-  /** Open the compact creation flow for a new planner entity. */
-  onCreateEntity: (kind: CreateFromMessageKind) => void
+  /** Open the picker that shares an EXISTING planner record into the chat. */
+  onShareEntity: (kind: ShareableEntityKind) => void
   /** Participants of this conversation, offered by the "@" autocomplete. */
   mentionCandidates: MentionCandidate[]
 }
@@ -49,11 +49,14 @@ interface DraftAttachment {
   abortController: AbortController
 }
 
-// Text + optional photo composer with a "+" menu. The + menu shows
-// only "Foto" today — other affordances (task, shopping, event,
-// reminder) are held back until they wire to real flows so we don't
-// ship a menu full of disabled placeholder buttons.
-export function Composer({ conversationId, replyingTo, onCancelReply, onSend, onCreateEntity, mentionCandidates }: Props) {
+// Text + optional photo composer with a "+" menu.
+//
+// "Foto" uploads a new file. The other three entries SHARE something that
+// already exists in the app — they open a picker, never a creation form, so
+// using them can never duplicate a chore, shopping item or activity.
+// Creating a record *from* a message is a separate action on the message
+// context menu, where it can prefill from that message's text.
+export function Composer({ conversationId, replyingTo, onCancelReply, onSend, onShareEntity, mentionCandidates }: Props) {
   const { uploadAttachment, discardPendingAttachment } = useMessagesData()
   const [value, setValue] = useState('')
   const [mentionQuery, setMentionQuery] = useState<MentionQuery | null>(null)
@@ -342,7 +345,7 @@ export function Composer({ conversationId, replyingTo, onCancelReply, onSend, on
                 type="button"
                 role="menuitem"
                 className="messages-composer-plus-menu-item"
-                onClick={() => { setPlusOpen(false); onCreateEntity('task') }}
+                onClick={() => { setPlusOpen(false); onShareEntity('task') }}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                   <path d="M9 11l3 3 8-8" strokeLinecap="round" strokeLinejoin="round" />
@@ -354,7 +357,7 @@ export function Composer({ conversationId, replyingTo, onCancelReply, onSend, on
                 type="button"
                 role="menuitem"
                 className="messages-composer-plus-menu-item"
-                onClick={() => { setPlusOpen(false); onCreateEntity('shopping_item') }}
+                onClick={() => { setPlusOpen(false); onShareEntity('shopping_item') }}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                   <path d="M6 6h15l-1.5 9h-12z" strokeLinejoin="round" />
@@ -367,7 +370,7 @@ export function Composer({ conversationId, replyingTo, onCancelReply, onSend, on
                 type="button"
                 role="menuitem"
                 className="messages-composer-plus-menu-item"
-                onClick={() => { setPlusOpen(false); onCreateEntity('event') }}
+                onClick={() => { setPlusOpen(false); onShareEntity('event') }}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                   <rect x="3" y="5" width="18" height="16" rx="2" />
