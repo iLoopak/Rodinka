@@ -19,6 +19,7 @@ import { MemberRemovalDialog } from './family/MemberRemovalDialog'
 import { ScreenHeader } from './ui/ScreenHeader'
 import { ArchivedItemBadge, ConfirmDestructiveActionDialog, DestructiveIconButton } from './ui/DestructiveActions'
 import { useChildAccounts, type ChildAccount } from '../hooks/useChildAccounts'
+import { useFamilyMemberEmails } from '../hooks/useFamilyMemberEmails'
 import { childAccountState, childAccountStatusLabel } from '../utils/childAccountStatus'
 import { revokeChildAccount } from '../lib/childAccountAdmin'
 
@@ -47,7 +48,7 @@ function formatDate(iso: string) {
 }
 
 export function FamilyScreen() {
-  const { currentMember, isParentOrAdmin } = useFamilyCore()
+  const { familyId, currentMember, isParentOrAdmin } = useFamilyCore()
   const {
     members, allMembers, addChild, createInvite, removeMember, leaveHousehold: leaveHouseholdRaw, restoreMember, permanentlyDeleteRemovedMember,
     membersLoading, membersError, refreshMembers,
@@ -59,6 +60,10 @@ export function FamilyScreen() {
 
   const childMemberIds = allMembers.filter((candidate) => candidate.role === 'child').map((candidate) => candidate.id)
   const { accounts: childAccounts, refresh: refreshChildAccounts } = useChildAccounts(childMemberIds, isParentOrAdmin)
+
+  // Adult account emails, readable only by adults of the same family (enforced
+  // server-side by the family_member_emails RPC). Children never appear here.
+  const { emails: memberEmails } = useFamilyMemberEmails(familyId, isParentOrAdmin)
 
   // members.user_id is the canonical access link and already arrives over
   // Realtime, so a revoke performed by another adult flips the status here
@@ -217,6 +222,11 @@ export function FamilyScreen() {
                 <span className="family-member-copy">
                   <span className="row-title">{m.display_name}</span>
                   <span className="row-meta">{roleLabel(m.role)}</span>
+                  {m.role !== 'child' && (
+                    memberEmails.get(m.id)
+                      ? <span className="family-member-email">{memberEmails.get(m.id)}</span>
+                      : <span className="family-member-email is-empty">{t.family.emailNoAccount}</span>
+                  )}
                 </span>
                 <span className="row-spacer" />
                 <MemberAccountBadge member={m} account={childAccounts.get(m.id) ?? null} />
@@ -297,6 +307,7 @@ export function FamilyScreen() {
           currentMember={currentMember}
           refreshMembers={refreshMembers}
           childAccount={childAccounts.get(editingMember.id) ?? null}
+          accountEmail={memberEmails.get(editingMember.id) ?? null}
           onAccountChanged={async () => { await Promise.all([refreshMembers(), refreshChildAccounts()]) }}
           onRequestRemove={isParentOrAdmin && editingMember.id !== currentMember.id ? () => {
             setRemovingMember(editingMember)

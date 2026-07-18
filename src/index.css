@@ -1925,6 +1925,18 @@ button.list-drag-handle:hover:not(:disabled) {
   overflow-wrap: anywhere;
 }
 
+.family-member-email {
+  overflow-wrap: anywhere;
+  color: var(--ink-muted);
+  font-size: var(--font-size-meta);
+  user-select: text;
+}
+
+.family-member-email.is-empty {
+  font-style: italic;
+  opacity: 0.8;
+}
+
 button.member-edit-button {
   min-height: 44px;
   padding: 8px 12px;
@@ -2193,6 +2205,36 @@ input[readonly] {
   overflow-wrap: anywhere;
   font-size: 0.9rem;
   font-weight: 700;
+}
+
+.profile-readonly-grid .profile-email-row {
+  grid-column: 1 / -1;
+}
+
+.profile-email-value {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-email-address {
+  overflow-wrap: anywhere;
+  font-weight: var(--font-weight-medium);
+  user-select: text;
+}
+
+button.profile-email-copy {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-regular);
+}
+
+.profile-email-empty {
+  color: var(--ink-muted);
+  font-weight: var(--font-weight-regular);
+  font-style: italic;
 }
 
 .profile-fieldset {
