@@ -15,6 +15,7 @@ import { OfflineFallbackScreen } from './components/OfflineFallbackScreen'
 import { useRouter } from './router'
 import { isManagedChildSession } from './lib/managedChildSession'
 import { UnlinkedChildAccountScreen } from './components/UnlinkedChildAccountScreen'
+import { CreateRecordProvider } from './context/create-record/CreateRecordContext'
 
 function AppLoading({ label }: { label: string }) {
   return <div className="loading app-loading"><FamilyMark variant="static" size={32} />{label}</div>
@@ -56,9 +57,11 @@ export default function App() {
       <AppDataProviders member={member} userId={session.user.id} userEmail={session.user.email ?? ''}>
         <ReminderProvider>
           <PushProvider>
-            <OfflineStartupGate connectionError={connectionError} refresh={refresh}>
-              <AppShell />
-            </OfflineStartupGate>
+            <CreateRecordProvider>
+              <OfflineStartupGate connectionError={connectionError} refresh={refresh}>
+                <AppShell />
+              </OfflineStartupGate>
+            </CreateRecordProvider>
           </PushProvider>
         </ReminderProvider>
       </AppDataProviders>

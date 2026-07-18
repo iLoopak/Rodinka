@@ -10,7 +10,6 @@ import { MonthGrid } from './calendar/MonthGrid'
 import { AgendaList } from './calendar/AgendaList'
 import { ErrorState } from './ui/ErrorState'
 import { EmptyState } from './ui/EmptyState'
-import { UniversalCreateModal } from './planner/UniversalCreateModal'
 import { CalendarEntryDetailModal } from './calendar/CalendarEntryDetailModal'
 import { WeekAgenda } from './calendar/WeekAgenda'
 import { CalendarDayAgendaCard } from './calendar/CalendarDayAgendaCard'
@@ -22,6 +21,7 @@ import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from 
 import { ScreenHeader } from './ui/ScreenHeader'
 import { useFamilyCore } from '../context/family/FamilyCoreContext'
 import { capabilitiesFor } from '../utils/uiCapabilities'
+import { useCreateRecord } from '../context/create-record/CreateRecordContext'
 
 type ViewMode = 'month' | 'week' | 'agenda'
 
@@ -51,9 +51,9 @@ export function CalendarScreen() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
   const [selectedEntry, setSelectedEntry] = useState<CalendarEntry | null>(null)
   const [openAssignmentInitially, setOpenAssignmentInitially] = useState(false)
-  const [createConfig, setCreateConfig] = useState<{ initialDate?: string } | null>(null)
   const [deepLinkError, setDeepLinkError] = useState(false)
   const { searchParams, setQueryParam, removeQueryParam } = useRouter()
+  const { openCreateRecord } = useCreateRecord()
   const dateParam = searchParams.get('date')
   const eventParam = searchParams.get('event')
   const processedDeepLinkRef = useRef<string | null>(null)
@@ -270,7 +270,7 @@ export function CalendarScreen() {
         {capabilities.createPlannerItems && <button
           type="button"
           className="header-icon-button"
-          onClick={() => setCreateConfig({})}
+          onClick={() => openCreateRecord({ source: 'calendar' })}
           aria-label={t.create.addAction}
         >
           +
@@ -331,7 +331,7 @@ export function CalendarScreen() {
               memberById={memberById}
               onSelectEntry={openEntry}
               onChangeAssignment={capabilities.manageTaskDefinitions ? openAssignment : undefined}
-              onAddDay={capabilities.createPlannerItems ? (date) => setCreateConfig({ initialDate: date }) : undefined}
+              onAddDay={capabilities.createPlannerItems ? (date) => openCreateRecord({ date, source: 'calendar-day' }) : undefined}
               onClose={closeDay}
             />
           )}
@@ -354,7 +354,7 @@ export function CalendarScreen() {
           onSelectDay={setSelectedWeekDay}
           onSelectEntry={openEntry}
           onChangeAssignment={capabilities.manageTaskDefinitions ? openAssignment : undefined}
-          onAddDay={capabilities.createPlannerItems ? (date) => setCreateConfig({ initialDate: date }) : undefined}
+          onAddDay={capabilities.createPlannerItems ? (date) => openCreateRecord({ date, source: 'calendar-day' }) : undefined}
         />
       )}
 
@@ -380,12 +380,6 @@ export function CalendarScreen() {
         />
       )}
 
-      {createConfig && capabilities.createPlannerItems && (
-        <UniversalCreateModal
-          initialDate={createConfig.initialDate}
-          onClose={() => setCreateConfig(null)}
-        />
-      )}
     </>
   )
 }

@@ -23,9 +23,9 @@ describe('design-system CSS contract', () => {
     expect(css).toMatch(/animation-duration:\s*0\.001ms\s*!important/)
   })
 
-  it('keeps planner create icons centered in their square touch targets', () => {
-    expect(css).toMatch(/\.planner-area-create\s*\{[^}]*width:\s*44px[^}]*height:\s*44px[^}]*min-width:\s*44px[^}]*min-height:\s*44px[^}]*padding:\s*0/s)
-    expect(css).toMatch(/\.planner-area-create svg\s*\{[^}]*display:\s*block/s)
+  it('keeps planning rows as single, full-width navigation targets', () => {
+    expect(css).toMatch(/\.planner-area-link\s*\{[^}]*flex:\s*1 1 auto/s)
+    expect(css).toMatch(/\.planner-area-chevron\s*\{[^}]*font-size:/s)
   })
 
   it('does not use left borders as status or category accents', () => {

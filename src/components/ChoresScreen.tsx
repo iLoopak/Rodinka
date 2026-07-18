@@ -8,14 +8,11 @@ import { useChoreApprovalActions } from '../context/chores/useChoreApprovalActio
 import { ChoreList } from './ChoreList'
 import { PendingApprovals } from './PendingApprovals'
 import { AllowanceBalances } from './AllowanceBalances'
-import { AddChoreForm } from './AddChoreForm'
 import { ErrorState } from './ui/ErrorState'
-import { Modal } from './ui/Modal'
 import { ChoreDetailModal } from './ChoreDetailModal'
 import { useRouter } from '../router'
 import { resolveDeepLinkedItem } from '../utils/deepLinks'
 import type { Chore } from '../hooks/useChores'
-import type { ChoreInput } from '../utils/choreModel'
 import { getChoreState } from '../utils/choreState'
 import { choreRecurrenceSummary } from '../utils/choreRecurrence'
 import { formatFullDate } from '../utils/dueDate'
@@ -27,6 +24,7 @@ import { ArchivedItemBadge } from './ui/DestructiveActions'
 import { capabilitiesFor } from '../utils/uiCapabilities'
 import { useOccurrenceAssignmentsData } from '../context/activities/OccurrenceAssignmentsContext'
 import { childVisibleChores } from '../utils/childChoreVisibility'
+import { useCreateRecord } from '../context/create-record/CreateRecordContext'
 
 type Tab = 'active' | 'pending' | 'allowance' | 'manage'
 
@@ -38,11 +36,11 @@ function initialTab(): Tab {
 
 export function ChoresScreen() {
   const [tab, setTab] = useState<Tab>(initialTab)
-  const [showAddChore, setShowAddChore] = useState(false)
   const [selectedChore, setSelectedChore] = useState<Chore | null>(null)
   const [deepLinkError, setDeepLinkError] = useState(false)
   const [approvalFeedback, setApprovalFeedback] = useState<string | null>(null)
   const { searchParams, setQueryParam, removeQueryParam } = useRouter()
+  const { openCreateRecord } = useCreateRecord()
   const choreParam = searchParams.get('chore')
   const editParam = searchParams.get('edit') === '1'
   const { currentMember, isParentOrAdmin } = useFamilyCore()
@@ -54,7 +52,6 @@ export function ChoresScreen() {
     pendingCompletions,
     latestCompletionFor,
     reject,
-    addChore,
     updateChore,
     setChoreArchived,
     reorderQuickTodos,
@@ -114,11 +111,6 @@ export function ChoresScreen() {
     return <ErrorState message={error} onRetry={refreshAll} />
   }
 
-  async function handleAddChore(input: ChoreInput) {
-    await addChore(input)
-    setShowAddChore(false)
-  }
-
   async function handleApprove(completionId: string) {
     const result = await approve(completionId)
     setApprovalFeedback(result.nextDueDate
@@ -170,7 +162,7 @@ export function ChoresScreen() {
           <button
             type="button"
             className="header-action-button"
-            onClick={() => setShowAddChore(true)}
+            onClick={() => openCreateRecord({ type: 'household-task', source: 'chores' })}
           >
             <span aria-hidden="true">+</span> {t.chores.addChoreAction}
           </button>
@@ -259,12 +251,6 @@ export function ChoresScreen() {
             </div>
           )}
         </section>
-      )}
-
-      {showAddChore && capabilities.manageTaskDefinitions && (
-        <Modal title={t.chores.addTitle} onClose={() => setShowAddChore(false)}>
-          <AddChoreForm members={members} currentMemberId={currentMember.id} onSubmit={handleAddChore} />
-        </Modal>
       )}
 
       {selectedChore && <ChoreDetailModal

@@ -16,6 +16,7 @@ import { canManageChildAccount, childAccountState, childAccountStatusLabel } fro
 import { canManageAllowance } from '../../utils/allowancePlans'
 import { ChildAccountSection } from './ChildAccountSection'
 import { AllowanceSection } from './AllowanceSection'
+import { useOptionalCreateRecord, type RecordType } from '../../context/create-record/CreateRecordContext'
 
 interface Props {
   member: FamilyMember
@@ -71,6 +72,7 @@ function mutationErrorMessage(error: unknown): string {
 }
 
 export function MemberProfileModal({ member, currentMember, refreshMembers, onClose, onRequestRemove, onRequestLeave, childAccount = null, onAccountChanged, accountEmail = null }: Props) {
+  const createRecord = useOptionalCreateRecord()
   const fields = editableMemberProfileFields(currentMember, member)
   const showAccountManagement = Boolean(onAccountChanged) && canManageChildAccount(currentMember, member)
   // Adults have no allowance, and a child opening their own profile must not
@@ -92,6 +94,7 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
   const [error, setError] = useState<string | null>(null)
   const [activeSection, setActiveSection] = useState<EditorSection>('profile')
   const [confirmingDiscard, setConfirmingDiscard] = useState(false)
+  const [pendingCreateType, setPendingCreateType] = useState<RecordType | null>(null)
   const [emailCopied, setEmailCopied] = useState(false)
 
   // Adults show a registered account email (or a subtle placeholder); children
@@ -154,6 +157,17 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
       return
     }
     onClose()
+  }
+
+  function openForMember(type: RecordType) {
+    if (!createRecord) return
+    if (isDirty) {
+      setPendingCreateType(type)
+      setConfirmingDiscard(true)
+      return
+    }
+    onClose()
+    createRecord.openCreateRecord({ type, memberId: member.id, source: 'member-profile' })
   }
 
   function handleRemoveAvatar() {
@@ -410,6 +424,17 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
                   })}
                 </div>
               </fieldset>
+
+              {createRecord && (currentMember.role === 'admin' || currentMember.role === 'parent') && (
+                <section className="member-editor-block member-planning-shortcuts" aria-labelledby="member-planning-title">
+                  <h4 id="member-planning-title">{t.family.editor.planForMember(member.display_name)}</h4>
+                  <div className="member-planning-actions">
+                    <button type="button" className="btn-secondary" onClick={() => openForMember('household-task')}>+ {t.family.editor.planTask}</button>
+                    <button type="button" className="btn-secondary" onClick={() => openForMember('activity')}>+ {t.family.editor.planActivity}</button>
+                    <button type="button" className="btn-secondary" onClick={() => openForMember('medical')}>+ {t.family.editor.planMedical}</button>
+                  </div>
+                </section>
+              )}
             </form>
           )}
 
@@ -460,10 +485,17 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
         title={t.family.editor.discardTitle}
         explanation={t.family.editor.discardExplain}
         confirmLabel={t.family.editor.discardConfirm}
-        onCancel={() => setConfirmingDiscard(false)}
+        onCancel={() => {
+          setConfirmingDiscard(false)
+          setPendingCreateType(null)
+        }}
         onConfirm={() => {
           setConfirmingDiscard(false)
           onClose()
+          if (pendingCreateType && createRecord) {
+            createRecord.openCreateRecord({ type: pendingCreateType, memberId: member.id, source: 'member-profile' })
+            setPendingCreateType(null)
+          }
         }}
       />
     </Modal>

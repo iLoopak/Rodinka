@@ -10,6 +10,7 @@ import {
 import type { MedicalRecordInput } from '../domain/medical/types'
 import type { MedicalRecord, MedicalRecordType, MedicalStatus } from '../hooks/useMedicalRecords'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
+import { DateShortcutField, GuidedDisclosure, GuidedLead, MemberChoicePicker } from './create-record/GuidedCreateFields'
 
 const RECORD_TYPE_OPTIONS = MEDICAL_RECORD_TYPE_VALUES.map((value) => ({
   value,
@@ -22,11 +23,16 @@ interface Props {
   currentMemberId: string
   initial?: MedicalRecord
   initialRecordDate?: string
+  initialMemberId?: string
+  variant?: 'standard' | 'guided'
   onSubmit: (input: MedicalRecordInput) => Promise<void>
 }
 
-export function AddMedicalRecordForm({ members, currentMemberId, initial, initialRecordDate, onSubmit }: Props) {
-  const [patientId, setPatientId] = useState(initial?.patient_id ?? members[0]?.id ?? currentMemberId)
+export function AddMedicalRecordForm({ members, currentMemberId, initial, initialRecordDate, initialMemberId, variant = 'standard', onSubmit }: Props) {
+  const initialPatientId = initialMemberId && members.some((member) => member.id === initialMemberId)
+    ? initialMemberId
+    : members[0]?.id ?? currentMemberId
+  const [patientId, setPatientId] = useState(initial?.patient_id ?? initialPatientId)
   const [responsibleMemberId, setResponsibleMemberId] = useState(initial?.responsible_member_id ?? '')
   const [recordType, setRecordType] = useState<MedicalRecordType>(initial?.record_type ?? 'checkup')
   const [title, setTitle] = useState(initial?.title ?? '')
@@ -55,6 +61,7 @@ export function AddMedicalRecordForm({ members, currentMemberId, initial, initia
 
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -75,7 +82,7 @@ export function AddMedicalRecordForm({ members, currentMemberId, initial, initia
         patientId,
         responsibleMemberId: responsibleMemberId || null,
         recordType,
-        title,
+        title: variant === 'guided' && !initial ? title.trim() || medicalRecordTypeLabel(recordType) : title,
         provider,
         location,
         recordDate,
@@ -99,6 +106,79 @@ export function AddMedicalRecordForm({ members, currentMemberId, initial, initia
     } finally {
       setLoading(false)
     }
+  }
+
+  if (variant === 'guided' && !initial) {
+    return <form className="guided-create-form" onSubmit={handleSubmit}>
+      <div className="guided-create-scroll">
+        <GuidedLead />
+        <section className="guided-primary-section">
+          <span className="guided-field-label">{t.create.guided.medicalPrompt}</span>
+          <div className="guided-option-grid" role="group" aria-label={t.medical.recordTypeLabel}>
+            {RECORD_TYPE_OPTIONS.map((option) => <button
+              key={option.value}
+              type="button"
+              className={recordType === option.value ? 'selected' : ''}
+              aria-pressed={recordType === option.value}
+              onClick={() => setRecordType(option.value)}
+            >{option.label}</button>)}
+          </div>
+        </section>
+
+        <MemberChoicePicker
+          label={t.medical.patientLabel}
+          members={members}
+          value={patientId}
+          required
+          onChange={setPatientId}
+        />
+
+        <DateShortcutField label={t.create.guided.medicalDate} value={recordDate} required onChange={setRecordDate} />
+        <label className="guided-compact-field">
+          <span>{t.medical.startTimeLabel}</span>
+          <input type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} />
+        </label>
+
+        <GuidedDisclosure open={detailsOpen} onToggle={() => setDetailsOpen((open) => !open)}>
+          <label>
+            <span>{t.create.guided.medicalCustomTitle}</span>
+            <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t.medical.titlePlaceholder} />
+            <small>{t.create.guided.medicalCustomTitleHint}</small>
+          </label>
+          <div className="guided-two-column">
+            <label><span>{t.medical.providerLabel}</span><input value={provider} onChange={(event) => setProvider(event.target.value)} /></label>
+            <label><span>{t.medical.locationLabel}</span><input value={location} onChange={(event) => setLocation(event.target.value)} /></label>
+          </div>
+          <MemberChoicePicker label={t.medical.responsibleLabel} members={members} value={responsibleMemberId} emptyLabel={t.medical.responsibleNone} onChange={setResponsibleMemberId} />
+          <div className="guided-two-column">
+            <label><span>{t.medical.endTimeLabel}</span><input type="time" value={endTime} onChange={(event) => setEndTime(event.target.value)} /></label>
+            <label><span>{t.medical.statusLabel}</span><select value={status} onChange={(event) => setStatus(event.target.value as MedicalStatus)}>{STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+            <label><span>{t.medical.nextDueDateLabel}</span><input type="date" value={nextDueDate} onChange={(event) => setNextDueDate(event.target.value)} /></label>
+            <label><span>{t.medical.recurrenceIntervalLabel}</span><input type="number" min="0" step="1" inputMode="numeric" value={recurrenceIntervalMonths} onChange={(event) => setRecurrenceIntervalMonths(event.target.value)} /></label>
+          </div>
+          {recordType === 'vaccination' && <div className="guided-subsection">
+            <h4>{t.medical.sectionVaccination}</h4>
+            <div className="guided-two-column">
+              <label><span>{t.medical.vaccineNameLabel}</span><input value={vaccineName} onChange={(event) => setVaccineName(event.target.value)} /></label>
+              <label><span>{t.medical.vaccineDoseNumberLabel}</span><input type="number" min="1" step="1" inputMode="numeric" value={vaccineDoseNumber} onChange={(event) => setVaccineDoseNumber(event.target.value)} /></label>
+              <label><span>{t.medical.vaccineCompletedDateLabel}</span><input type="date" value={vaccineCompletedDate} onChange={(event) => setVaccineCompletedDate(event.target.value)} /></label>
+              <label><span>{t.medical.vaccineNextDoseDateLabel}</span><input type="date" value={vaccineNextDoseDate} onChange={(event) => setVaccineNextDoseDate(event.target.value)} /></label>
+              <label className="guided-full-width"><span>{t.medical.vaccineBatchNumberLabel}</span><input value={vaccineBatchNumber} onChange={(event) => setVaccineBatchNumber(event.target.value)} /></label>
+            </div>
+          </div>}
+          <label className="guided-switch">
+            <input type="checkbox" checked={reminderEnabled} onChange={(event) => setReminderEnabled(event.target.checked)} />
+            <span>{t.medical.reminderEnabledLabel}</span>
+          </label>
+          {reminderEnabled && <label><span>{t.medical.reminderDaysBeforeLabel}</span><input type="number" min="0" step="1" inputMode="numeric" value={reminderDaysBefore} onChange={(event) => setReminderDaysBefore(event.target.value)} /></label>}
+          <label><span>{t.medical.notesLabel}</span><textarea rows={3} value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
+        </GuidedDisclosure>
+      </div>
+      <div className="guided-create-footer">
+        {error && <p className="error" role="alert">{error}</p>}
+        <button type="submit" disabled={loading}>{loading ? t.medical.submitting : t.medical.submitAdd}</button>
+      </div>
+    </form>
   }
 
   return (

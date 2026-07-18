@@ -2,14 +2,16 @@ import { useState } from 'react'
 import { t } from '../../strings'
 import type { Meal } from '../../hooks/useMeals'
 import type { VoteRoundInput } from '../../context/meals/MealsContext'
+import { GuidedDisclosure, GuidedLead } from '../create-record/GuidedCreateFields'
 
 interface Props {
   meals: Meal[]
   initialMealId?: string
+  variant?: 'standard' | 'guided'
   onSubmit: (input: VoteRoundInput, openImmediately: boolean) => Promise<void>
 }
 
-export function CreateRoundForm({ meals, initialMealId, onSubmit }: Props) {
+export function CreateRoundForm({ meals, initialMealId, variant = 'standard', onSubmit }: Props) {
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -17,6 +19,7 @@ export function CreateRoundForm({ meals, initialMealId, onSubmit }: Props) {
   const [selectedMealIds, setSelectedMealIds] = useState<string[]>(initialMealId ? [initialMealId] : [])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   const activeMeals = meals.filter((meal) => meal.status === 'active')
 
@@ -48,6 +51,14 @@ export function CreateRoundForm({ meals, initialMealId, onSubmit }: Props) {
   }
 
   async function handleFinish(openImmediately: boolean) {
+    if (!title.trim()) {
+      setError(t.mealVoting.errors.roundTitleRequired)
+      return
+    }
+    if (selectedMealIds.length === 0) {
+      setError(t.mealVoting.errors.candidatesRequired)
+      return
+    }
     setLoading(true)
     setError(null)
     try {
@@ -66,6 +77,44 @@ export function CreateRoundForm({ meals, initialMealId, onSubmit }: Props) {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (variant === 'guided') {
+    return <div className="guided-create-form">
+      <div className="guided-create-scroll">
+        <GuidedLead />
+        <section className="guided-primary-section">
+          <label className="guided-hero-field">
+            <span>{t.create.guided.votePrompt}</span>
+            <input autoFocus required value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t.mealVoting.roundTitlePlaceholder} />
+          </label>
+        </section>
+        <fieldset className="guided-choice-fieldset">
+          <legend>{t.create.guided.voteCandidates}</legend>
+          {activeMeals.length === 0 ? <p className="empty-state">{t.mealLibrary.noMeals}</p> : <div className="guided-candidate-grid">
+            {activeMeals.map((meal) => {
+              const selected = selectedMealIds.includes(meal.id)
+              return <button
+                key={meal.id}
+                type="button"
+                className={selected ? 'selected' : ''}
+                aria-pressed={selected}
+                onClick={() => toggleMeal(meal.id)}
+              ><span>{meal.name}</span><span aria-hidden="true">{selected ? '✓' : '+'}</span></button>
+            })}
+          </div>}
+        </fieldset>
+        <GuidedDisclosure open={detailsOpen} onToggle={() => setDetailsOpen((open) => !open)}>
+          <label><span>{t.mealVoting.roundDescriptionLabel}</span><textarea rows={2} value={description} onChange={(event) => setDescription(event.target.value)} /></label>
+          <label><span>{t.mealVoting.roundDeadlineLabel}</span><input type="datetime-local" value={deadline} onChange={(event) => setDeadline(event.target.value)} /></label>
+        </GuidedDisclosure>
+      </div>
+      <div className="guided-create-footer split">
+        {error && <p className="error" role="alert">{error}</p>}
+        <button type="button" className="btn-secondary" onClick={() => handleFinish(false)} disabled={loading}>{t.create.guided.saveVoteDraft}</button>
+        <button type="button" onClick={() => handleFinish(true)} disabled={loading}>{loading ? t.mealVoting.submitting : t.create.guided.startVote}</button>
+      </div>
+    </div>
   }
 
   return (

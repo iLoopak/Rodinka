@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useChoresData } from '../context/chores/ChoresContext'
 import { useActivitiesData } from '../context/activities/ActivitiesContext'
 import { useMedicalData } from '../context/health/MedicalContext'
@@ -11,16 +10,13 @@ import { getItemTypeStyle } from '../utils/itemTypeStyle'
 import { displayTitle } from '../utils/mealPlanGrouping'
 import { isMedicalRecordOverdue } from '../utils/medicalDueState'
 import { nextOccurrenceDate } from '../utils/recurrence'
-import type { PlannerItemType } from '../utils/plannerCreate'
 import { ErrorState } from './ui/ErrorState'
 import { PlannerAreaCard } from './planner/PlannerAreaCard'
-import { UniversalCreateModal } from './planner/UniversalCreateModal'
 import { ShoppingCategoryIcon } from './shopping/ShoppingCategoryIcon'
-import { useRouter } from '../router'
+import { useCreateRecord } from '../context/create-record/CreateRecordContext'
 
 export function PlannerScreen() {
-  const [createConfig, setCreateConfig] = useState<{ type?: PlannerItemType } | null>(null)
-  const { navigate } = useRouter()
+  const { openCreateRecord } = useCreateRecord()
   const {
     chores, pendingCompletions, latestCompletionFor,
     choresLoading, choresError, refreshChores, refreshCompletions,
@@ -83,7 +79,7 @@ export function PlannerScreen() {
           <h1 className="home-title">{t.planner.title}</h1>
           <p className="home-subtitle">{t.planner.subtitle}</p>
         </div>
-        <button type="button" className="header-action-button planner-create-button" onClick={() => setCreateConfig({})}>
+        <button type="button" className="header-action-button planner-create-button" onClick={() => openCreateRecord({ source: 'planning' })}>
           <span aria-hidden="true">+</span> {t.create.addAction}
         </button>
       </div>
@@ -102,8 +98,6 @@ export function PlannerScreen() {
               ...(overdueChores.length > 0 ? [t.planner.choresOverdue(overdueChores.length)] : []),
             ]}
             ariaLabel={t.planner.openArea(t.planner.choresTitle)}
-            createLabel={t.planner.addChore}
-            onCreate={() => setCreateConfig({ type: 'chore' })}
           />
           <PlannerAreaCard
             to="/activities"
@@ -124,8 +118,6 @@ export function PlannerScreen() {
               ...(overduePayments.length > 0 ? [t.planner.paymentsOverdue(overduePayments.length)] : []),
             ]}
             ariaLabel={t.planner.openArea(t.planner.activitiesTitle)}
-            createLabel={t.planner.addActivity}
-            onCreate={() => setCreateConfig({ type: 'activity' })}
           />
           <PlannerAreaCard
             to="/health"
@@ -142,8 +134,6 @@ export function PlannerScreen() {
             }
             details={overdueMedical.length > 0 ? [t.planner.healthOverdue(overdueMedical.length)] : []}
             ariaLabel={t.planner.openArea(t.planner.healthTitle)}
-            createLabel={t.planner.addMedical}
-            onCreate={() => setCreateConfig({ type: 'medical' })}
           />
           <PlannerAreaCard
             to="/meals"
@@ -160,8 +150,6 @@ export function PlannerScreen() {
             }
             details={openVotes.length > 0 ? [t.planner.mealsVoting(openVotes.length)] : []}
             ariaLabel={t.planner.openArea(t.planner.mealsTitle)}
-            createLabel={t.planner.addMeal}
-            onCreate={() => setCreateConfig({ type: 'meal' })}
           />
           <PlannerAreaCard
             to="/shopping"
@@ -171,18 +159,9 @@ export function PlannerScreen() {
             summary={t.shopping.activeCount(activeShoppingItems.length)}
             details={[]}
             ariaLabel={t.planner.openArea(t.shopping.title)}
-            createLabel={t.planner.addShopping}
-            onCreate={() => navigate('/shopping')}
           />
         </div>
       </section>
-
-      {createConfig && (
-        <UniversalCreateModal
-          initialType={createConfig.type}
-          onClose={() => setCreateConfig(null)}
-        />
-      )}
     </>
   )
 }
