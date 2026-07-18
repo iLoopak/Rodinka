@@ -23,6 +23,7 @@ import type {
 } from '../../context/messages/types'
 import { EntityCard } from './EntityCard'
 import { CreateFromMessageDialog, type CreateFromMessageKind } from './CreateFromMessageDialog'
+import { ShareExistingEntityDialog, type ShareableEntityKind } from './ShareExistingEntityDialog'
 import type { FamilyMember } from '../../hooks/useFamilyMembers'
 import {
   clusterMessages,
@@ -421,6 +422,7 @@ function ConversationDetail(props: ConversationDetailProps) {
   const [lightbox, setLightbox] = useState<LightboxState | null>(null)
   const [muteDialogOpen, setMuteDialogOpen] = useState(false)
   const [createFrom, setCreateFrom] = useState<{ kind: CreateFromMessageKind; text: string } | null>(null)
+  const [shareExisting, setShareExisting] = useState<ShareableEntityKind | null>(null)
   const [showJumpButton, setShowJumpButton] = useState(false)
 
   // Only real participants can be mentioned — the RPC enforces the same
@@ -682,7 +684,7 @@ function ConversationDetail(props: ConversationDetailProps) {
                     <div
                       key={message.id}
                       data-message-id={message.id}
-                      className={message.id === highlightedMessageId ? 'messages-row is-push-target' : undefined}
+                      className={`messages-thread-item${message.id === highlightedMessageId ? ' is-push-target' : ''}`}
                     >
                       {divider && (
                         <div className="messages-day-divider" role="separator">
@@ -769,7 +771,10 @@ function ConversationDetail(props: ConversationDetailProps) {
           await onSend(payload)
           setReplyingTo(null)
         }}
-        onCreateEntity={(kind) => setCreateFrom({ kind, text: '' })}
+        // The "+" menu shares something that ALREADY exists. Creating a new
+        // record from chat is a different action and lives on the message
+        // context menu, where it can prefill from the message text.
+        onShareEntity={(kind) => setShareExisting(kind)}
         mentionCandidates={mentionCandidates}
       />
       {contextMenu && (
@@ -863,6 +868,13 @@ function ConversationDetail(props: ConversationDetailProps) {
       )}
       {lightbox && (
         <AttachmentLightbox url={lightbox.url} alt={lightbox.alt} onClose={() => setLightbox(null)} />
+      )}
+      {shareExisting && (
+        <ShareExistingEntityDialog
+          kind={shareExisting}
+          conversationId={conversation.id}
+          onClose={() => setShareExisting(null)}
+        />
       )}
       {createFrom && (
         <CreateFromMessageDialog

@@ -6170,14 +6170,24 @@ button.danger-action:focus-visible:not(:disabled) {
 
 .messages-bubble {
   max-width: min(78%, 520px);
+  /* Floor for emoji-only and one-letter messages so they still read as a
+     bubble. Small on purpose: the timestamp inside already sets a natural
+     minimum for anything with meta, so this rarely binds and never widens
+     an ordinary message. */
+  min-width: 3.5rem;
   padding: 10px 14px;
   border-radius: 18px;
   background: var(--neutral-soft);
   color: var(--ink);
   line-height: var(--line-height-body);
   white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  /* `break-word`, NOT `anywhere`. They look identical for wrapping, but
+     `anywhere` also shrinks the element's min-content contribution to a
+     single character. Inside the column-flex thread (which sizes the bubble
+     to fit-content) that made "A"/"OK" collapse into a one-character-wide
+     tower. `break-word` keeps max-content intact while still breaking a long
+     unbroken URL that would otherwise overflow. */
+  overflow-wrap: break-word;
   border: 1px solid transparent;
   box-shadow: var(--shadow-card);
   position: relative;
@@ -6209,6 +6219,9 @@ button.danger-action:focus-visible:not(:disabled) {
   color: var(--ink-faint);
   text-align: right;
   font-variant-numeric: tabular-nums;
+  /* "09:30 PM" must never split into "09:30" / "PM" — the bubble inherits
+     `pre-wrap`, so the space in a 12-hour clock is a real break opportunity. */
+  white-space: nowrap;
 }
 
 .messages-composer {
@@ -6408,6 +6421,15 @@ button.danger-action:focus-visible:not(:disabled) {
   color: var(--ink-faint);
 }
 
+/* Per-message wrapper (day divider + bubble row). The thread cluster is a
+   column flex with align-items other than `stretch`, so without an explicit
+   width this shrinks to fit-content and drags the bubble down with it —
+   that is what squeezed short messages and pinned day dividers to the edge.
+   The bubble's own alignment is handled by .messages-bubble-row below. */
+.messages-thread-item {
+  width: 100%;
+}
+
 .messages-bubble-row {
   display: flex;
   flex-direction: column;
@@ -6501,6 +6523,7 @@ button.danger-action:focus-visible:not(:disabled) {
   color: var(--ink-faint);
   font-size: 0.66rem;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .messages-bubble-edited { font-style: italic; }
@@ -6998,6 +7021,58 @@ button.danger-action:focus-visible:not(:disabled) {
   background: var(--neutral-soft);
   cursor: pointer;
 }
+/* Existing-record picker opened from the composer "+" menu. Mirrors the
+   share-target list above so the two share/pick surfaces read the same. */
+.messages-entity-picker-list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 45vh;
+  overflow-y: auto;
+}
+.messages-entity-picker-option {
+  display: flex;
+  /* Explicit: the global `label { flex-direction: column }` reset would
+     otherwise stack the radio above the text. */
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-row, 12px);
+  background: var(--neutral-soft);
+  cursor: pointer;
+}
+.messages-entity-picker-option.is-selected {
+  border-color: var(--focus-ring);
+  background: var(--paper);
+}
+.messages-entity-picker-option input[type='radio'] {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+}
+.messages-entity-picker-text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+.messages-entity-picker-text strong {
+  /* A long chore title must not stretch the dialog. */
+  overflow-wrap: break-word;
+}
+.messages-entity-picker-text small {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+}
+
 .messages-share-target.is-selected {
   border-color: var(--focus-ring);
   background: var(--paper);
@@ -7179,7 +7254,7 @@ button.danger-action:focus-visible:not(:disabled) {
 
 /* Push deep-link target: brief flash so the user sees which message the
    notification was about, then fades back to normal. */
-.messages-row.is-push-target {
+.messages-thread-item.is-push-target {
   animation: messages-push-target-flash 2.4s ease-out;
   border-radius: 12px;
 }
@@ -7188,7 +7263,7 @@ button.danger-action:focus-visible:not(:disabled) {
   100% { background: transparent; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .messages-row.is-push-target { animation: none; background: color-mix(in srgb, var(--focus-ring) 10%, transparent); }
+  .messages-thread-item.is-push-target { animation: none; background: color-mix(in srgb, var(--focus-ring) 10%, transparent); }
 }
 
 /* Contextual push prompt, shown after a first received message */
