@@ -6969,6 +6969,78 @@ button.danger-action:focus-visible:not(:disabled) {
 }
 .messages-entity-card-error { color: var(--state-danger); }
 
+/* Share-to-chat dialog + create-from-message. Reuses the modal sheet,
+   the app's row/chip tokens and button variants — no bespoke surfaces. */
+.messages-share-body {
+  margin: 0 0 12px;
+  color: var(--ink-muted);
+  font-size: var(--font-size-body);
+}
+.messages-share-targets {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+.messages-share-target {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* Comfortable tap target on mobile. */
+  min-height: 48px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-row, 12px);
+  background: var(--neutral-soft);
+  cursor: pointer;
+}
+.messages-share-target.is-selected {
+  border-color: var(--focus-ring);
+  background: var(--paper);
+}
+.messages-share-target-avatar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  color: var(--ink-muted);
+  background: var(--paper);
+}
+.messages-share-note {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.messages-share-note textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: inherit;
+  /* >=16px avoids the iOS focus zoom. */
+  font-size: var(--font-size-control);
+  resize: none;
+}
+.messages-share-error {
+  margin: 0 0 10px;
+  color: var(--state-danger);
+  font-size: 0.82rem;
+}
+.messages-context-menu-separator {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--border-soft);
+}
+
 /* System notices: deliberately quieter than a normal message — a small
    centred line, never a bubble, so they never dominate the thread. */
 .messages-system-row {

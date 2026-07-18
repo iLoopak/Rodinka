@@ -9,6 +9,7 @@ import type { ActivityInput } from '../domain/activities/types'
 import { Modal } from './ui/Modal'
 import { AddActivityForm } from './AddActivityForm'
 import { ShareLinkButton } from './ui/ShareLinkButton'
+import { ShareToChatButton } from './messages/ShareToChatButton'
 import { PersonRoleGroup, type PersonRole } from './ui/PersonRoleGroup'
 import { useFamilyCore } from '../context/family/FamilyCoreContext'
 import { capabilitiesFor } from '../utils/uiCapabilities'
@@ -105,6 +106,7 @@ export function ActivityDetailModal({
         {capabilities.manageActivities && <button className="btn-secondary" onClick={() => setEditing(true)}>
           {t.activities.edit}
         </button>}
+        <ShareToChatButton entityType="event" entityId={activity.id} label={activity.title} />
         <ShareLinkButton route="/activities" param="activity" id={activity.id} title={activity.title} />
       </div>
     </Modal>

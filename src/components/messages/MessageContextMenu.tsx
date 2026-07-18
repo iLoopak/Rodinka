@@ -15,6 +15,11 @@ interface Props {
   onReact: () => void
   onEdit: () => void
   onDelete: () => void
+  /** Create-from-message actions; hidden when the message has no usable text. */
+  canCreateEntities: boolean
+  onCreateTask: () => void
+  onCreateShopping: () => void
+  onCreateEvent: () => void
   onClose: () => void
 }
 
@@ -31,6 +36,10 @@ export function MessageContextMenu({
   onReact,
   onEdit,
   onDelete,
+  canCreateEntities,
+  onCreateTask,
+  onCreateShopping,
+  onCreateEvent,
   onClose,
 }: Props) {
   const menuRef = useRef<HTMLDivElement>(null)
@@ -94,6 +103,34 @@ export function MessageContextMenu({
         </MenuIcon>
         {t.messages.react}
       </MenuItem>
+      {canCreateEntities && (
+        <>
+          <div className="messages-context-menu-separator" role="separator" />
+          <MenuItem onClick={onCreateTask}>
+            <MenuIcon>
+              <path d="M9 11l3 3 8-8" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9" strokeLinecap="round" strokeLinejoin="round" />
+            </MenuIcon>
+            {t.messages.createFromMessage.createTask}
+          </MenuItem>
+          <MenuItem onClick={onCreateShopping}>
+            <MenuIcon>
+              <path d="M6 6h15l-1.5 9h-12z" strokeLinejoin="round" />
+              <path d="M6 6 5 3H3" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="9" cy="20" r="1.4" /><circle cx="17" cy="20" r="1.4" />
+            </MenuIcon>
+            {t.messages.createFromMessage.addToShopping}
+          </MenuItem>
+          <MenuItem onClick={onCreateEvent}>
+            <MenuIcon>
+              <rect x="3" y="5" width="18" height="16" rx="2" />
+              <path d="M3 9h18M8 3v4M16 3v4" strokeLinecap="round" />
+            </MenuIcon>
+            {t.messages.createFromMessage.createEvent}
+          </MenuItem>
+          <div className="messages-context-menu-separator" role="separator" />
+        </>
+      )}
       {isMine && canEdit && (
         <MenuItem onClick={onEdit}>
           <MenuIcon>

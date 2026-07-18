@@ -19,6 +19,7 @@ import { MemberAvatar } from './ui/MemberAvatar'
 import { Modal } from './ui/Modal'
 import { ConfirmDestructiveActionDialog, UndoToast } from './ui/DestructiveActions'
 import { ShoppingItemForm } from './shopping/ShoppingItemForm'
+import { ShareToChatButton } from './messages/ShareToChatButton'
 import { CompletionCheckbox } from './ui/CompletionCheckbox'
 import { defaultShoppingCategorySettings, type ShoppingCategorySettings } from '../utils/shoppingCategorySettings'
 import { ScreenHeader } from './ui/ScreenHeader'
@@ -257,11 +258,16 @@ export function ShoppingScreen() {
         {isParentOrAdmin && <button type="button" className="link danger-action" onClick={() => setConfirmClearPurchased(true)}>{t.shopping.clearPurchased}</button>}
       </details>}
 
-      {isParentOrAdmin && selectedItem && <Modal title={t.shopping.editTitle} onClose={() => setSelectedItem(null)}><ShoppingItemForm
-        initial={selectedItem} members={members} categorySettings={shoppingCategorySettings}
-        onSubmit={async (input) => { await updateShoppingItem(selectedItem.id, input); setSelectedItem(null) }}
-        onDelete={async () => scheduleDeleteShoppingItem(selectedItem)}
-      /></Modal>}
+      {isParentOrAdmin && selectedItem && <Modal title={t.shopping.editTitle} onClose={() => setSelectedItem(null)}>
+        <ShoppingItemForm
+          initial={selectedItem} members={members} categorySettings={shoppingCategorySettings}
+          onSubmit={async (input) => { await updateShoppingItem(selectedItem.id, input); setSelectedItem(null) }}
+          onDelete={async () => scheduleDeleteShoppingItem(selectedItem)}
+        />
+        <div className="family-actions">
+          <ShareToChatButton entityType="shopping_item" entityId={selectedItem.id} label={selectedItem.name} />
+        </div>
+      </Modal>}
       {pendingDelete && <UndoToast message={t.shopping.removedWithUndo(pendingDelete.name)} onUndo={undoDeleteShoppingItem} />}
       <ConfirmDestructiveActionDialog
         open={confirmClearPurchased}

@@ -10,6 +10,7 @@ import { Modal } from './ui/Modal'
 import { ConfirmDestructiveActionDialog, DestructiveIconButton } from './ui/DestructiveActions'
 import { MemberAvatar } from './ui/MemberAvatar'
 import { ShareLinkButton } from './ui/ShareLinkButton'
+import { ShareToChatButton } from './messages/ShareToChatButton'
 import { AddChoreForm } from './AddChoreForm'
 
 interface Props {
@@ -141,6 +142,7 @@ export function ChoreDetailModal({
             onClick={() => setConfirmArchiveOpen(true)}
             disabled={pending || busy || (chore.status === 'archived' && state === 'done')}
           />}
+          <ShareToChatButton entityType="task" entityId={chore.id} label={chore.title} />
           <ShareLinkButton route="/chores" param="chore" id={chore.id} title={chore.title} />
         </div>
 
