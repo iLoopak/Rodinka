@@ -515,6 +515,11 @@ export const strings = {
       birthDateEmpty: 'Neuvedeno',
       roleLabel: 'Role',
       accountLabel: 'Propojení s účtem',
+      emailLabel: 'E-mail',
+      emailNoAccount: 'Bez propojeného účtu',
+      copyEmail: 'Kopírovat',
+      copyEmailFor: (name: string) => `Kopírovat e-mail: ${name}`,
+      emailCopied: 'Zkopírováno',
       parentManagedField: 'Tento údaj může změnit rodič.',
       childAccount: {
         sectionTitle: 'Přihlášení dítěte',
@@ -1958,6 +1963,11 @@ export const strings = {
       birthDateEmpty: 'Not provided',
       roleLabel: 'Role',
       accountLabel: 'Account link',
+      emailLabel: 'Email',
+      emailNoAccount: 'No account connected',
+      copyEmail: 'Copy',
+      copyEmailFor: (name: string) => `Copy email: ${name}`,
+      emailCopied: 'Copied',
       parentManagedField: 'A parent can change this field.',
       childAccount: {
         sectionTitle: 'Child sign-in',

@@ -29,6 +29,11 @@ interface Props {
   // panel cannot render there.
   childAccount?: ChildAccount | null
   onAccountChanged?: () => Promise<void> | void
+  // Registered account email for an adult member, visible only to adults of the
+  // same family (resolved via the family_member_emails RPC upstream). Null when
+  // the member has no connected account, and irrelevant for children — their
+  // synthetic managed-account identifier is never an email.
+  accountEmail?: string | null
 }
 
 type EditorSection = 'profile' | 'allowance' | 'access' | 'other'
@@ -65,7 +70,7 @@ function mutationErrorMessage(error: unknown): string {
   return t.family.errors.profileSaveFailed
 }
 
-export function MemberProfileModal({ member, currentMember, refreshMembers, onClose, onRequestRemove, onRequestLeave, childAccount = null, onAccountChanged }: Props) {
+export function MemberProfileModal({ member, currentMember, refreshMembers, onClose, onRequestRemove, onRequestLeave, childAccount = null, onAccountChanged, accountEmail = null }: Props) {
   const fields = editableMemberProfileFields(currentMember, member)
   const showAccountManagement = Boolean(onAccountChanged) && canManageChildAccount(currentMember, member)
   // Adults have no allowance, and a child opening their own profile must not
@@ -87,6 +92,22 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
   const [error, setError] = useState<string | null>(null)
   const [activeSection, setActiveSection] = useState<EditorSection>('profile')
   const [confirmingDiscard, setConfirmingDiscard] = useState(false)
+  const [emailCopied, setEmailCopied] = useState(false)
+
+  // Adults show a registered account email (or a subtle placeholder); children
+  // never do — their managed-account identifier is not a real email address.
+  const showEmail = member.role !== 'child'
+
+  async function copyEmail() {
+    if (!accountEmail) return
+    try {
+      await navigator.clipboard.writeText(accountEmail)
+      setEmailCopied(true)
+    } catch {
+      // Clipboard access fails on insecure contexts or when permission is
+      // denied. The email stays selectable on screen, so this is not surfaced.
+    }
+  }
 
   const vocativePreview = getLocalizedAddressName({
     firstName: displayName,
@@ -303,6 +324,28 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
                       ? childAccountStatusLabel(childAccountState(member, childAccount))
                       : member.user_id ? t.family.hasAccount : t.family.noAccount}</dd>
                   </div>
+                  {showEmail && (
+                    <div className="profile-email-row">
+                      <dt>{t.family.emailLabel}</dt>
+                      <dd>
+                        {accountEmail ? (
+                          <span className="profile-email-value">
+                            <span className="profile-email-address">{accountEmail}</span>
+                            <button
+                              type="button"
+                              className="btn-secondary profile-email-copy"
+                              aria-label={t.family.copyEmailFor(member.display_name)}
+                              onClick={() => void copyEmail()}
+                            >
+                              {emailCopied ? t.family.emailCopied : t.family.copyEmail}
+                            </button>
+                          </span>
+                        ) : (
+                          <span className="profile-email-empty">{t.family.emailNoAccount}</span>
+                        )}
+                      </dd>
+                    </div>
+                  )}
                 </dl>
               </section>
 

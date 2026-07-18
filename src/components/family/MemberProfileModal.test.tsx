@@ -193,6 +193,51 @@ describe('MemberProfileModal sectioned editor', () => {
     expect(onRequestRemove).not.toHaveBeenCalled()
   })
 
+  it('shows an adult account email with a copy action', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    render(<MemberProfileModal
+      member={parentSelf}
+      currentMember={admin}
+      refreshMembers={vi.fn().mockResolvedValue(undefined)}
+      accountEmail="petr@example.com"
+      onClose={vi.fn()}
+    />)
+
+    expect(screen.getByText('petr@example.com')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: t.family.copyEmailFor(parentSelf.display_name) }))
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith('petr@example.com'))
+    await vi.waitFor(() =>
+      expect(screen.getByRole('button', { name: t.family.copyEmailFor(parentSelf.display_name) }).textContent).toBe(t.family.emailCopied)
+    )
+    vi.unstubAllGlobals()
+  })
+
+  it('shows a placeholder when an adult has no connected account email', () => {
+    render(<MemberProfileModal
+      member={{ ...parentSelf, user_id: null }}
+      currentMember={admin}
+      refreshMembers={vi.fn().mockResolvedValue(undefined)}
+      accountEmail={null}
+      onClose={vi.fn()}
+    />)
+    expect(screen.getByText(t.family.emailNoAccount)).toBeTruthy()
+  })
+
+  it('never renders an email row for a child member', () => {
+    render(<MemberProfileModal
+      member={childWithLogin}
+      currentMember={admin}
+      refreshMembers={vi.fn().mockResolvedValue(undefined)}
+      childAccount={activeAccount}
+      onAccountChanged={vi.fn()}
+      accountEmail={null}
+      onClose={vi.fn()}
+    />)
+    expect(screen.queryByText(t.family.emailLabel)).toBeNull()
+    expect(screen.queryByText(t.family.emailNoAccount)).toBeNull()
+  })
+
   it('submits profile changes through the shared save mutation', async () => {
     const refresh = vi.fn().mockResolvedValue(undefined)
     render(<MemberProfileModal
