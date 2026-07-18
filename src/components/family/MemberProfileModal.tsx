@@ -318,34 +318,44 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
                     <dt>{t.family.roleLabel}</dt>
                     <dd>{member.role === 'admin' ? t.family.roleAdmin : member.role === 'parent' ? t.family.roleParent : t.family.roleChild}</dd>
                   </div>
-                  <div>
+                  <div className={showEmail ? 'profile-email-row' : undefined}>
                     <dt>{t.family.accountLabel}</dt>
-                    <dd>{member.role === 'child'
-                      ? childAccountStatusLabel(childAccountState(member, childAccount))
-                      : member.user_id ? t.family.hasAccount : t.family.noAccount}</dd>
-                  </div>
-                  {showEmail && (
-                    <div className="profile-email-row">
-                      <dt>{t.family.emailLabel}</dt>
-                      <dd>
-                        {accountEmail ? (
-                          <span className="profile-email-value">
-                            <span className="profile-email-address">{accountEmail}</span>
-                            <button
-                              type="button"
-                              className="btn-secondary profile-email-copy"
-                              aria-label={t.family.copyEmailFor(member.display_name)}
-                              onClick={() => void copyEmail()}
-                            >
-                              {emailCopied ? t.family.emailCopied : t.family.copyEmail}
-                            </button>
-                          </span>
-                        ) : (
+                    <dd>
+                      {member.role === 'child' ? (
+                        // Children have their own managed-account lifecycle; their
+                        // synthetic identifier is never a real email, so no address
+                        // is ever shown here.
+                        childAccountStatusLabel(childAccountState(member, childAccount))
+                      ) : member.user_id ? (
+                        // Linked to a real authenticated account (members.user_id is
+                        // the source of truth). Show the login email when the RPC
+                        // returned it, plus a subtle "connected account" status.
+                        <span className="profile-account is-linked">
+                          {accountEmail && (
+                            <span className="profile-email-value">
+                              <span className="profile-email-address">{accountEmail}</span>
+                              <button
+                                type="button"
+                                className="btn-secondary profile-email-copy"
+                                aria-label={t.family.copyEmailFor(member.display_name)}
+                                onClick={() => void copyEmail()}
+                              >
+                                {emailCopied ? t.family.emailCopied : t.family.copyEmail}
+                              </button>
+                            </span>
+                          )}
+                          <span className="profile-account-status">{t.family.accountLinked}</span>
+                        </span>
+                      ) : (
+                        // No authenticated account is linked — never render an empty
+                        // email or technical id, just a neutral state and a hint.
+                        <span className="profile-account">
                           <span className="profile-email-empty">{t.family.emailNoAccount}</span>
-                        )}
-                      </dd>
-                    </div>
-                  )}
+                          <span className="field-hint profile-account-hint">{t.family.noAccountHint}</span>
+                        </span>
+                      )}
+                    </dd>
+                  </div>
                 </dl>
               </section>
 

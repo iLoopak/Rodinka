@@ -34,8 +34,10 @@ function roleLabel(role: FamilyMember['role']) {
 // managed account, so they keep the plain account-link wording.
 function MemberAccountBadge({ member, account }: { member: FamilyMember; account: ChildAccount | null }) {
   if (member.role !== 'child') {
+    // The authenticated-account link (members.user_id) is the source of truth —
+    // never the role, name, or mere existence of the member profile.
     return <span className={`badge ${member.user_id ? 'badge-done' : 'badge-pending'}`}>
-      {member.user_id ? t.family.hasAccount : t.family.noAccount}
+      {member.user_id ? t.family.accountLinked : t.family.emailNoAccount}
     </span>
   }
   const state = childAccountState(member, account)
@@ -222,10 +224,11 @@ export function FamilyScreen() {
                 <span className="family-member-copy">
                   <span className="row-title">{m.display_name}</span>
                   <span className="row-meta">{roleLabel(m.role)}</span>
-                  {m.role !== 'child' && (
-                    memberEmails.get(m.id)
-                      ? <span className="family-member-email">{memberEmails.get(m.id)}</span>
-                      : <span className="family-member-email is-empty">{t.family.emailNoAccount}</span>
+                  {m.role !== 'child' && memberEmails.get(m.id) && (
+                    // Only the login email of a genuinely linked account is shown;
+                    // the no-account state is carried by the badge, so no empty
+                    // email or misleading placeholder appears here.
+                    <span className="family-member-email">{memberEmails.get(m.id)}</span>
                   )}
                 </span>
                 <span className="row-spacer" />
