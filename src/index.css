@@ -6037,16 +6037,22 @@ button.danger-action:focus-visible:not(:disabled) {
   font-variant-numeric: tabular-nums;
 }
 
+/* The single owner of the conversation column. `position: relative`
+   anchors the jump-to-latest button; `overscroll-behavior: contain` stops
+   an iOS keyboard scroll from dragging the whole app shell — the thread
+   inside has its own scroll container. */
 .messages-conversation {
   display: flex;
   flex-direction: column;
   min-height: 0;
   height: 100%;
+  position: relative;
   background: var(--paper);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
   overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 .messages-conversation-header {
@@ -6088,7 +6094,7 @@ button.danger-action:focus-visible:not(:disabled) {
   min-height: 0;
   padding: 14px 14px 12px;
   overflow-y: auto;
-  overscroll-behavior-y: contain;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
@@ -6411,10 +6417,6 @@ button.danger-action:focus-visible:not(:disabled) {
 }
 .messages-bubble-row.is-mine { align-items: flex-end; }
 
-.messages-bubble {
-  position: relative;
-}
-
 .messages-bubble.is-failed {
   border-color: var(--state-danger);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--state-danger) 30%, transparent);
@@ -6635,8 +6637,6 @@ button.danger-action:focus-visible:not(:disabled) {
   cursor: pointer;
 }
 
-.messages-conversation { position: relative; }
-
 /* Context menu + emoji picker */
 .messages-context-menu,
 .messages-emoji-picker {
@@ -6646,13 +6646,13 @@ button.danger-action:focus-visible:not(:disabled) {
   border-radius: 12px;
   box-shadow: var(--shadow-card);
   padding: 4px;
-  min-width: 160px;
 }
+
+.messages-context-menu { min-width: 160px; }
 
 .messages-emoji-picker {
   display: inline-flex;
   gap: 4px;
-  min-width: 0;
 }
 
 .messages-emoji-picker-item {
@@ -7112,16 +7112,3 @@ button.danger-action:focus-visible:not(:disabled) {
 }
 body.has-attachment-lightbox { overflow: hidden; }
 
-/* Prevent iOS keyboard from scrolling the whole app shell — the
-   conversation column contains its own scrollable thread, so the
-   root document should stay put. */
-.messages-conversation {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overscroll-behavior: contain;
-}
-.messages-thread {
-  min-height: 0;
-  overscroll-behavior: contain;
-}
