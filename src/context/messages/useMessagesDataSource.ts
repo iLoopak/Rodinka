@@ -19,8 +19,10 @@ import type {
   ConversationRow,
   ConversationView,
   MessageAttachmentRow,
+  MessageEntityResolution,
   MessageReactionRow,
   MessageRow,
+  SharedEntityType,
 } from './types'
 
 // Cap so a very old family thread doesn't drop 20k messages into memory.
@@ -59,6 +61,9 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
   const [reactionsByMessage, setReactionsByMessage] = useState<Record<string, MessageReactionRow[]>>({})
   const [attachmentsByMessage, setAttachmentsByMessage] = useState<Record<string, MessageAttachmentRow[]>>({})
   const [attachmentSignedUrls, setAttachmentSignedUrls] = useState<Record<string, string>>({})
+  // One resolved entity card per message (a message carries at most one
+  // shared entity in this batch). Keyed by message id.
+  const [entityByMessage, setEntityByMessage] = useState<Record<string, MessageEntityResolution>>({})
   const [loadedConversations, setLoadedConversations] = useState<Set<string>>(() => new Set())
   const [olderExhausted, setOlderExhausted] = useState<Set<string>>(() => new Set())
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
@@ -280,6 +285,19 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
             })
           },
         },
+        {
+          table: 'message_entity_refs',
+          filter: `family_id=eq.${familyId}`,
+          onInsert: (row) => {
+            if (activeFamilyIdRef.current !== familyId) return
+            const next = row as { message_id?: string }
+            // A ref just landed (e.g. another member shared an entity, or
+            // our own share echoed) — resolve its live state so the card
+            // renders. Dedup is handled inside resolveEntitiesFor (it
+            // overwrites by message id).
+            if (next.message_id) void resolveEntitiesFor([next.message_id])
+          },
+        },
       ],
     })
     return unsubscribe
@@ -428,6 +446,44 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
       })
       await Promise.all(rows.map(ensureAttachmentSignedUrl))
     }
+    await resolveEntitiesFor(messageIds)
+  }, [])
+
+  // Resolve the live state of any shared entities on these messages. Safe
+  // to call repeatedly — it overwrites the cached resolution so a card
+  // reflects the entity's current state after an action or a refetch.
+  const resolveEntitiesFor = useCallback(async (messageIds: string[]) => {
+    if (messageIds.length === 0) return
+    const { data, error: rpcError } = await supabase.rpc('resolve_message_entities', {
+      p_message_ids: messageIds,
+    })
+    if (rpcError) {
+      console.error('Failed to resolve shared entities:', rpcError.message)
+      return
+    }
+    const rows = (data ?? []) as Array<{
+      ref_id: string
+      message_id: string
+      entity_type: SharedEntityType
+      entity_id: string
+      entity_exists: boolean
+      state: Record<string, unknown> | null
+    }>
+    if (rows.length === 0) return
+    setEntityByMessage((current) => {
+      const next = { ...current }
+      for (const row of rows) {
+        next[row.message_id] = {
+          refId: row.ref_id,
+          messageId: row.message_id,
+          entityType: row.entity_type,
+          entityId: row.entity_id,
+          exists: row.entity_exists,
+          state: row.state ?? {},
+        }
+      }
+      return next
+    })
   }, [])
 
   const ensureAttachmentSignedUrl = useCallback(async (attachment: MessageAttachmentRow) => {
@@ -659,6 +715,128 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
       const existing = current[conversationId] ?? []
       return { ...current, [conversationId]: existing.filter((m) => m.client_id !== clientId) }
     })
+  }, [])
+
+  interface ShareEntityPayload {
+    entityType: SharedEntityType
+    entityId: string
+    body?: string
+    fallbackLabel?: string
+    clientId?: string
+  }
+
+  // Share a live planner entity into a conversation. Optimistically shows
+  // a "sending" entity message; the RPC creates the real message + ref and
+  // we reconcile by client_id exactly like sendMessage. The card resolves
+  // its state once the real id lands.
+  const shareEntity = useCallback(async (conversationId: string, payload: ShareEntityPayload) => {
+    if (!currentMemberId) throw new Error('No active member')
+    const clientId = payload.clientId ?? crypto.randomUUID()
+    const now = new Date().toISOString()
+    const optimistic: MessageRow = {
+      id: `pending:${clientId}`,
+      conversation_id: conversationId,
+      family_id: familyId ?? '',
+      sender_member_id: currentMemberId,
+      content_type: 'entity',
+      body: payload.body?.trim() ?? '',
+      client_id: clientId,
+      reply_to_message_id: null,
+      system_kind: null,
+      edited_at: null,
+      deleted_at: null,
+      has_attachments: false,
+      created_at: now,
+      deliveryStatus: 'sending',
+    }
+    setMessagesByConversation((current) => {
+      const existing = current[conversationId] ?? []
+      const filtered = existing.filter((m) => m.client_id !== clientId)
+      return { ...current, [conversationId]: [...filtered, optimistic] }
+    })
+    // Optimistic card from the caller-supplied label so the bubble isn't
+    // empty during the round-trip.
+    if (payload.fallbackLabel) {
+      setEntityByMessage((current) => ({
+        ...current,
+        [optimistic.id]: {
+          refId: `pending:${clientId}`,
+          messageId: optimistic.id,
+          entityType: payload.entityType,
+          entityId: payload.entityId,
+          exists: true,
+          state: { title: payload.fallbackLabel, name: payload.fallbackLabel, pending: true },
+        },
+      }))
+    }
+    try {
+      const { data, error: rpcError } = await supabase.rpc('share_entity_to_conversation', {
+        p_conversation_id: conversationId,
+        p_entity_type: payload.entityType,
+        p_entity_id: payload.entityId,
+        p_body: payload.body?.trim() ?? null,
+        p_client_id: clientId,
+        p_fallback_label: payload.fallbackLabel ?? null,
+      })
+      if (rpcError) throw friendly(rpcError)
+      const inserted = (Array.isArray(data) ? data[0] : data) as MessageRow | null
+      if (inserted) {
+        setMessagesByConversation((current) => {
+          const existing = current[conversationId] ?? []
+          const filtered = existing.filter((m) => m.client_id !== clientId)
+          if (filtered.some((m) => m.id === inserted.id)) return { ...current, [conversationId]: filtered }
+          const next = [...filtered, { ...inserted, deliveryStatus: 'sent' as const }].sort(compareMessages)
+          return { ...current, [conversationId]: next }
+        })
+        setEntityByMessage((current) => {
+          if (!current[optimistic.id]) return current
+          const next = { ...current }
+          delete next[optimistic.id]
+          return next
+        })
+        await resolveEntitiesFor([inserted.id])
+      }
+    } catch (e) {
+      setMessagesByConversation((current) => {
+        const existing = current[conversationId] ?? []
+        return {
+          ...current,
+          [conversationId]: existing.map((m) =>
+            m.client_id === clientId
+              ? { ...m, deliveryStatus: 'failed', deliveryError: e instanceof Error ? e.message : String(e) }
+              : m,
+          ),
+        }
+      })
+      throw e
+    }
+  }, [currentMemberId, familyId, resolveEntitiesFor])
+
+  // Re-resolve a single message's card after an action that changed the
+  // underlying entity (complete task, mark purchased) so the card reflects
+  // the new state without a full refetch.
+  const refreshMessageEntity = useCallback(async (messageId: string) => {
+    await resolveEntitiesFor([messageId])
+  }, [resolveEntitiesFor])
+
+  // Post a restrained system message (fixed kinds only) after an entity
+  // action taken through chat. Fire-and-forget: a failed notice must never
+  // block the primary action's success.
+  const postEntitySystemMessage = useCallback(async (
+    conversationId: string,
+    kind: string,
+    entityType: SharedEntityType,
+    entityId: string,
+    summary: string,
+  ) => {
+    const { error: rpcError } = await supabase.rpc('post_entity_system_message', {
+      p_conversation_id: conversationId,
+      p_kind: kind,
+      p_entity_type: entityType,
+      p_entity_id: entityId,
+      p_summary: summary,
+    })
+    if (rpcError) console.error('Failed to post system message:', rpcError.message)
   }, [])
 
   const editMessage = useCallback(async (messageId: string, body: string) => {
@@ -928,6 +1106,11 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
     [attachmentSignedUrls],
   )
 
+  const getMessageEntity = useCallback(
+    (messageId: string): MessageEntityResolution | null => entityByMessage[messageId] ?? null,
+    [entityByMessage],
+  )
+
   return {
     loading,
     error,
@@ -955,6 +1138,10 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
     getMessageReactions,
     getMessageAttachments,
     getAttachmentUrl,
+    getMessageEntity,
+    shareEntity,
+    refreshMessageEntity,
+    postEntitySystemMessage,
     markConversationRead,
     loadInitialMessages,
     loadOlderMessages,

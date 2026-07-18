@@ -6306,8 +6306,10 @@ button.danger-action:focus-visible:not(:disabled) {
   margin-top: 14px;
 }
 
-/* Mobile: use a single column, and the detail pane takes over the whole
-   viewport (the list is hidden while the detail is open). */
+/* Mobile: the conversation detail is portaled to <body> (see
+   MobileChatPortal) and rendered as a true fullscreen overlay via
+   `.messages-fullscreen` below. The in-flow list is all that remains
+   inside the app shell. */
 @media (max-width: 720px) {
   .messages-screen {
     display: block;
@@ -6318,19 +6320,45 @@ button.danger-action:focus-visible:not(:disabled) {
   .messages-pane-list.is-collapsed-mobile {
     display: none;
   }
-  .messages-pane-detail {
-    position: fixed;
-    inset: 0;
-    z-index: 40;
-    padding-bottom: 0;
-    background: var(--surface-canvas);
-  }
-  .messages-conversation {
-    height: 100%;
-    border-radius: 0;
-    border: none;
-    box-shadow: none;
-  }
+}
+
+/* Fullscreen mobile chat overlay.
+
+   Portaled out of `.app-main` (an `overflow-y: auto` scroll container)
+   so `position: fixed` pins to the layout viewport on every engine —
+   including iOS standalone PWA, where a fixed element trapped inside a
+   scrolling ancestor was being clipped below the app-shell header. This
+   is the single owner of the fullscreen frame: it fills the dynamic
+   viewport and the chat's own header/composer handle the safe-area
+   insets, so there is no doubled top padding. */
+.messages-fullscreen {
+  position: fixed;
+  inset: 0;
+  /* 100dvh (not 100vh) so iOS dynamic browser toolbars and the PWA
+     status bar don't leave a gap or force a document scroll. */
+  height: 100vh;
+  height: 100dvh;
+  /* Sits above the app header (z 12) and bottom nav; below modals/sheets
+     (which use their own higher layer) so entity sheets can still open
+     over the chat. */
+  z-index: 60;
+  display: flex;
+  background: var(--surface-canvas);
+  overscroll-behavior: contain;
+}
+.messages-fullscreen .messages-conversation {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+/* The chat header is the ONLY top bar in fullscreen mode, so it absorbs
+   the top safe-area inset (notch / status bar). The app-shell header is
+   not in this subtree, so there's no doubled inset. */
+.messages-fullscreen .messages-conversation-header {
+  padding-top: calc(12px + env(safe-area-inset-top));
 }
 
 /* Desktop / tablet: keep both panes side by side. */
@@ -6807,6 +6835,152 @@ button.danger-action:focus-visible:not(:disabled) {
   text-align: left;
 }
 .messages-composer-plus-menu-item:hover { background: var(--neutral-soft); }
+
+/* ------------------------------------------------------------
+   Shared entity cards (batch 3)
+
+   A compact card inside a message bubble. Reuses the app's card tokens
+   (paper surface, hairline border, card radius) so it reads as one
+   system with the module cards it mirrors — never as an embedded web
+   page. One accent colour per entity type is the ONLY per-type styling;
+   no aggressive colours, no nested frames, no double borders.
+   ------------------------------------------------------------ */
+.messages-entity-card {
+  --entity-accent: var(--brick);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  max-width: 320px;
+  margin: 2px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-row, 12px);
+  background: var(--paper);
+}
+.messages-bubble.is-mine .messages-entity-card {
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+}
+.messages-entity-card[data-entity-type="Úkol"],
+.messages-entity-card[data-entity-type="Task"] { --entity-accent: var(--blue, #4a7ab5); }
+.messages-entity-card[data-entity-type="Nákup"],
+.messages-entity-card[data-entity-type="Shopping"] { --entity-accent: var(--sage, #6f9e6f); }
+.messages-entity-card[data-entity-type="Událost"],
+.messages-entity-card[data-entity-type="Event"] { --entity-accent: var(--honey, #c9962f); }
+.messages-entity-card[data-entity-type="Připomínka"],
+.messages-entity-card[data-entity-type="Reminder"] { --entity-accent: var(--lavender, #8b7fb5); }
+.messages-entity-card.is-deleted { --entity-accent: var(--border); opacity: 0.82; }
+
+.messages-entity-card-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.messages-entity-card-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  color: var(--entity-accent);
+  background: color-mix(in srgb, var(--entity-accent) 12%, var(--paper));
+}
+.messages-entity-card-headings {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.messages-entity-card-kind {
+  font-size: 0.68rem;
+  font-weight: var(--font-weight-strong);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint, var(--ink-muted));
+}
+.messages-entity-card-title {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-strong);
+  color: var(--ink);
+  /* Long titles wrap to two lines, then ellipsize — never overflow. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.messages-entity-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.messages-entity-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--member-color-main, var(--ink-muted));
+  background: color-mix(in srgb, var(--member-color-main, var(--ink-muted)) 12%, var(--paper));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.messages-entity-chip.is-quiet {
+  color: var(--ink-muted);
+  background: var(--neutral-soft);
+}
+.messages-entity-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: var(--font-weight-strong);
+}
+.messages-entity-status.is-done { color: var(--state-success, #4c8a4c); background: color-mix(in srgb, var(--state-success, #4c8a4c) 14%, var(--paper)); }
+.messages-entity-status.is-pending { color: var(--state-warning, #b8860b); background: color-mix(in srgb, var(--state-warning, #b8860b) 14%, var(--paper)); }
+.messages-entity-status.is-open { color: var(--ink-muted); background: var(--neutral-soft); }
+.messages-entity-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.messages-entity-card-primary {
+  min-height: 34px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  border-radius: 999px;
+}
+.messages-entity-card-open {
+  min-height: 34px;
+  padding: 6px 8px;
+  font-size: 0.82rem;
+}
+.messages-entity-card-deleted-note,
+.messages-entity-card-error {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+.messages-entity-card-error { color: var(--state-danger); }
+
+/* System notices: deliberately quieter than a normal message — a small
+   centred line, never a bubble, so they never dominate the thread. */
+.messages-system-row {
+  margin: 6px auto;
+  max-width: 80%;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  color: var(--ink-muted);
+  font-size: 0.74rem;
+  text-align: center;
+}
 
 /* Mute dialog */
 .messages-mute-sheet {

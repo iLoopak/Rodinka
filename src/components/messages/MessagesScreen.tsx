@@ -14,9 +14,12 @@ import type {
   ConversationMuteScope,
   ConversationView,
   MessageAttachmentRow,
+  MessageEntityResolution,
   MessageReactionRow,
   MessageRow,
+  SharedEntityType,
 } from '../../context/messages/types'
+import { EntityCard } from './EntityCard'
 import type { FamilyMember } from '../../hooks/useFamilyMembers'
 import {
   clusterMessages,
@@ -30,6 +33,8 @@ import { ReactionsRow } from './ReactionsRow'
 import { EmojiPicker, COMMON_REACTIONS } from './EmojiPicker'
 import { Composer, type ComposerReplyContext } from './Composer'
 import { AttachmentLightbox } from './AttachmentLightbox'
+import { MobileChatPortal } from './MobileChatPortal'
+import { useMediaQuery, MOBILE_CHAT_QUERY } from '../../hooks/useMediaQuery'
 
 const CONVERSATION_QUERY_KEY = 'c'
 const LONG_PRESS_MS = 500
@@ -64,6 +69,9 @@ export function MessagesScreen() {
     getMessageReactions,
     getMessageAttachments,
     getAttachmentUrl,
+    getMessageEntity,
+    refreshMessageEntity,
+    postEntitySystemMessage,
     refresh,
   } = messagesData
   const { searchParams, setQueryParam, removeQueryParam } = useRouter()
@@ -176,6 +184,42 @@ export function MessagesScreen() {
     [activeId, setConversationMute],
   )
 
+  // On mobile the detail is portaled to <body> as a true fullscreen
+  // overlay; on desktop it stays inline as the second column. Building
+  // the element once keeps both paths identical.
+  const isMobile = useMediaQuery(MOBILE_CHAT_QUERY)
+  const detail = activeConversation ? (
+    <ConversationDetail
+      key={activeConversation.id}
+      conversation={activeConversation}
+      currentMember={currentMember}
+      memberById={memberById}
+      memberName={memberName}
+      messages={getMessages(activeConversation.id)}
+      loaded={isConversationLoaded(activeConversation.id)}
+      olderExhausted={isOlderExhausted(activeConversation.id)}
+      loadInitial={handleLoadInitial}
+      loadOlder={handleLoadOlder}
+      onSend={handleSend}
+      onEdit={editMessage}
+      onDelete={deleteMessage}
+      onReact={toggleReaction}
+      onRetry={handleRetry}
+      onDiscardFailed={handleDiscardFailed}
+      onMarkRead={handleMarkRead}
+      onBack={closeConversation}
+      onMuteChange={handleMuteChange}
+      getReactions={getMessageReactions}
+      getAttachments={getMessageAttachments}
+      getAttachmentUrl={getAttachmentUrl}
+      getEntity={getMessageEntity}
+      onEntityAfterAction={refreshMessageEntity}
+      onEntitySystemNotice={(kind, summary, entityType, entityId) => {
+        if (activeId) void postEntitySystemMessage(activeId, kind, entityType, entityId, summary)
+      }}
+    />
+  ) : null
+
   return (
     <div className="messages-screen" data-active={activeConversation ? 'detail' : 'list'}>
       <div className={`messages-pane messages-pane-list${activeConversation ? ' is-collapsed-mobile' : ''}`}>
@@ -206,33 +250,14 @@ export function MessagesScreen() {
         />
       </div>
 
-      {activeConversation && (
-        <div className="messages-pane messages-pane-detail">
-          <ConversationDetail
-            key={activeConversation.id}
-            conversation={activeConversation}
-            currentMember={currentMember}
-            memberById={memberById}
-            memberName={memberName}
-            messages={getMessages(activeConversation.id)}
-            loaded={isConversationLoaded(activeConversation.id)}
-            olderExhausted={isOlderExhausted(activeConversation.id)}
-            loadInitial={handleLoadInitial}
-            loadOlder={handleLoadOlder}
-            onSend={handleSend}
-            onEdit={editMessage}
-            onDelete={deleteMessage}
-            onReact={toggleReaction}
-            onRetry={handleRetry}
-            onDiscardFailed={handleDiscardFailed}
-            onMarkRead={handleMarkRead}
-            onBack={closeConversation}
-            onMuteChange={handleMuteChange}
-            getReactions={getMessageReactions}
-            getAttachments={getMessageAttachments}
-            getAttachmentUrl={getAttachmentUrl}
-          />
-        </div>
+      {activeConversation && !isMobile && (
+        <div className="messages-pane messages-pane-detail">{detail}</div>
+      )}
+
+      {activeConversation && isMobile && (
+        <MobileChatPortal>
+          <div className="messages-fullscreen">{detail}</div>
+        </MobileChatPortal>
       )}
 
       {pickerOpen && (
@@ -348,6 +373,9 @@ interface ConversationDetailProps {
   getReactions: (messageId: string) => MessageReactionRow[]
   getAttachments: (messageId: string) => MessageAttachmentRow[]
   getAttachmentUrl: (attachmentId: string) => string | null
+  getEntity: (messageId: string) => MessageEntityResolution | null
+  onEntityAfterAction: (messageId: string) => void
+  onEntitySystemNotice: (kind: string, summary: string, entityType: SharedEntityType, entityId: string) => void
 }
 
 interface ContextMenuState {
@@ -370,6 +398,7 @@ function ConversationDetail(props: ConversationDetailProps) {
     conversation, currentMember, memberById, memberName, messages, loaded, olderExhausted,
     loadInitial, loadOlder, onSend, onEdit, onDelete, onReact, onRetry, onDiscardFailed,
     onMarkRead, onBack, onMuteChange, getReactions, getAttachments, getAttachmentUrl,
+    getEntity, onEntityAfterAction, onEntitySystemNotice,
   } = props
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const stickToBottomRef = useRef(true)
@@ -589,6 +618,7 @@ function ConversationDetail(props: ConversationDetailProps) {
                   const isUnreadPivot = message.id === unreadDividerBefore
                   const reactions = getReactions(message.id)
                   const attachments = getAttachments(message.id)
+                  const entity = getEntity(message.id)
                   const replySource = message.reply_to_message_id
                     ? messages.find((m) => m.id === message.reply_to_message_id) ?? null
                     : null
@@ -604,6 +634,10 @@ function ConversationDetail(props: ConversationDetailProps) {
                           <span>{t.messages.newMessagesDivider}</span>
                         </div>
                       )}
+                      {message.content_type === 'system' ? (
+                        <p className="messages-system-row">{message.body}</p>
+                      ) : (
+                      <>
                       {showHeader && sender && (
                         <div className="messages-cluster-header">
                           <MemberAvatar member={sender} size={22} />
@@ -624,6 +658,10 @@ function ConversationDetail(props: ConversationDetailProps) {
                         onEditCancel={() => setEditing(null)}
                         reactions={reactions}
                         attachments={attachments}
+                        entity={entity}
+                        conversationId={conversation.id}
+                        onEntityAfterAction={onEntityAfterAction}
+                        onEntitySystemNotice={onEntitySystemNotice}
                         currentMemberId={currentMember.id}
                         memberName={memberName}
                         onOpenContextMenu={openContextMenu}
@@ -637,6 +675,8 @@ function ConversationDetail(props: ConversationDetailProps) {
                         }}
                         getAttachmentUrl={getAttachmentUrl}
                       />
+                      </>
+                      )}
                     </div>
                   )
                 })}
@@ -753,6 +793,10 @@ interface MessageRowViewProps {
   onEditCancel: () => void
   reactions: MessageReactionRow[]
   attachments: MessageAttachmentRow[]
+  entity: MessageEntityResolution | null
+  conversationId: string
+  onEntityAfterAction: (messageId: string) => void
+  onEntitySystemNotice: (kind: string, summary: string, entityType: SharedEntityType, entityId: string) => void
   currentMemberId: string
   memberName: (id: string) => string
   onOpenContextMenu: (message: MessageRow, position: { x: number; y: number }) => void
@@ -767,7 +811,8 @@ interface MessageRowViewProps {
 function MessageRowView({
   message, mine, sender, replySource, editing,
   onEditChange, onEditSave, onEditCancel,
-  reactions, attachments, currentMemberId, memberName,
+  reactions, attachments, entity, conversationId, onEntityAfterAction, onEntitySystemNotice,
+  currentMemberId, memberName,
   onOpenContextMenu, onOpenEmojiPicker, onQuickReaction,
   onRetryFailed, onDiscardFailed, onOpenLightbox, getAttachmentUrl,
 }: MessageRowViewProps) {
@@ -875,6 +920,14 @@ function MessageRowView({
               )
             })}
           </ul>
+        )}
+        {entity && !isDeleted && (
+          <EntityCard
+            resolution={entity}
+            conversationId={conversationId}
+            onAfterAction={() => onEntityAfterAction(message.id)}
+            onSystemNotice={(kind, summary) => onEntitySystemNotice(kind, summary, entity.entityType, entity.entityId)}
+          />
         )}
         {isDeleted ? (
           <p className="messages-bubble-body is-deleted">{t.messages.messageDeleted}</p>
