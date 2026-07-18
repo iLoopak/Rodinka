@@ -12,6 +12,27 @@ interface Delivery {
 }
 interface Subscription { id: string; endpoint: string; p256dh: string; auth: string }
 
+// Batch 4: messaging deliveries reuse this outbox. They are distinguished
+// purely by `metadata.kind`; a delivery with no recognised kind is a
+// reminder and takes the original path unchanged.
+type MessageKind = 'direct' | 'group' | 'mention' | 'reply'
+type EntityKind = 'task_assigned' | 'entity_changed'
+type MessagingKind = MessageKind | EntityKind
+
+const MESSAGE_KINDS: readonly string[] = ['direct', 'group', 'mention', 'reply']
+const ENTITY_KINDS: readonly string[] = ['task_assigned', 'entity_changed']
+
+function messagingKindOf(delivery: Delivery): MessagingKind | null {
+  const kind = delivery.metadata?.kind
+  if (typeof kind !== 'string') return null
+  return MESSAGE_KINDS.includes(kind) || ENTITY_KINDS.includes(kind) ? kind as MessagingKind : null
+}
+
+function metadataString(delivery: Delivery, key: string) {
+  const value = delivery.metadata?.[key]
+  return typeof value === 'string' && value ? value : null
+}
+
 const CORS = {
   'access-control-allow-origin': '*',
   'access-control-allow-headers': 'authorization, apikey, content-type, x-client-info, x-notification-sender-secret',
@@ -96,6 +117,89 @@ function safePayload(delivery: Delivery, reminder: Record<string, unknown> | nul
   })
 }
 
+function safeDeepLink(value: unknown, fallback: string) {
+  return typeof value === 'string' && value.startsWith('/') && !value.startsWith('//') ? value : fallback
+}
+
+interface MessagingContext {
+  kind: MessagingKind
+  conversationId: string | null
+  conversationTitle: string | null
+  conversationKind: string | null
+  body: string | null
+  contentType: string | null
+  hasAttachments: boolean
+  deleted: boolean
+  label: string | null
+}
+
+// Renders a chat push. The two privacy rules live here rather than at
+// enqueue time, so that flipping "show message preview" off takes effect on
+// everything still sitting in the queue:
+//   - preview off  => generic title and body, real text never encrypted in
+//   - preview on   => sender name + conversation, body truncated
+function messagingPayload(
+  delivery: Delivery,
+  context: MessagingContext,
+  locale: 'cs' | 'en',
+  previewEnabled: boolean,
+  soundEnabled: boolean,
+) {
+  const cs = locale === 'cs'
+  const priority = delivery.metadata?.priority === 'high' ? 'high' : 'normal'
+  const senderName = delivery.title.slice(0, 80)
+  const conversationLabel = context.conversationTitle
+    ?? (cs ? 'Rodinná konverzace' : 'Family chat')
+
+  let title: string
+  let body: string
+
+  if (context.kind === 'task_assigned') {
+    title = cs ? 'Nový úkol' : 'New task'
+    body = previewEnabled && context.label
+      ? (cs ? `${senderName} vám přiřadil: ${context.label}` : `${senderName} assigned you: ${context.label}`)
+      : (cs ? 'Máte nový přiřazený úkol.' : 'You have a new assigned task.')
+  } else if (context.kind === 'entity_changed') {
+    title = cs ? 'Změna sdílené položky' : 'Shared item updated'
+    body = previewEnabled && context.label
+      ? (cs ? `${senderName} upravil: ${context.label}` : `${senderName} updated: ${context.label}`)
+      : (cs ? 'Sdílená položka, která se vás týká, se změnila.' : 'A shared item you are involved in has changed.')
+  } else if (!previewEnabled) {
+    // Deliberately says nothing about who wrote it or where — this text is
+    // what appears on a locked screen.
+    title = 'Rodinka'
+    body = cs ? 'Nová zpráva v Rodince' : 'New message in Rodinka'
+  } else {
+    title = context.conversationKind === 'direct' ? senderName : `${senderName} · ${conversationLabel}`
+    const text = (context.body ?? '').trim()
+    body = text
+      ? text.slice(0, 300)
+      : context.hasAttachments || context.contentType === 'image'
+        ? (cs ? '📷 Fotka' : '📷 Photo')
+        : (cs ? 'Nová zpráva' : 'New message')
+    if (context.kind === 'mention') body = `${cs ? '📣 Zmínil vás' : '📣 Mentioned you'} — ${body}`.slice(0, 300)
+  }
+
+  // One notification per conversation: a burst of group chat collapses into
+  // a single entry instead of stacking. `renotify` only re-alerts for the
+  // high-priority kinds, so ordinary group chat updates quietly.
+  const tagScope = context.conversationId?.replace(/[^a-z0-9]/gi, '') ?? delivery.id.replace(/-/g, '')
+  return JSON.stringify({
+    version: 1,
+    deliveryId: delivery.id,
+    title,
+    body,
+    deepLink: safeDeepLink(delivery.deep_link, '/messages'),
+    tag: `rodinka-chat:${tagScope}`.slice(0, 100),
+    importance: delivery.importance,
+    priority,
+    silent: !soundEnabled,
+    renotify: priority === 'high',
+    conversationId: context.conversationId,
+    messageId: metadataString(delivery, 'messageId'),
+  })
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   if (request.method !== 'POST') return json(405, { ok: false, error: 'method_not_allowed' })
@@ -159,6 +263,42 @@ Deno.serve(async (request) => {
     const preferences = preferenceFromRow(preferenceRow, delivery)
     if (delivery.delivery_type === 'daily_digest' && !preferences.dailyDigestEnabled) { await finish('cancelled', 'daily_digest_disabled'); diagnostics.cancelled += 1; continue }
     if (delivery.delivery_type === 'weekly_digest' && !preferences.weeklyDigestEnabled) { await finish('cancelled', 'weekly_digest_disabled'); diagnostics.cancelled += 1; continue }
+    // Messaging deliveries: everything the fan-out trigger checked at
+    // enqueue time (mute, presence, per-type preference) is re-checked here,
+    // because the user may have opened, muted or reconfigured the
+    // conversation during the up-to-2-minute cron gap.
+    const messagingKind = messagingKindOf(delivery)
+    let messagingContext: MessagingContext | null = null
+    if (messagingKind) {
+      const conversationId = metadataString(delivery, 'conversationId')
+      if (!conversationId) { await finish('cancelled', 'message_context_missing'); diagnostics.cancelled += 1; continue }
+      const { data: stillRelevant, error: relevanceError } = await service.rpc('message_delivery_still_relevant', {
+        p_member_id: delivery.target_member_id, p_conversation_id: conversationId, p_kind: messagingKind,
+      })
+      if (relevanceError) { await finish('pending', 'relevance_check_failed', retryAt(delivery.attempt_count)); diagnostics.failed += 1; continue }
+      if (!stillRelevant) { await finish('cancelled', 'message_no_longer_relevant'); diagnostics.cancelled += 1; continue }
+
+      const messageId = metadataString(delivery, 'messageId')
+      const [{ data: conversationRow }, { data: messageRow }] = await Promise.all([
+        service.from('conversations').select('kind,title').eq('id', conversationId).maybeSingle(),
+        messageId
+          ? service.from('messages').select('body,content_type,has_attachments,deleted_at').eq('id', messageId).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ])
+      if (messageId && !messageRow) { await finish('cancelled', 'message_missing'); diagnostics.cancelled += 1; continue }
+      if (messageRow?.deleted_at) { await finish('cancelled', 'message_deleted'); diagnostics.cancelled += 1; continue }
+      messagingContext = {
+        kind: messagingKind,
+        conversationId,
+        conversationTitle: typeof conversationRow?.title === 'string' ? conversationRow.title : null,
+        conversationKind: typeof conversationRow?.kind === 'string' ? conversationRow.kind : metadataString(delivery, 'conversationKind'),
+        body: typeof messageRow?.body === 'string' ? messageRow.body : null,
+        contentType: typeof messageRow?.content_type === 'string' ? messageRow.content_type : null,
+        hasAttachments: Boolean(messageRow?.has_attachments),
+        deleted: false,
+        label: metadataString(delivery, 'label'),
+      }
+    }
     if (reminder && (reminder.resolved_at || reminder.dismissed_at || (reminder.expires_at && Date.parse(String(reminder.expires_at)) <= Date.now()))) { await finish('cancelled', 'reminder_no_longer_relevant'); diagnostics.cancelled += 1; continue }
     if (reminder && !preferences.categories[categoryForSource(String(reminder.source))]) { await finish('cancelled', 'category_disabled'); diagnostics.cancelled += 1; continue }
     if (delivery.importance !== 'important' && isWithinQuietHoursAt(new Date(), preferences)) {
@@ -166,7 +306,16 @@ Deno.serve(async (request) => {
     }
     if (!subscriptions?.length) { await finish('cancelled', 'no_active_subscription'); diagnostics.cancelled += 1; continue }
 
-    const payload = safePayload(delivery, reminder as Record<string, unknown> | null, preferences.locale)
+    const highPriority = delivery.metadata?.priority === 'high'
+    const payload = messagingContext
+      ? messagingPayload(
+        delivery,
+        messagingContext,
+        preferences.locale,
+        preferenceRow.message_preview_enabled !== false,
+        preferenceRow.message_sound_enabled !== false,
+      )
+      : safePayload(delivery, reminder as Record<string, unknown> | null, preferences.locale)
     let succeeded = 0; let retryable = 0; let permanent = 0
     for (const subscription of subscriptions as Subscription[]) {
       diagnostics.attempts += 1
@@ -178,8 +327,11 @@ Deno.serve(async (request) => {
           data: payload,
           options: {
             ttl: Math.max(60, Math.min(86400, Math.floor((Date.parse(delivery.expires_at) - Date.now()) / 1000))),
-            urgency: delivery.importance === 'important' ? 'high' : 'normal',
-            topic: delivery.id.replace(/-/g, '').slice(0, 32),
+            urgency: delivery.importance === 'important' || highPriority ? 'high' : 'normal',
+            // Topic collapsing at the push service: while a device is
+            // offline, a burst in one conversation leaves one pending
+            // notification instead of N, matching the client-side tag.
+            topic: (messagingContext?.conversationId ?? delivery.id).replace(/-/g, '').slice(0, 32),
           },
         }, {
           endpoint: subscription.endpoint, expirationTime: null,

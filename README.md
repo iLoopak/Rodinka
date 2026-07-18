@@ -267,6 +267,7 @@ Rodinka používá Supabase Realtime jako výchozí způsob, jak se změny jedno
 - [Nastavení Supabase Auth a Google OAuth](./supabase-auth-setup.md)
 - [Serverové zpracování připomínek](./supabase-reminder-processing.md)
 - [Nasazení a provoz Web Push](./supabase-web-push.md)
+- [Push oznámení pro zprávy](./supabase-messaging-push.md)
 - [Lokalizace a přidávání překladů](./I18N.md)
 - [Vizuální identita](./visual-identity.md)
 - [Produktová a technická roadmapa](./rodinka-roadmap.md)

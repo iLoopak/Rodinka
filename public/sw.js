@@ -41,13 +41,17 @@ self.addEventListener('fetch', (event) => {
   }
 })
 
-function safeDeepLink(value) {
-  if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) return '/reminders'
+function safeDeepLink(value, fallback = '/reminders') {
+  if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) return fallback
   try {
     const target = new URL(value, self.registration.scope)
     const scope = new URL(self.registration.scope)
-    return target.origin === scope.origin && target.pathname.startsWith(scope.pathname) ? `${target.pathname}${target.search}${target.hash}` : '/reminders'
-  } catch { return '/reminders' }
+    return target.origin === scope.origin && target.pathname.startsWith(scope.pathname) ? `${target.pathname}${target.search}${target.hash}` : fallback
+  } catch { return fallback }
+}
+
+function safeId(value) {
+  return typeof value === 'string' && /^[0-9a-f-]{36}$/i.test(value) ? value : null
 }
 
 async function preferredLocale() {
@@ -56,46 +60,108 @@ async function preferredLocale() {
 }
 
 function pushPayload(event, locale) {
-  const fallback = { version: 1, title: 'Rodinka', body: locale === 'en' ? 'You have a new reminder.' : 'Máte novou připomínku.', deepLink: '/reminders', tag: 'rodinka-reminder' }
+  const fallback = {
+    version: 1, title: 'Rodinka', body: locale === 'en' ? 'You have a new reminder.' : 'Máte novou připomínku.',
+    deepLink: '/reminders', tag: 'rodinka-reminder', deliveryId: null,
+    conversationId: null, messageId: null, silent: false, renotify: true,
+  }
   if (!event.data) return fallback
   try {
     const value = event.data.json()
     if (!value || typeof value !== 'object') return fallback
+    const conversationId = safeId(value.conversationId)
     return {
       version: 1,
       title: typeof value.title === 'string' && value.title.trim() ? value.title.slice(0, 120) : fallback.title,
       body: typeof value.body === 'string' && value.body.trim() ? value.body.slice(0, 400) : fallback.body,
-      deepLink: safeDeepLink(value.deepLink),
+      // Chat payloads fall back to the conversation list, not the reminder
+      // centre, when the deep link is missing or not same-origin.
+      deepLink: safeDeepLink(value.deepLink, conversationId ? '/messages' : '/reminders'),
       tag: typeof value.tag === 'string' && /^rodinka-[a-z0-9:-]{1,100}$/i.test(value.tag) ? value.tag : fallback.tag,
       deliveryId: typeof value.deliveryId === 'string' ? value.deliveryId : null,
+      conversationId,
+      messageId: safeId(value.messageId),
+      silent: value.silent === true,
+      renotify: value.renotify !== false,
     }
   } catch { return fallback }
 }
 
+// Ask every live window whether it is currently showing this conversation
+// in a focused tab. Windows answer over a MessageChannel; anything that does
+// not answer within the timeout counts as "not looking".
+//
+// This is the SECOND line of defence. The server already skips a recipient
+// whose presence heartbeat is fresh, so this only catches the narrow race
+// where the delivery was queued just before the user opened the chat.
+// Keeping it rare matters: suppressing a push spends `userVisibleOnly`
+// budget, and browsers eventually show a generic "site updated in
+// background" notice if a worker swallows too many.
+function isConversationOpen(conversationId, timeoutMs = 700) {
+  if (!conversationId) return Promise.resolve(false)
+  return clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+    if (!windows.length) return false
+    return Promise.race([
+      Promise.all(windows.map((client) => new Promise((resolve) => {
+        const channel = new MessageChannel()
+        channel.port1.onmessage = (message) => resolve(Boolean(message.data?.open))
+        try {
+          client.postMessage({ type: 'RODINKA_IS_CONVERSATION_OPEN', conversationId }, [channel.port2])
+        } catch { resolve(false) }
+      }))).then((answers) => answers.some(Boolean)),
+      new Promise((resolve) => setTimeout(() => resolve(false), timeoutMs)),
+    ])
+  }).catch(() => false)
+}
+
 self.addEventListener('push', (event) => {
-  event.waitUntil(preferredLocale().then((locale) => {
+  event.waitUntil(preferredLocale().then(async (locale) => {
     const payload = pushPayload(event, locale)
+    if (await isConversationOpen(payload.conversationId)) return undefined
     return self.registration.showNotification(payload.title, {
       body: payload.body,
       icon: '/icon.svg',
       badge: '/notification-badge.svg',
       tag: payload.tag,
-      renotify: true,
-      data: { deepLink: payload.deepLink, deliveryId: payload.deliveryId },
+      renotify: payload.renotify,
+      silent: payload.silent,
+      data: {
+        deepLink: payload.deepLink,
+        deliveryId: payload.deliveryId,
+        conversationId: payload.conversationId,
+        messageId: payload.messageId,
+      },
     })
   }))
 })
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const path = safeDeepLink(event.notification.data?.deepLink)
+  const data = event.notification.data || {}
+  const conversationId = safeId(data.conversationId)
+  const messageId = safeId(data.messageId)
+  const path = safeDeepLink(data.deepLink, conversationId ? '/messages' : '/reminders')
   const targetUrl = new URL(path, self.registration.scope).href
   event.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (windows) => {
     const sameOrigin = windows.find((client) => new URL(client.url).origin === self.location.origin)
     if (sameOrigin) {
-      if ('navigate' in sameOrigin) await sameOrigin.navigate(targetUrl)
+      // A live window gets a message rather than a navigation. The app
+      // router is pushState-based, so `client.navigate()` to another
+      // in-app path would force a full reload and throw away the loaded
+      // conversation cache. For chat we hand off in-app; the app switches
+      // conversation, scrolls to the message and marks it read (which is
+      // what keeps the unread badge from re-counting a message the user is
+      // already looking at).
+      if (conversationId) {
+        sameOrigin.postMessage({ type: 'RODINKA_OPEN_CONVERSATION', conversationId, messageId })
+      } else if ('navigate' in sameOrigin) {
+        await sameOrigin.navigate(targetUrl).catch(() => undefined)
+      }
       return sameOrigin.focus()
     }
+    // Cold start: the deep link carries ?c=&m= and the app reads them from
+    // window.location on mount, so this also works offline against the
+    // cached app shell.
     return clients.openWindow(targetUrl)
   }))
 })

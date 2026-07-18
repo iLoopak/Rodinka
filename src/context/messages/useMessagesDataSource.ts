@@ -614,6 +614,8 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
     attachmentIds?: string[]
     attachments?: MessageAttachmentRow[]
     clientId?: string
+    /** Members the composer resolved from "@Name" runs in the body. */
+    mentionMemberIds?: string[]
   }
 
   const sendMessage = useCallback(async (conversationId: string, payload: SendMessagePayload | string) => {
@@ -661,6 +663,9 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
         p_client_id: clientId,
         p_reply_to_message_id: normalized.replyToMessageId ?? null,
         p_attachment_ids: attachmentIds.length > 0 ? attachmentIds : null,
+        // A hint, not an authority: the RPC re-resolves mentions from the
+        // body and drops any id that is not an active participant.
+        p_mention_member_ids: normalized.mentionMemberIds?.length ? normalized.mentionMemberIds : null,
       })
       if (rpcError) throw friendly(rpcError)
       const inserted = (Array.isArray(data) ? data[0] : data) as MessageRow | null
@@ -937,18 +942,32 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
     }
   }, [reactionsByMessage, currentMemberId, familyId])
 
-  const setConversationMute = useCallback(async (conversationId: string, scope: ConversationMuteScope) => {
+  // `until = null` means indefinite; a timestamp means the mute lapses on
+  // its own. The server caps it, so a bad clock cannot silence a
+  // conversation permanently through this path.
+  const setConversationMute = useCallback(async (
+    conversationId: string,
+    scope: ConversationMuteScope,
+    until: string | null = null,
+  ) => {
     if (!currentMemberId) return
+    const mutedUntil = scope === 'none' ? null : until
     setMembers((current) =>
       current.map((m) =>
         m.conversation_id === conversationId && m.member_id === currentMemberId
-          ? { ...m, mute_scope: scope, muted_at: scope === 'none' ? null : m.muted_at ?? new Date().toISOString() }
+          ? {
+            ...m,
+            mute_scope: scope,
+            muted_at: scope === 'none' ? null : m.muted_at ?? new Date().toISOString(),
+            muted_until: mutedUntil,
+          }
           : m,
       ),
     )
     const { error: rpcError } = await supabase.rpc('set_conversation_mute', {
       p_conversation_id: conversationId,
       p_scope: scope,
+      p_until: mutedUntil,
     })
     if (rpcError) throw friendly(rpcError)
   }, [currentMemberId])
@@ -1026,7 +1045,12 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
       const memberIds = list.map((m) => m.member_id)
       const selfRow = currentMemberId ? list.find((m) => m.member_id === currentMemberId) : undefined
       const lastReadAt = selfRow?.last_read_at ?? new Date(0).toISOString()
-      const muteScope: ConversationMuteScope = selfRow?.mute_scope ?? 'none'
+      const mutedUntil = selfRow?.muted_until ?? null
+      // A lapsed timed mute reads as unmuted without needing a write: the
+      // server applies the same rule when it decides whether to push.
+      const storedScope: ConversationMuteScope = selfRow?.mute_scope ?? 'none'
+      const muteScope: ConversationMuteScope =
+        mutedUntil && Date.parse(mutedUntil) <= Date.now() ? 'none' : storedScope
       const messages = messagesByConversation[c.id] ?? []
       let unreadCount = 0
       if (loadedConversations.has(c.id)) {
@@ -1053,6 +1077,7 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
         lastReadAt,
         otherMemberId,
         muteScope,
+        mutedUntil: muteScope === 'none' ? null : mutedUntil,
       }
     })
   }, [conversations, membersByConversation, messagesByConversation, loadedConversations, currentMemberId])

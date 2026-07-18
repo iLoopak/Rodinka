@@ -7078,6 +7078,140 @@ button.danger-action:focus-visible:not(:disabled) {
   border-color: var(--focus-ring);
   background: color-mix(in srgb, var(--focus-ring) 10%, var(--paper));
 }
+.messages-mute-scope {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 20px 0;
+  border: 0;
+}
+.messages-mute-scope legend {
+  padding: 0 0 6px;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+/* The shared form styles stack label contents inside a fieldset; the mute
+   options are a radio beside its text, so restore the row. */
+.messages-mute-scope .messages-mute-option {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+}
+.messages-mute-scope .messages-mute-option span {
+  flex: 1;
+  text-align: left;
+}
+/* Global form styles stretch inputs to fill their row; a radio must stay
+   its intrinsic size or it eats the label's width. */
+.messages-mute-scope .messages-mute-option input[type='radio'] {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+}
+.messages-mute-current {
+  margin: 0;
+  padding: 12px 20px 0;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+.messages-mute-duration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: var(--paper);
+  cursor: pointer;
+  font: inherit;
+  /* Global `button` styling paints light-on-dark; these sit on paper. */
+  color: var(--ink);
+}
+.messages-mute-duration:hover {
+  border-color: var(--focus-ring);
+}
+.messages-mute-unmute {
+  margin: 0 20px 16px;
+}
+
+/* Mention autocomplete + highlighting */
+.messages-mention-list {
+  list-style: none;
+  margin: 0 12px 6px;
+  padding: 4px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: var(--paper);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  max-height: 220px;
+  overflow-y: auto;
+}
+.messages-mention-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.messages-mention-option.is-active {
+  background: color-mix(in srgb, var(--focus-ring) 12%, var(--paper));
+}
+.messages-mention-option-at {
+  color: var(--ink-muted);
+}
+.messages-mention {
+  font-weight: 600;
+  color: var(--focus-ring);
+}
+/* A mention of the reader is the one that actually pinged them. */
+.messages-mention.is-self {
+  border-radius: 4px;
+  padding: 0 3px;
+  background: color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+/* Push deep-link target: brief flash so the user sees which message the
+   notification was about, then fades back to normal. */
+.messages-row.is-push-target {
+  animation: messages-push-target-flash 2.4s ease-out;
+  border-radius: 12px;
+}
+@keyframes messages-push-target-flash {
+  0%, 40% { background: color-mix(in srgb, var(--focus-ring) 16%, transparent); }
+  100% { background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .messages-row.is-push-target { animation: none; background: color-mix(in srgb, var(--focus-ring) 10%, transparent); }
+}
+
+/* Contextual push prompt, shown after a first received message */
+.messages-push-prompt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 12px 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: var(--paper-soft, var(--paper));
+}
+.messages-push-prompt-text {
+  font-size: 0.9rem;
+}
+.messages-push-prompt-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
 /* Fullscreen lightbox */
 .messages-attachment-lightbox {

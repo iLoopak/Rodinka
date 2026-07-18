@@ -24,10 +24,17 @@ import { useShopping } from '../context/shopping/ShoppingContext'
 import { t } from '../strings'
 import { useFamilyCore } from '../context/family/FamilyCoreContext'
 import { capabilitiesFor, childRouteFallback } from '../utils/uiCapabilities'
+import { useMessagesData } from '../context/messages/MessagesContext'
+import { useConversationPushBridge } from '../hooks/useConversationPushBridge'
 
 export function AppShell() {
   const { path, navigate } = useRouter()
   const { currentMember } = useFamilyCore()
+  const { activeConversationId } = useMessagesData()
+  // Mounted here rather than inside MessagesScreen so the service worker's
+  // "is this conversation open?" probe gets an immediate answer from any
+  // screen, and so a push click can route in from anywhere in the app.
+  useConversationPushBridge(activeConversationId)
   const capabilities = capabilitiesFor(currentMember)
   const { familyName, familyNameLoading } = useFamilySettings()
   const familyMark = useActiveFamilyMark()

@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient'
+import { releasePushOnSignOut } from '../push/pushClient'
 import { t } from '../strings'
 import { FamilyMark } from './FamilyMark'
 
@@ -10,7 +11,10 @@ export function UnlinkedChildAccountScreen() {
         <h1 id="child-access-title">{t.login.childAccessUnavailableTitle}</h1>
       </div>
       <p>{t.login.childAccessUnavailableBody}</p>
-      <button type="button" onClick={() => void supabase.auth.signOut()}>{t.dashboard.signOut}</button>
+      <button
+        type="button"
+        onClick={() => void releasePushOnSignOut().then(() => supabase.auth.signOut())}
+      >{t.dashboard.signOut}</button>
     </main>
   )
 }
