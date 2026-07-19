@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { useSession } from './hooks/useSession'
 import type { ReactNode } from 'react'
 import { useFamily } from './hooks/useFamily'
@@ -19,6 +20,7 @@ import { CreateRecordProvider } from './context/create-record/CreateRecordContex
 import { useCalendarOffline } from './context/calendar/CalendarOfflineContext'
 import { resolveAuthRoutingState } from './auth/authRoutingState'
 import { useNetworkStatus } from './network/useNetworkStatus'
+import { ErrorState } from './components/ui/ErrorState'
 
 function AppLoading({ label }: { label: string }) {
   return <div className="loading app-loading"><FamilyMark variant="static" size={32} />{label}</div>
@@ -30,6 +32,20 @@ export default function App() {
   const { session } = useSession()
   const family = useFamily(session?.user.id)
   const routing = resolveAuthRoutingState({ session, family })
+  const lastRoutingStatus = useRef<string | null>(null)
+
+  useEffect(() => {
+    console.info('BOOT 6 offline check done', { networkStatus })
+  }, [networkStatus])
+
+  useEffect(() => {
+    if (lastRoutingStatus.current === routing.status) return
+    lastRoutingStatus.current = routing.status
+    console.info('BOOT 7 routing', { status: routing.status })
+    if (routing.status !== 'authLoading' && routing.status !== 'userDataLoading') {
+      console.info('BOOT DONE', { status: routing.status })
+    }
+  }, [routing.status])
 
   if (routing.status === 'authLoading') {
     return <AppLoading label={t.loading.session} />
@@ -54,7 +70,8 @@ export default function App() {
         onRetry={family.refresh}
       />
     }
-    return <AppLoading label={t.loading.family} />
+    console.error('BOOT ERROR routing failed:', routing.connectionError)
+    return <ErrorState message={t.errors.loadFailed} onRetry={family.refresh} />
   }
 
   if (routing.status === 'authenticatedWithoutFamily') {

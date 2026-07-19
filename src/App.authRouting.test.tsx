@@ -134,11 +134,12 @@ describe('App authentication routing', () => {
     expect(screen.queryByTestId('onboarding-screen')).toBeNull()
   })
 
-  it('does not use the offline fallback for an online membership request failure', () => {
+  it('shows an error with retry instead of a permanent loader for an online membership request failure', () => {
     hooks.useSession.mockReturnValue({ session, loading: false })
     hooks.useFamily.mockReturnValue(family({ status: 'error', resolved: false, connectionError: 'network unavailable' }))
     render(<App />)
-    expect(screen.getByText(t.loading.family)).toBeTruthy()
+    expect(screen.getByRole('alert').textContent).toBe(t.errors.loadFailed)
+    expect(screen.getByRole('button', { name: t.errors.retry })).toBeTruthy()
     expect(screen.queryByTestId('offline-fallback')).toBeNull()
     expect(screen.queryByTestId('onboarding-screen')).toBeNull()
   })
