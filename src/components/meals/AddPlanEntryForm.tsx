@@ -28,12 +28,21 @@ interface Props {
 
 export function AddPlanEntryForm({ meals, members, planEntries, initial, defaultDate, defaultSlot, initialMemberId, prefill, variant = 'standard', onSubmit }: Props) {
   const activeMeals = meals.filter((meal) => meal.status === 'active')
-  const initialMealId = initial?.meal_id ?? prefill?.mealId ?? null
+  const initialMealId = initial ? initial.meal_id : (prefill?.mealId ?? null)
+  const initialLinkedMeal = initialMealId ? meals.find((meal) => meal.id === initialMealId) : undefined
+  const mealOptions = initialMealId && !activeMeals.some((meal) => meal.id === initialMealId)
+    ? [{ id: initialMealId, name: initialLinkedMeal?.name ?? initial?.title ?? prefill?.title ?? '—' }, ...activeMeals]
+    : activeMeals
+  const initiallyUsesLibrary = initial
+    ? initial.meal_id !== null
+    : prefill
+      ? prefill.mealId !== null
+      : variant === 'standard' && activeMeals.length > 0
 
   const [entryDate, setEntryDate] = useState(initial?.entry_date ?? defaultDate ?? todayISODate())
   const [mealSlot, setMealSlot] = useState<MealSlot>(initial?.meal_slot ?? defaultSlot ?? 'dinner')
-  const [useLibrary, setUseLibrary] = useState(variant === 'guided' ? initialMealId !== null : initialMealId !== null || activeMeals.length > 0)
-  const [selectedMealId, setSelectedMealId] = useState(initialMealId ?? activeMeals[0]?.id ?? '')
+  const [useLibrary, setUseLibrary] = useState(initiallyUsesLibrary)
+  const [selectedMealId, setSelectedMealId] = useState(initialMealId ?? '')
   const [customTitle, setCustomTitle] = useState(initialMealId ? '' : (initial?.title ?? prefill?.title ?? ''))
   const contextualMemberId = initialMemberId && members.some((member) => member.id === initialMemberId) ? initialMemberId : ''
   const [responsibleMemberId, setResponsibleMemberId] = useState(initial?.responsible_member_id ?? contextualMemberId)
@@ -61,7 +70,12 @@ export function AddPlanEntryForm({ meals, members, planEntries, initial, default
     setError(null)
 
     const mealId = useLibrary ? selectedMealId || null : null
-    const title = useLibrary ? (activeMeals.find((m) => m.id === selectedMealId)?.name ?? '') : customTitle
+    const selectedMeal = meals.find((meal) => meal.id === selectedMealId)
+    const title = useLibrary
+      ? initial && selectedMealId === initial.meal_id
+        ? (initial.title ?? selectedMeal?.name ?? '')
+        : (selectedMeal?.name ?? '')
+      : customTitle
 
     if (!isValidPlanEntryInput({ mealId, title })) {
       setError(t.mealPlan.errors.entryTitleRequired)
@@ -108,11 +122,11 @@ export function AddPlanEntryForm({ meals, members, planEntries, initial, default
             <button type="button" className={useLibrary ? 'selected' : ''} aria-pressed={useLibrary} onClick={() => setUseLibrary(true)}>{t.mealPlan.useLibraryMealLabel}</button>
             <button type="button" className={!useLibrary ? 'selected' : ''} aria-pressed={!useLibrary} onClick={() => setUseLibrary(false)}>{t.mealPlan.useCustomTitleAction}</button>
           </div>
-          {useLibrary ? activeMeals.length === 0 ? <p className="empty-state">{t.mealLibrary.noMeals}</p> : <label className="guided-hero-field compact">
+          {useLibrary ? mealOptions.length === 0 ? <p className="empty-state">{t.mealLibrary.noMeals}</p> : <label className="guided-hero-field compact">
             <span>{t.create.guided.chooseMeal}</span>
             <select value={selectedMealId} onChange={(event) => setSelectedMealId(event.target.value)}>
               <option value="" disabled>{t.mealPlan.chooseFromLibraryAction}</option>
-              {activeMeals.map((meal) => <option key={meal.id} value={meal.id}>{meal.name}</option>)}
+              {mealOptions.map((meal) => <option key={meal.id} value={meal.id}>{meal.name}</option>)}
             </select>
           </label> : <label className="guided-hero-field compact">
             <span>{t.create.guided.customMeal}</span>
@@ -204,13 +218,14 @@ export function AddPlanEntryForm({ meals, members, planEntries, initial, default
           </button>
         </div>
         {useLibrary ? (
-          activeMeals.length === 0 ? (
+          mealOptions.length === 0 ? (
             <p className="empty-state">{t.mealLibrary.noMeals}</p>
           ) : (
             <label>
               {t.mealPlan.useLibraryMealLabel}
               <select value={selectedMealId} onChange={(e) => setSelectedMealId(e.target.value)}>
-                {activeMeals.map((meal) => (
+                <option value="" disabled>{t.mealPlan.chooseFromLibraryAction}</option>
+                {mealOptions.map((meal) => (
                   <option key={meal.id} value={meal.id}>
                     {meal.name}
                   </option>
