@@ -24,6 +24,7 @@ export interface FamilyMember {
   user_id: string | null
   birth_date: string | null
   color_key: MemberColorKey | null
+  custom_color?: string | null
   avatar_path: string | null
   avatar_url: string | null
   grammatical_gender: GrammaticalGender | null
@@ -55,7 +56,7 @@ export function useFamilyMembers(familyId: string | undefined) {
     setLoading(true)
     const { data, error } = await supabase
       .from('members')
-      .select('id, family_id, display_name, role, user_id, birth_date, color_key, avatar_path, grammatical_gender, vocative_name, status, removed_at, removed_by_member_id, removal_reason')
+      .select('id, family_id, display_name, role, user_id, birth_date, color_key, custom_color, avatar_path, grammatical_gender, vocative_name, status, removed_at, removed_by_member_id, removal_reason')
       .eq('family_id', familyId)
       .order('display_name')
 

@@ -79,6 +79,8 @@
   --member-sage: #9EBA82;
   --member-sage-soft: #CDDDBD;
   --member-ink: #243128;
+  --member-border: var(--member-coral);
+  --member-foreground: var(--member-ink);
 
   --category-tasks: #4f8068;
   --category-tasks-soft: #eaf4ed;
@@ -2872,7 +2874,7 @@ button.profile-email-copy {
   gap: 6px;
 }
 
-label.member-color-option {
+.member-color-option {
   position: relative;
   display: flex;
   align-items: center;
@@ -2885,11 +2887,11 @@ label.member-color-option {
   cursor: pointer;
 }
 
-label.member-color-option.selected {
+.member-color-option.selected {
   border-color: var(--ink);
 }
 
-label.member-color-option:focus-within {
+.member-color-option:focus-within {
   outline: 3px solid var(--coral-light);
   outline-offset: 2px;
 }
@@ -8059,3 +8061,72 @@ button.danger-action:focus-visible:not(:disabled) {
   cursor: default;
 }
 body.has-attachment-lightbox { overflow: hidden; }
+
+.member-color-option.member-color-custom {
+  width: auto;
+  padding: 4px 10px 4px 6px;
+  gap: 8px;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+button.member-color-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 0;
+  border: 2px solid transparent;
+  border-radius: var(--radius-input);
+  cursor: pointer;
+  font: inherit;
+}
+
+.member-color-option.selected {
+  border-color: var(--ink);
+}
+
+.member-color-option:focus-visible,
+.member-color-option:focus-within {
+  outline: 3px solid var(--coral-light);
+  outline-offset: 2px;
+}
+
+.member-custom-color-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  max-width: 100%;
+  margin-top: 12px;
+}
+
+.member-custom-color-panel label {
+  min-width: 0;
+  margin: 0;
+}
+
+.member-custom-color-panel input[type="color"] {
+  width: 100%;
+  max-width: 180px;
+  height: 44px;
+  padding: 2px;
+}
+
+.member-color-live-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1.5px solid var(--member-border);
+  border-radius: var(--radius-card);
+  color: var(--member-foreground);
+}
+
+.member-color-live-preview .member-badge,
+.member-preview-row {
+  min-width: 0;
+  border-color: var(--member-border);
+  color: var(--member-foreground);
+}

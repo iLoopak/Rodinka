@@ -4,7 +4,7 @@ import { getCurrentLanguage } from '../../i18n'
 import type { FamilyMember, GrammaticalGender, MemberColorKey } from '../../hooks/useFamilyMembers'
 import { MemberProfileError, useMemberProfiles } from '../../hooks/useMemberProfiles'
 import { editableMemberProfileFields } from '../../utils/memberProfilePermissions'
-import { MEMBER_COLOR_KEYS, getMemberMainColor, getMemberColor, memberColorKey } from '../../utils/memberColor'
+import { MEMBER_COLOR_KEYS, getMemberColorTheme, getMemberMainColor, getMemberColor, memberColorKey, normalizeCustomMemberColor, memberColorStyle } from '../../utils/memberColor'
 import type { AvatarValidationError } from '../../utils/memberAvatarImage'
 import { Modal } from '../ui/Modal'
 import { MemberAvatar } from '../ui/MemberAvatar'
@@ -82,7 +82,10 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
   const { saveMemberProfile } = useMemberProfiles(refreshMembers)
   const [displayName, setDisplayName] = useState(member.display_name)
   const [birthDate, setBirthDate] = useState(member.birth_date ?? '')
-  const [colorKey, setColorKey] = useState<MemberColorKey>(memberColorKey(member))
+  const [colorKey, setColorKey] = useState<MemberColorKey | null>(member.custom_color ? null : memberColorKey(member))
+  const [customColor, setCustomColor] = useState(member.custom_color ?? '')
+  const normalizedCustomColor = normalizeCustomMemberColor(customColor)
+  const colorTheme = getMemberColorTheme({ id: member.id, color_key: colorKey, custom_color: normalizedCustomColor })
   const [grammaticalGender, setGrammaticalGender] = useState<GrammaticalGender | null>(
     member.grammatical_gender
   )
@@ -143,7 +146,8 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
   const isDirty = (
     (fields.displayName && displayName !== member.display_name) ||
     (fields.birthDate && birthDate !== (member.birth_date ?? '')) ||
-    colorKey !== memberColorKey(member) ||
+    colorKey !== (member.custom_color ? null : memberColorKey(member)) ||
+    (normalizedCustomColor ?? '') !== (member.custom_color ?? '') ||
     grammaticalGender !== member.grammatical_gender ||
     vocativeName !== (member.vocative_name ?? '') ||
     (avatarFile !== null && !avatarPersisted) ||
@@ -186,7 +190,8 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
       await saveMemberProfile(member, {
         displayName: member.display_name,
         birthDate: member.birth_date,
-        colorKey: memberColorKey(member),
+        colorKey: member.color_key,
+        customColor: member.custom_color ?? null,
         grammaticalGender: member.grammatical_gender,
         vocativeName: member.vocative_name,
         avatarFile: file,
@@ -208,13 +213,19 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
       return
     }
 
+    if (colorKey === null && customColor && !normalizedCustomColor) {
+      setError(t.family.errors.customColorInvalid)
+      return
+    }
+
     setSaving(true)
     setError(null)
     try {
       await saveMemberProfile(member, {
         displayName: fields.displayName ? displayName : member.display_name,
         birthDate: fields.birthDate ? birthDate || null : member.birth_date,
-        colorKey,
+        colorKey: normalizedCustomColor ? null : colorKey,
+        customColor: normalizedCustomColor,
         grammaticalGender,
         vocativeName: vocativeName || null,
         avatarFile: avatarPersisted ? null : avatarFile,
@@ -228,10 +239,11 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
     }
   }
 
-  const summaryMember: Pick<FamilyMember, 'id' | 'display_name' | 'color_key' | 'avatar_url'> = {
+  const summaryMember: Pick<FamilyMember, 'id' | 'display_name' | 'color_key' | 'custom_color' | 'avatar_url'> = {
     id: member.id,
     display_name: displayName || member.display_name,
     color_key: colorKey,
+    custom_color: normalizedCustomColor,
     avatar_url: removeAvatar ? null : member.avatar_url,
   }
 
@@ -391,15 +403,50 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
                         disabled={saving}
                         onChange={() => {
                           setColorKey(key)
+                          setCustomColor('')
                         }}
                       />
                       <span className="member-color-swatch" style={{ backgroundColor: getMemberMainColor(key) }}>
-                        {colorKey === key && <span aria-hidden="true">✓</span>}
+                        {colorKey === key && !normalizedCustomColor && <span aria-hidden="true">✓</span>}
                       </span>
                       <span className="visually-hidden">{colorLabel(key)}</span>
                     </label>
                   ))}
+
+                  <button
+                    type="button"
+                    className={`member-color-option member-color-custom${normalizedCustomColor ? ' selected' : ''}`}
+                    disabled={saving}
+                    onClick={() => {
+                      setColorKey(null)
+                      setCustomColor(normalizedCustomColor ?? colorTheme.primary)
+                    }}
+                    aria-pressed={Boolean(normalizedCustomColor)}
+                  >
+                    <span className="member-color-swatch" style={{ backgroundColor: normalizedCustomColor ?? '#FFFFFF', borderColor: colorTheme.border }}>
+                      {normalizedCustomColor && <span aria-hidden="true">✓</span>}
+                    </span>
+                    <span>{t.family.customColor}</span>
+                  </button>
                 </div>
+                {(colorKey === null || normalizedCustomColor) && (
+                  <div className="member-custom-color-panel">
+                    <label>
+                      <span>{t.family.customColorPicker}</span>
+                      <input type="color" value={normalizedCustomColor ?? '#E9785E'} disabled={saving} onChange={(event) => { setColorKey(null); setCustomColor(event.target.value) }} />
+                    </label>
+                    <label>
+                      <span>{t.family.customColorHex}</span>
+                      <input value={customColor} disabled={saving} inputMode="text" pattern="#[0-9A-Fa-f]{6}" placeholder="#E9785E" onChange={(event) => { setColorKey(null); setCustomColor(event.target.value) }} />
+                    </label>
+                    <div className="member-color-live-preview" style={{ ...memberColorStyle(summaryMember), backgroundColor: 'var(--member-soft)', borderColor: 'var(--member-border)' }}>
+                      <MemberAvatar member={summaryMember} size={34} />
+                      <span className="member-badge">{summaryMember.display_name}</span>
+                      <span className="member-preview-row">{t.family.customColorPreview}</span>
+                    </div>
+                    {customColor && !normalizedCustomColor && <p className="error" role="alert">{t.family.errors.customColorInvalid}</p>}
+                  </div>
+                )}
               </fieldset>
 
               <fieldset className="member-editor-block profile-fieldset">

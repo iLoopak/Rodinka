@@ -7,7 +7,7 @@ export type { FamilyLogoAnimationMode } from './FamilyMark'
 
 export interface FamilyLogoProps {
   familyName: string | null
-  members: Array<Pick<FamilyMember, 'id' | 'color_key'>>
+  members: Array<Pick<FamilyMember, 'id' | 'color_key' | 'custom_color'>>
   activeMemberId?: string | null
   animationMode?: FamilyLogoAnimationMode
   loading?: boolean

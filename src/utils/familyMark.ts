@@ -20,7 +20,7 @@ export interface FamilyMarkSlot {
 }
 
 export interface FamilyMarkModel {
-  members: Array<Pick<FamilyMember, 'id' | 'color_key'> & { role?: MemberRole }>
+  members: Array<Pick<FamilyMember, 'id' | 'color_key' | 'custom_color'> & { role?: MemberRole }>
   slots: FamilyMarkSlot[]
 }
 
@@ -120,7 +120,7 @@ export function orderedFamilyMarkMembers<T extends Pick<FamilyMember, 'id'>>(mem
 }
 
 export function createFamilyMarkModel(
-  members: Array<Pick<FamilyMember, 'id' | 'color_key'> & { role?: MemberRole }>
+  members: Array<Pick<FamilyMember, 'id' | 'color_key' | 'custom_color'> & { role?: MemberRole }>
 ): FamilyMarkModel {
   const ordered = orderedFamilyMarkMembers(members)
   return {

@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { FamilyMember, MemberRole } from '../hooks/useFamilyMembers'
-import { getMemberMainColor, memberColorKey } from '../utils/memberColor'
+import { getMemberColorTheme } from '../utils/memberColor'
 import {
   createFamilyMarkModel,
   createFamilyMarkSlots,
@@ -12,7 +12,7 @@ import {
   type FamilyMarkSlot,
 } from '../utils/familyMark'
 
-export type FamilyMarkMember = Pick<FamilyMember, 'id' | 'color_key'> & { role?: MemberRole }
+export type FamilyMarkMember = Pick<FamilyMember, 'id' | 'color_key' | 'custom_color'> & { role?: MemberRole }
 
 export type FamilyLogoAnimationMode =
   | 'idle'
@@ -122,7 +122,7 @@ export function FamilyMark(props: FamilyMarkProps) {
       >
         <Petal
           slot={model.slots[index]}
-          fill={getMemberMainColor(memberColorKey(member))}
+          fill={getMemberColorTheme(member).primary}
           className="family-mark-petal"
         />
       </g>

@@ -130,4 +130,12 @@ describe('FamilyMark', () => {
     expect(labelled).toContain('aria-label="Rodinka"')
     expect(labelled).not.toContain('aria-hidden')
   })
+  it('renders custom member colors in the dynamic logo', () => {
+    const html = renderToStaticMarkup(createElement(FamilyMark, {
+      variant: 'dynamic',
+      members: [makeFamilyMember({ id: 'custom', color_key: null, custom_color: '#336699' })],
+    }))
+    expect(html).toContain('#336699')
+  })
+
 })

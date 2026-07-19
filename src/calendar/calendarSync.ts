@@ -82,7 +82,7 @@ export async function fetchCalendarSnapshot(familyId: string): Promise<CalendarS
       .select('id, family_id, activity_id, member_id, effective_from, effective_to')
       .eq('family_id', familyId).lte('effective_from', end).limit(2000),
     supabase.from('members')
-      .select('id, family_id, display_name, role, user_id, birth_date, color_key, avatar_path, grammatical_gender, vocative_name, status, removed_at, removed_by_member_id, removal_reason')
+      .select('id, family_id, display_name, role, user_id, birth_date, color_key, custom_color, avatar_path, grammatical_gender, vocative_name, status, removed_at, removed_by_member_id, removal_reason')
       .eq('family_id', familyId).order('display_name').limit(500),
   ])
 

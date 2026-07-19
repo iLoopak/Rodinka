@@ -9,12 +9,33 @@ import {
   MEMBER_COLOR_VAR_BY_KEY,
   MEMBER_COLORS,
   MEMBER_INK,
+  getMemberColorTheme,
+  normalizeCustomMemberColor,
   memberColorKey,
   memberColorVar,
   normalizeMemberColor,
 } from './memberColor'
 
 describe('member colors', () => {
+
+  it('normalizes custom HEX colors and rejects arbitrary CSS', () => {
+    expect(normalizeCustomMemberColor('336699')).toBe('#336699')
+    expect(normalizeCustomMemberColor('#aabbcc')).toBe('#AABBCC')
+    expect(normalizeCustomMemberColor('red')).toBeNull()
+    expect(normalizeCustomMemberColor('var(--brand)')).toBeNull()
+  })
+
+  it('derives a complete custom color theme with readable foregrounds', () => {
+    expect(getMemberColorTheme({ id: 'custom', custom_color: '#111111' })).toMatchObject({
+      primary: '#111111',
+      foreground: '#FFFFFF',
+    })
+    expect(getMemberColorTheme({ id: 'custom', custom_color: '#FDFDFD' }).foreground).toBe('#243128')
+  })
+
+  it('falls back safely for invalid custom colors', () => {
+    expect(getMemberColorTheme({ id: 'same-id', color_key: 'blue', custom_color: 'hotpink' }).primary).toBe(MEMBER_COLORS.blue.main)
+  })
   it('defines the canonical Rodinka palette exactly', () => {
     expect(MEMBER_COLOR_KEYS).toEqual(['coral', 'honey', 'mint', 'blue', 'lavender', 'berry', 'peach', 'sage'])
     expect(MEMBER_COLORS).toMatchObject({
