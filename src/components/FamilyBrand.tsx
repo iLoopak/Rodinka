@@ -12,6 +12,8 @@ export interface FamilyLogoProps {
   animationMode?: FamilyLogoAnimationMode
   loading?: boolean
   markLoading?: boolean
+  onOpenGame?: () => void
+  openGameLabel?: string
 }
 
 export function FamilyBrand({
@@ -21,10 +23,12 @@ export function FamilyBrand({
   animationMode = 'idle',
   loading = false,
   markLoading = loading,
+  onOpenGame,
+  openGameLabel,
 }: FamilyLogoProps) {
   const label = formatFamilyBrand(loading ? null : familyName, t.appName)
 
-  return <div className="brand" aria-label={label.accessibleLabel}>
+  const content = <>
     <FamilyMark
       variant="dynamic"
       members={members}
@@ -37,5 +41,14 @@ export function FamilyBrand({
       <span className="wordmark">{label.productName}</span>
       {label.householdName && <span className="household-name" title={label.householdName}>{label.householdName}</span>}
     </span>
-  </div>
+  </>
+
+  if (onOpenGame) return <button
+    type="button"
+    className="brand family-brand-game-button"
+    aria-label={openGameLabel ?? label.accessibleLabel}
+    onClick={onOpenGame}
+  >{content}</button>
+
+  return <div className="brand" aria-label={label.accessibleLabel}>{content}</div>
 }

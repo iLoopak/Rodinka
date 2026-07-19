@@ -331,6 +331,12 @@ export function MoreScreen() {
       <section className="page-section">
         <div className="panel is-primary more-links-section">
           <ul className="section-list plain-list more-settings-list">
+            <li>
+              <Link to="/family-jump" className="row-link more-navigation-row">
+                <span className="row-title">{language === 'cs' ? 'Rodinná herna' : 'Family arcade'}</span>
+                <span className="more-navigation-chevron" aria-hidden="true">›</span>
+              </Link>
+            </li>
             {capabilities.isChild && <>
               <li className="more-settings-group-heading"><h2>{t.more.childLinksSection}</h2></li>
               <li><Link to="/activities" className="row-link more-navigation-row"><span className="row-title">{t.more.activitiesAction}</span><span className="more-navigation-chevron" aria-hidden="true">›</span></Link></li>
