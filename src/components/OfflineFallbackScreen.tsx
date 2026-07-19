@@ -28,7 +28,7 @@ export function OfflineFallbackScreen({ canOpenShopping, canOpenCalendar, device
         <h1 id="offline-title">{t.offline.title}</h1>
         <p>{deviceOffline ? t.offline.deviceOfflineBody : t.offline.body}</p>
         {!canOpenShopping && !canOpenCalendar && <p className="form-hint">{t.offline.noLocalData}</p>}
-        <div className="form-actions">
+        <div className="form-actions offline-actions">
           <button type="button" onClick={onOpenShopping} disabled={!canOpenShopping}>{t.offline.openShopping}</button>
           <button type="button" onClick={onOpenCalendar} disabled={!canOpenCalendar}>{t.offline.openCalendar}</button>
           <button type="button" className="btn-secondary" disabled={retrying} onClick={() => void retry()}>{retrying ? t.errors.retrying : t.offline.retry}</button>
