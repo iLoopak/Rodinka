@@ -16,6 +16,25 @@ interface FamilyMembershipState {
   dataError: string | null
 }
 
+const BOOT_TIMEOUT_MS = 10_000
+
+async function withBootTimeout<T>(step: string, promise: PromiseLike<T>, timeoutMs = BOOT_TIMEOUT_MS): Promise<T> {
+  let timeout: ReturnType<typeof globalThis.setTimeout> | null = null
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeout = globalThis.setTimeout(() => {
+          console.error(`BOOT ERROR ${step} timed out after ${timeoutMs}ms`)
+          reject(new Error(`${step} timed out`))
+        }, timeoutMs)
+      }),
+    ])
+  } finally {
+    if (timeout) globalThis.clearTimeout(timeout)
+  }
+}
+
 const idleFamilyState: FamilyMembershipState = {
   userId: null,
   status: 'idle',
@@ -40,12 +59,14 @@ export function useFamily(userId: string | undefined) {
 
     let cached: Member | null = null
     try {
-      cached = await getShoppingLocalStore().loadFamilyIdentity(userId)
+      console.info('BOOT 3 profile loaded', { source: 'local-cache-start' })
+      cached = await withBootTimeout('profile cache load', getShoppingLocalStore().loadFamilyIdentity(userId))
+      console.info('BOOT 3 profile loaded', { cached: Boolean(cached) })
     } catch (error) {
-      console.error('Failed to load cached family identity:', error instanceof Error ? error.message : 'unknown error')
+      console.error('BOOT ERROR profile cache load failed:', error instanceof Error ? error.message : 'unknown error')
     }
 
-    let timeout: ReturnType<typeof globalThis.setTimeout> | null = null
+    console.info('BOOT 4 membership loaded', { status: 'started' })
     // RLS ensures this only ever returns rows the current user is allowed to see
     const query = supabase
         .from('members')
@@ -53,17 +74,17 @@ export function useFamily(userId: string | undefined) {
         .eq('user_id', userId)
         .eq('status', 'active')
         .maybeSingle()
-    const { data, error } = await Promise.race([
-      query,
-      new Promise<{ data: null; error: Error }>((resolve) => {
-        timeout = globalThis.setTimeout(() => resolve({ data: null, error: new Error('Backend request timed out') }), 5500)
-      }),
-    ])
-    if (timeout) globalThis.clearTimeout(timeout)
+    let response: { data: unknown; error: { message: string } | null }
+    try {
+      response = await withBootTimeout('membership load', query)
+    } catch (error) {
+      response = { data: null, error: error instanceof Error ? error : new Error('membership load failed') }
+    }
     if (request !== requestVersion.current) return
 
+    const { data, error } = response
     if (error) {
-      console.error('Failed to load family membership:', error.message)
+      console.error('BOOT ERROR membership load failed:', error.message)
       const isNetworkError = isNetworkUnavailableError(error)
       setState({
         userId,
@@ -74,11 +95,13 @@ export function useFamily(userId: string | undefined) {
       })
     } else {
       const next = data ? ({ ...data, avatar_url: null } as Member) : null
+      console.info('BOOT 4 membership loaded', { found: Boolean(next) })
+      console.info('BOOT 5 family loaded', { familyId: next?.family_id ?? null })
       setState({ userId, status: 'resolved', member: next, connectionError: null, dataError: null })
       try {
-        await getShoppingLocalStore().saveFamilyIdentity(userId, next)
+        await withBootTimeout('profile cache save', getShoppingLocalStore().saveFamilyIdentity(userId, next))
       } catch (cacheError) {
-        console.error('Failed to save family identity:', cacheError instanceof Error ? cacheError.message : 'unknown error')
+        console.error('BOOT ERROR profile cache save failed:', cacheError instanceof Error ? cacheError.message : 'unknown error')
       }
     }
   }, [userId])
