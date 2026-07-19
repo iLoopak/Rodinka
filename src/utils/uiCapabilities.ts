@@ -5,7 +5,7 @@ type Actor = Pick<FamilyMember, 'id' | 'family_id' | 'role'>
 type TargetMember = Pick<FamilyMember, 'id' | 'family_id'>
 
 const CHILD_ROUTES = new Set<Route>([
-  '/', '/calendar', '/chores', '/activities', '/meals', '/shopping', '/messages', '/more', '/reminders',
+  '/', '/calendar', '/chores', '/activities', '/meals', '/shopping', '/messages', '/more', '/reminders', '/family-jump',
 ])
 
 export const ADULT_PRIMARY_ROUTES = ['/', '/calendar', '/plan', '/family', '/more'] as const satisfies readonly Route[]

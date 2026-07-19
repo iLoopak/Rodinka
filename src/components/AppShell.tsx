@@ -29,9 +29,12 @@ import { useConversationPushBridge } from '../hooks/useConversationPushBridge'
 import { CreateRecordWizard } from './create-record/CreateRecordWizard'
 import { useCalendarOffline } from '../context/calendar/CalendarOfflineContext'
 import { useFamilyLogoAnimation } from '../hooks/useFamilyLogoAnimation'
+import { FamilyJumpScreen } from '../features/family-jump/components/FamilyJumpScreen'
+import { useLanguage } from '../i18n/languageContext'
 
 export function AppShell() {
   const { path, navigate } = useRouter()
+  const { language } = useLanguage()
   const { currentMember } = useFamilyCore()
   const { activeConversationId } = useMessagesData()
   // Mounted here rather than inside MessagesScreen so the service worker's
@@ -55,6 +58,8 @@ export function AppShell() {
   const offlineBlocked = offlineMode && path !== '/' && path !== '/shopping' && path !== '/calendar'
   const routeAllowed = capabilities.accessRoute(path)
 
+  if (path === '/family-jump') return <FamilyJumpScreen />
+
   return (
     <div className={`app-shell${path === '/' ? ' is-today' : ''}`}>
       <header className="app-header">
@@ -65,6 +70,8 @@ export function AppShell() {
           animationMode={logoAnimationMode}
           loading={familyNameLoading}
           markLoading={familyMark.loading}
+          onOpenGame={() => navigate('/family-jump')}
+          openGameLabel={language === 'cs' ? 'Otevřít Rodinnou hernu' : 'Open the family arcade'}
         />
         <div className="app-header-actions">
           <RealtimeStatusBadge status={realtimeStatus} />
