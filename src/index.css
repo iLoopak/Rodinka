@@ -441,6 +441,31 @@ textarea:disabled {
 
 .brand-lockup .wordmark { flex: none; }
 
+button.family-brand-game-button {
+  display: grid;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  flex: 0 0 auto;
+  margin-left: -7px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button.family-brand-game-button .family-mark { margin: 0; }
+button.family-brand-game-button:hover { background: color-mix(in srgb, var(--surface-subtle) 65%, transparent); }
+button.family-brand-game-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--interactive-primary) 40%, transparent);
+  outline-offset: 1px;
+}
+
 /* Matches the landing page wordmark: Manrope 800, tightly tracked. */
 .family-brand-lockup {
   font-family: var(--font-family);

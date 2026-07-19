@@ -20,6 +20,7 @@ export interface StablePlatform {
   y: number
   width: number
   height: number
+  impactAnimation: number
 }
 
 export type JumpPlatform = StablePlatform
@@ -31,6 +32,8 @@ export interface JumpGameState {
   climbedPixels: number
   score: number
   gameOver: boolean
+  lastPlatformDirection: -1 | 0 | 1
+  sameDirectionPlatformCount: number
 }
 
 export interface JumpViewport {
@@ -43,6 +46,7 @@ export interface JumpScoreMarker {
   name: string
   score: number
   color: string
+  foreground: string
 }
 
 export interface JumpDebugSnapshot {
