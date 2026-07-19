@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { t } from '../../strings'
 import { getCurrentLanguage } from '../../i18n'
 import type { FamilyMember, GrammaticalGender, MemberColorKey } from '../../hooks/useFamilyMembers'
@@ -99,6 +99,7 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
   const [confirmingDiscard, setConfirmingDiscard] = useState(false)
   const [pendingCreateType, setPendingCreateType] = useState<RecordType | null>(null)
   const [emailCopied, setEmailCopied] = useState(false)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   // Adults show a registered account email (or a subtle placeholder); children
   // never do — their managed-account identifier is not a real email address.
@@ -140,6 +141,12 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
   useEffect(() => {
     if (!sections.some((s) => s.id === activeSection)) setActiveSection('profile')
   }, [sections, activeSection])
+
+  // Each section starts at its first control instead of inheriting the scroll
+  // position from the previously active section.
+  useEffect(() => {
+    if (contentRef.current) contentRef.current.scrollTop = 0
+  }, [activeSection])
 
   // The photo is persisted immediately by the crop editor, so any local
   // avatarFile that we've already committed doesn't count as dirty.
@@ -206,8 +213,8 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
     setError(null)
   }
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault()
+  async function handleSubmit(event?: React.FormEvent) {
+    event?.preventDefault()
     if (fields.displayName && !displayName.trim()) {
       setError(t.family.errors.nameRequired)
       return
@@ -253,6 +260,7 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
       onClose={requestClose}
       closeOnBackdrop={false}
       className="member-editor-sheet"
+      backdropClassName="member-editor-backdrop"
     >
       <div className="member-editor-summary">
         <MemberAvatar member={summaryMember} size={44} decorative={false} />
@@ -273,6 +281,7 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
                 type="button"
                 className={`member-editor-nav-item${activeSection === section.id ? ' is-active' : ''}`}
                 aria-current={activeSection === section.id ? 'page' : undefined}
+                aria-pressed={activeSection === section.id}
                 onClick={() => setActiveSection(section.id)}
               >
                 {section.label}
@@ -281,7 +290,7 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
           </nav>
         )}
 
-        <div className="member-editor-content">
+        <div ref={contentRef} className="member-editor-content">
           {activeSection === 'profile' && (
             <form id={FORM_ID} className="member-profile-form" onSubmit={handleSubmit}>
               <MemberAvatarPhotoField
@@ -518,14 +527,17 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
         </div>
       </div>
 
-      {activeSection === 'profile' && (
-        <div className="member-editor-footer">
-          {error && <p className="error" role="alert">{error}</p>}
-          <button type="submit" form={FORM_ID} disabled={saving}>
-            {saving ? t.family.savingProfile : t.family.saveProfile}
-          </button>
-        </div>
-      )}
+      <div className="member-editor-footer">
+        {error && <p className="error" role="alert">{error}</p>}
+        <button
+          type={activeSection === 'profile' ? 'submit' : 'button'}
+          form={activeSection === 'profile' ? FORM_ID : undefined}
+          disabled={saving}
+          onClick={activeSection === 'profile' ? undefined : () => void handleSubmit()}
+        >
+          {saving ? t.family.savingProfile : t.family.saveProfile}
+        </button>
+      </div>
 
       <ConfirmDestructiveActionDialog
         open={confirmingDiscard}
