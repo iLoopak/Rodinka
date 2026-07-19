@@ -15,6 +15,7 @@ import { existsSync } from 'node:fs'
 const SUITES = [
   { name: 'Child account authorization matrix', path: 'supabase/tests/child_account_authorization.sql' },
   { name: 'Messaging push fan-out', path: 'supabase/tests/messaging_push_notifications.sql' },
+  { name: 'Family Jump score authorization', path: 'supabase/tests/family_jump_scores_authorization.sql' },
 ]
 const LOCAL_DB_URL = process.env.SUPABASE_DB_URL ?? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres'
 

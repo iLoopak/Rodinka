@@ -8,12 +8,8 @@ import { useRouter } from '../../../router'
 import { getMemberColorTheme, memberColorStyle } from '../../../utils/memberColor'
 import { familyJumpCopy, type FamilyJumpCopy } from '../copy'
 import { FamilyJumpEngine } from '../game/FamilyJumpEngine'
-import {
-  loadFamilyJumpRecords,
-  saveFamilyJumpBestScore,
-  sortFamilyJumpLeaderboard,
-  type FamilyJumpRecordMap,
-} from '../storage/records'
+import { useFamilyJumpRecords, type FamilyJumpSyncStatus } from '../hooks/useFamilyJumpRecords'
+import { sortFamilyJumpLeaderboard, type FamilyJumpRecordMap } from '../storage/records'
 import type { JumpDebugSnapshot, JumpScoreMarker } from '../types/game'
 import '../familyJump.css'
 
@@ -31,11 +27,12 @@ export function FamilyJumpScreen() {
   const { members, membersLoading } = useFamilyMembersData()
   const { language } = useLanguage()
   const copy = useMemo(() => familyJumpCopy(language), [language])
-  const [records, setRecords] = useState<FamilyJumpRecordMap>(() => loadFamilyJumpRecords(familyId))
   const [selectedMemberId, setSelectedMemberId] = useState(currentMember.id)
   const [phase, setPhase] = useState<ScreenPhase>('intro')
   const [completedRun, setCompletedRun] = useState<CompletedRun | null>(null)
   const [runKey, setRunKey] = useState(0)
+  const memberIds = useMemo(() => members.map((member) => member.id), [members])
+  const { records, saveBestScore, syncStatus } = useFamilyJumpRecords(familyId, memberIds, phase !== 'playing')
   const selectedMember = members.find((member) => member.id === selectedMemberId) ?? members[0] ?? currentMember
 
   useEffect(() => {
@@ -57,11 +54,10 @@ export function FamilyJumpScreen() {
     const overtakenNames = members
       .filter((member) => member.id !== selectedMember.id && (records[member.id] ?? 0) > 0 && score > records[member.id])
       .map((member) => member.display_name)
-    const nextRecords = saveFamilyJumpBestScore(familyId, selectedMember.id, score)
-    setRecords(nextRecords)
+    saveBestScore(selectedMember.id, score)
     setCompletedRun({ score, newPersonalBest: score > previousBest, overtakenNames })
     setPhase('game-over')
-  }, [familyId, members, records, selectedMember])
+  }, [members, records, saveBestScore, selectedMember])
 
   if (phase === 'playing') {
     return <FamilyJumpGame
@@ -85,6 +81,7 @@ export function FamilyJumpScreen() {
     </header>
 
     <div className="family-jump-menu-scroll">
+      <SyncStatus copy={copy} status={syncStatus} />
       {phase === 'intro' ? <>
         <div className="family-jump-hero">
           <p className="eyebrow">{copy.eyebrow}</p>
@@ -139,6 +136,20 @@ export function FamilyJumpScreen() {
       <Leaderboard copy={copy} entries={leaderboard} />
     </div>
   </section>
+}
+
+function SyncStatus({ copy, status }: { copy: FamilyJumpCopy; status: FamilyJumpSyncStatus }) {
+  if (status === 'idle') return null
+  const label = status === 'syncing'
+    ? copy.syncing
+    : status === 'synced'
+      ? copy.synced
+      : status === 'offline'
+        ? copy.syncOffline
+        : copy.syncError
+  return <p className={`family-jump-sync-status is-${status}`} role="status">
+    <span aria-hidden="true" />{label}
+  </p>
 }
 
 interface FamilyJumpGameProps {
