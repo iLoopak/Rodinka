@@ -1,29 +1,47 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '../supabaseClient'
 import type { FamilyMember } from './useFamilyMembers'
 import { getShoppingLocalStore } from '../shopping/shoppingIndexedDb'
 
 export type Member = FamilyMember
 
+export type FamilyMembershipStatus = 'idle' | 'loading' | 'resolved' | 'error'
+
+interface FamilyMembershipState {
+  userId: string | null
+  status: FamilyMembershipStatus
+  member: Member | null
+  connectionError: string | null
+}
+
+const idleFamilyState: FamilyMembershipState = {
+  userId: null,
+  status: 'idle',
+  member: null,
+  connectionError: null,
+}
+
 export function useFamily(userId: string | undefined) {
-  const [member, setMember] = useState<Member | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [connectionError, setConnectionError] = useState<string | null>(null)
+  const [state, setState] = useState<FamilyMembershipState>(idleFamilyState)
+  const requestVersion = useRef(0)
+  const scopedUserId = userId ?? null
 
   const refresh = useCallback(async () => {
+    const request = ++requestVersion.current
     if (!userId) {
-      setMember(null)
-      setLoading(false)
+      setState(idleFamilyState)
       return
     }
 
-    const cached = await getShoppingLocalStore().loadFamilyIdentity(userId)
-    if (cached) {
-      setMember(cached)
-      setLoading(false)
-    } else {
-      setLoading(true)
+    setState({ userId, status: 'loading', member: null, connectionError: null })
+
+    let cached: Member | null = null
+    try {
+      cached = await getShoppingLocalStore().loadFamilyIdentity(userId)
+    } catch (error) {
+      console.error('Failed to load cached family identity:', error instanceof Error ? error.message : 'unknown error')
     }
+
     let timeout: ReturnType<typeof globalThis.setTimeout> | null = null
     // RLS ensures this only ever returns rows the current user is allowed to see
     const query = supabase
@@ -39,23 +57,50 @@ export function useFamily(userId: string | undefined) {
       }),
     ])
     if (timeout) globalThis.clearTimeout(timeout)
+    if (request !== requestVersion.current) return
 
     if (error) {
       console.error('Failed to load family membership:', error.message)
-      setConnectionError(error.message)
-      if (!cached) setMember(null)
+      setState({
+        userId,
+        status: cached ? 'resolved' : 'error',
+        member: cached,
+        connectionError: error.message,
+      })
     } else {
-      setConnectionError(null)
       const next = data ? ({ ...data, avatar_url: null } as Member) : null
-      setMember(next)
-      await getShoppingLocalStore().saveFamilyIdentity(userId, next)
+      setState({ userId, status: 'resolved', member: next, connectionError: null })
+      try {
+        await getShoppingLocalStore().saveFamilyIdentity(userId, next)
+      } catch (cacheError) {
+        console.error('Failed to save family identity:', cacheError instanceof Error ? cacheError.message : 'unknown error')
+      }
     }
-    setLoading(false)
   }, [userId])
 
   useEffect(() => {
-    refresh()
+    void refresh()
+    return () => {
+      requestVersion.current += 1
+    }
   }, [refresh])
 
-  return { member, loading, refresh, connectionError }
+  // Effects run after render. Deriving a loading state for a mismatched scope
+  // closes the one-render gap when auth switches from no user (or another
+  // user) to a valid session.
+  const scopedState: FamilyMembershipState = state.userId === scopedUserId
+    ? state
+    : scopedUserId
+      ? { userId: scopedUserId, status: 'loading', member: null, connectionError: null }
+      : idleFamilyState
+
+  return {
+    userId: scopedState.userId,
+    status: scopedState.status,
+    member: scopedState.member,
+    loading: scopedState.status === 'loading',
+    resolved: scopedState.status === 'resolved',
+    refresh,
+    connectionError: scopedState.connectionError,
+  }
 }

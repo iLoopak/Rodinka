@@ -17,6 +17,7 @@ import { isManagedChildSession } from './lib/managedChildSession'
 import { UnlinkedChildAccountScreen } from './components/UnlinkedChildAccountScreen'
 import { CreateRecordProvider } from './context/create-record/CreateRecordContext'
 import { useCalendarOffline } from './context/calendar/CalendarOfflineContext'
+import { resolveAuthRoutingState } from './auth/authRoutingState'
 
 function AppLoading({ label }: { label: string }) {
   return <div className="loading app-loading"><FamilyMark variant="static" size={32} />{label}</div>
@@ -24,44 +25,45 @@ function AppLoading({ label }: { label: string }) {
 
 export default function App() {
   useLanguage()
-  const { session, loading: sessionLoading } = useSession()
-  const { member, loading: familyLoading, refresh, connectionError } = useFamily(session?.user.id)
+  const { session } = useSession()
+  const family = useFamily(session?.user.id)
+  const routing = resolveAuthRoutingState({ session, family })
 
-  if (sessionLoading) {
+  if (routing.status === 'authLoading') {
     return <AppLoading label={t.loading.session} />
   }
 
-  if (!session) {
+  if (routing.status === 'unauthenticated') {
     return <AuthScreen />
   }
 
-  if (familyLoading) {
+  if (routing.status === 'userDataLoading') {
     return <AppLoading label={t.loading.family} />
   }
 
-  if (!member && connectionError) {
+  if (routing.status === 'userDataError') {
     return <OfflineFallbackScreen
       canOpenShopping={false}
       canOpenCalendar={false}
       deviceOffline={typeof navigator !== 'undefined' && !navigator.onLine}
       onOpenShopping={() => { window.history.pushState(null, '', '/shopping') }}
       onOpenCalendar={() => { window.history.pushState(null, '', '/calendar') }}
-      onRetry={refresh}
+      onRetry={family.refresh}
     />
   }
 
-  if (!member) {
-    if (isManagedChildSession(session)) return <UnlinkedChildAccountScreen />
-    return <OnboardingScreen onDone={refresh} />
+  if (routing.status === 'authenticatedWithoutFamily') {
+    if (isManagedChildSession(routing.session)) return <UnlinkedChildAccountScreen />
+    return <OnboardingScreen onDone={family.refresh} />
   }
 
   return (
     <RouterProvider>
-      <AppDataProviders member={member} userId={session.user.id} userEmail={session.user.email ?? ''}>
+      <AppDataProviders member={routing.member} userId={routing.session.user.id} userEmail={routing.session.user.email ?? ''}>
         <ReminderProvider>
           <PushProvider>
             <CreateRecordProvider>
-              <OfflineStartupGate connectionError={connectionError} refresh={refresh}>
+              <OfflineStartupGate connectionError={routing.connectionError} refresh={family.refresh}>
                 <AppShell />
               </OfflineStartupGate>
             </CreateRecordProvider>
