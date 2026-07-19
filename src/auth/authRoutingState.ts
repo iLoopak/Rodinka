@@ -6,6 +6,7 @@ interface FamilyRoutingSnapshot {
   status: FamilyMembershipStatus
   member: Member | null
   connectionError: string | null
+  dataError?: string | null
 }
 
 interface AuthRoutingInput {

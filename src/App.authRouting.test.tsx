@@ -9,6 +9,7 @@ import { t } from './strings'
 const hooks = vi.hoisted(() => ({
   useSession: vi.fn(),
   useFamily: vi.fn(),
+  useNetworkStatus: vi.fn(),
 }))
 
 vi.mock('./hooks/useSession', () => ({ useSession: hooks.useSession }))
@@ -29,6 +30,7 @@ vi.mock('./context/ReminderContext', () => ({ ReminderProvider: ({ children }: {
 vi.mock('./context/PushContext', () => ({ PushProvider: ({ children }: { children: ReactNode }) => children }))
 vi.mock('./context/create-record/CreateRecordContext', () => ({ CreateRecordProvider: ({ children }: { children: ReactNode }) => children }))
 vi.mock('./context/calendar/CalendarOfflineContext', () => ({ useCalendarOffline: () => ({ calendarHasUsableData: false }) }))
+vi.mock('./network/useNetworkStatus', () => ({ useNetworkStatus: hooks.useNetworkStatus }))
 
 import App from './App'
 
@@ -56,6 +58,7 @@ beforeEach(() => {
   window.history.replaceState(null, '', '/')
   hooks.useSession.mockReturnValue({ session: null, loading: false })
   hooks.useFamily.mockReturnValue(family({ userId: null, status: 'idle', resolved: false }))
+  hooks.useNetworkStatus.mockReturnValue('online')
 })
 
 afterEach(cleanup)
@@ -131,11 +134,20 @@ describe('App authentication routing', () => {
     expect(screen.queryByTestId('onboarding-screen')).toBeNull()
   })
 
-  it('uses the fallback instead of onboarding after a failed membership request', () => {
+  it('does not use the offline fallback for an online membership request failure', () => {
     hooks.useSession.mockReturnValue({ session, loading: false })
     hooks.useFamily.mockReturnValue(family({ status: 'error', resolved: false, connectionError: 'network unavailable' }))
     render(<App />)
-    expect(screen.getByTestId('offline-fallback')).toBeTruthy()
+    expect(screen.getByText(t.loading.family)).toBeTruthy()
+    expect(screen.queryByTestId('offline-fallback')).toBeNull()
     expect(screen.queryByTestId('onboarding-screen')).toBeNull()
+  })
+
+  it('uses the offline fallback only when the browser reports offline', () => {
+    hooks.useSession.mockReturnValue({ session, loading: false })
+    hooks.useNetworkStatus.mockReturnValue('offline')
+    hooks.useFamily.mockReturnValue(family({ status: 'error', resolved: false, connectionError: 'network unavailable' }))
+    render(<App />)
+    expect(screen.getByTestId('offline-fallback')).toBeTruthy()
   })
 })

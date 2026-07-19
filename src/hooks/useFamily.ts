@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '../supabaseClient'
 import type { FamilyMember } from './useFamilyMembers'
 import { getShoppingLocalStore } from '../shopping/shoppingIndexedDb'
+import { isNetworkUnavailableError } from '../network/networkStatus'
 
 export type Member = FamilyMember
 
@@ -12,6 +13,7 @@ interface FamilyMembershipState {
   status: FamilyMembershipStatus
   member: Member | null
   connectionError: string | null
+  dataError: string | null
 }
 
 const idleFamilyState: FamilyMembershipState = {
@@ -19,6 +21,7 @@ const idleFamilyState: FamilyMembershipState = {
   status: 'idle',
   member: null,
   connectionError: null,
+  dataError: null,
 }
 
 export function useFamily(userId: string | undefined) {
@@ -33,7 +36,7 @@ export function useFamily(userId: string | undefined) {
       return
     }
 
-    setState({ userId, status: 'loading', member: null, connectionError: null })
+    setState({ userId, status: 'loading', member: null, connectionError: null, dataError: null })
 
     let cached: Member | null = null
     try {
@@ -61,15 +64,17 @@ export function useFamily(userId: string | undefined) {
 
     if (error) {
       console.error('Failed to load family membership:', error.message)
+      const isNetworkError = isNetworkUnavailableError(error)
       setState({
         userId,
-        status: cached ? 'resolved' : 'error',
-        member: cached,
-        connectionError: error.message,
+        status: cached && isNetworkError ? 'resolved' : 'error',
+        member: cached && isNetworkError ? cached : null,
+        connectionError: isNetworkError ? error.message : null,
+        dataError: isNetworkError ? null : error.message,
       })
     } else {
       const next = data ? ({ ...data, avatar_url: null } as Member) : null
-      setState({ userId, status: 'resolved', member: next, connectionError: null })
+      setState({ userId, status: 'resolved', member: next, connectionError: null, dataError: null })
       try {
         await getShoppingLocalStore().saveFamilyIdentity(userId, next)
       } catch (cacheError) {
@@ -91,7 +96,7 @@ export function useFamily(userId: string | undefined) {
   const scopedState: FamilyMembershipState = state.userId === scopedUserId
     ? state
     : scopedUserId
-      ? { userId: scopedUserId, status: 'loading', member: null, connectionError: null }
+      ? { userId: scopedUserId, status: 'loading', member: null, connectionError: null, dataError: null }
       : idleFamilyState
 
   return {
@@ -102,5 +107,6 @@ export function useFamily(userId: string | undefined) {
     resolved: scopedState.status === 'resolved',
     refresh,
     connectionError: scopedState.connectionError,
+    dataError: scopedState.dataError,
   }
 }
