@@ -2,8 +2,6 @@ import { useState } from 'react'
 import { t } from '../strings'
 import { useFamilyCore } from '../context/family/FamilyCoreContext'
 import { useFamilySettings } from '../context/family/FamilySettingsContext'
-import { supabase } from '../supabaseClient'
-import { releasePushOnSignOut } from '../push/pushClient'
 import { useInstallPrompt } from '../hooks/useInstallPrompt'
 import { Modal } from './ui/Modal'
 import { SetPasswordForm } from './SetPasswordForm'
@@ -25,8 +23,8 @@ import { MemberProfileModal } from './family/MemberProfileModal'
 import { FamilyAllowanceSettings } from './allowance/FamilyAllowanceSettings'
 import { AllowancePlanDialog } from './allowance/AllowancePlanDialog'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
-import { getShoppingLocalStore } from '../shopping/shoppingIndexedDb'
 import { useCalendarOffline } from '../context/calendar/CalendarOfflineContext'
+import { signOutCurrentAccount } from '../auth/signOutCurrentAccount'
 
 export function MoreScreen() {
   const { currentMember, userEmail, userId } = useFamilyCore()
@@ -358,15 +356,11 @@ export function MoreScreen() {
       <button
         className="btn-secondary sign-out-button"
         onClick={async () => {
-          // Deactivate this device's push row first, so it cannot keep
-          // receiving this family's messages after sign-out.
-          await releasePushOnSignOut()
-          const offlineStore = getShoppingLocalStore()
-          await Promise.all([
-            clearCalendarAccount(),
-            offlineStore.saveFamilyIdentity(userId, null),
-          ]).catch((error) => console.error('Failed to clear offline account data:', error))
-          await supabase.auth.signOut()
+          try {
+            await signOutCurrentAccount({ userId, clearCalendarAccount })
+          } catch (error) {
+            console.error('Failed to sign out:', error instanceof Error ? error.message : 'unknown error')
+          }
         }}
       >
         {t.dashboard.signOut}
