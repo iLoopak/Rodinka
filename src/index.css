@@ -4705,6 +4705,60 @@ button.btn-danger:hover:not(:disabled) {
   opacity: 0.88;
 }
 
+/* Each member owns an independently animated SVG group. The SVG viewport and
+   adjacent wordmark never transform, so the complete brand lockup stays fixed. */
+.family-mark-member {
+  transform-box: fill-box;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+.family-mark-animation-idle .family-mark-member {
+  animation: family-mark-idle 5.2s ease-in-out infinite;
+}
+
+.family-mark-animation-member-focus .family-mark-member.is-active-member {
+  animation: family-mark-member-focus 2.8s ease-in-out infinite;
+}
+
+.family-mark-animation-reconnecting .family-mark-member {
+  animation: family-mark-reconnecting 1.35s ease-in-out infinite;
+}
+
+.family-mark-animation-connection-restored .family-mark-member {
+  animation: family-mark-connection-restored 720ms cubic-bezier(0.22, 0.8, 0.32, 1) both;
+}
+
+@keyframes family-mark-idle {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-0.65px) scaleY(1.015); }
+}
+
+@keyframes family-mark-member-focus {
+  0%, 100% { transform: translateY(0) scale(1); }
+  38% { transform: translateY(-1.3px) scale(1.035); }
+  58% { transform: translateY(-0.25px) scale(1.01); }
+}
+
+@keyframes family-mark-reconnecting {
+  0%, 100% { opacity: 1; transform: translateY(0) scaleY(1); }
+  50% { opacity: 0.66; transform: translateY(-1.45px) scaleY(1.025); }
+}
+
+@keyframes family-mark-connection-restored {
+  0% { opacity: 0.72; transform: translateY(1px) scale(0.96); }
+  48% { opacity: 1; transform: translateY(-1.5px) scale(1.07); }
+  72% { transform: translateY(0.35px) scale(0.99); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .family-mark-member {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
 .family-screen-mark {
   flex: 0 0 auto;
 }

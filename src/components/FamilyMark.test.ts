@@ -26,6 +26,34 @@ describe('FamilyMark', () => {
     expect(html).toContain('#9EBA82')
     expect(html).toContain('#F2C85B')
     expect(countShapes(html)).toBe(3)
+    expect(html).toContain('data-member-id="a"')
+    expect(html).toContain('data-member-id="b"')
+    expect(html).toContain('data-member-id="c"')
+  })
+
+  it('exposes contextual animation modes without changing member order or colors', () => {
+    const html = renderToStaticMarkup(createElement(FamilyMark, {
+      variant: 'dynamic',
+      members: [member('b', 'coral'), member('a', 'sage')],
+      activeMemberId: 'b',
+      animationMode: 'member-focus',
+    }))
+
+    expect(html).toContain('family-mark-animation-member-focus')
+    expect(html).toContain('data-animation-mode="member-focus"')
+    expect(html).toContain('data-member-id="b"')
+    expect(html).toContain('data-active-member="true"')
+    expect(html.indexOf('data-member-id="a"')).toBeLessThan(html.indexOf('data-member-id="b"'))
+    expect(html).toContain('#9EBA82')
+    expect(html).toContain('#E9785E')
+  })
+
+  it.each(['idle', 'reconnecting', 'connection-restored'] as const)('renders the %s animation mode', (animationMode) => {
+    const html = renderToStaticMarkup(createElement(FamilyMark, {
+      variant: 'dynamic', members: [member('a', 'blue')], animationMode,
+    }))
+    expect(html).toContain(`family-mark-animation-${animationMode}`)
+    expect(html).toContain(`data-animation-mode="${animationMode}"`)
   })
 
   it('draws the dynamic mark from member identity colors, not CSS variables', () => {
