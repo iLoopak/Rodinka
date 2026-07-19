@@ -5,7 +5,7 @@
 - Aplikace používá vlastní `pushState` router a jeden `AppShell`. Hra dostane samostatnou route `/family-jump`; na této route se AppShell vůbec nevykreslí, aby se herní canvas nekřížil s hlavičkou, spodní navigací ani scroll kontejnerem.
 - Aktivní rodina a členové jsou dostupní přes `FamilyCoreContext` a `FamilyMembersContext`. Výběr hráče proto používá skutečné aktivní členy a funguje i nad jejich perzistentní offline cache.
 - Dynamické logo i profily používají `getMemberColorTheme`. Stejná funkce bude jediným zdrojem hlavní a jemné barvy herní postavičky, značek rekordů i leaderboardu.
-- Repo má obecnou persistentní query cache a specializovaná IndexedDB úložiště pro synchronizované domény. Herní rekord je malý, lokální a synchronní údaj, proto MVP použije úzce zapouzdřený, rodinou scopeovaný adapter nad `localStorage` s paměťovým fallbackem. Nevznikne druhý obecný sync systém.
+- Repo má obecnou persistentní query cache a specializovaná IndexedDB úložiště pro synchronizované domény. Herní rekord je malý údaj, proto offline cache používá úzce zapouzdřený, rodinou scopeovaný adapter nad `localStorage` s paměťovým fallbackem. Nad ním běží pouze malá synchronizační vrstva pro rodinné rekordy; nevzniká druhý obecný sync systém.
 
 ## Modul
 
@@ -14,7 +14,7 @@ src/features/family-jump/
   components/   React obrazovky, canvas host a přístupné ovládání
   config/       všechny fyzikální a generační konstanty
   game/         čistý stav, fyzika, generátor a canvas engine
-  storage/      verzované lokální rekordy
+  storage/      verzované lokální rekordy a úzký Supabase sync adapter
   types/        herní typy
 ```
 
@@ -39,7 +39,7 @@ React řídí vstup, výběr člena, pauzu, game over a leaderboard. Aktivní he
 
 Lokální klíč je verzovaný a obsahuje `familyId`, `gameKey=family_jump`, mapu `memberId -> bestScore` a `updatedAt`. Zápis proběhne pouze při vyšším výsledku a bez síťového požadavku během runu.
 
-Online sync není součástí stabilního lokálního MVP. Nejmenší budoucí tabulka:
+Online synchronizace je implementovaná jako úzká vrstva nad lokálním MVP. Používá tabulku:
 
 ```text
 family_game_scores(
@@ -52,10 +52,11 @@ family_game_scores(
 )
 ```
 
-`member_id` má odkazovat na `members(id)` a být svázán se stejným `family_id`. RLS má povolit select jen členům rodiny a zápis jen aktivním členům stejné rodiny. Bezpečný serverový zápis má být jedna idempotentní RPC/upsert operace ve tvaru `best_score = greatest(existing.best_score, incoming.best_score)`. Teprve po doplnění migrace se lokální adapter rozšíří o malou outbox/sync vrstvu; lokální výsledek zůstane okamžitým zdrojem UI.
+Migrace `20260720140000_family_jump_scores.sql` povoluje čtení pouze členům stejné rodiny a nepovoluje žádné přímé klientské zápisy. Zápis vede přes idempotentní RPC `record_family_game_score`, která ověřuje aktivního přihlášeného člena, aktivního cílového hráče stejné rodiny a monotónně ukládá pouze vyšší skóre.
+
+Lokální výsledek zůstává okamžitým zdrojem UI i outboxem: při otevření hry a po dokončení runu se serverová a lokální mapa sloučí pravidlem `max(local, server)`. Vyšší lokální hodnoty se odešlou RPC a vyšší serverové hodnoty se uloží do lokální cache. Při offline stavu se nic neztratí a další přechod online vyvolá nový pokus. Aktivní herní run synchronizaci nespouští a při jeho startu zruší rozpracovaný čtecí požadavek.
 
 ## Ověření
 
 - Unit testy pokryjí gravitaci, odraz, wrap, landing, skóre, dosažitelnost generovaných plošinek, update rekordu a leaderboard.
 - Následně proběhne celý Vitest suite, lint, TypeScript build a produkční Vite build.
-

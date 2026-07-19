@@ -17,7 +17,7 @@ export interface FamilyJumpLeaderboardEntry {
   rank: number
 }
 
-interface StorageLike {
+export interface StorageLike {
   getItem(key: string): string | null
   setItem(key: string, value: string): void
 }
@@ -38,16 +38,27 @@ function browserStorage(): StorageLike | null {
 
 export function loadFamilyJumpRecords(familyId: string, storage: StorageLike | null = browserStorage()): FamilyJumpRecordMap {
   const key = storageKey(familyId)
+  const fallback = memoryFallback.get(key)?.scores ?? {}
   let raw: string | null = null
   try { raw = storage?.getItem(key) ?? null } catch { /* Private browsing can deny access. */ }
-  if (!raw) return { ...(memoryFallback.get(key)?.scores ?? {}) }
+  if (!raw) return { ...fallback }
   try {
     const parsed = JSON.parse(raw) as Partial<StoredFamilyJumpRecords>
-    if (parsed.version !== 1 || parsed.familyId !== familyId || parsed.gameKey !== FAMILY_JUMP_GAME_KEY) return {}
-    return sanitizeScores(parsed.scores)
+    if (parsed.version !== 1 || parsed.familyId !== familyId || parsed.gameKey !== FAMILY_JUMP_GAME_KEY) return { ...fallback }
+    return mergeFamilyJumpRecords(sanitizeScores(parsed.scores), fallback)
   } catch {
-    return {}
+    return { ...fallback }
   }
+}
+
+export function mergeFamilyJumpRecords(...sources: readonly FamilyJumpRecordMap[]): FamilyJumpRecordMap {
+  const merged: FamilyJumpRecordMap = {}
+  for (const source of sources) {
+    for (const [memberId, score] of Object.entries(sanitizeScores(source))) {
+      if (score > (merged[memberId] ?? 0)) merged[memberId] = score
+    }
+  }
+  return merged
 }
 
 export function updateBestScore(scores: FamilyJumpRecordMap, memberId: string, score: number): FamilyJumpRecordMap {
@@ -62,20 +73,35 @@ export function saveFamilyJumpBestScore(
   score: number,
   storage: StorageLike | null = browserStorage(),
 ): FamilyJumpRecordMap {
-  const key = storageKey(familyId)
   const current = loadFamilyJumpRecords(familyId, storage)
   const next = updateBestScore(current, memberId, score)
   if (next === current) return current
+  return persistFamilyJumpRecords(familyId, next, storage)
+}
+
+export function saveFamilyJumpRecords(
+  familyId: string,
+  scores: FamilyJumpRecordMap,
+  storage: StorageLike | null = browserStorage(),
+): FamilyJumpRecordMap {
+  const current = loadFamilyJumpRecords(familyId, storage)
+  const next = mergeFamilyJumpRecords(current, scores)
+  if (sameRecords(current, next)) return current
+  return persistFamilyJumpRecords(familyId, next, storage)
+}
+
+function persistFamilyJumpRecords(familyId: string, scores: FamilyJumpRecordMap, storage: StorageLike | null) {
+  const key = storageKey(familyId)
   const document: StoredFamilyJumpRecords = {
     version: 1,
     familyId,
     gameKey: FAMILY_JUMP_GAME_KEY,
-    scores: next,
+    scores,
     updatedAt: new Date().toISOString(),
   }
   memoryFallback.set(key, document)
   try { storage?.setItem(key, JSON.stringify(document)) } catch { /* Memory fallback remains available. */ }
-  return next
+  return scores
 }
 
 export function sortFamilyJumpLeaderboard(
@@ -97,4 +123,10 @@ function sanitizeScores(value: unknown): FamilyJumpRecordMap {
     result[memberId] = Math.floor(score)
   }
   return result
+}
+
+function sameRecords(left: FamilyJumpRecordMap, right: FamilyJumpRecordMap) {
+  const keys = new Set([...Object.keys(left), ...Object.keys(right)])
+  for (const key of keys) if ((left[key] ?? 0) !== (right[key] ?? 0)) return false
+  return true
 }

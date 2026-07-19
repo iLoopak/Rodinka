@@ -40,6 +40,27 @@ button.family-jump-back {
   padding: 20px max(18px, env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
 }
 
+.family-jump-sync-status {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 7px;
+  margin: -6px 2px 12px auto;
+  color: var(--text-muted);
+  font-size: .72rem;
+}
+
+.family-jump-sync-status > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--state-success);
+}
+
+.family-jump-sync-status.is-syncing > span { background: var(--state-info); }
+.family-jump-sync-status.is-offline > span { background: var(--state-offline); }
+.family-jump-sync-status.is-error > span { background: var(--state-danger); }
+
 .family-jump-hero {
   position: relative;
   min-height: 248px;
