@@ -16,6 +16,7 @@ import { useRouter } from './router'
 import { isManagedChildSession } from './lib/managedChildSession'
 import { UnlinkedChildAccountScreen } from './components/UnlinkedChildAccountScreen'
 import { CreateRecordProvider } from './context/create-record/CreateRecordContext'
+import { useCalendarOffline } from './context/calendar/CalendarOfflineContext'
 
 function AppLoading({ label }: { label: string }) {
   return <div className="loading app-loading"><FamilyMark variant="static" size={32} />{label}</div>
@@ -41,8 +42,10 @@ export default function App() {
   if (!member && connectionError) {
     return <OfflineFallbackScreen
       canOpenShopping={false}
+      canOpenCalendar={false}
       deviceOffline={typeof navigator !== 'undefined' && !navigator.onLine}
       onOpenShopping={() => { window.history.pushState(null, '', '/shopping') }}
+      onOpenCalendar={() => { window.history.pushState(null, '', '/calendar') }}
       onRetry={refresh}
     />
   }
@@ -71,12 +74,15 @@ export default function App() {
 
 function OfflineStartupGate({ children, connectionError, refresh }: { children: ReactNode; connectionError: string | null; refresh: () => Promise<void> }) {
   const { path, navigate } = useRouter()
-  const showFallback = Boolean(connectionError) && path !== '/shopping'
+  const { calendarHasUsableData } = useCalendarOffline()
+  const showFallback = Boolean(connectionError) && path !== '/shopping' && path !== '/calendar'
   if (showFallback) {
     return <OfflineFallbackScreen
       canOpenShopping
+      canOpenCalendar={calendarHasUsableData}
       deviceOffline={typeof navigator !== 'undefined' && !navigator.onLine}
       onOpenShopping={() => navigate('/shopping')}
+      onOpenCalendar={() => navigate('/calendar')}
       onRetry={refresh}
     />
   }

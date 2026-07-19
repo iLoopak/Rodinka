@@ -2,6 +2,8 @@ import type { ShoppingMutation } from './shoppingMutationQueue'
 import type { ShoppingItem, ShoppingTemplate } from '../utils/shopping'
 import type { ShoppingCategorySettings } from '../utils/shoppingCategorySettings'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
+import type { CalendarMutation, CalendarSnapshotData } from '../calendar/calendarTypes'
+import { CALENDAR_LOCAL_SCHEMA_VERSION } from '../calendar/calendarTypes'
 
 export interface ShoppingSyncMetadata {
   familyId: string
@@ -9,7 +11,7 @@ export interface ShoppingSyncMetadata {
   lastSuccessfulSyncAt: string | null
 }
 
-export interface ShoppingLocalStore {
+export interface OfflineLocalStore {
   loadItems(familyId: string): Promise<ShoppingItem[]>
   replaceItems(familyId: string, items: ShoppingItem[]): Promise<void>
   loadMutations(familyId: string): Promise<ShoppingMutation[]>
@@ -22,6 +24,23 @@ export interface ShoppingLocalStore {
   loadCategorySettings(familyId: string): Promise<ShoppingCategorySettings | null>
   loadFamilyIdentity(userId: string): Promise<FamilyMember | null>
   saveFamilyIdentity(userId: string, member: FamilyMember | null): Promise<void>
+  loadCalendarSnapshot(scopeKey: string): Promise<StoredCalendarSnapshot | null>
+  saveCalendarSnapshot(snapshot: StoredCalendarSnapshot): Promise<void>
+  loadCalendarMutations(scopeKey: string): Promise<CalendarMutation[]>
+  replaceCalendarMutations(scopeKey: string, mutations: CalendarMutation[]): Promise<void>
+  clearCalendarUser(userId: string): Promise<void>
+}
+
+export type ShoppingLocalStore = OfflineLocalStore
+
+export interface StoredCalendarSnapshot {
+  scopeKey: string
+  userId: string
+  familyId: string
+  schemaVersion: number
+  hasSnapshot: boolean
+  data: CalendarSnapshotData
+  lastSuccessfulSyncAt: string | null
 }
 
 interface StoredItem { key: string; familyId: string; item: ShoppingItem }
@@ -30,7 +49,7 @@ interface StoredCategorySettings { familyId: string; settings: ShoppingCategoryS
 interface StoredFamilyIdentity { userId: string; member: FamilyMember }
 
 const DB_NAME = 'rodinka-offline'
-const DB_VERSION = 2
+const DB_VERSION = 3
 
 export class IndexedDbShoppingStore implements ShoppingLocalStore {
   private databasePromise: Promise<IDBDatabase> | null = null
@@ -106,6 +125,55 @@ export class IndexedDbShoppingStore implements ShoppingLocalStore {
     else store.delete(userId)
     await transactionDone(transaction)
   }
+
+  async loadCalendarSnapshot(scopeKey: string) {
+    const stored = (await readOne<StoredCalendarSnapshot>(await this.database(), 'calendarSnapshots', scopeKey)) ?? null
+    if (stored && stored.schemaVersion !== CALENDAR_LOCAL_SCHEMA_VERSION) {
+      await this.deleteCalendarScope(scopeKey)
+      return null
+    }
+    return stored
+  }
+
+  async saveCalendarSnapshot(snapshot: StoredCalendarSnapshot) {
+    await writeOne(await this.database(), 'calendarSnapshots', snapshot)
+  }
+
+  async loadCalendarMutations(scopeKey: string) {
+    const rows = await getAllByIndex<CalendarMutation>(await this.database(), 'calendarMutations', 'scopeKey', scopeKey)
+    return rows.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+  }
+
+  async replaceCalendarMutations(scopeKey: string, mutations: CalendarMutation[]) {
+    const db = await this.database()
+    const transaction = db.transaction('calendarMutations', 'readwrite')
+    const store = transaction.objectStore('calendarMutations')
+    const existing = await request(store.index('scopeKey').getAllKeys(IDBKeyRange.only(scopeKey)))
+    for (const key of existing) store.delete(key)
+    for (const mutation of mutations) store.put(mutation)
+    await transactionDone(transaction)
+  }
+
+  async clearCalendarUser(userId: string) {
+    const db = await this.database()
+    const transaction = db.transaction(['calendarSnapshots', 'calendarMutations'], 'readwrite')
+    for (const storeName of ['calendarSnapshots', 'calendarMutations']) {
+      const store = transaction.objectStore(storeName)
+      const keys = await request(store.index('userId').getAllKeys(IDBKeyRange.only(userId)))
+      for (const key of keys) store.delete(key)
+    }
+    await transactionDone(transaction)
+  }
+
+  private async deleteCalendarScope(scopeKey: string) {
+    const db = await this.database()
+    const transaction = db.transaction(['calendarSnapshots', 'calendarMutations'], 'readwrite')
+    transaction.objectStore('calendarSnapshots').delete(scopeKey)
+    const mutations = transaction.objectStore('calendarMutations')
+    const keys = await request(mutations.index('scopeKey').getAllKeys(IDBKeyRange.only(scopeKey)))
+    for (const key of keys) mutations.delete(key)
+    await transactionDone(transaction)
+  }
 }
 
 export class MemoryShoppingStore implements ShoppingLocalStore {
@@ -115,6 +183,8 @@ export class MemoryShoppingStore implements ShoppingLocalStore {
   private templates = new Map<string, ShoppingTemplate[]>()
   private categories = new Map<string, ShoppingCategorySettings>()
   private identities = new Map<string, FamilyMember>()
+  private calendarSnapshots = new Map<string, StoredCalendarSnapshot>()
+  private calendarMutations = new Map<string, CalendarMutation[]>()
 
   async loadItems(familyId: string) { return structuredClone(this.items.get(familyId) ?? []) }
   async replaceItems(familyId: string, items: ShoppingItem[]) { this.items.set(familyId, structuredClone(items)) }
@@ -131,13 +201,39 @@ export class MemoryShoppingStore implements ShoppingLocalStore {
     if (member) this.identities.set(userId, structuredClone(member))
     else this.identities.delete(userId)
   }
+  async loadCalendarSnapshot(scopeKey: string) {
+    const stored = structuredClone(this.calendarSnapshots.get(scopeKey) ?? null)
+    if (stored && stored.schemaVersion !== CALENDAR_LOCAL_SCHEMA_VERSION) {
+      this.calendarSnapshots.delete(scopeKey)
+      this.calendarMutations.delete(scopeKey)
+      return null
+    }
+    return stored
+  }
+  async saveCalendarSnapshot(snapshot: StoredCalendarSnapshot) { this.calendarSnapshots.set(snapshot.scopeKey, structuredClone(snapshot)) }
+  async loadCalendarMutations(scopeKey: string) { return structuredClone(this.calendarMutations.get(scopeKey) ?? []) }
+  async replaceCalendarMutations(scopeKey: string, mutations: CalendarMutation[]) { this.calendarMutations.set(scopeKey, structuredClone(mutations)) }
+  async clearCalendarUser(userId: string) {
+    for (const [scopeKey, snapshot] of this.calendarSnapshots) {
+      if (snapshot.userId !== userId) continue
+      this.calendarSnapshots.delete(scopeKey)
+      this.calendarMutations.delete(scopeKey)
+    }
+    for (const [scopeKey, mutations] of this.calendarMutations) {
+      if (mutations.some((mutation) => mutation.userId === userId)) this.calendarMutations.delete(scopeKey)
+    }
+  }
 }
 
-let sharedStore: ShoppingLocalStore | null = null
+let sharedStore: OfflineLocalStore | null = null
 
-export function getShoppingLocalStore(): ShoppingLocalStore {
+export function getOfflineLocalStore(): OfflineLocalStore {
   if (!sharedStore) sharedStore = typeof indexedDB === 'undefined' ? new MemoryShoppingStore() : new IndexedDbShoppingStore()
   return sharedStore
+}
+
+export function getShoppingLocalStore(): ShoppingLocalStore {
+  return getOfflineLocalStore()
 }
 
 function openDatabase(): Promise<IDBDatabase> {
@@ -153,6 +249,8 @@ function openDatabase(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains('shoppingTemplates')) db.createObjectStore('shoppingTemplates', { keyPath: 'familyId' })
       if (!db.objectStoreNames.contains('shoppingCategorySettings')) db.createObjectStore('shoppingCategorySettings', { keyPath: 'familyId' })
       if (!db.objectStoreNames.contains('shoppingFamilyIdentity')) db.createObjectStore('shoppingFamilyIdentity', { keyPath: 'userId' })
+      createScopedStore(db, 'calendarSnapshots', 'scopeKey')
+      createScopedStore(db, 'calendarMutations', 'operationId')
     }
   })
 }
@@ -163,9 +261,22 @@ function createFamilyStore(db: IDBDatabase, name: string, keyPath: string) {
   store.createIndex('familyId', 'familyId', { unique: false })
 }
 
+function createScopedStore(db: IDBDatabase, name: string, keyPath: string) {
+  if (db.objectStoreNames.contains(name)) return
+  const store = db.createObjectStore(name, { keyPath })
+  store.createIndex('scopeKey', 'scopeKey', { unique: false })
+  store.createIndex('familyId', 'familyId', { unique: false })
+  store.createIndex('userId', 'userId', { unique: false })
+}
+
 async function getAllByFamily<T>(db: IDBDatabase, storeName: string, familyId: string): Promise<T[]> {
   const transaction = db.transaction(storeName, 'readonly')
   return request(transaction.objectStore(storeName).index('familyId').getAll(IDBKeyRange.only(familyId))) as Promise<T[]>
+}
+
+async function getAllByIndex<T>(db: IDBDatabase, storeName: string, indexName: string, value: IDBValidKey): Promise<T[]> {
+  const transaction = db.transaction(storeName, 'readonly')
+  return request(transaction.objectStore(storeName).index(indexName).getAll(IDBKeyRange.only(value))) as Promise<T[]>
 }
 
 async function readOne<T>(db: IDBDatabase, storeName: string, key: IDBValidKey): Promise<T | undefined> {

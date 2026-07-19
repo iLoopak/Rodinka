@@ -1382,6 +1382,24 @@ details.manage .add-child-form + .add-chore-form {
 .shopping-sync-status.error .shopping-sync-status-dot { background: var(--danger); }
 .shopping-sync-status.synced .shopping-sync-status-dot { background: var(--category-tasks); }
 .shopping-item-pending { width: 7px; height: 7px; margin-inline: 2px; }
+.calendar-sync-status { margin: 8px 4px 14px; }
+.calendar-pending-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  color: var(--state-warning);
+  font-size: 0.7rem;
+  font-weight: var(--font-weight-strong);
+  line-height: 1.2;
+}
+.calendar-pending-label.failed { color: var(--danger); }
+.calendar-pending-label.failed .shopping-item-pending,
+.calendar-detail-sync.failed .shopping-item-pending { background: var(--danger); animation: none; box-shadow: none; }
+.calendar-detail-sync { width: fit-content; margin: 0; }
+.month-grid-indicator.is-pending,
+.month-grid-indicator.is-syncing { box-shadow: 0 0 0 2px var(--state-warning-soft); }
+.month-grid-indicator.is-failed { box-shadow: 0 0 0 2px var(--state-danger-soft); }
 @keyframes shopping-sync-pulse { 50% { opacity: .42; transform: scale(.84); } }
 @media (prefers-reduced-motion: reduce) {
   .shopping-sync-status-dot,

@@ -1,5 +1,5 @@
 /* Rodinka service worker: runtime offline cache plus standards-based Web Push. */
-const CACHE_NAME = 'rodinka-runtime-v1'
+const CACHE_NAME = 'rodinka-runtime-v2'
 const CONFIG_CACHE = 'rodinka-push-config-v1'
 const APP_SHELL = ['/', '/manifest.webmanifest', '/icon.svg', '/notification-badge.svg']
 

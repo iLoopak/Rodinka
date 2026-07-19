@@ -8,6 +8,7 @@ import { useFamilySettings } from '../../context/family/FamilySettingsContext'
 import { useMedicalData } from '../../context/health/MedicalContext'
 import { useMealsDataContext } from '../../context/meals/MealsContext'
 import { useShopping } from '../../context/shopping/ShoppingContext'
+import { useCalendarOffline } from '../../context/calendar/CalendarOfflineContext'
 import { t } from '../../strings'
 import { capabilitiesFor } from '../../utils/uiCapabilities'
 import { AddActivityForm } from '../AddActivityForm'
@@ -45,13 +46,23 @@ export function CreateRecordWizard() {
   const create = useCreateRecord()
   const { currentMember } = useFamilyCore()
   const capabilities = capabilitiesFor(currentMember)
-  const { members, kids } = useFamilyMembersData()
+  const { members: liveMembers, kids: liveKids } = useFamilyMembersData()
   const { shoppingCategorySettings } = useFamilySettings()
   const { addChore } = useChoresData()
   const { addActivity } = useActivitiesData()
   const { addMedicalRecord } = useMedicalData()
   const { meals, planEntries, voteRounds, addMeal, addPlanEntry, createVoteRound } = useMealsDataContext()
   const { addShoppingItem } = useShopping()
+  const {
+    members: cachedCalendarMembers,
+    addOfflineChore,
+    addOfflineActivity,
+    calendarSyncStatus,
+    calendarSyncError,
+    refreshCalendar,
+  } = useCalendarOffline()
+  const members = liveMembers.length > 0 ? liveMembers : cachedCalendarMembers
+  const kids = liveKids.length > 0 ? liveKids : members.filter((member) => member.role === 'child')
 
   if (!create.isOpen || !create.context) return null
 
@@ -69,6 +80,11 @@ export function CreateRecordWizard() {
     ? allOptions.filter((option) => option.type !== 'meal-vote' || !activeVoteExists)
     : allOptions.filter((option) => option.type === 'shopping-item')
   const selectedOption = allOptions.find((option) => option.type === create.selectedType)
+  const queueCalendarCreate = calendarSyncStatus !== 'synced'
+  const offlineLimited = calendarSyncStatus === 'offline'
+    || (calendarSyncStatus === 'error' && calendarSyncError !== 'calendar-mutation-failed')
+  const offlineSupportedTypes = new Set<RecordType>(['household-task', 'activity', 'shopping-item'])
+  const selectedTypeUnavailable = Boolean(offlineLimited && create.selectedType && !offlineSupportedTypes.has(create.selectedType))
   const selectedMemberId = create.context.memberId && members.some((member) => member.id === create.context?.memberId)
     ? create.context.memberId
     : undefined
@@ -93,6 +109,7 @@ export function CreateRecordWizard() {
         <span aria-hidden="true">←</span> {t.create.backToTypes}
       </button>
       {create.error && <p className="error create-record-error" role="alert">{create.error}</p>}
+      {selectedTypeUnavailable && <p className="info-note" role="status">{t.calendar.offlineCreateUnsupported}</p>}
       <div
         className="create-record-form-body"
         onChangeCapture={create.markDirty}
@@ -103,7 +120,7 @@ export function CreateRecordWizard() {
           create.markDirty()
         }}
       >
-        {create.selectedType === 'household-task' && <AddChoreForm
+        {!selectedTypeUnavailable && create.selectedType === 'household-task' && <AddChoreForm
           key={formKey}
           members={members}
           currentMemberId={currentMember.id}
@@ -111,9 +128,13 @@ export function CreateRecordWizard() {
           initialDueDate={create.context.date}
           initialMemberId={selectedMemberId}
           variant="guided"
-          onSubmit={(input) => create.runCreate(() => addChore(input))}
+          onSubmit={(input) => create.runCreate(async () => {
+            if (queueCalendarCreate) return addOfflineChore(input)
+            await addChore(input)
+            await refreshCalendar()
+          })}
         />}
-        {create.selectedType === 'activity' && <AddActivityForm
+        {!selectedTypeUnavailable && create.selectedType === 'activity' && <AddActivityForm
           key={formKey}
           members={members}
           kids={kids}
@@ -121,9 +142,13 @@ export function CreateRecordWizard() {
           initialStartDate={create.context.date}
           initialMemberId={selectedMemberId}
           variant="guided"
-          onSubmit={(input) => create.runCreate(() => addActivity(input))}
+          onSubmit={(input) => create.runCreate(async () => {
+            if (queueCalendarCreate) return addOfflineActivity(input)
+            await addActivity(input)
+            await refreshCalendar()
+          })}
         />}
-        {create.selectedType === 'medical' && <AddMedicalRecordForm
+        {!selectedTypeUnavailable && create.selectedType === 'medical' && <AddMedicalRecordForm
           key={formKey}
           members={members}
           currentMemberId={currentMember.id}
@@ -132,7 +157,7 @@ export function CreateRecordWizard() {
           variant="guided"
           onSubmit={(input) => create.runCreate(() => addMedicalRecord(input))}
         />}
-        {create.selectedType === 'meal' && <AddPlanEntryForm
+        {!selectedTypeUnavailable && create.selectedType === 'meal' && <AddPlanEntryForm
           key={formKey}
           meals={meals}
           members={members}
@@ -146,7 +171,7 @@ export function CreateRecordWizard() {
           variant="guided"
           onSubmit={(input) => create.runCreate(() => addPlanEntry(input))}
         />}
-        {create.selectedType === 'shopping-item' && <ShoppingItemForm
+        {!selectedTypeUnavailable && create.selectedType === 'shopping-item' && <ShoppingItemForm
           key={formKey}
           initialName={create.context.initialTitle}
           initialMemberId={selectedMemberId}
@@ -155,13 +180,13 @@ export function CreateRecordWizard() {
           variant="guided"
           onSubmit={(input) => create.runCreate(() => addShoppingItem(input))}
         />}
-        {create.selectedType === 'meal-library' && <AddMealForm
+        {!selectedTypeUnavailable && create.selectedType === 'meal-library' && <AddMealForm
           key={formKey}
           initialName={create.context.initialTitle}
           variant="guided"
           onSubmit={(input) => create.runCreate(() => addMeal(input))}
         />}
-        {create.selectedType === 'meal-vote' && <CreateRoundForm
+        {!selectedTypeUnavailable && create.selectedType === 'meal-vote' && <CreateRoundForm
           key={formKey}
           meals={meals}
           initialMealId={create.context.mealId}
@@ -175,6 +200,7 @@ export function CreateRecordWizard() {
         key={option.type}
         type="button"
         className="create-type-option"
+        disabled={offlineLimited && !offlineSupportedTypes.has(option.type)}
         onClick={() => create.selectRecordType(option.type)}
         autoFocus={index === 0}
       >
@@ -182,6 +208,7 @@ export function CreateRecordWizard() {
         <span className="create-type-copy">
           <span className="create-type-title">{option.title}</span>
           <span className="create-type-description">{option.description}</span>
+          {offlineLimited && !offlineSupportedTypes.has(option.type) && <span className="row-meta">{t.calendar.offlineUnavailableBadge}</span>}
         </span>
         <span className="create-type-chevron" aria-hidden="true">›</span>
       </button>)}

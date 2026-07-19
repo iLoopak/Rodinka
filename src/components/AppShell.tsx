@@ -27,6 +27,7 @@ import { capabilitiesFor, childRouteFallback } from '../utils/uiCapabilities'
 import { useMessagesData } from '../context/messages/MessagesContext'
 import { useConversationPushBridge } from '../hooks/useConversationPushBridge'
 import { CreateRecordWizard } from './create-record/CreateRecordWizard'
+import { useCalendarOffline } from '../context/calendar/CalendarOfflineContext'
 
 export function AppShell() {
   const { path, navigate } = useRouter()
@@ -41,8 +42,9 @@ export function AppShell() {
   const familyMark = useActiveFamilyMark()
   const realtimeStatus = useRealtimeStatus()
   const { shoppingSyncStatus } = useShopping()
-  const shoppingOnlyOffline = shoppingSyncStatus === 'offline'
-  const offlineBlocked = shoppingOnlyOffline && path !== '/shopping'
+  const { calendarSyncStatus } = useCalendarOffline()
+  const offlineMode = shoppingSyncStatus === 'offline' || calendarSyncStatus === 'offline'
+  const offlineBlocked = offlineMode && path !== '/shopping' && path !== '/calendar'
   const routeAllowed = capabilities.accessRoute(path)
 
   return (

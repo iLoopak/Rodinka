@@ -73,6 +73,11 @@ export function CalendarScreen() {
     loading,
     error,
     refresh,
+    calendarSyncStatus,
+    calendarLastSyncedAt,
+    pendingCalendarChanges,
+    pendingCalendarRecords,
+    retryCalendarRecord,
   } = useCalendarSources()
 
   useEffect(() => {
@@ -174,11 +179,11 @@ export function CalendarScreen() {
     if (capabilities.isChild) projected = projected.filter((entry) => entry.type === 'meal' || entryMatchesMember(entry, currentMember.id))
     else if (filterPerson) projected = projected.filter((entry) => entry.type === 'meal' || entryMatchesMember(entry, filterPerson))
     if (filterType) projected = projected.filter((entry) => entry.type === filterType)
-    return projected
-  }, [activities, allowancePlans, assignmentHistory, capabilities.isChild, chores, currentMember.id, filterPerson, filterType, latestCompletionFor, medicalRecords, occurrenceOverrides, participantHistory, planEntries, range.end, range.start])
+    return projected.map((entry) => ({ ...entry, syncStatus: pendingCalendarRecords.get(entry.sourceId)?.status }))
+  }, [activities, allowancePlans, assignmentHistory, capabilities.isChild, chores, currentMember.id, filterPerson, filterType, latestCompletionFor, medicalRecords, occurrenceOverrides, participantHistory, pendingCalendarRecords, planEntries, range.end, range.start])
 
   if (loading) return <p className="loading">{t.loading.generic}</p>
-  if (error) return <ErrorState message={error} onRetry={refresh} />
+  if (error) return <ErrorState message={t.calendar.dataUnavailable} onRetry={refresh} />
 
   const hasFilters = filterPerson !== '' || filterType !== ''
   function clearFilters() {
@@ -283,6 +288,20 @@ export function CalendarScreen() {
       </>} />
 
       <ScrollableTabs tabs={viewTabs} activeTab={viewMode} onChange={changeView} />
+
+      {calendarSyncStatus !== 'synced' && <div
+        className={`shopping-sync-status calendar-sync-status ${calendarSyncStatus}`}
+        role={calendarSyncStatus === 'error' ? 'alert' : 'status'}
+        aria-live="polite"
+      >
+        <span className="shopping-sync-status-dot" aria-hidden="true" />
+        <span>{calendarSyncStatus === 'offline'
+          ? t.calendar.offlineSnapshot(calendarLastSyncedAt ? new Date(calendarLastSyncedAt).toLocaleString() : t.calendar.neverUpdated)
+          : calendarSyncStatus === 'syncing'
+            ? t.calendar.syncing(pendingCalendarChanges)
+            : t.calendar.syncFailed}</span>
+        {calendarSyncStatus === 'error' && <button type="button" className="link" onClick={() => void retryCalendarRecord()}>{t.calendar.syncRetry}</button>}
+      </div>}
 
       {deepLinkError && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
 
