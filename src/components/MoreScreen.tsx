@@ -25,9 +25,11 @@ import { MemberProfileModal } from './family/MemberProfileModal'
 import { FamilyAllowanceSettings } from './allowance/FamilyAllowanceSettings'
 import { AllowancePlanDialog } from './allowance/AllowancePlanDialog'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
+import { getShoppingLocalStore } from '../shopping/shoppingIndexedDb'
+import { useCalendarOffline } from '../context/calendar/CalendarOfflineContext'
 
 export function MoreScreen() {
-  const { currentMember, userEmail } = useFamilyCore()
+  const { currentMember, userEmail, userId } = useFamilyCore()
   const capabilities = capabilitiesFor(currentMember)
   const { members, refreshMembers } = useFamilyMembersData()
   const { familyName, familyHeroImageUrl, updateFamilyName, updateFamilyHeroImage } = useFamilySettings()
@@ -52,6 +54,7 @@ export function MoreScreen() {
   const [allowanceChild, setAllowanceChild] = useState<FamilyMember | null>(null)
   const childMembers = members.filter((member) => member.role === 'child')
   const { canPrompt, showIOSInstructions, isStandalone, isNative, promptInstall } = useInstallPrompt()
+  const { clearCalendarAccount } = useCalendarOffline()
 
   function startEditingFamilyName() {
     setFamilyNameDraft(familyName ?? '')
@@ -358,6 +361,11 @@ export function MoreScreen() {
           // Deactivate this device's push row first, so it cannot keep
           // receiving this family's messages after sign-out.
           await releasePushOnSignOut()
+          const offlineStore = getShoppingLocalStore()
+          await Promise.all([
+            clearCalendarAccount(),
+            offlineStore.saveFamilyIdentity(userId, null),
+          ]).catch((error) => console.error('Failed to clear offline account data:', error))
           await supabase.auth.signOut()
         }}
       >

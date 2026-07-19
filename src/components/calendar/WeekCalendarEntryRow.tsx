@@ -49,6 +49,10 @@ export function WeekCalendarEntryRow({ entry, memberById, onClick, onAssignmentC
         <ItemTypeIcon type={entry.type} size={40} />
         <strong>{entry.title}</strong>
         {entry.completed && <span className="week-entry-status">{t.calendar.completed}</span>}
+        {entry.syncStatus && <span className={`calendar-pending-label ${entry.syncStatus}`}>
+          <span className="shopping-item-pending" aria-hidden="true" />
+          {entry.syncStatus === 'failed' ? t.calendar.syncRecordFailed : entry.syncStatus === 'syncing' ? t.calendar.syncRecordSyncing : t.calendar.pendingSync}
+        </span>}
       </div>
       <div className="week-entry-time font-tabular">{timeLabel}</div>
       <div className="week-entry-metadata">

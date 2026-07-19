@@ -75,7 +75,7 @@ export function MonthGrid({ monthAnchor, entries, today, selectedDay, memberById
                       return (
                         <span
                           key={entry.id}
-                          className={`month-grid-indicator${personId ? ' has-member' : ''}`}
+                          className={`month-grid-indicator${personId ? ' has-member' : ''}${entry.syncStatus ? ` is-${entry.syncStatus}` : ''}`}
                           style={{
                             backgroundColor: `var(${style.surfaceVar})`,
                             borderColor: `var(${style.colorVar})`,

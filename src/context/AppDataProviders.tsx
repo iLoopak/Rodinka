@@ -11,6 +11,7 @@ import { MedicalProvider } from './health/MedicalContext'
 import { MealsProvider } from './meals/MealsContext'
 import { ShoppingProvider } from './shopping/ShoppingContext'
 import { MessagesProvider } from './messages/MessagesContext'
+import { CalendarOfflineProvider } from './calendar/CalendarOfflineContext'
 
 interface Props {
   member: Member
@@ -42,11 +43,13 @@ export function AppDataProviders({ member, userId, userEmail, children }: Props)
                 <OccurrenceAssignmentsProvider familyId={familyId}>
                   <MedicalProvider familyId={familyId} userId={userId}>
                     <MealsProvider familyId={familyId} userId={userId}>
-                      <ShoppingProvider familyId={familyId} currentMemberId={currentMemberId}>
-                        <MessagesProvider familyId={familyId} currentMemberId={currentMemberId}>
-                          {children}
-                        </MessagesProvider>
-                      </ShoppingProvider>
+                      <CalendarOfflineProvider familyId={familyId} userId={userId} currentMemberId={currentMemberId}>
+                        <ShoppingProvider familyId={familyId} currentMemberId={currentMemberId}>
+                          <MessagesProvider familyId={familyId} currentMemberId={currentMemberId}>
+                            {children}
+                          </MessagesProvider>
+                        </ShoppingProvider>
+                      </CalendarOfflineProvider>
                     </MealsProvider>
                   </MedicalProvider>
                 </OccurrenceAssignmentsProvider>

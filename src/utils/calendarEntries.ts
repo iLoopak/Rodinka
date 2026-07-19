@@ -44,6 +44,8 @@ export interface CalendarEntry {
   sourceId: string
   /** Meal-plan ordering metadata; present only for projected meals. */
   mealSlot?: MealSlot
+  /** Present only for a locally created record that is still in the durable sync queue. */
+  syncStatus?: 'pending' | 'syncing' | 'failed'
 }
 
 function withinRange(date: string, rangeStart: string, rangeEnd: string): boolean {
