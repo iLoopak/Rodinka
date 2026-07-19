@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import type { FamilyMember, MemberRole } from '../hooks/useFamilyMembers'
 import { getMemberMainColor, memberColorKey } from '../utils/memberColor'
 import {
@@ -12,6 +13,12 @@ import {
 } from '../utils/familyMark'
 
 export type FamilyMarkMember = Pick<FamilyMember, 'id' | 'color_key'> & { role?: MemberRole }
+
+export type FamilyLogoAnimationMode =
+  | 'idle'
+  | 'member-focus'
+  | 'reconnecting'
+  | 'connection-restored'
 
 interface SharedProps {
   size?: number
@@ -30,6 +37,8 @@ interface DynamicProps extends SharedProps {
   variant: 'dynamic'
   members: FamilyMarkMember[]
   loading?: boolean
+  activeMemberId?: string | null
+  animationMode?: FamilyLogoAnimationMode
 }
 
 export type FamilyMarkProps = StaticProps | DynamicProps
@@ -43,6 +52,13 @@ function Petal({ slot, fill, className }: { slot: FamilyMarkSlot; fill: string; 
   />
 }
 
+function memberAnimationStyle(mode: FamilyLogoAnimationMode, index: number): CSSProperties | undefined {
+  if (mode === 'idle') return { animationDelay: `${index * -480}ms` }
+  if (mode === 'reconnecting') return { animationDelay: `${index * 110}ms` }
+  if (mode === 'connection-restored') return { animationDelay: `${index * 70}ms` }
+  return undefined
+}
+
 export function FamilyMark(props: FamilyMarkProps) {
   const {
     size = 32,
@@ -52,8 +68,16 @@ export function FamilyMark(props: FamilyMarkProps) {
   } = props
   const dynamic = props.variant === 'dynamic'
   const loading = dynamic && Boolean(props.loading)
+  const animationMode: FamilyLogoAnimationMode = dynamic ? (props.animationMode ?? 'idle') : 'idle'
+  const activeMemberId = dynamic ? props.activeMemberId : null
   const model = createFamilyMarkModel(dynamic && !loading ? props.members : [])
-  const classes = ['family-mark', `family-mark-${props.variant}`, loading ? 'is-loading' : '', className ?? '']
+  const classes = [
+    'family-mark',
+    `family-mark-${props.variant}`,
+    dynamic && !loading ? `family-mark-animation-${animationMode}` : '',
+    loading ? 'is-loading' : '',
+    className ?? '',
+  ]
     .filter(Boolean)
     .join(' ')
   const accessibility = decorative
@@ -70,6 +94,7 @@ export function FamilyMark(props: FamilyMarkProps) {
     focusable="false"
     fill="none"
     data-member-count={dynamic && !loading ? props.members.length : undefined}
+    data-animation-mode={dynamic && !loading ? animationMode : undefined}
     {...accessibility}
   >
     {props.variant === 'static' && createStaticFamilyMarkSlots().map((slot, index) => <Petal
@@ -86,11 +111,21 @@ export function FamilyMark(props: FamilyMarkProps) {
       className="family-mark-petal family-mark-loading-petal"
     />)}
 
-    {dynamic && !loading && model.members.map((member, index) => <Petal
-      key={member.id}
-      slot={model.slots[index]}
-      fill={getMemberMainColor(memberColorKey(member))}
-      className="family-mark-petal"
-    />)}
+    {dynamic && !loading && model.members.map((member, index) => {
+      const active = member.id === activeMemberId
+      return <g
+        key={member.id}
+        className={`family-mark-member${active ? ' is-active-member' : ''}`}
+        data-member-id={member.id}
+        data-active-member={active ? 'true' : undefined}
+        style={memberAnimationStyle(animationMode, index)}
+      >
+        <Petal
+          slot={model.slots[index]}
+          fill={getMemberMainColor(memberColorKey(member))}
+          className="family-mark-petal"
+        />
+      </g>
+    })}
   </svg>
 }

@@ -28,6 +28,7 @@ import { useMessagesData } from '../context/messages/MessagesContext'
 import { useConversationPushBridge } from '../hooks/useConversationPushBridge'
 import { CreateRecordWizard } from './create-record/CreateRecordWizard'
 import { useCalendarOffline } from '../context/calendar/CalendarOfflineContext'
+import { useFamilyLogoAnimation } from '../hooks/useFamilyLogoAnimation'
 
 export function AppShell() {
   const { path, navigate } = useRouter()
@@ -44,6 +45,13 @@ export function AppShell() {
   const { shoppingSyncStatus } = useShopping()
   const { calendarSyncStatus } = useCalendarOffline()
   const offlineMode = shoppingSyncStatus === 'offline' || calendarSyncStatus === 'offline'
+  const browserOffline = typeof navigator !== 'undefined' && !navigator.onLine
+  const realtimeInterrupted = realtimeStatus === 'reconnecting' || realtimeStatus === 'disconnected'
+  const logoAnimationMode = useFamilyLogoAnimation({
+    baseMode: 'member-focus',
+    connectionInterrupted: browserOffline || offlineMode || realtimeInterrupted,
+    connectionReady: !browserOffline && !offlineMode && realtimeStatus === 'connected',
+  })
   const offlineBlocked = offlineMode && path !== '/shopping' && path !== '/calendar'
   const routeAllowed = capabilities.accessRoute(path)
 
@@ -53,6 +61,8 @@ export function AppShell() {
         <FamilyBrand
           familyName={familyName}
           members={familyMark.members}
+          activeMemberId={currentMember.id}
+          animationMode={logoAnimationMode}
           loading={familyNameLoading}
           markLoading={familyMark.loading}
         />

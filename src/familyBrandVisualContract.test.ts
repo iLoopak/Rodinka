@@ -74,6 +74,14 @@ describe('family brand visual contract', () => {
     expect(icon).not.toContain('<rect x=')
   })
 
+  it('animates member groups without transforming the logo viewport or wordmark', () => {
+    expect(mark).toContain('data-member-id={member.id}')
+    expect(mark).toContain('family-mark-member')
+    expect(css).toMatch(/\.family-mark-member\s*\{[^}]*transform-box:\s*fill-box/s)
+    expect(css).not.toMatch(/\.family-brand-lockup[^}]*animation:/s)
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*\{[^}]*\.family-mark-member/s)
+  })
+
   it('uses the single public icon for favicon and launcher contexts', () => {
     expect(read('index.html')).toContain('href="/icon.svg"')
     expect(read('public/manifest.webmanifest')).toContain('"src": "/icon.svg"')

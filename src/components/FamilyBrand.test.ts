@@ -49,4 +49,17 @@ describe('FamilyBrand', () => {
     expect(html).toContain('Novákovi</span>')
     expect(html).not.toContain('var(--brand-blue)')
   })
+
+  it('passes member focus to the mark while keeping the text lockup unchanged', () => {
+    const html = renderToStaticMarkup(createElement(FamilyBrand, {
+      familyName: 'Novákovi',
+      members: [firstMember, secondMember],
+      activeMemberId: secondMember.id,
+      animationMode: 'member-focus',
+    }))
+    expect(html).toContain(`data-member-id="${secondMember.id}"`)
+    expect(html).toContain('data-active-member="true"')
+    expect(html).toContain('data-animation-mode="member-focus"')
+    expect(html).toContain('class="brand-lockup family-brand-lockup"')
+  })
 })
