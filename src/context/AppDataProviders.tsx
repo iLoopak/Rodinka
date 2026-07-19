@@ -35,7 +35,7 @@ export function AppDataProviders({ member, userId, userEmail, children }: Props)
 
   return (
     <FamilyCoreProvider member={member} userId={userId} userEmail={userEmail}>
-      <FamilyMembersProvider familyId={familyId}>
+      <FamilyMembersProvider familyId={familyId} userId={userId}>
         <FamilySettingsProvider familyId={familyId}>
           <ChoresProvider familyId={familyId} userId={userId} currentMemberId={currentMemberId}>
             <AllowanceProvider familyId={familyId}>

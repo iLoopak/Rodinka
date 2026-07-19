@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../supabaseClient'
+import { cachedQuery, cacheTimes, familyQueryKey } from '../queryCache'
 import { t } from '../strings'
 
 export type MemberColorKey =
@@ -41,7 +42,7 @@ export function isActiveFamilyMember(member: FamilyMember) {
 
 export const AVATAR_SIGNED_URL_SECONDS = 12 * 60 * 60
 
-export function useFamilyMembers(familyId: string | undefined) {
+export function useFamilyMembers(familyId: string | undefined, userId: string | null = null) {
   const [members, setMembers] = useState<FamilyMember[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -54,44 +55,47 @@ export function useFamilyMembers(familyId: string | undefined) {
     }
 
     setLoading(true)
-    const { data, error } = await supabase
-      .from('members')
-      .select('id, family_id, display_name, role, user_id, birth_date, color_key, custom_color, avatar_path, grammatical_gender, vocative_name, status, removed_at, removed_by_member_id, removal_reason')
-      .eq('family_id', familyId)
-      .order('display_name')
-
-    if (error) {
-      console.error('Failed to load family members:', error.message)
+    try {
+      const result = await cachedQuery({
+        key: familyQueryKey('members', familyId),
+        scope: { userId, familyId },
+        staleTimeMs: cacheTimes.stable,
+        maxAgeMs: 11 * 60 * 60 * 1000,
+        persist: true,
+        queryName: 'members.list',
+        table: 'members,member-avatars',
+        reason: 'mount',
+        fetcher: async () => {
+          const { data, error } = await supabase
+            .from('members')
+            .select('id, family_id, display_name, role, user_id, birth_date, color_key, custom_color, avatar_path, grammatical_gender, vocative_name, status, removed_at, removed_by_member_id, removal_reason')
+            .eq('family_id', familyId)
+            .order('display_name')
+          if (error) throw error
+          const loadedMembers = (data ?? []).map((member) => ({ ...member, status: member.status ?? 'active', avatar_url: null })) as FamilyMember[]
+          const avatarPaths = [...new Set(loadedMembers.flatMap((member) => member.avatar_path ?? []))]
+          if (avatarPaths.length > 0) {
+            const { data: signedUrls, error: signedUrlError } = await supabase.storage
+              .from('member-avatars')
+              .createSignedUrls(avatarPaths, AVATAR_SIGNED_URL_SECONDS)
+            if (signedUrlError) console.error('Failed to create member avatar signed URLs:', signedUrlError.message)
+            else {
+              const urlByPath = new Map((signedUrls ?? []).filter((item) => item.signedUrl).map((item) => [item.path, item.signedUrl] as const))
+              for (const member of loadedMembers) member.avatar_url = member.avatar_path ? (urlByPath.get(member.avatar_path) ?? null) : null
+            }
+          }
+          return loadedMembers
+        },
+      })
+      setMembers(result.data)
+      setError(result.stale ? t.errors.loadFailed : null)
+    } catch (error) {
+      console.error('Failed to load family members:', error instanceof Error ? error.message : 'unknown error')
       setMembers([])
       setError(t.errors.loadFailed)
-    } else {
-      const loadedMembers = (data ?? []).map((member) => ({ ...member, status: member.status ?? 'active', avatar_url: null })) as FamilyMember[]
-      const avatarPaths = [...new Set(loadedMembers.flatMap((member) => member.avatar_path ?? []))]
-
-      if (avatarPaths.length > 0) {
-        const { data: signedUrls, error: signedUrlError } = await supabase.storage
-          .from('member-avatars')
-          .createSignedUrls(avatarPaths, AVATAR_SIGNED_URL_SECONDS)
-
-        if (signedUrlError) {
-          console.error('Failed to create member avatar signed URLs:', signedUrlError.message)
-        } else {
-          const urlByPath = new Map(
-            (signedUrls ?? [])
-              .filter((item) => item.signedUrl)
-              .map((item) => [item.path, item.signedUrl] as const)
-          )
-          for (const member of loadedMembers) {
-            member.avatar_url = member.avatar_path ? (urlByPath.get(member.avatar_path) ?? null) : null
-          }
-        }
-      }
-
-      setMembers(loadedMembers)
-      setError(null)
     }
     setLoading(false)
-  }, [familyId])
+  }, [familyId, userId])
 
   useEffect(() => {
     refresh()
