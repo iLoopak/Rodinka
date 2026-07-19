@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { t } from '../../strings'
 
 const focusableSelector = [
@@ -15,22 +16,41 @@ interface Props {
   onClose: () => void
   children: ReactNode
   className?: string
+  backdropClassName?: string
   closeOnBackdrop?: boolean
   descriptionId?: string
 }
 
-export function Modal({ title, onClose, children, className, closeOnBackdrop = true, descriptionId }: Props) {
+let openModalCount = 0
+let nextModalOrder = 0
+
+export function Modal({ title, onClose, children, className, backdropClassName, closeOnBackdrop = true, descriptionId }: Props) {
   const sheetRef = useRef<HTMLDivElement>(null)
   const backdropRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
+  const modalOrderRef = useRef(0)
   const titleId = useId()
+  if (modalOrderRef.current === 0) modalOrderRef.current = ++nextModalOrder
   onCloseRef.current = onClose
+
+  useEffect(() => {
+    openModalCount += 1
+    document.body.classList.add('has-modal-open')
+    return () => {
+      openModalCount = Math.max(0, openModalCount - 1)
+      if (openModalCount === 0) document.body.classList.remove('has-modal-open')
+    }
+  }, [])
 
   useEffect(() => {
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null
     function onKeyDown(e: KeyboardEvent) {
       const roots = document.querySelectorAll<HTMLElement>('[data-modal-root]')
-      if (roots.item(roots.length - 1) !== backdropRef.current) return
+      const topmost = [...roots].reduce<HTMLElement | null>((current, candidate) => {
+        if (!current) return candidate
+        return Number(candidate.dataset.modalOrder) > Number(current.dataset.modalOrder) ? candidate : current
+      }, null)
+      if (topmost !== backdropRef.current) return
       if (e.key === 'Escape') {
         e.preventDefault()
         onCloseRef.current()
@@ -66,8 +86,15 @@ export function Modal({ title, onClose, children, className, closeOnBackdrop = t
     }
   }, [])
 
-  return (
-    <div ref={backdropRef} className="modal-backdrop" data-modal-root onClick={closeOnBackdrop ? onClose : undefined}>
+  const content = (
+    <div
+      ref={backdropRef}
+      className={`modal-backdrop${backdropClassName ? ` ${backdropClassName}` : ''}`}
+      data-modal-root
+      data-modal-order={modalOrderRef.current}
+      style={{ zIndex: 100 + modalOrderRef.current }}
+      onClick={closeOnBackdrop ? onClose : undefined}
+    >
       <div
         ref={sheetRef}
         className={`modal-sheet${className ? ` ${className}` : ''}`}
@@ -88,4 +115,9 @@ export function Modal({ title, onClose, children, className, closeOnBackdrop = t
       </div>
     </div>
   )
+
+  // Static rendering has no document to portal into. In the browser every
+  // modal is portalled so app-shell stacking contexts cannot trap it.
+  if (typeof document === 'undefined') return content
+  return createPortal(content, document.body)
 }

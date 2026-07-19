@@ -165,10 +165,11 @@ describe('ShareExistingEntityDialog', () => {
   it('can be closed without sharing', () => {
     const onClose = vi.fn()
     choresState.chores = [chore]
-    const { container } = render(<ShareExistingEntityDialog kind="task" conversationId="conv-1" onClose={onClose} />)
+    render(<ShareExistingEntityDialog kind="task" conversationId="conv-1" onClose={onClose} />)
     // The Modal chrome also renders an "×" whose accessible name is "Close";
     // this asserts the explicit footer button.
-    const footerClose = container.querySelector('.family-actions .btn-secondary') as HTMLButtonElement
+    const dialog = screen.getByRole('dialog')
+    const footerClose = dialog.querySelector('.family-actions .btn-secondary') as HTMLButtonElement
     expect(footerClose.textContent).toBe(t.common.close)
     fireEvent.click(footerClose)
     expect(onClose).toHaveBeenCalled()

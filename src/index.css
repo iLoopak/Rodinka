@@ -1748,9 +1748,14 @@ button.list-drag-handle:hover:not(:disabled) {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  z-index: 20;
+  z-index: 100;
   padding: 0;
+  overscroll-behavior: none;
   animation: rise 160ms ease both;
+}
+
+body.has-modal-open .app-main {
+  overflow: hidden;
 }
 
 .modal-sheet {
@@ -3878,11 +3883,21 @@ button.btn-danger:hover:not(:disabled) {
 /* ------------------------------------------------------------------ */
 
 .modal-sheet.member-editor-sheet {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  max-height: 100dvh;
   padding: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  max-height: min(92dvh, 780px);
+  border-radius: 0;
+}
+
+.modal-backdrop.member-editor-backdrop {
+  align-items: stretch;
+  padding: 0;
 }
 
 .member-editor-sheet > .modal-header {
@@ -3947,24 +3962,38 @@ button.btn-danger:hover:not(:disabled) {
 
 .member-editor-main {
   flex: 1 1 auto;
+  min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .member-editor-nav {
   flex: 0 0 auto;
   display: flex;
+  min-width: 0;
   gap: 6px;
   padding: 8px 14px;
   overflow-x: auto;
+  overflow-y: hidden;
   background: var(--canvas);
   border-bottom: 1px solid var(--border-soft);
-  scrollbar-width: thin;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 14px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.member-editor-nav::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .member-editor-nav-item {
   flex: 0 0 auto;
+  width: max-content;
+  min-width: max-content;
   min-height: 44px;
   padding: 8px 14px;
   border-radius: 999px;
@@ -3983,8 +4012,9 @@ button.btn-danger:hover:not(:disabled) {
 
 .member-editor-nav-item.is-active {
   background: var(--ink);
-  color: var(--paper);
+  color: #fff;
   border-color: var(--ink);
+  -webkit-text-fill-color: currentColor;
 }
 
 .member-editor-nav-item:focus-visible {
@@ -3994,12 +4024,18 @@ button.btn-danger:hover:not(:disabled) {
 
 .member-editor-content {
   flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 18px;
+  overscroll-behavior-y: contain;
+  scroll-padding-block: 18px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .member-editor-content > .member-profile-form,
@@ -4059,11 +4095,10 @@ button.btn-danger:hover:not(:disabled) {
   padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
   background: var(--surface-elevated);
   border-top: 1px solid var(--border-soft);
-  position: sticky;
-  bottom: 0;
+  box-shadow: 0 -8px 24px rgba(80, 58, 42, 0.08);
 }
 
-.member-editor-footer button[type="submit"] {
+.member-editor-footer > button {
   min-height: 48px;
   width: 100%;
 }
@@ -4075,14 +4110,15 @@ button.btn-danger:hover:not(:disabled) {
 }
 
 @media (min-width: 720px) {
-  .modal-backdrop:has(.member-editor-sheet) {
+  .modal-backdrop.member-editor-backdrop {
     align-items: center;
     padding: 24px;
   }
 
   .modal-sheet.member-editor-sheet {
     max-width: 780px;
-    max-height: min(88vh, 820px);
+    height: min(88dvh, 820px);
+    max-height: min(88dvh, 820px);
     border-radius: var(--radius-card);
   }
 
@@ -4125,7 +4161,7 @@ button.btn-danger:hover:not(:disabled) {
     padding: 14px 24px;
   }
 
-  .member-editor-footer button[type="submit"] {
+  .member-editor-footer > button {
     width: auto;
     align-self: flex-end;
     min-width: 200px;

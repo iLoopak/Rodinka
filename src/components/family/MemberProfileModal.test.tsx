@@ -127,10 +127,10 @@ describe('MemberProfileModal sectioned editor', () => {
     const nameInput = screen.getByLabelText(t.family.nameLabel) as HTMLInputElement
     fireEvent.change(nameInput, { target: { value: 'Alexandr' } })
 
-    // Only the Profile section owns the save action; other sections must not
-    // present a floating save button that could mislead the user.
+    // The editor footer stays mounted while the active section is the only
+    // scrolling region, so pending profile edits remain saveable everywhere.
     fireEvent.click(screen.getByRole('button', { name: editor.sectionAllowance }))
-    expect(screen.queryByRole('button', { name: t.family.saveProfile })).toBeNull()
+    expect(screen.getByRole('button', { name: t.family.saveProfile })).toBeTruthy()
     expect(screen.queryByLabelText(t.family.nameLabel)).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: editor.sectionProfile }))
@@ -186,8 +186,9 @@ describe('MemberProfileModal sectioned editor', () => {
     expect(screen.queryByRole('button', { name: t.family.leaveHouseholdAction })).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: editor.sectionOther }))
-    // The main save button is gone; the danger card owns its own action.
-    expect(screen.queryByRole('button', { name: t.family.saveProfile })).toBeNull()
+    // The danger card owns its own action while the shared profile save stays
+    // isolated in the fixed editor footer.
+    expect(screen.getByRole('button', { name: t.family.saveProfile })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: t.family.leaveHouseholdAction }))
     expect(onRequestLeave).toHaveBeenCalledTimes(1)
     expect(onRequestRemove).not.toHaveBeenCalled()
@@ -255,5 +256,23 @@ describe('MemberProfileModal sectioned editor', () => {
     // mutation. Wait for the mock to be invoked.
     await vi.waitFor(() => expect(saveMemberProfile).toHaveBeenCalledTimes(1))
     expect(saveMemberProfile.mock.calls[0][1]).toMatchObject({ displayName: 'Anna Nová' })
+  })
+
+  it('can save pending profile edits from another section', async () => {
+    render(<MemberProfileModal
+      member={childWithLogin}
+      currentMember={admin}
+      refreshMembers={vi.fn().mockResolvedValue(undefined)}
+      childAccount={activeAccount}
+      onAccountChanged={vi.fn()}
+      onClose={vi.fn()}
+    />)
+
+    fireEvent.change(screen.getByLabelText(t.family.nameLabel), { target: { value: 'Alexandr' } })
+    fireEvent.click(screen.getByRole('button', { name: editor.sectionAccess }))
+    fireEvent.click(screen.getByRole('button', { name: t.family.saveProfile }))
+
+    await vi.waitFor(() => expect(saveMemberProfile).toHaveBeenCalledTimes(1))
+    expect(saveMemberProfile.mock.calls[0][1]).toMatchObject({ displayName: 'Alexandr' })
   })
 })
