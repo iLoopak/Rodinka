@@ -108,7 +108,7 @@ export function FamilyMembersProvider({ familyId, children }: ProviderProps) {
       const { data, error } = await supabase
         .from('members')
         .insert({ family_id: familyId, display_name: displayName, role: 'child', color_key: colorKey })
-        .select('id, family_id, display_name, role, user_id, birth_date, color_key, avatar_path, grammatical_gender, vocative_name')
+        .select('id, family_id, display_name, role, user_id, birth_date, color_key, custom_color, avatar_path, grammatical_gender, vocative_name')
         .single()
       if (error) throw friendly(error)
       if (avatarFile) {

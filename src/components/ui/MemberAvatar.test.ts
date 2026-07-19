@@ -34,4 +34,12 @@ describe('MemberAvatar', () => {
     expect(html).toContain('border-color:var(--member-color-main)')
     expect(html).toContain('has-photo')
   })
+  it('uses custom colors from the member snapshot after reload', () => {
+    const html = renderToStaticMarkup(createElement(MemberAvatar, {
+      member: { ...member, color_key: null, custom_color: '#336699' },
+      forceInitials: true,
+    }))
+    expect(html).toContain('--member-color-main:#336699')
+  })
+
 })

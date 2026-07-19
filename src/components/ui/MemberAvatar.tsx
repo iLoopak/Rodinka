@@ -3,7 +3,7 @@ import { memberColorStyle, memberInitials } from '../../utils/memberColor'
 import type { FamilyMember } from '../../hooks/useFamilyMembers'
 
 interface Props {
-  member: Pick<FamilyMember, 'id' | 'display_name' | 'color_key' | 'avatar_url'> | null | undefined
+  member: Pick<FamilyMember, 'id' | 'display_name' | 'color_key' | 'custom_color' | 'avatar_url'> | null | undefined
   size?: number
   decorative?: boolean
   forceInitials?: boolean
