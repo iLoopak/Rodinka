@@ -371,7 +371,7 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
         .from('messages')
         .select(MESSAGE_SELECT_COLUMNS)
         .eq('conversation_id', conversationId)
-        .lt('created_at', oldest.created_at)
+        .or(`created_at.lt.${oldest.created_at},and(created_at.eq.${oldest.created_at},id.lt.${oldest.id})`)
         .order('created_at', { ascending: false })
         .order('id', { ascending: false })
         .limit(OLDER_PAGE_SIZE)
