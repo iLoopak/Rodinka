@@ -99,7 +99,7 @@ export default function App() {
 function OfflineStartupGate({ children, networkStatus, connectionError, refresh }: { children: ReactNode; networkStatus: ReturnType<typeof useNetworkStatus>; connectionError: string | null; refresh: () => Promise<void> }) {
   const { path, navigate } = useRouter()
   const { calendarHasUsableData } = useCalendarOffline()
-  const showFallback = networkStatus === 'offline' && Boolean(connectionError) && path !== '/shopping' && path !== '/calendar'
+  const showFallback = networkStatus === 'offline' && Boolean(connectionError) && path !== '/shopping' && path !== '/calendar' && path !== '/family-jump'
   if (showFallback) {
     return <OfflineFallbackScreen
       canOpenShopping
