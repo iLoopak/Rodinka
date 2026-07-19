@@ -1,5 +1,5 @@
 import { GAME_CONFIG } from '../config/gameConfig'
-import type { JumpDebugSnapshot, JumpGameState, JumpInput, JumpScoreMarker, JumpViewport } from '../types/game'
+import type { JumpDebugSnapshot, JumpGameState, JumpInput, JumpPlatform, JumpScoreMarker, JumpViewport } from '../types/game'
 import { createInitialGameState, stepGame } from './core'
 
 interface EngineCopy {
@@ -11,7 +11,6 @@ interface EngineCopy {
 interface FamilyJumpEngineOptions {
   canvas: HTMLCanvasElement
   color: string
-  softColor: string
   markers: JumpScoreMarker[]
   copy: EngineCopy
   reducedMotion: boolean
@@ -79,6 +78,7 @@ export class FamilyJumpEngine {
   }
 
   setControl(side: 'left' | 'right', active: boolean) {
+    if (active && (this.paused || this.finished || this.destroyed)) return
     this.input[side] = active
   }
 
@@ -260,13 +260,13 @@ export class FamilyJumpEngine {
   private drawBackground(context: CanvasRenderingContext2D, state: JumpGameState) {
     const { width, height } = this.viewport
     context.save()
-    context.fillStyle = 'rgba(255,255,255,.42)'
-    const drift = this.options.reducedMotion ? 0 : state.climbedPixels * 0.08
-    for (let index = 0; index < 10; index += 1) {
-      const x = (index * 97 + 31) % width
-      const y = ((index * 149 + drift) % (height + 140)) - 70
+    context.fillStyle = 'rgba(255,255,255,.2)'
+    const drift = this.options.reducedMotion ? 0 : state.climbedPixels * 0.025
+    for (let index = 0; index < 8; index += 1) {
+      const x = (index * 113 + 31) % width
+      const y = ((index * 163 + drift) % (height + 100)) - 50
       context.beginPath()
-      context.arc(x, y, 16 + index % 3 * 7, 0, Math.PI * 2)
+      context.arc(x, y, 8 + index % 3 * 4, 0, Math.PI * 2)
       context.fill()
     }
     context.restore()
@@ -277,7 +277,7 @@ export class FamilyJumpEngine {
     for (const marker of this.options.markers) {
       if (marker.score <= 0) continue
       const y = threshold - (marker.score - state.score) / GAME_CONFIG.metersPerPixel
-      if (y < -30 || y > this.viewport.height + 30) continue
+      if (y < GAME_CONFIG.hudSafeHeight + 28 || y > this.viewport.height + 30) continue
       const beaten = this.beatenMarkers.has(marker.memberId)
       context.save()
       context.globalAlpha = beaten ? 0.52 : 0.9
@@ -291,32 +291,59 @@ export class FamilyJumpEngine {
       context.setLineDash([])
       context.font = '700 12px Manrope, sans-serif'
       const label = this.options.copy.marker(marker.name, marker.score)
-      const labelWidth = context.measureText(label).width + 18
-      roundedRect(context, 12, y - 29, labelWidth, 24, 12)
+      const labelWidth = Math.min(this.viewport.width - 24, context.measureText(label).width + 18)
+      const labelPosition = this.markerLabelPosition(state, y, labelWidth)
+      roundedRect(context, labelPosition.x, labelPosition.y, labelWidth, 24, 12)
       context.fillStyle = marker.color
       context.fill()
-      context.fillStyle = '#243128'
-      context.fillText(label, 21, y - 12)
+      context.fillStyle = marker.foreground
+      context.fillText(label, labelPosition.x + 9, labelPosition.y + 17, labelWidth - 18)
       context.restore()
     }
+  }
+
+  private markerLabelPosition(state: JumpGameState, markerY: number, labelWidth: number) {
+    const left = 12
+    const right = Math.max(12, this.viewport.width - labelWidth - 12)
+    const candidates = [
+      { x: left, y: markerY - 29 },
+      { x: right, y: markerY - 29 },
+      { x: left, y: markerY + 5 },
+      { x: right, y: markerY + 5 },
+    ]
+    const overlapsPlatform = ({ x, y }: { x: number; y: number }) => state.platforms.some((platform) =>
+      platform.x < x + labelWidth
+      && platform.x + platform.width > x
+      && platform.y < y + 24
+      && platform.y + platform.height > y)
+    return candidates.find((candidate) => !overlapsPlatform(candidate)) ?? candidates[0]
   }
 
   private drawPlatforms(context: CanvasRenderingContext2D, state: JumpGameState) {
     context.save()
     for (const platform of state.platforms) {
       if (platform.y < -30 || platform.y > this.viewport.height + 30) continue
+      const impact = this.options.reducedMotion ? 0 : platform.impactAnimation
+      const drawWidth = platform.width * (1 + impact * 0.04)
+      const drawHeight = platform.height * (1 - impact * 0.12)
+      const drawX = platform.x - (drawWidth - platform.width) / 2
+      const drawY = platform.y + impact * 2.5
       context.fillStyle = 'rgba(58, 70, 61, .12)'
-      roundedRect(context, platform.x + 2, platform.y + 6, platform.width, platform.height, 8)
+      roundedRect(context, drawX + 2, drawY + 6, drawWidth, drawHeight, 8)
       context.fill()
       context.fillStyle = '#FFFFFF'
-      roundedRect(context, platform.x, platform.y, platform.width, platform.height, 8)
+      roundedRect(context, drawX, drawY, drawWidth, drawHeight, 8)
       context.fill()
-      context.strokeStyle = 'rgba(79, 128, 104, .34)'
+      context.strokeStyle = 'rgba(79, 128, 104, .46)'
       context.lineWidth = 2
       context.stroke()
-      context.fillStyle = 'rgba(139, 198, 173, .35)'
-      roundedRect(context, platform.x + 8, platform.y + 3, platform.width - 16, 4, 3)
-      context.fill()
+      context.strokeStyle = 'rgba(79, 128, 104, .72)'
+      context.lineWidth = 2.5
+      context.lineCap = 'round'
+      context.beginPath()
+      context.moveTo(drawX + 9, drawY + 3)
+      context.lineTo(drawX + drawWidth - 9, drawY + 3)
+      context.stroke()
       if (this.debug) {
         context.strokeStyle = '#9C3E3E'
         context.lineWidth = 1
@@ -336,21 +363,39 @@ export class FamilyJumpEngine {
     const scaleX = 1 + squash - stretch * 0.4
     const scaleY = 1 - squash + stretch
     const tilt = motionScale * Math.max(-0.18, Math.min(0.18, player.velocityX / 1_700))
+    const playerBottom = player.y + player.height
+    let supportingPlatform: JumpPlatform | undefined
+    for (const platform of state.platforms) {
+      const belowPlayer = platform.y >= playerBottom - 1
+      const horizontallyNear = platform.x < player.x + player.width + 18
+        && platform.x + platform.width > player.x - 18
+      if (belowPlayer && horizontallyNear && (!supportingPlatform || platform.y < supportingPlatform.y)) {
+        supportingPlatform = platform
+      }
+    }
+    const shadowDistance = Math.min(180, Math.max(0, (supportingPlatform?.y ?? playerBottom + 180) - playerBottom))
+    const shadowHeight = shadowDistance / 180
+    const shadowRadiusX = player.width * (0.42 - shadowHeight * 0.18)
+    const shadowOpacity = 0.18 - shadowHeight * 0.11
 
     context.save()
-    context.fillStyle = 'rgba(36,49,40,.16)'
+    context.fillStyle = `rgba(36,49,40,${shadowOpacity})`
     context.beginPath()
-    context.ellipse(centerX, player.y + player.height + 7, 17, 5, 0, 0, Math.PI * 2)
+    context.ellipse(
+      centerX,
+      supportingPlatform ? supportingPlatform.y + 3 : playerBottom + 10,
+      shadowRadiusX,
+      Math.max(2.5, shadowRadiusX * 0.28),
+      0,
+      0,
+      Math.PI * 2,
+    )
     context.fill()
     context.translate(centerX, centerY)
     context.rotate(tilt)
     context.scale(scaleX, scaleY)
     context.fillStyle = this.options.color
     roundedRect(context, -player.width / 2, -player.height / 2, player.width, player.height, 17)
-    context.fill()
-    context.fillStyle = this.options.softColor
-    context.beginPath()
-    context.ellipse(0, 5, 12, 10, 0, 0, Math.PI * 2)
     context.fill()
     context.fillStyle = '#243128'
     context.beginPath()
@@ -383,14 +428,15 @@ export class FamilyJumpEngine {
     context.font = '800 14px Manrope, sans-serif'
     const width = Math.min(this.viewport.width - 32, context.measureText(message).width + 30)
     const x = (this.viewport.width - width) / 2
-    roundedRect(context, x, 86, width, 42, 20)
+    const y = GAME_CONFIG.hudSafeHeight + 8
+    roundedRect(context, x, y, width, 42, 20)
     context.fillStyle = 'rgba(255,253,248,.96)'
     context.fill()
     context.strokeStyle = 'rgba(169,71,56,.25)'
     context.stroke()
     context.fillStyle = '#243128'
     context.textAlign = 'center'
-    context.fillText(message, this.viewport.width / 2, 112)
+    context.fillText(message, this.viewport.width / 2, y + 26)
     context.restore()
   }
 

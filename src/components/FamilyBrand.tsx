@@ -28,27 +28,31 @@ export function FamilyBrand({
 }: FamilyLogoProps) {
   const label = formatFamilyBrand(loading ? null : familyName, t.appName)
 
-  const content = <>
-    <FamilyMark
-      variant="dynamic"
-      members={members}
-      size={38}
-      loading={markLoading}
-      activeMemberId={activeMemberId}
-      animationMode={animationMode}
-    />
-    <span className="brand-lockup family-brand-lockup">
-      <span className="wordmark">{label.productName}</span>
-      {label.householdName && <span className="household-name" title={label.householdName}>{label.householdName}</span>}
-    </span>
-  </>
+  const mark = <FamilyMark
+    variant="dynamic"
+    members={members}
+    size={38}
+    loading={markLoading}
+    activeMemberId={activeMemberId}
+    animationMode={animationMode}
+  />
+  const lockup = <span className="brand-lockup family-brand-lockup">
+    <span className="wordmark">{label.productName}</span>
+    {label.householdName && <span className="household-name" title={label.householdName}>{label.householdName}</span>}
+  </span>
 
-  if (onOpenGame) return <button
-    type="button"
-    className="brand family-brand-game-button"
-    aria-label={openGameLabel ?? label.accessibleLabel}
-    onClick={onOpenGame}
-  >{content}</button>
+  if (onOpenGame) return <div className="brand">
+    <button
+      type="button"
+      className="family-brand-game-button"
+      aria-label={openGameLabel ?? label.accessibleLabel}
+      onClick={onOpenGame}
+    >{mark}</button>
+    {lockup}
+  </div>
 
-  return <div className="brand" aria-label={label.accessibleLabel}>{content}</div>
+  return <div className="brand" aria-label={label.accessibleLabel}>
+    {mark}
+    {lockup}
+  </div>
 }

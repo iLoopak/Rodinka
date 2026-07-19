@@ -10,6 +10,7 @@ import { familyJumpCopy, type FamilyJumpCopy } from '../copy'
 import { FamilyJumpEngine } from '../game/FamilyJumpEngine'
 import { useFamilyJumpRecords, type FamilyJumpSyncStatus } from '../hooks/useFamilyJumpRecords'
 import { sortFamilyJumpLeaderboard, type FamilyJumpRecordMap } from '../storage/records'
+import { recordFamilyJumpRun, type FamilyJumpMemberRunStats } from '../storage/runStats'
 import type { JumpDebugSnapshot, JumpScoreMarker } from '../types/game'
 import '../familyJump.css'
 
@@ -19,6 +20,7 @@ interface CompletedRun {
   score: number
   newPersonalBest: boolean
   overtakenNames: string[]
+  stats: FamilyJumpMemberRunStats
 }
 
 export function FamilyJumpScreen() {
@@ -55,9 +57,15 @@ export function FamilyJumpScreen() {
       .filter((member) => member.id !== selectedMember.id && (records[member.id] ?? 0) > 0 && score > records[member.id])
       .map((member) => member.display_name)
     saveBestScore(selectedMember.id, score)
-    setCompletedRun({ score, newPersonalBest: score > previousBest, overtakenNames })
+    const nextRunStats = recordFamilyJumpRun(familyId, selectedMember.id, score)
+    setCompletedRun({
+      score,
+      newPersonalBest: score > previousBest,
+      overtakenNames,
+      stats: nextRunStats[selectedMember.id],
+    })
     setPhase('game-over')
-  }, [members, records, saveBestScore, selectedMember])
+  }, [familyId, members, records, saveBestScore, selectedMember])
 
   if (phase === 'playing') {
     return <FamilyJumpGame
@@ -174,12 +182,16 @@ function FamilyJumpGame({ member, members, records, copy, onExit, onGameOver }: 
   const colorTheme = useMemo(() => getMemberColorTheme(member), [member])
   const markers = useMemo<JumpScoreMarker[]>(() => members
     .filter((candidate) => candidate.id !== member.id && (records[candidate.id] ?? 0) > 0)
-    .map((candidate) => ({
-      memberId: candidate.id,
-      name: candidate.display_name,
-      score: records[candidate.id],
-      color: getMemberColorTheme(candidate).primary,
-    })), [member.id, members, records])
+    .map((candidate) => {
+      const theme = getMemberColorTheme(candidate)
+      return {
+        memberId: candidate.id,
+        name: candidate.display_name,
+        score: records[candidate.id],
+        color: theme.primary,
+        foreground: theme.foreground,
+      }
+    }), [member.id, members, records])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -187,7 +199,6 @@ function FamilyJumpGame({ member, members, records, copy, onExit, onGameOver }: 
     const engine = new FamilyJumpEngine({
       canvas,
       color: colorTheme.primary,
-      softColor: colorTheme.soft,
       markers,
       copy,
       reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
@@ -204,10 +215,31 @@ function FamilyJumpGame({ member, members, records, copy, onExit, onGameOver }: 
       engine.destroy()
       engineRef.current = null
     }
-  }, [colorTheme.primary, colorTheme.soft, copy, markers, onGameOver, records])
+  }, [colorTheme.primary, copy, markers, onGameOver, records])
+
+  const clearPointers = useCallback(() => {
+    leftPointers.current.clear()
+    rightPointers.current.clear()
+    engineRef.current?.setControl('left', false)
+    engineRef.current?.setControl('right', false)
+  }, [])
+
+  useEffect(() => {
+    const releaseOnVisibilityChange = () => {
+      if (document.hidden) clearPointers()
+    }
+    window.addEventListener('blur', clearPointers)
+    document.addEventListener('visibilitychange', releaseOnVisibilityChange)
+    return () => {
+      window.removeEventListener('blur', clearPointers)
+      document.removeEventListener('visibilitychange', releaseOnVisibilityChange)
+      clearPointers()
+    }
+  }, [clearPointers])
 
   function press(side: 'left' | 'right', event: ReactPointerEvent<HTMLButtonElement>) {
     event.preventDefault()
+    if (paused) return
     const pointers = side === 'left' ? leftPointers.current : rightPointers.current
     pointers.add(event.pointerId)
     try { event.currentTarget.setPointerCapture(event.pointerId) } catch { /* Capture can fail if the pointer already ended. */ }
@@ -220,14 +252,25 @@ function FamilyJumpGame({ member, members, records, copy, onExit, onGameOver }: 
     if (pointers.size === 0) engineRef.current?.setControl(side, false)
   }
 
-  return <section className="family-jump-screen family-jump-playing" aria-label={copy.title}>
+  const togglePause = () => {
+    clearPointers()
+    engineRef.current?.togglePause()
+  }
+
+  return <section
+    className="family-jump-screen family-jump-playing"
+    aria-label={copy.title}
+    onContextMenu={(event) => event.preventDefault()}
+    onDragStart={(event) => event.preventDefault()}
+  >
     <canvas ref={canvasRef} className="family-jump-canvas" role="img" aria-label={copy.canvasLabel} />
+    <div className="family-jump-hud-shield" aria-hidden="true" />
     <header className="family-jump-game-toolbar">
       <button type="button" className="family-jump-toolbar-button" onClick={onExit} aria-label={copy.backToApp}>←</button>
       <div className="family-jump-score" aria-label={`${copy.scoreLabel}: ${copy.score(score)}`}>
         <small>{copy.scoreLabel}</small><strong>{copy.score(score)}</strong>
       </div>
-      <button type="button" className="family-jump-toolbar-button" onClick={() => engineRef.current?.togglePause()} aria-label={paused ? copy.resume : copy.pause}>
+      <button type="button" className="family-jump-toolbar-button" onClick={togglePause} aria-label={paused ? copy.resume : copy.pause}>
         <span aria-hidden="true">{paused ? '▶' : 'Ⅱ'}</span>
       </button>
     </header>
@@ -241,7 +284,7 @@ function FamilyJumpGame({ member, members, records, copy, onExit, onGameOver }: 
         onPointerUp={(event) => release('left', event)}
         onPointerCancel={(event) => release('left', event)}
         onLostPointerCapture={(event) => release('left', event)}
-        onContextMenu={(event) => event.preventDefault()}
+        onPointerLeave={(event) => release('left', event)}
       ><span aria-hidden="true">‹</span></button>
       <button
         type="button"
@@ -251,13 +294,13 @@ function FamilyJumpGame({ member, members, records, copy, onExit, onGameOver }: 
         onPointerUp={(event) => release('right', event)}
         onPointerCancel={(event) => release('right', event)}
         onLostPointerCapture={(event) => release('right', event)}
-        onContextMenu={(event) => event.preventDefault()}
+        onPointerLeave={(event) => release('right', event)}
       ><span aria-hidden="true">›</span></button>
     </div>
 
     {paused && <div className="family-jump-pause-card" role="status">
       <strong>{copy.paused}</strong>
-      <button type="button" onClick={() => engineRef.current?.togglePause()}>{copy.resume}</button>
+      <button type="button" onClick={togglePause}>{copy.resume}</button>
     </div>}
 
     {import.meta.env.DEV && <div className="family-jump-debug-controls">
@@ -312,6 +355,11 @@ function GameOverPanel({ copy, member, result, leaderboard, onRestart, onChangeP
     <h1 id="family-jump-title">{copy.score(result.score)}</h1>
     <p>{copy.reached} · #{position}</p>
     {result.newPersonalBest && <p className="family-jump-record-celebration" role="status">{copy.newPersonal}</p>}
+    <div className="family-jump-run-stats" aria-label={copy.localStats}>
+      <span><small>{copy.lastResult}</small><strong>{copy.score(result.stats.lastScore)}</strong></span>
+      <span><small>{copy.todayBest}</small><strong>{copy.score(result.stats.todayBest)}</strong></span>
+      <span><small>{copy.attempts}</small><strong>{result.stats.attempts}</strong></span>
+    </div>
     <section className="family-jump-card family-jump-overtaken">
       <h2>{copy.overtaken}</h2>
       {result.overtakenNames.length > 0

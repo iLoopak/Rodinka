@@ -26,6 +26,7 @@ React řídí vstup, výběr člena, pauzu, game over a leaderboard. Aktivní he
 - Kolize se vyhodnocuje jen při pádu a přes průsečík spodní hrany postavy s horní hranou stabilní plošinky. Po dopadu se postava položí přesně na plošinku a ihned dostane nový impuls.
 - Kamera při překročení prahu vrátí hráče na práh a posune svět dolů. Součet těchto posunů je nezávislý na FPS a převádí se na metry.
 - Generátor navazuje každou povinnou plošinku na poslední. Svislý i vodorovný krok je omezen dosahem nakonfigurovaného skoku; doplňkové plošinky nejsou potřeba pro hratelnost. Typ plošinky je už nyní diskriminovaný (`stable`) kvůli budoucím variantám.
+- První výškové úseky používají menší mezery. Povolený rozsah se plynule zvětšuje do 1 200 m a generátor po nejvýše dvou krocích stejným směrem vynutí změnu, aniž by vytvářel pravidelný cikcak.
 - Horizontální pozice postavy se wrapuje přes oba okraje viewportu.
 
 ## Ovládání a životní cyklus
@@ -34,6 +35,15 @@ React řídí vstup, výběr člena, pauzu, game over a leaderboard. Aktivní he
 - Desktop používá `ArrowLeft`, `ArrowRight`, `A`, `D`; `P` pozastaví hru.
 - Změna viditelnosti stránku automaticky pozastaví. Unmount zruší RAF, observer i všechny listenery.
 - Fullscreen view respektuje safe-area insety a `100dvh`. Důležité stavy a skóre mají živý DOM text mimo canvas.
+- Celá levá a pravá polovina herní plochy pod bezpečnou HUD zónou funguje jako dotykové ovládání. Spodní šipky jsou pouze nápověda; blur, skrytí aplikace i ztráta pointer capture vždy uvolní vstup.
+
+## V1 vizuální pravidla
+
+- Figurky v menu i canvasu používají jako jedinou barevnou plochu přesnou primární accent barvu člena. Obličej, nožičky a dynamický stín jsou neutrální.
+- Canvasový hráč má hitbox `46 × 53 px`, shodný se základním viditelným tělem. Squash, stretch, náklon a reakce platformy jsou pouze render transformace a při `prefers-reduced-motion` se vypnou.
+- Platformy mají zvýrazněnou aktivní horní hranu. Dekorace jsou menší, méně kontrastní a pohybují se pomaleji než herní objekty.
+- Horní HUD má samostatnou safe-area masku; herní objekty mohou fyzicky pokračovat pod ní, ale nejsou přes ovládací prvky vidět a HUD nemění fyziku.
+- Z běžné aplikace otevírá hru pouze 44px přístupné tlačítko obalující dynamické logo. Wordmark, název rodiny ani okolní header nejsou součástí hit targetu.
 
 ## Rekordy a synchronizace
 
@@ -55,6 +65,8 @@ family_game_scores(
 Migrace `20260720140000_family_jump_scores.sql` povoluje čtení pouze členům stejné rodiny a nepovoluje žádné přímé klientské zápisy. Zápis vede přes idempotentní RPC `record_family_game_score`, která ověřuje aktivního přihlášeného člena, aktivního cílového hráče stejné rodiny a monotónně ukládá pouze vyšší skóre.
 
 Lokální výsledek zůstává okamžitým zdrojem UI i outboxem: při otevření hry a po dokončení runu se serverová a lokální mapa sloučí pravidlem `max(local, server)`. Vyšší lokální hodnoty se odešlou RPC a vyšší serverové hodnoty se uloží do lokální cache. Při offline stavu se nic neztratí a další přechod online vyvolá nový pokus. Aktivní herní run synchronizaci nespouští a při jeho startu zruší rozpracovaný čtecí požadavek.
+
+Vedle osobního rekordu se pouze lokálně a bez historie ukládá poslední výsledek, nejlepší dnešní výsledek a celkový počet pokusů každého člena. Tyto souhrnné údaje se do Supabase neposílají.
 
 ## Ověření
 
