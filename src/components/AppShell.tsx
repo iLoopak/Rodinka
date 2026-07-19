@@ -52,7 +52,7 @@ export function AppShell() {
     connectionInterrupted: browserOffline || offlineMode || realtimeInterrupted,
     connectionReady: !browserOffline && !offlineMode && realtimeStatus === 'connected',
   })
-  const offlineBlocked = offlineMode && path !== '/shopping' && path !== '/calendar'
+  const offlineBlocked = offlineMode && path !== '/' && path !== '/shopping' && path !== '/calendar'
   const routeAllowed = capabilities.accessRoute(path)
 
   return (

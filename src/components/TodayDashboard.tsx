@@ -47,6 +47,13 @@ export function TodayDashboard() {
     shoppingLoading,
     shoppingHasUsableData,
     shoppingSyncStatus,
+    shoppingLastSyncedAt,
+    pendingShoppingChanges,
+    calendarSyncStatus,
+    calendarLastSyncedAt,
+    pendingCalendarChanges,
+    hasOfflineCalendarSnapshot,
+    usingOfflineCalendarSnapshot,
     familyHeroImageUrl,
     addChore,
     updateChore,
@@ -125,6 +132,14 @@ export function TodayDashboard() {
   return (
     <>
       <div className="today-dashboard">
+      <TodayOfflineStatus
+        calendarSyncStatus={calendarSyncStatus}
+        shoppingSyncStatus={shoppingSyncStatus}
+        calendarLastSyncedAt={calendarLastSyncedAt}
+        shoppingLastSyncedAt={shoppingLastSyncedAt}
+        pendingChanges={pendingCalendarChanges + pendingShoppingChanges}
+      />
+
       <TodayHeader
         name={addressName || null}
         date={today}
@@ -176,7 +191,7 @@ export function TodayDashboard() {
         )}
       </section>
 
-      {isParentOrAdmin && <TodayQuickTodoWidget
+      {isParentOrAdmin && (hasOfflineCalendarSnapshot || !usingOfflineCalendarSnapshot) && <TodayQuickTodoWidget
         tasks={quickTodos}
         onAdd={(title) => addChore(createQuickTaskInput(title))}
         onComplete={(taskId) => markDone(taskId)}
@@ -236,6 +251,30 @@ interface HeaderProps {
   itemCount: number
   familyHeroImageUrl: string | null
   onAdd?: () => void
+}
+
+type TodaySyncStatus = 'offline' | 'syncing' | 'synced' | 'error'
+
+interface TodayOfflineStatusProps {
+  calendarSyncStatus: TodaySyncStatus
+  shoppingSyncStatus: TodaySyncStatus
+  calendarLastSyncedAt: string | null
+  shoppingLastSyncedAt: string | null
+  pendingChanges: number
+}
+
+function TodayOfflineStatus({ calendarSyncStatus, shoppingSyncStatus, calendarLastSyncedAt, shoppingLastSyncedAt, pendingChanges }: TodayOfflineStatusProps) {
+  const offline = calendarSyncStatus === 'offline' || shoppingSyncStatus === 'offline' || typeof navigator !== 'undefined' && !navigator.onLine
+  const syncing = calendarSyncStatus === 'syncing' || shoppingSyncStatus === 'syncing'
+  if (!offline && !syncing) return null
+  const lastSyncedAt = [calendarLastSyncedAt, shoppingLastSyncedAt].filter(Boolean).sort().at(-1) ?? null
+  const lastSynced = lastSyncedAt ? new Date(lastSyncedAt) : null
+  const label = syncing ? t.today.syncing(pendingChanges) : offline ? t.today.offlineMode : ''
+  return <div className={`today-offline-status${syncing ? ' is-syncing' : ' is-offline'}`} role="status">
+    <span className="shopping-sync-status-dot" aria-hidden="true" />
+    <span>{label}</span>
+    {lastSynced && <span>{t.today.lastUpdated(formatFullDate(lastSynced.toISOString().slice(0, 10)))}</span>}
+  </div>
 }
 
 function TodayHeader({ name, date, itemCount, familyHeroImageUrl, onAdd }: HeaderProps) {

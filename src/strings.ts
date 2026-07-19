@@ -197,6 +197,10 @@ export const strings = {
       attentionAllowanceReason: (date: string) => `Kapesné čeká na připsání nebo přeskočení · ${date}`,
       attentionVoteAction: 'Vyberte své preference',
       resolveAction: 'Vyřešit',
+      offlineMode: 'Offline režim',
+      lastUpdated: (value: string) => `Poslední aktualizace ${value}`,
+      syncing: (count: number) => count > 0 ? `Synchronizuji změny (${count})…` : 'Synchronizuji změny…',
+      offlineModuleUnavailable: 'Tento modul zatím není dostupný offline.',
     },
     planner: {
       title: 'Plánovat',
@@ -1771,6 +1775,10 @@ export const strings = {
       attentionAllowanceReason: (date: string) => `Allowance is waiting to be credited or skipped · ${date}`,
       attentionVoteAction: 'Choose your preferences',
       resolveAction: 'Resolve',
+      offlineMode: 'Offline mode',
+      lastUpdated: (value: string) => `Last updated ${value}`,
+      syncing: (count: number) => count > 0 ? `Synchronizing changes (${count})…` : 'Synchronizing changes…',
+      offlineModuleUnavailable: 'This module is not available offline yet.',
     },
     planner: {
       title: 'Plan',

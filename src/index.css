@@ -8130,3 +8130,22 @@ button.member-color-option {
   border-color: var(--member-border);
   color: var(--member-foreground);
 }
+
+.today-offline-status {
+  align-items: center;
+  background: var(--state-offline-soft);
+  border: 1px solid rgba(108, 90, 50, .22);
+  border-radius: 999px;
+  color: var(--state-offline);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 4px 14px;
+  padding: 8px 12px;
+  width: fit-content;
+}
+
+.today-offline-status.is-syncing {
+  background: var(--state-warning-soft);
+  color: var(--state-warning);
+}
