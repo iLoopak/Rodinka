@@ -16,7 +16,7 @@ const emptySnapshot: ShoppingRepositorySnapshot = {
   items: [],
   pendingItemIds: new Set(),
   pendingCount: 0,
-  status: typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'synced',
+  status: 'synced',
   lastSuccessfulSyncAt: null,
   error: null,
 }
@@ -43,7 +43,7 @@ export function useShoppingDataSource(familyId: string | undefined, currentMembe
     if (!familyId || !currentMemberId) {
       void repositoryRef.current?.stop()
       repositoryRef.current = null
-      setSnapshot({ ...emptySnapshot, ready: true, status: 'offline' })
+      setSnapshot({ ...emptySnapshot, ready: true, status: 'synced' })
       setMealIngredients([])
       return
     }

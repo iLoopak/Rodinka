@@ -18,6 +18,7 @@ import { UnlinkedChildAccountScreen } from './components/UnlinkedChildAccountScr
 import { CreateRecordProvider } from './context/create-record/CreateRecordContext'
 import { useCalendarOffline } from './context/calendar/CalendarOfflineContext'
 import { resolveAuthRoutingState } from './auth/authRoutingState'
+import { useNetworkStatus } from './network/useNetworkStatus'
 
 function AppLoading({ label }: { label: string }) {
   return <div className="loading app-loading"><FamilyMark variant="static" size={32} />{label}</div>
@@ -25,6 +26,7 @@ function AppLoading({ label }: { label: string }) {
 
 export default function App() {
   useLanguage()
+  const networkStatus = useNetworkStatus()
   const { session } = useSession()
   const family = useFamily(session?.user.id)
   const routing = resolveAuthRoutingState({ session, family })
@@ -42,14 +44,17 @@ export default function App() {
   }
 
   if (routing.status === 'userDataError') {
-    return <OfflineFallbackScreen
-      canOpenShopping={false}
-      canOpenCalendar={false}
-      deviceOffline={typeof navigator !== 'undefined' && !navigator.onLine}
-      onOpenShopping={() => { window.history.pushState(null, '', '/shopping') }}
-      onOpenCalendar={() => { window.history.pushState(null, '', '/calendar') }}
-      onRetry={family.refresh}
-    />
+    if (networkStatus === 'offline') {
+      return <OfflineFallbackScreen
+        canOpenShopping={false}
+        canOpenCalendar={false}
+        deviceOffline
+        onOpenShopping={() => { window.history.pushState(null, '', '/shopping') }}
+        onOpenCalendar={() => { window.history.pushState(null, '', '/calendar') }}
+        onRetry={family.refresh}
+      />
+    }
+    return <AppLoading label={t.loading.family} />
   }
 
   if (routing.status === 'authenticatedWithoutFamily') {
@@ -63,7 +68,7 @@ export default function App() {
         <ReminderProvider>
           <PushProvider>
             <CreateRecordProvider>
-              <OfflineStartupGate connectionError={routing.connectionError} refresh={family.refresh}>
+              <OfflineStartupGate networkStatus={networkStatus} connectionError={routing.connectionError} refresh={family.refresh}>
                 <AppShell />
               </OfflineStartupGate>
             </CreateRecordProvider>
@@ -74,15 +79,15 @@ export default function App() {
   )
 }
 
-function OfflineStartupGate({ children, connectionError, refresh }: { children: ReactNode; connectionError: string | null; refresh: () => Promise<void> }) {
+function OfflineStartupGate({ children, networkStatus, connectionError, refresh }: { children: ReactNode; networkStatus: ReturnType<typeof useNetworkStatus>; connectionError: string | null; refresh: () => Promise<void> }) {
   const { path, navigate } = useRouter()
   const { calendarHasUsableData } = useCalendarOffline()
-  const showFallback = Boolean(connectionError) && path !== '/shopping' && path !== '/calendar'
+  const showFallback = networkStatus === 'offline' && Boolean(connectionError) && path !== '/shopping' && path !== '/calendar'
   if (showFallback) {
     return <OfflineFallbackScreen
       canOpenShopping
       canOpenCalendar={calendarHasUsableData}
-      deviceOffline={typeof navigator !== 'undefined' && !navigator.onLine}
+      deviceOffline={networkStatus === 'offline'}
       onOpenShopping={() => navigate('/shopping')}
       onOpenCalendar={() => navigate('/calendar')}
       onRetry={refresh}

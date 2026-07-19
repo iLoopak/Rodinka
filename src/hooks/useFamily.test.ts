@@ -82,6 +82,18 @@ describe('useFamily membership scope', () => {
     expect(result.current.connectionError).toBe('network unavailable')
   })
 
+
+  it('does not treat auth or permission errors as offline-cache access', async () => {
+    mocks.loadFamilyIdentity.mockResolvedValue(member)
+    mocks.maybeSingle.mockResolvedValue({ data: null, error: new Error('401 Unauthorized') })
+    const { result } = renderHook(() => useFamily('user-1'))
+
+    await waitFor(() => expect(result.current.status).toBe('error'))
+    expect(result.current.member).toBeNull()
+    expect(result.current.connectionError).toBeNull()
+    expect(result.current.dataError).toBe('401 Unauthorized')
+  })
+
   it('never exposes a previous user membership after the session changes', async () => {
     mocks.maybeSingle.mockResolvedValueOnce({ data: member, error: null })
     const secondQuery = deferred<{ data: null; error: null }>()
