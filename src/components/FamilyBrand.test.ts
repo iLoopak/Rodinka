@@ -62,4 +62,22 @@ describe('FamilyBrand', () => {
     expect(html).toContain('data-animation-mode="member-focus"')
     expect(html).toContain('class="brand-lockup family-brand-lockup"')
   })
+
+  it('makes only the dynamic mark interactive when opening the game', () => {
+    const html = renderToStaticMarkup(createElement(FamilyBrand, {
+      familyName: 'Novákovi',
+      members: [firstMember, secondMember],
+      onOpenGame: () => undefined,
+      openGameLabel: 'Otevřít Rodinka Jump',
+    }))
+    const buttonStart = html.indexOf('<button')
+    const buttonEnd = html.indexOf('</button>')
+    const lockupStart = html.indexOf('class="brand-lockup family-brand-lockup"')
+    expect(html).toContain('class="family-brand-game-button"')
+    expect(html).toContain('aria-label="Otevřít Rodinka Jump"')
+    expect(buttonStart).toBeGreaterThan(-1)
+    expect(buttonEnd).toBeGreaterThan(buttonStart)
+    expect(lockupStart).toBeGreaterThan(buttonEnd)
+    expect(html.slice(buttonStart, buttonEnd)).not.toContain('wordmark')
+  })
 })

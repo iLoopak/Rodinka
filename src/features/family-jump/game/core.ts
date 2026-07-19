@@ -2,6 +2,13 @@ import { GAME_CONFIG } from '../config/gameConfig'
 import type { JumpGameState, JumpInput, JumpPlatform, JumpPlayer, JumpViewport } from '../types/game'
 
 export type RandomSource = () => number
+export type PlatformDirection = -1 | 0 | 1
+
+interface PlatformGenerationOptions {
+  progress?: number
+  previousDirection?: PlatformDirection
+  sameDirectionCount?: number
+}
 
 export function applyGravity(velocityY: number, deltaSeconds: number): number {
   return Math.min(
@@ -65,25 +72,47 @@ export function generateNextPlatform(
   viewportWidth: number,
   id: number,
   random: RandomSource = Math.random,
+  options: PlatformGenerationOptions = {},
 ): JumpPlatform {
+  const progress = clamp(options.progress ?? 1, 0, 1)
+  const maximumVertical = interpolate(
+    GAME_CONFIG.platformSpacing.beginnerMaximumVertical,
+    GAME_CONFIG.platformSpacing.maximumVertical,
+    progress,
+  )
+  const maximumHorizontal = interpolate(
+    GAME_CONFIG.platformSpacing.beginnerMaximumHorizontal,
+    GAME_CONFIG.platformSpacing.maximumHorizontal,
+    progress,
+  )
   const verticalGap = randomBetween(
     GAME_CONFIG.platformSpacing.minimumVertical,
-    GAME_CONFIG.platformSpacing.maximumVertical,
+    maximumVertical,
     random,
   )
-  const horizontalDelta = randomBetween(
-    -GAME_CONFIG.platformSpacing.maximumHorizontal,
-    GAME_CONFIG.platformSpacing.maximumHorizontal,
+  const previousDirection = options.previousDirection ?? 0
+  const forceTurn = previousDirection !== 0 && (options.sameDirectionCount ?? 0) >= 2
+  let direction: PlatformDirection = random() < 0.5 ? -1 : 1
+  if (forceTurn) direction = previousDirection === 1 ? -1 : 1
+  const horizontalDistance = randomBetween(
+    GAME_CONFIG.platformSpacing.minimumHorizontal,
+    maximumHorizontal,
     random,
   )
   const maximumX = Math.max(0, viewportWidth - GAME_CONFIG.platform.width)
+  let nextX = previous.x + direction * horizontalDistance
+  if (nextX < 0 || nextX > maximumX) {
+    direction = direction === 1 ? -1 : 1
+    nextX = previous.x + direction * horizontalDistance
+  }
   return {
     id,
     kind: 'stable',
-    x: clamp(previous.x + horizontalDelta, 0, maximumX),
+    x: clamp(nextX, 0, maximumX),
     y: previous.y - verticalGap,
     width: GAME_CONFIG.platform.width,
     height: GAME_CONFIG.platform.height,
+    impactAnimation: 0,
   }
 }
 
@@ -106,6 +135,7 @@ export function createInitialGameState(
     y: viewport.height - 68,
     width: GAME_CONFIG.platform.width,
     height: GAME_CONFIG.platform.height,
+    impactAnimation: 0,
   }
   const state: JumpGameState = {
     player: {
@@ -122,6 +152,8 @@ export function createInitialGameState(
     climbedPixels: 0,
     score: 0,
     gameOver: false,
+    lastPlatformDirection: 0,
+    sameDirectionPlatformCount: 0,
   }
   replenishPlatforms(state, viewport, random)
   return state
@@ -143,11 +175,16 @@ export function stepGame(
   player.x = wrapHorizontal(player.x + player.velocityX * deltaSeconds, player.width, viewport.width)
   player.y += player.velocityY * deltaSeconds
 
+  for (const platform of state.platforms) {
+    platform.impactAnimation = Math.max(0, platform.impactAnimation - deltaSeconds * 8)
+  }
+
   const landing = findLandingPlatform(player, previousY, state.platforms)
   if (landing) {
     player.y = landing.y - player.height
     player.velocityY = bouncedVelocity()
     player.landingAnimation = 1
+    landing.impactAnimation = 1
   } else {
     player.landingAnimation = Math.max(0, player.landingAnimation - deltaSeconds * 7)
   }
@@ -175,13 +212,32 @@ export function replenishPlatforms(
   let top = state.platforms[0]
   for (const platform of state.platforms) if (platform.y < top.y) top = platform
   while (top.y > -GAME_CONFIG.generationMargin) {
-    top = generateNextPlatform(top, viewport.width, state.nextPlatformId++, random)
+    const previousX = top.x
+    top = generateNextPlatform(top, viewport.width, state.nextPlatformId++, random, {
+      progress: state.score / GAME_CONFIG.platformDifficultyFullScore,
+      previousDirection: state.lastPlatformDirection,
+      sameDirectionCount: state.sameDirectionPlatformCount,
+    })
+    const direction = Math.sign(top.x - previousX) as PlatformDirection
+    if (direction === 0) {
+      state.lastPlatformDirection = 0
+      state.sameDirectionPlatformCount = 0
+    } else if (direction === state.lastPlatformDirection) {
+      state.sameDirectionPlatformCount += 1
+    } else {
+      state.lastPlatformDirection = direction
+      state.sameDirectionPlatformCount = 1
+    }
     state.platforms.push(top)
   }
 }
 
 function randomBetween(minimum: number, maximum: number, random: RandomSource) {
   return minimum + (maximum - minimum) * clamp(random(), 0, 1)
+}
+
+function interpolate(start: number, end: number, progress: number) {
+  return start + (end - start) * progress
 }
 
 function clamp(value: number, minimum: number, maximum: number) {

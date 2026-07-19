@@ -17,6 +17,8 @@ describe('Modal', () => {
     )
     const dialog = screen.getByRole('dialog', { name: 'Remove member' })
     expect(dialog.getAttribute('aria-describedby')).toBe('impact')
+    expect(dialog.parentElement?.parentElement).toBe(document.body)
+    expect(document.body.classList.contains('has-modal-open')).toBe(true)
   })
 
   it('traps focus and returns it to the trigger', () => {

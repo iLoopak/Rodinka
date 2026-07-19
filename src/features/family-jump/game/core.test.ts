@@ -13,7 +13,7 @@ import {
   wrapHorizontal,
 } from './core'
 
-const platform: JumpPlatform = { id: 1, kind: 'stable', x: 80, y: 200, width: 86, height: 14 }
+const platform: JumpPlatform = { id: 1, kind: 'stable', x: 80, y: 200, width: 86, height: 14, impactAnimation: 0 }
 
 function player(input: Partial<JumpPlayer> = {}): JumpPlayer {
   return {
@@ -46,9 +46,11 @@ describe('Family Jump core physics', () => {
   })
 
   it('lands only while descending through the platform top', () => {
-    expect(findLandingPlatform(player({ y: 162 }), 150, [platform])).toBe(platform)
-    expect(findLandingPlatform(player({ y: 162, velocityY: -120 }), 150, [platform])).toBeNull()
-    expect(findLandingPlatform(player({ x: 200, y: 162 }), 150, [platform])).toBeNull()
+    const previousY = platform.y - GAME_CONFIG.player.height - 7
+    const crossingY = platform.y - GAME_CONFIG.player.height + 2
+    expect(findLandingPlatform(player({ y: crossingY }), previousY, [platform])).toBe(platform)
+    expect(findLandingPlatform(player({ y: crossingY, velocityY: -120 }), previousY, [platform])).toBeNull()
+    expect(findLandingPlatform(player({ x: 200, y: crossingY }), previousY, [platform])).toBeNull()
     expect(findLandingPlatform(player({ y: 205 }), 201, [platform])).toBeNull()
   })
 
@@ -83,5 +85,51 @@ describe('Family Jump platform generation', () => {
       expect(next.x + next.width).toBeLessThanOrEqual(360)
       previous = next
     }
+  })
+
+  it('starts with gentler gaps and prevents long one-sided platform runs', () => {
+    let previous = platform
+    let previousDirection: -1 | 0 | 1 = 0
+    let sameDirectionCount = 0
+    let largestDirectionRun = 0
+    let sameDirectionPairs = 0
+    let seed = 41
+    const random = () => {
+      seed = (seed * 48_271) % 2_147_483_647
+      return seed / 2_147_483_647
+    }
+    for (let id = 2; id < 82; id += 1) {
+      const next = generateNextPlatform(previous, 320, id, random, {
+        progress: 0,
+        previousDirection,
+        sameDirectionCount,
+      })
+      expect(previous.y - next.y).toBeLessThanOrEqual(GAME_CONFIG.platformSpacing.beginnerMaximumVertical)
+      const direction = Math.sign(next.x - previous.x) as -1 | 0 | 1
+      if (direction !== 0 && direction === previousDirection) {
+        sameDirectionCount += 1
+        sameDirectionPairs += 1
+      } else {
+        previousDirection = direction
+        sameDirectionCount = direction === 0 ? 0 : 1
+      }
+      largestDirectionRun = Math.max(largestDirectionRun, sameDirectionCount)
+      previous = next
+    }
+    expect(largestDirectionRun).toBeLessThanOrEqual(2)
+    expect(sameDirectionPairs).toBeGreaterThan(0)
+  })
+
+  it('records a visual platform impact without changing its collision position', () => {
+    const viewport = { width: 320, height: 560 }
+    const state = createInitialGameState(viewport, () => 0.5)
+    const landing = state.platforms[0]
+    const originalY = landing.y
+    state.player.x = landing.x + 10
+    state.player.y = landing.y - state.player.height - 1
+    state.player.velocityY = 180
+    stepGame(state, { left: false, right: false }, 1 / 120, viewport, () => 0.5)
+    expect(landing.impactAnimation).toBe(1)
+    expect(landing.y).toBe(originalY)
   })
 })

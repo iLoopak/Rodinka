@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { FamilyMember } from '../../../hooks/useFamilyMembers'
-import { loadFamilyJumpRecords, saveFamilyJumpBestScore, sortFamilyJumpLeaderboard, updateBestScore } from './records'
+import { loadFamilyJumpRecords, mergeFamilyJumpRecords, saveFamilyJumpBestScore, saveFamilyJumpRecords, sortFamilyJumpLeaderboard, updateBestScore } from './records'
 
 class MemoryStorage {
   private readonly values = new Map<string, string>()
@@ -39,6 +39,14 @@ describe('Family Jump records', () => {
     saveFamilyJumpBestScore('family-b', 'boris', 330, storage)
     expect(loadFamilyJumpRecords('family-a', storage)).toEqual({ anna: 210 })
     expect(loadFamilyJumpRecords('family-b', storage)).toEqual({ boris: 330 })
+  })
+
+  it('merges shared records into the local cache without lowering either side', () => {
+    expect(mergeFamilyJumpRecords({ anna: 120, boris: 80 }, { anna: 90, boris: 200 })).toEqual({ anna: 120, boris: 200 })
+    const storage = new MemoryStorage()
+    saveFamilyJumpBestScore('family-merge', 'anna', 120, storage)
+    saveFamilyJumpRecords('family-merge', { anna: 90, boris: 240 }, storage)
+    expect(loadFamilyJumpRecords('family-merge', storage)).toEqual({ anna: 120, boris: 240 })
   })
 
   it('sorts the whole family leaderboard by best height', () => {
