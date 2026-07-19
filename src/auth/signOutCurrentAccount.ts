@@ -1,6 +1,7 @@
 import { releasePushOnSignOut } from '../push/pushClient'
 import { getShoppingLocalStore } from '../shopping/shoppingIndexedDb'
 import { supabase } from '../supabaseClient'
+import { clearQueryCacheScope } from '../queryCache'
 
 interface SignOutCurrentAccountOptions {
   userId: string
@@ -18,6 +19,7 @@ export async function signOutCurrentAccount({ userId, clearCalendarAccount }: Si
     await Promise.all([
       clearCalendarAccount(),
       getShoppingLocalStore().saveFamilyIdentity(userId, null),
+      clearQueryCacheScope({ userId }),
     ])
   } catch (error) {
     console.error('Failed to clear offline account data:', error instanceof Error ? error.message : 'unknown error')

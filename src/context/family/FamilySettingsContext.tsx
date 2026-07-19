@@ -6,6 +6,7 @@ import { getShoppingLocalStore } from '../../shopping/shoppingIndexedDb'
 import { buildFamilyHeroPath, validateFamilyHeroFile } from '../../utils/familyHeroImage'
 import { defaultShoppingCategorySettings, normalizeShoppingCategorySettings, type ShoppingCategorySettings } from '../../utils/shoppingCategorySettings'
 import { createRealtimeSubscription } from '../../realtime/createRealtimeSubscription'
+import { cachedQuery, cacheTimes, familyQueryKey, invalidateQueryCache } from '../../queryCache'
 import type { RealtimeConnectionState } from '../../realtime/connectionState'
 
 const FAMILY_HERO_SIGNED_URL_SECONDS = 12 * 60 * 60
@@ -54,23 +55,37 @@ export function FamilySettingsProvider({ familyId, children }: ProviderProps) {
   const refreshFamilySettings = useCallback(async () => {
     const cachedCategorySettings = await getShoppingLocalStore().loadCategorySettings(familyId)
     setFamilyNameState({ familyId, name: null, heroImagePath: null, heroImageUrl: null, shoppingCategorySettings: cachedCategorySettings ?? defaultShoppingCategorySettings(), loading: true })
-    const { data, error: loadError } = await supabase.from('families').select('name, hero_image_path, shopping_category_settings').eq('id', familyId).single()
-    if (activeFamilyIdRef.current !== familyId) return
-    if (loadError) {
-      console.error('Failed to load family name:', loadError.message)
+    try {
+      const { data } = await cachedQuery({
+        key: familyQueryKey('settings', familyId),
+        scope: { userId: null, familyId },
+        staleTimeMs: cacheTimes.stable,
+        maxAgeMs: 11 * 60 * 60 * 1000,
+        persist: true,
+        queryName: 'family.settings',
+        table: 'families,family-hero-images',
+        reason: 'mount',
+        fetcher: async () => {
+          const { data, error: loadError } = await supabase.from('families').select('name, hero_image_path, shopping_category_settings').eq('id', familyId).single()
+          if (loadError) throw loadError
+          let heroImageUrl: string | null = null
+          if (data.hero_image_path) {
+            const { data: signedUrl, error: signedUrlError } = await supabase.storage.from('family-hero-images').createSignedUrl(data.hero_image_path, FAMILY_HERO_SIGNED_URL_SECONDS)
+            if (signedUrlError) console.error('Failed to create family hero signed URL:', signedUrlError.message)
+            else heroImageUrl = signedUrl.signedUrl
+          }
+          return { name: data.name, heroImagePath: data.hero_image_path, heroImageUrl, shoppingCategorySettings: normalizeShoppingCategorySettings(data.shopping_category_settings) }
+        },
+      })
+      if (activeFamilyIdRef.current !== familyId) return
+      await getShoppingLocalStore().saveCategorySettings(familyId, data.shoppingCategorySettings)
+      setFamilyNameState({ familyId, name: data.name, heroImagePath: data.heroImagePath, heroImageUrl: data.heroImageUrl, shoppingCategorySettings: data.shoppingCategorySettings, loading: false })
+      setError(null)
+    } catch (loadError) {
+      if (activeFamilyIdRef.current !== familyId) return
+      console.error('Failed to load family name:', loadError instanceof Error ? loadError.message : 'unknown error')
       setError(t.errors.loadFailed)
       setFamilyNameState({ familyId, name: null, heroImagePath: null, heroImageUrl: null, shoppingCategorySettings: cachedCategorySettings ?? defaultShoppingCategorySettings(), loading: false })
-    } else {
-      let heroImageUrl: string | null = null
-      if (data.hero_image_path) {
-        const { data: signedUrl, error: signedUrlError } = await supabase.storage.from('family-hero-images').createSignedUrl(data.hero_image_path, FAMILY_HERO_SIGNED_URL_SECONDS)
-        if (signedUrlError) console.error('Failed to create family hero signed URL:', signedUrlError.message)
-        else heroImageUrl = signedUrl.signedUrl
-      }
-      const nextCategorySettings = normalizeShoppingCategorySettings(data.shopping_category_settings)
-      await getShoppingLocalStore().saveCategorySettings(familyId, nextCategorySettings)
-      setFamilyNameState({ familyId, name: data.name, heroImagePath: data.hero_image_path, heroImageUrl, shoppingCategorySettings: nextCategorySettings, loading: false })
-      setError(null)
     }
   }, [familyId])
 
@@ -81,6 +96,7 @@ export function FamilySettingsProvider({ familyId, children }: ProviderProps) {
     if (updateError) throw friendly(updateError)
     if (activeFamilyIdRef.current !== familyId) return
     setFamilyNameState((current) => ({ ...current, familyId, name: normalized, loading: false }))
+    void invalidateQueryCache(familyQueryKey('settings', familyId), { userId: null, familyId })
     setError(null)
   }, [familyId])
 
@@ -91,6 +107,7 @@ export function FamilySettingsProvider({ familyId, children }: ProviderProps) {
     await getShoppingLocalStore().saveCategorySettings(familyId, normalized)
     if (activeFamilyIdRef.current !== familyId) return
     setFamilyNameState((current) => ({ ...current, familyId, shoppingCategorySettings: normalized, loading: false }))
+    void invalidateQueryCache(familyQueryKey('settings', familyId), { userId: null, familyId })
   }, [familyId])
 
   const updateFamilyHeroImage = useCallback(async (file: File | null) => {
@@ -124,6 +141,7 @@ export function FamilySettingsProvider({ familyId, children }: ProviderProps) {
     }
     if (activeFamilyIdRef.current !== familyId) return
     setFamilyNameState((current) => ({ ...current, familyId, heroImagePath: nextPath, heroImageUrl: nextUrl, loading: false }))
+    void invalidateQueryCache(familyQueryKey('settings', familyId), { userId: null, familyId })
     if (previousPath && previousPath !== nextPath) {
       const { error: removeError } = await supabase.storage.from('family-hero-images').remove([previousPath])
       if (removeError) console.error('Failed to remove previous family hero image:', removeError.message)

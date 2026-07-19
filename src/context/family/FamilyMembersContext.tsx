@@ -35,17 +35,18 @@ const FamilyMembersContext = createContext<FamilyMembersContextValue | null>(nul
 
 interface ProviderProps {
   familyId: string
+  userId?: string | null
   children: ReactNode
 }
 
-export function FamilyMembersProvider({ familyId, children }: ProviderProps) {
+export function FamilyMembersProvider({ familyId, userId = null, children }: ProviderProps) {
   const {
     members: allMembers,
     setMembers: setAllMembers,
     loading: membersLoading,
     error: membersError,
     refresh: refreshMembers,
-  } = useFamilyMembers(familyId)
+  } = useFamilyMembers(familyId, userId)
   const { saveMemberProfile } = useMemberProfiles(refreshMembers)
   const [membersRealtimeStatus, setMembersRealtimeStatus] = useState<RealtimeConnectionState>('connecting')
   const activeFamilyIdRef = useRef(familyId)
