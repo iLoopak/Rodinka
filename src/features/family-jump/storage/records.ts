@@ -25,7 +25,32 @@ export interface StorageLike {
 const memoryFallback = new Map<string, StoredFamilyJumpRecords>()
 
 function storageKey(familyId: string) {
-  return `rodinka.family-jump.records.v1.${familyId}`
+  return `${KEY_PREFIX}${familyId}`
+}
+
+const KEY_PREFIX = 'rodinka.family-jump.records.v1.'
+
+/**
+ * Scores live in localStorage keyed by family only, so they used to survive a
+ * sign-out and show the next account the previous one's leaderboard (audit
+ * P1-2). Cleanup drops every family's records: which families belonged to the
+ * departing user is not recoverable from the key, and the scores re-sync from
+ * the server on the next sign-in anyway.
+ */
+export function clearFamilyJumpRecords(storage: StorageLike | null = browserStorage()) {
+  memoryFallback.clear()
+  const removable = storage as (StorageLike & { length?: number; key?: (index: number) => string | null; removeItem?: (key: string) => void }) | null
+  if (!removable || typeof removable.removeItem !== 'function' || typeof removable.key !== 'function') return
+  try {
+    const keys: string[] = []
+    for (let index = 0; index < (removable.length ?? 0); index += 1) {
+      const key = removable.key(index)
+      if (key?.startsWith(KEY_PREFIX)) keys.push(key)
+    }
+    for (const key of keys) removable.removeItem(key)
+  } catch {
+    // A storage failure must not block sign-out; the in-memory copy is gone.
+  }
 }
 
 function browserStorage(): StorageLike | null {

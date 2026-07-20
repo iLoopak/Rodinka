@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ShoppingItem } from '../utils/shopping'
-import { applyPendingShoppingMutations, enqueueShoppingMutation, type ShoppingMutation } from './shoppingMutationQueue'
+import { applyPendingShoppingMutations, enqueueShoppingMutation, newShoppingMutationState, type ShoppingMutation } from './shoppingMutationQueue'
 
 const item: ShoppingItem = {
   id: 'item-1', family_id: 'family-1', name: 'Milk', normalized_name: 'milk', quantity: 1, unit: 'l', note: null,
@@ -10,7 +10,7 @@ const item: ShoppingItem = {
 }
 
 function mutation(type: ShoppingMutation['type'], payload: Record<string, unknown> = {}): ShoppingMutation {
-  return { mutationId: `mutation-${type}`, familyId: 'family-1', type, itemId: item.id, payload, createdAt: '2026-07-15T11:00:00Z' }
+  return { mutationId: `mutation-${type}`, familyId: 'family-1', type, itemId: item.id, payload, createdAt: '2026-07-15T11:00:00Z', ...newShoppingMutationState() }
 }
 
 describe('shopping mutation queue', () => {

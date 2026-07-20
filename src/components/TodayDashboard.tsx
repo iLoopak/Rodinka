@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTodayDashboardData } from './today/useTodayDashboardData'
 import { useRouteSearchParams, useRouterActions } from '../router'
 import { t } from '../strings'
+import { useConnectivityState } from '../network/connectivity'
 import { getCurrentLanguage } from '../i18n'
 import type { CalendarEntry } from '../utils/calendarEntries'
 import { formatFullDate, todayISODate } from '../utils/dueDate'
@@ -265,7 +266,11 @@ interface TodayOfflineStatusProps {
 }
 
 function TodayOfflineStatus({ calendarSyncStatus, shoppingSyncStatus, calendarLastSyncedAt, shoppingLastSyncedAt, pendingChanges }: TodayOfflineStatusProps) {
-  const offline = calendarSyncStatus === 'offline' || shoppingSyncStatus === 'offline' || typeof navigator !== 'undefined' && !navigator.onLine
+  // Feature sync state stays feature-level here on purpose — this badge is
+  // about the calendar and shopping queues. Only the device-level half comes
+  // from the shared snapshot, so it actually re-renders when the radio flips.
+  const connectivity = useConnectivityState()
+  const offline = calendarSyncStatus === 'offline' || shoppingSyncStatus === 'offline' || connectivity === 'offline'
   const syncing = calendarSyncStatus === 'syncing' || shoppingSyncStatus === 'syncing'
   if (!offline && !syncing) return null
   const lastSyncedAt = [calendarLastSyncedAt, shoppingLastSyncedAt].filter(Boolean).sort().at(-1) ?? null

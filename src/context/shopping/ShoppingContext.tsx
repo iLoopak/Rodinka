@@ -9,12 +9,13 @@ const ShoppingSyncStatusContext = createContext<ShoppingSyncStatus | null>(null)
 
 interface ProviderProps {
   familyId: string
+  userId: string
   currentMemberId: string
   children: ReactNode
 }
 
-export function ShoppingProvider({ familyId, currentMemberId, children }: ProviderProps) {
-  const value = useShoppingDataSource(familyId, currentMemberId)
+export function ShoppingProvider({ familyId, userId, currentMemberId, children }: ProviderProps) {
+  const value = useShoppingDataSource(familyId, userId, currentMemberId)
   return (
     <ShoppingSyncStatusContext.Provider value={value.shoppingSyncStatus}>
       <ShoppingContext.Provider value={value}>{children}</ShoppingContext.Provider>

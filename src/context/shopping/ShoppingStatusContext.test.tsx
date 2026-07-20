@@ -37,7 +37,7 @@ describe('Shopping status boundary', () => {
       return null
     }
     function Wrapper({ children }: { children: ReactNode }) {
-      return <ShoppingProvider familyId="family-1" currentMemberId="member-1">{children}</ShoppingProvider>
+      return <ShoppingProvider familyId="family-1" userId="user-1" currentMemberId="member-1">{children}</ShoppingProvider>
     }
 
     render(<Wrapper><HeaderStatusProbe /></Wrapper>)

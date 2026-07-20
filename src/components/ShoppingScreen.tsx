@@ -38,6 +38,7 @@ export function ShoppingScreen() {
     toggleShoppingPurchased, archivePurchasedShoppingItems, importShoppingItems,
     reorderShoppingItems,
     shoppingSyncStatus, pendingShoppingChanges, pendingShoppingItemIds, shoppingLastSyncedAt,
+    failedShoppingMutations, retryShoppingMutation, discardShoppingMutation,
   } = useShopping()
   const [quickName, setQuickName] = useState('')
   const [filterResponsible, setFilterResponsible] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('assignedTo') === 'me' ? currentMember.id : '')
@@ -190,6 +191,25 @@ export function ShoppingScreen() {
               ? t.shopping.syncFailed
               : t.shopping.syncComplete}</span>
         {shoppingSyncStatus === 'error' && <button type="button" className="link" disabled={syncRetrying} onClick={() => void retrySync()}>{syncRetrying ? t.errors.retrying : t.shopping.syncRetry}</button>}
+      </div>}
+
+      {/* A mutation the server rejected outright. Retrying it on a timer would
+          never help, so it is surfaced with the two actions that can actually
+          resolve it. Editing the item also clears it, by folding into the
+          queued mutation. */}
+      {failedShoppingMutations.length > 0 && <div className="shopping-sync-blocked" role="alert">
+        <span>{t.shopping.syncBlocked(failedShoppingMutations.length)}</span>
+        <div className="shopping-sync-blocked-actions">
+          <button type="button" className="link" onClick={() => void retryShoppingMutation()}>{t.shopping.syncBlockedRetry}</button>
+          {failedShoppingMutations.map((mutation) => (
+            <button
+              key={mutation.mutationId}
+              type="button"
+              className="link"
+              onClick={() => void discardShoppingMutation(mutation.itemId)}
+            >{t.shopping.syncBlockedDiscard}</button>
+          ))}
+        </div>
       </div>}
 
       {isParentOrAdmin && <FilterDisclosurePanel>

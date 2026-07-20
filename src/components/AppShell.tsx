@@ -9,14 +9,13 @@ import { useActiveFamilyMark } from '../hooks/useActiveFamilyMark'
 import { useRealtimeStatus } from '../hooks/useRealtimeStatus'
 import { RealtimeStatusBadge } from './ui/RealtimeStatusBadge'
 import { FamilyValidatingBadge } from './ui/FamilyValidatingBadge'
-import { useShoppingSyncStatus } from '../context/shopping/ShoppingContext'
 import { t } from '../strings'
 import { useFamilyCore } from '../context/family/FamilyCoreContext'
 import { capabilitiesFor, childRouteFallback } from '../utils/uiCapabilities'
 import { useActiveConversationId } from '../context/messages/MessagesSummaryContext'
 import { useConversationPushBridge } from '../hooks/useConversationPushBridge'
 import { CreateRecordWizardController } from './create-record/CreateRecordWizardController'
-import { useCalendarSyncStatus } from '../context/calendar/CalendarOfflineContext'
+import { useConnectivityState } from '../network/connectivity'
 import { useFamilyLogoAnimation } from '../hooks/useFamilyLogoAnimation'
 import { useLanguage } from '../i18n/languageContext'
 import { getRouteDefinition, type RouteDefinition } from '../routes/routeRegistry'
@@ -49,17 +48,19 @@ function StandardAppShell({ definition }: { definition: RouteDefinition }) {
   const { familyName, familyNameLoading } = useFamilySettings()
   const familyMark = useActiveFamilyMark()
   const realtimeStatus = useRealtimeStatus()
-  const shoppingSyncStatus = useShoppingSyncStatus()
-  const calendarSyncStatus = useCalendarSyncStatus()
-  const offlineMode = shoppingSyncStatus === 'offline' || calendarSyncStatus === 'offline'
-  const browserOffline = typeof navigator !== 'undefined' && !navigator.onLine
-  const realtimeInterrupted = realtimeStatus === 'reconnecting' || realtimeStatus === 'disconnected'
+  // One connectivity answer instead of three hand-combined booleans. It also
+  // subscribes, where the old inline browser-online read only updated when the
+  // shell happened to re-render for some other reason.
+  const connectivity = useConnectivityState()
   const logoAnimationMode = useFamilyLogoAnimation({
     baseMode: 'member-focus',
-    connectionInterrupted: browserOffline || offlineMode || realtimeInterrupted,
-    connectionReady: !browserOffline && !offlineMode && realtimeStatus === 'connected',
+    connectionInterrupted: connectivity !== 'online',
+    connectionReady: connectivity === 'online',
   })
-  const offlineBlocked = offlineMode && definition.offline === 'blocked'
+  // Only a genuinely offline device may hide an offline-incapable route. A
+  // degraded backend — or one feature's stuck queue — must not black out
+  // unrelated screens (audit P1-7).
+  const offlineBlocked = connectivity === 'offline' && definition.offline === 'blocked'
   const routeAllowed = capabilities.accessRoute(path)
 
   return (

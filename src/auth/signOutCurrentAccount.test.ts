@@ -4,12 +4,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   releasePush: vi.fn(),
   saveFamilyIdentity: vi.fn(),
+  clearCalendarUser: vi.fn(),
+  clearShoppingUser: vi.fn(),
   signOut: vi.fn(),
 }))
 
 vi.mock('../push/pushClient', () => ({ releasePushOnSignOut: mocks.releasePush }))
+const store = {
+  saveFamilyIdentity: mocks.saveFamilyIdentity,
+  clearCalendarUser: mocks.clearCalendarUser,
+  clearShoppingUser: mocks.clearShoppingUser,
+}
 vi.mock('../shopping/shoppingIndexedDb', () => ({
-  getShoppingLocalStore: () => ({ saveFamilyIdentity: mocks.saveFamilyIdentity }),
+  getShoppingLocalStore: () => store,
+  getOfflineLocalStore: () => store,
 }))
 vi.mock('../supabaseClient', () => ({ supabase: { auth: { signOut: mocks.signOut } } }))
 
@@ -19,6 +27,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   mocks.releasePush.mockResolvedValue(undefined)
   mocks.saveFamilyIdentity.mockResolvedValue(undefined)
+  mocks.clearCalendarUser.mockResolvedValue(undefined)
+  mocks.clearShoppingUser.mockResolvedValue(undefined)
   mocks.signOut.mockResolvedValue({ error: null })
   window.history.replaceState(null, '', '/more')
 })
@@ -30,6 +40,8 @@ describe('signOutCurrentAccount', () => {
 
     expect(clearCalendarAccount).toHaveBeenCalledOnce()
     expect(mocks.saveFamilyIdentity).toHaveBeenCalledWith('user-1', null)
+    expect(mocks.clearShoppingUser).toHaveBeenCalledWith('user-1')
+    expect(mocks.clearCalendarUser).toHaveBeenCalledWith('user-1')
     expect(mocks.signOut).toHaveBeenCalledOnce()
     expect(window.location.pathname).toBe('/')
   })
@@ -39,5 +51,8 @@ describe('signOutCurrentAccount', () => {
     await signOutCurrentAccount({ userId: 'user-1', clearCalendarAccount: vi.fn().mockResolvedValue(undefined) })
     expect(mocks.signOut).toHaveBeenCalledOnce()
     expect(window.location.pathname).toBe('/')
+    // The failing step must not abandon the others (audit P0-5).
+    expect(mocks.clearShoppingUser).toHaveBeenCalledWith('user-1')
+    expect(mocks.clearCalendarUser).toHaveBeenCalledWith('user-1')
   })
 })

@@ -11,15 +11,27 @@ export interface ShoppingSyncMetadata {
   lastSuccessfulSyncAt: string | null
 }
 
+/**
+ * Shopping records carry the user they were cached for. They used to be keyed
+ * by familyId alone, which meant a signed-out user's snapshot AND their unsent
+ * mutation queue were picked up verbatim by the next account to sign in on the
+ * device — and replayed under that account's identity (audit P0-4).
+ */
+export type ShoppingScope = { userId: string; familyId: string }
+
+export function shoppingScopeKey(scope: ShoppingScope) {
+  return `${scope.userId}:${scope.familyId}`
+}
+
 export interface OfflineLocalStore {
-  loadItems(familyId: string): Promise<ShoppingItem[]>
-  replaceItems(familyId: string, items: ShoppingItem[]): Promise<void>
-  loadMutations(familyId: string): Promise<ShoppingMutation[]>
-  replaceMutations(familyId: string, mutations: ShoppingMutation[]): Promise<void>
-  loadMetadata(familyId: string): Promise<ShoppingSyncMetadata | null>
-  saveMetadata(metadata: ShoppingSyncMetadata): Promise<void>
-  saveTemplates(familyId: string, templates: ShoppingTemplate[]): Promise<void>
-  loadTemplates(familyId: string): Promise<ShoppingTemplate[]>
+  loadItems(scope: ShoppingScope): Promise<ShoppingItem[]>
+  replaceItems(scope: ShoppingScope, items: ShoppingItem[]): Promise<void>
+  loadMutations(scope: ShoppingScope): Promise<ShoppingMutation[]>
+  replaceMutations(scope: ShoppingScope, mutations: ShoppingMutation[]): Promise<void>
+  loadMetadata(scope: ShoppingScope): Promise<ShoppingSyncMetadata | null>
+  saveMetadata(scope: ShoppingScope, metadata: ShoppingSyncMetadata): Promise<void>
+  saveTemplates(scope: ShoppingScope, templates: ShoppingTemplate[]): Promise<void>
+  loadTemplates(scope: ShoppingScope): Promise<ShoppingTemplate[]>
   saveCategorySettings(familyId: string, settings: ShoppingCategorySettings): Promise<void>
   loadCategorySettings(familyId: string): Promise<ShoppingCategorySettings | null>
   loadFamilyIdentity(userId: string): Promise<FamilyMember | null>
@@ -29,6 +41,7 @@ export interface OfflineLocalStore {
   loadCalendarMutations(scopeKey: string): Promise<CalendarMutation[]>
   replaceCalendarMutations(scopeKey: string, mutations: CalendarMutation[]): Promise<void>
   clearCalendarUser(userId: string): Promise<void>
+  clearShoppingUser(userId: string): Promise<void>
 }
 
 export type ShoppingLocalStore = OfflineLocalStore
@@ -43,13 +56,15 @@ export interface StoredCalendarSnapshot {
   lastSuccessfulSyncAt: string | null
 }
 
-interface StoredItem { key: string; familyId: string; item: ShoppingItem }
-interface StoredTemplates { familyId: string; templates: ShoppingTemplate[] }
+interface StoredItem { key: string; scopeKey: string; userId: string; familyId: string; item: ShoppingItem }
+interface StoredMutation extends ShoppingMutation { scopeKey: string; userId: string }
+interface StoredMetadata extends ShoppingSyncMetadata { scopeKey: string; userId: string }
+interface StoredTemplates { scopeKey: string; userId: string; familyId: string; templates: ShoppingTemplate[] }
 interface StoredCategorySettings { familyId: string; settings: ShoppingCategorySettings }
 interface StoredFamilyIdentity { userId: string; member: FamilyMember }
 
 const DB_NAME = 'rodinka-offline'
-const DB_VERSION = 3
+const DB_VERSION = 4
 
 export class IndexedDbShoppingStore implements ShoppingLocalStore {
   private databasePromise: Promise<IDBDatabase> | null = null
@@ -59,50 +74,67 @@ export class IndexedDbShoppingStore implements ShoppingLocalStore {
     return this.databasePromise
   }
 
-  async loadItems(familyId: string) {
-    const rows = await getAllByFamily<StoredItem>(await this.database(), 'shoppingItems', familyId)
+  /**
+   * Releases the connection. An open handle blocks `deleteDatabase` and any
+   * future `versionchange` transaction, so anything that tears a store down
+   * has to call this rather than just dropping the reference.
+   */
+  async close() {
+    const pending = this.databasePromise
+    this.databasePromise = null
+    if (!pending) return
+    await pending.then((database) => database.close(), () => undefined)
+  }
+
+  async loadItems(scope: ShoppingScope) {
+    const rows = await getAllByIndex<StoredItem>(await this.database(), 'shoppingItems', 'scopeKey', shoppingScopeKey(scope))
     return rows.map((row) => row.item)
   }
 
-  async replaceItems(familyId: string, items: ShoppingItem[]) {
+  async replaceItems(scope: ShoppingScope, items: ShoppingItem[]) {
+    const scopeKey = shoppingScopeKey(scope)
     const db = await this.database()
     const transaction = db.transaction('shoppingItems', 'readwrite')
     const store = transaction.objectStore('shoppingItems')
-    const existing = await request(store.index('familyId').getAllKeys(IDBKeyRange.only(familyId)))
+    const existing = await request(store.index('scopeKey').getAllKeys(IDBKeyRange.only(scopeKey)))
     for (const key of existing) store.delete(key)
-    for (const item of items) store.put({ key: itemKey(familyId, item.id), familyId, item } satisfies StoredItem)
+    for (const item of items) {
+      store.put({ key: itemKey(scopeKey, item.id), scopeKey, userId: scope.userId, familyId: scope.familyId, item } satisfies StoredItem)
+    }
     await transactionDone(transaction)
   }
 
-  async loadMutations(familyId: string) {
-    const rows = await getAllByFamily<ShoppingMutation>(await this.database(), 'shoppingMutations', familyId)
+  async loadMutations(scope: ShoppingScope) {
+    const rows = await getAllByIndex<StoredMutation>(await this.database(), 'shoppingMutations', 'scopeKey', shoppingScopeKey(scope))
     return rows.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
   }
 
-  async replaceMutations(familyId: string, mutations: ShoppingMutation[]) {
+  async replaceMutations(scope: ShoppingScope, mutations: ShoppingMutation[]) {
+    const scopeKey = shoppingScopeKey(scope)
     const db = await this.database()
     const transaction = db.transaction('shoppingMutations', 'readwrite')
     const store = transaction.objectStore('shoppingMutations')
-    const existing = await request(store.index('familyId').getAllKeys(IDBKeyRange.only(familyId)))
+    const existing = await request(store.index('scopeKey').getAllKeys(IDBKeyRange.only(scopeKey)))
     for (const key of existing) store.delete(key)
-    for (const mutation of mutations) store.put(mutation)
+    for (const mutation of mutations) store.put({ ...mutation, scopeKey, userId: scope.userId } satisfies StoredMutation)
     await transactionDone(transaction)
   }
 
-  async loadMetadata(familyId: string) {
-    return (await readOne<ShoppingSyncMetadata>(await this.database(), 'shoppingMetadata', familyId)) ?? null
+  async loadMetadata(scope: ShoppingScope) {
+    const stored = await readOne<StoredMetadata>(await this.database(), 'shoppingMetadata', shoppingScopeKey(scope))
+    return stored ? { familyId: stored.familyId, hasSnapshot: stored.hasSnapshot, lastSuccessfulSyncAt: stored.lastSuccessfulSyncAt } : null
   }
 
-  async saveMetadata(metadata: ShoppingSyncMetadata) {
-    await writeOne(await this.database(), 'shoppingMetadata', metadata)
+  async saveMetadata(scope: ShoppingScope, metadata: ShoppingSyncMetadata) {
+    await writeOne(await this.database(), 'shoppingMetadata', { ...metadata, scopeKey: shoppingScopeKey(scope), userId: scope.userId } satisfies StoredMetadata)
   }
 
-  async saveTemplates(familyId: string, templates: ShoppingTemplate[]) {
-    await writeOne(await this.database(), 'shoppingTemplates', { familyId, templates } satisfies StoredTemplates)
+  async saveTemplates(scope: ShoppingScope, templates: ShoppingTemplate[]) {
+    await writeOne(await this.database(), 'shoppingTemplates', { scopeKey: shoppingScopeKey(scope), userId: scope.userId, familyId: scope.familyId, templates } satisfies StoredTemplates)
   }
 
-  async loadTemplates(familyId: string) {
-    return (await readOne<StoredTemplates>(await this.database(), 'shoppingTemplates', familyId))?.templates ?? []
+  async loadTemplates(scope: ShoppingScope) {
+    return (await readOne<StoredTemplates>(await this.database(), 'shoppingTemplates', shoppingScopeKey(scope)))?.templates ?? []
   }
 
   async saveCategorySettings(familyId: string, settings: ShoppingCategorySettings) {
@@ -165,6 +197,18 @@ export class IndexedDbShoppingStore implements ShoppingLocalStore {
     await transactionDone(transaction)
   }
 
+  async clearShoppingUser(userId: string) {
+    const db = await this.database()
+    const stores = ['shoppingItems', 'shoppingMutations', 'shoppingMetadata', 'shoppingTemplates']
+    const transaction = db.transaction(stores, 'readwrite')
+    for (const storeName of stores) {
+      const store = transaction.objectStore(storeName)
+      const keys = await request(store.index('userId').getAllKeys(IDBKeyRange.only(userId)))
+      for (const key of keys) store.delete(key)
+    }
+    await transactionDone(transaction)
+  }
+
   private async deleteCalendarScope(scopeKey: string) {
     const db = await this.database()
     const transaction = db.transaction(['calendarSnapshots', 'calendarMutations'], 'readwrite')
@@ -186,14 +230,14 @@ export class MemoryShoppingStore implements ShoppingLocalStore {
   private calendarSnapshots = new Map<string, StoredCalendarSnapshot>()
   private calendarMutations = new Map<string, CalendarMutation[]>()
 
-  async loadItems(familyId: string) { return structuredClone(this.items.get(familyId) ?? []) }
-  async replaceItems(familyId: string, items: ShoppingItem[]) { this.items.set(familyId, structuredClone(items)) }
-  async loadMutations(familyId: string) { return structuredClone(this.mutations.get(familyId) ?? []) }
-  async replaceMutations(familyId: string, mutations: ShoppingMutation[]) { this.mutations.set(familyId, structuredClone(mutations)) }
-  async loadMetadata(familyId: string) { return structuredClone(this.metadata.get(familyId) ?? null) }
-  async saveMetadata(metadata: ShoppingSyncMetadata) { this.metadata.set(metadata.familyId, structuredClone(metadata)) }
-  async saveTemplates(familyId: string, templates: ShoppingTemplate[]) { this.templates.set(familyId, structuredClone(templates)) }
-  async loadTemplates(familyId: string) { return structuredClone(this.templates.get(familyId) ?? []) }
+  async loadItems(scope: ShoppingScope) { return structuredClone(this.items.get(shoppingScopeKey(scope)) ?? []) }
+  async replaceItems(scope: ShoppingScope, items: ShoppingItem[]) { this.items.set(shoppingScopeKey(scope), structuredClone(items)) }
+  async loadMutations(scope: ShoppingScope) { return structuredClone(this.mutations.get(shoppingScopeKey(scope)) ?? []) }
+  async replaceMutations(scope: ShoppingScope, mutations: ShoppingMutation[]) { this.mutations.set(shoppingScopeKey(scope), structuredClone(mutations)) }
+  async loadMetadata(scope: ShoppingScope) { return structuredClone(this.metadata.get(shoppingScopeKey(scope)) ?? null) }
+  async saveMetadata(scope: ShoppingScope, metadata: ShoppingSyncMetadata) { this.metadata.set(shoppingScopeKey(scope), structuredClone(metadata)) }
+  async saveTemplates(scope: ShoppingScope, templates: ShoppingTemplate[]) { this.templates.set(shoppingScopeKey(scope), structuredClone(templates)) }
+  async loadTemplates(scope: ShoppingScope) { return structuredClone(this.templates.get(shoppingScopeKey(scope)) ?? []) }
   async saveCategorySettings(familyId: string, settings: ShoppingCategorySettings) { this.categories.set(familyId, structuredClone(settings)) }
   async loadCategorySettings(familyId: string) { return structuredClone(this.categories.get(familyId) ?? null) }
   async loadFamilyIdentity(userId: string) { return structuredClone(this.identities.get(userId) ?? null) }
@@ -223,6 +267,13 @@ export class MemoryShoppingStore implements ShoppingLocalStore {
       if (mutations.some((mutation) => mutation.userId === userId)) this.calendarMutations.delete(scopeKey)
     }
   }
+
+  async clearShoppingUser(userId: string) {
+    const prefix = `${userId}:`
+    for (const map of [this.items, this.mutations, this.metadata, this.templates]) {
+      for (const key of [...map.keys()]) if (key.startsWith(prefix)) map.delete(key)
+    }
+  }
 }
 
 let sharedStore: OfflineLocalStore | null = null
@@ -243,10 +294,17 @@ function openDatabase(): Promise<IDBDatabase> {
     open.onsuccess = () => resolve(open.result)
     open.onupgradeneeded = () => {
       const db = open.result
-      createFamilyStore(db, 'shoppingItems', 'key')
-      createFamilyStore(db, 'shoppingMutations', 'mutationId')
-      if (!db.objectStoreNames.contains('shoppingMetadata')) db.createObjectStore('shoppingMetadata', { keyPath: 'familyId' })
-      if (!db.objectStoreNames.contains('shoppingTemplates')) db.createObjectStore('shoppingTemplates', { keyPath: 'familyId' })
+      // v4 moved shopping from family-only keying to user+family keying.
+      // Legacy rows have no userId, so there is no safe way to attribute
+      // them to an account — drop them. Everything here is re-syncable from
+      // the server, and keeping them is exactly the P0-4 leak.
+      for (const legacy of ['shoppingItems', 'shoppingMutations', 'shoppingMetadata', 'shoppingTemplates']) {
+        if (db.objectStoreNames.contains(legacy)) db.deleteObjectStore(legacy)
+      }
+      createScopedStore(db, 'shoppingItems', 'key')
+      createScopedStore(db, 'shoppingMutations', 'mutationId')
+      createScopedStore(db, 'shoppingMetadata', 'scopeKey')
+      createScopedStore(db, 'shoppingTemplates', 'scopeKey')
       if (!db.objectStoreNames.contains('shoppingCategorySettings')) db.createObjectStore('shoppingCategorySettings', { keyPath: 'familyId' })
       if (!db.objectStoreNames.contains('shoppingFamilyIdentity')) db.createObjectStore('shoppingFamilyIdentity', { keyPath: 'userId' })
       createScopedStore(db, 'calendarSnapshots', 'scopeKey')
@@ -255,23 +313,12 @@ function openDatabase(): Promise<IDBDatabase> {
   })
 }
 
-function createFamilyStore(db: IDBDatabase, name: string, keyPath: string) {
-  if (db.objectStoreNames.contains(name)) return
-  const store = db.createObjectStore(name, { keyPath })
-  store.createIndex('familyId', 'familyId', { unique: false })
-}
-
 function createScopedStore(db: IDBDatabase, name: string, keyPath: string) {
   if (db.objectStoreNames.contains(name)) return
   const store = db.createObjectStore(name, { keyPath })
   store.createIndex('scopeKey', 'scopeKey', { unique: false })
   store.createIndex('familyId', 'familyId', { unique: false })
   store.createIndex('userId', 'userId', { unique: false })
-}
-
-async function getAllByFamily<T>(db: IDBDatabase, storeName: string, familyId: string): Promise<T[]> {
-  const transaction = db.transaction(storeName, 'readonly')
-  return request(transaction.objectStore(storeName).index('familyId').getAll(IDBKeyRange.only(familyId))) as Promise<T[]>
 }
 
 async function getAllByIndex<T>(db: IDBDatabase, storeName: string, indexName: string, value: IDBValidKey): Promise<T[]> {
@@ -305,4 +352,4 @@ function transactionDone(transaction: IDBTransaction): Promise<void> {
   })
 }
 
-function itemKey(familyId: string, itemId: string) { return `${familyId}:${itemId}` }
+function itemKey(scopeKey: string, itemId: string) { return `${scopeKey}:${itemId}` }

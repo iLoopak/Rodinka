@@ -21,7 +21,7 @@ class FakeRemote implements ShoppingRemote {
 function repository(store: MemoryShoppingStore, remote: FakeRemote, isOnline: () => boolean, realtime?: ShoppingRealtimeSubscription) {
   let id = 0
   return new ShoppingRepository({
-    familyId: 'family-1', currentMemberId: 'member-1', store, remote, isOnline,
+    familyId: 'family-1', userId: 'user-1', currentMemberId: 'member-1', store, remote, isOnline,
     realtime: realtime ?? (async () => async () => undefined),
     createId: () => `00000000-0000-4000-8000-${String(++id).padStart(12, '0')}`,
     now: () => new Date('2026-07-15T10:00:00Z'),
@@ -103,7 +103,7 @@ describe('offline shopping repository', () => {
     await repo.sync()
     expect(remote.items[0]).toMatchObject({ id: added.item.id, purchased: true })
     expect(repo.getSnapshot()).toMatchObject({ status: 'synced', pendingCount: 0 })
-    expect(await store.loadMutations('family-1')).toEqual([])
+    expect(await store.loadMutations({ userId: 'user-1', familyId: 'family-1' })).toEqual([])
     repo.stop()
   })
 
@@ -173,7 +173,7 @@ describe('offline shopping repository', () => {
       repo.addItem({ ...input, name: 'Apples', category: 'produce', unit: 'kg' }),
     ])
     expect(repo.getSnapshot().items.map((entry) => entry.name).sort()).toEqual(['Apples', 'Bread', 'Milk'])
-    expect((await store.loadItems('family-1'))).toHaveLength(3)
+    expect((await store.loadItems({ userId: 'user-1', familyId: 'family-1' }))).toHaveLength(3)
     repo.stop()
   })
 })

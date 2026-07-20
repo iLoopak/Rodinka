@@ -36,7 +36,7 @@ export function AppDataProviders({ member, userId, userEmail, children }: Props)
   return (
     <FamilyCoreProvider member={member} userId={userId} userEmail={userEmail}>
       <FamilyMembersProvider familyId={familyId} userId={userId}>
-        <FamilySettingsProvider familyId={familyId}>
+        <FamilySettingsProvider familyId={familyId} userId={userId}>
           <ChoresProvider familyId={familyId} userId={userId} currentMemberId={currentMemberId}>
             <AllowanceProvider familyId={familyId}>
               <ActivitiesProvider familyId={familyId}>
@@ -44,7 +44,7 @@ export function AppDataProviders({ member, userId, userEmail, children }: Props)
                   <MedicalProvider familyId={familyId} userId={userId}>
                     <MealsProvider familyId={familyId} userId={userId}>
                       <CalendarOfflineProvider familyId={familyId} userId={userId} currentMemberId={currentMemberId}>
-                        <ShoppingProvider familyId={familyId} currentMemberId={currentMemberId}>
+                        <ShoppingProvider familyId={familyId} userId={userId} currentMemberId={currentMemberId}>
                           <MessagesSummaryProvider familyId={familyId} currentMemberId={currentMemberId}>
                             {children}
                           </MessagesSummaryProvider>
