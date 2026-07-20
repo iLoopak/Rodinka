@@ -122,9 +122,51 @@ Main entry 336 868 → **339 142 B raw** (100 197 → 100 747 B gzip) kvůli nov
 
 ## Browser QA
 
-Aplikace byla načtena na lokálním dev serveru. Bootstrap proběhl `BOOT 1 auth init → BOOT 2 auth ready → BOOT 7 routing → BOOT DONE` a skončil na přihlašovací obrazovce bez chyb v konzoli.
+Ověřeno na lokálním dev serveru, nejprve odhlášeně, poté na přihlášené relaci s reálnými rodinnými daty.
 
-**Omezení:** relace nebyla přihlášená, takže ověřuje pouze potvrzenou `anonymous` cestu — tedy tu, kterou tato vlna měnila nejcitlivěji. Neověřeno naživo: cached-validating shell, badge, account switch a managed child. Tyto cesty pokrývají deterministické testy výše; před nasazením stojí za manuální průchod.
+### Anonymous cesta
+
+`BOOT 1 auth init → BOOT 2 auth ready → BOOT 7 routing → BOOT DONE`, konec na přihlašovací obrazovce, konzole bez chyb.
+
+### Cached-validating cesta
+
+Membership dotaz byl v prohlížeči uměle zpožděn o 2,5 s (patch `window.fetch` na `/rest/v1/members`), aby bylo okno pozorovatelné. Zachycená sekvence:
+
+```text
+BOOT 3 profile loaded {"source":"local-cache-start"}
+BOOT 4 membership loaded {"status":"started"}      ← query startuje, cache ještě neodpověděla
+BOOT 3 profile loaded {"cached":true}
+BOOT 7 routing {"status":"userDataLoading"}
+BOOT 7 routing {"status":"cachedFamilyValidating"} ← shell otevřen na cached identitě
+BOOT DONE {"status":"cachedFamilyValidating"}
+   … 2,5 s …
+BOOT 4 membership loaded {"found":true}
+BOOT 5 family loaded {"familyId":"…"}
+BOOT 7 routing {"status":"authenticatedWithFamily"}
+BOOT DONE {"status":"authenticatedWithFamily"}
+```
+
+Potvrzeno současně:
+
+- **paralelizace** — `BOOT 4 … started` je zalogováno dřív, než cache odpoví (`{"cached":true}`);
+- **badge** — `.realtime-status-badge.validating` se skutečně vyrenderoval (MutationObserver) a po potvrzení zmizel;
+- **žádný remount** — shell zůstal mounted přes přechod `cachedFamilyValidating → authenticatedWithFamily`, protože scope se nezměnil.
+
+### Reálné časování bez umělého zpoždění
+
+Na localhostu trvá membership dotaz 85–115 ms, takže cached-validating okno je prakticky neviditelné. To je očekávané: přínos se projeví na pomalé síti, ne na lokálním serveru. Dvě `members` volání na boot jsou důsledek dev `StrictMode` (mount → cleanup → remount), ne duplicitní fetch z této vlny.
+
+### Křížová kontrola předchozích vln
+
+Na přihlášeném Home bootu neproběhl **žádný** dotaz na `messages`, `message_reactions`, `message_attachments` ani `message_entity_refs` — z messagingu jen `conversations` a `conversation_members`. Hranice z Wave 5 tedy drží i na reálných datech. Celkový počet requestů z dev relace není použitelný jako produkční číslo kvůli `StrictMode` zdvojení.
+
+### Neověřeno naživo
+
+Account switch (vyžaduje druhý účet) a managed child flow. Obojí pokrývají deterministické testy výše.
+
+### Pozorování mimo rozsah vlny
+
+`BOOT 5 family loaded` loguje `familyId` (UUID). Není to osobní údaj a řádek existoval před touto vlnou, ale je to identifikátor v produkční konzoli — stojí za zvážení, jestli ho nezkrátit na `Boolean(familyId)` jako u ostatních BOOT řádků.
 
 ## Záměrně beze změny
 
