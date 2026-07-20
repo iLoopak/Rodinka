@@ -753,86 +753,6 @@
       "isTest": false
     },
     {
-      "file": "src/context/ReminderContext.tsx",
-      "line": 132,
-      "kind": "table",
-      "method": "from",
-      "target": "reminders",
-      "domain": "reminders",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/ReminderContext.tsx",
-      "line": 149,
-      "kind": "table",
-      "method": "from",
-      "target": "notification_preferences",
-      "domain": "reminders",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/ReminderContext.tsx",
-      "line": 166,
-      "kind": "table",
-      "method": "from",
-      "target": "notification_preferences",
-      "domain": "reminders",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/ReminderContext.tsx",
-      "line": 171,
-      "kind": "table",
-      "method": "from",
-      "target": "notification_preferences",
-      "domain": "reminders",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/ReminderContext.tsx",
-      "line": 191,
-      "kind": "table",
-      "method": "from",
-      "target": "notification_preferences",
-      "domain": "reminders",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/ReminderContext.tsx",
-      "line": 282,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "sync_member_reminders",
-      "domain": "reminders",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/ReminderContext.tsx",
-      "line": 299,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "set_member_reminder_state",
-      "domain": "reminders",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/ReminderContext.tsx",
-      "line": 318,
-      "kind": "table",
-      "method": "from",
-      "target": "notification_preferences",
-      "domain": "reminders",
-      "layer": "state",
-      "isTest": false
-    },
-    {
       "file": "src/context/shopping/useShoppingDataSource.ts",
       "line": 55,
       "kind": "table",
@@ -1156,6 +1076,105 @@
       "method": "from",
       "target": "meal_votes",
       "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/reminders/data/supabaseReminderRepository.ts",
+      "line": 42,
+      "kind": "table",
+      "method": "from",
+      "target": "reminders",
+      "domain": "reminders",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/reminders/data/supabaseReminderRepository.ts",
+      "line": 55,
+      "kind": "table",
+      "method": "from",
+      "target": "reminders",
+      "domain": "reminders",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/reminders/data/supabaseReminderRepository.ts",
+      "line": 75,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "set_member_reminder_state",
+      "domain": "reminders",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/reminders/data/supabaseReminderRepository.ts",
+      "line": 83,
+      "kind": "table",
+      "method": "from",
+      "target": "notification_preferences",
+      "domain": "reminders",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/reminders/data/supabaseReminderRepository.ts",
+      "line": 91,
+      "kind": "table",
+      "method": "from",
+      "target": "notification_preferences",
+      "domain": "reminders",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/reminders/data/supabaseReminderRepository.ts",
+      "line": 100,
+      "kind": "table",
+      "method": "from",
+      "target": "notification_preferences",
+      "domain": "reminders",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/reminders/data/supabaseReminderRepository.ts",
+      "line": 108,
+      "kind": "table",
+      "method": "from",
+      "target": "notification_preferences",
+      "domain": "reminders",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/reminders/data/supabaseReminderRepository.ts",
+      "line": 116,
+      "kind": "table",
+      "method": "from",
+      "target": "notification_preferences",
+      "domain": "reminders",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/reminders/data/supabaseReminderRepository.ts",
+      "line": 126,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "sync_member_reminders",
+      "domain": "reminders",
       "layer": "data",
       "isTest": false,
       "allowed": "Per-feature data layer introduced by the repository waves."
