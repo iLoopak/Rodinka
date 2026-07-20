@@ -1,4 +1,6 @@
 import { GAME_CONFIG } from '../config/gameConfig'
+import { renderCosmeticAnchors, renderEquippedCosmetics } from '../cosmetics/cosmeticRenderer'
+import type { EquippedCosmetics } from '../cosmetics/cosmeticTypes'
 import type { FallingClutter, JumpDebugSnapshot, JumpGameState, JumpInput, JumpPlatform, JumpScoreMarker, JumpViewport } from '../types/game'
 import { createInitialGameState, stepGame } from './core'
 import { environmentBlendAtHeight, type EnvironmentTheme } from './environment'
@@ -16,6 +18,7 @@ interface FamilyJumpEngineOptions {
   copy: EngineCopy
   reducedMotion: boolean
   familyRecord: number
+  equippedCosmetics: EquippedCosmetics
   onScore: (score: number) => void
   onPauseChange: (paused: boolean) => void
   onAnnouncement: (message: string) => void
@@ -37,6 +40,7 @@ export class FamilyJumpEngine {
   private destroyed = false
   private finished = false
   private debug = false
+  private debugAnchors = false
   private toast = ''
   private toastSeconds = 0
   private lastReportedScore = -1
@@ -85,6 +89,11 @@ export class FamilyJumpEngine {
 
   setDebug(enabled: boolean) {
     this.debug = enabled
+    this.render()
+  }
+
+  setDebugAnchors(enabled: boolean) {
+    this.debugAnchors = enabled
     this.render()
   }
 
@@ -480,6 +489,8 @@ export class FamilyJumpEngine {
     context.moveTo(9, player.height / 2 - 1)
     context.lineTo(10, player.height / 2 + 7)
     context.stroke()
+    renderEquippedCosmetics(context, this.options.equippedCosmetics, player.width, player.height)
+    if (this.debugAnchors) renderCosmeticAnchors(context, player.width, player.height)
     if (this.debug) {
       context.strokeStyle = '#9C3E3E'
       context.lineWidth = 1
