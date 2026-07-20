@@ -25,6 +25,22 @@ export interface CalendarSnapshotData {
   rangeEnd: string
 }
 
+export type CalendarSnapshotDomain = Exclude<keyof CalendarSnapshotData, 'rangeStart' | 'rangeEnd'>
+export type CalendarProviderSnapshot = Partial<Pick<CalendarSnapshotData, CalendarSnapshotDomain>>
+
+export const CALENDAR_PROVIDER_DOMAINS: readonly CalendarSnapshotDomain[] = [
+  'chores',
+  'completions',
+  'activities',
+  'medicalRecords',
+  'planEntries',
+  'allowancePlans',
+  'occurrenceOverrides',
+  'assignmentHistory',
+  'participantHistory',
+  'members',
+]
+
 export type CalendarMutationStatus = 'pending' | 'syncing' | 'failed'
 export type CalendarMutation = CalendarChoreMutation | CalendarActivityMutation
 

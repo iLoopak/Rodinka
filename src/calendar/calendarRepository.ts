@@ -1,10 +1,9 @@
 import type { ActivityInput } from '../domain/activities/types'
 import type { ChoreInput } from '../utils/choreModel'
 import type { OfflineLocalStore } from '../shopping/shoppingIndexedDb'
-import { CALENDAR_LOCAL_SCHEMA_VERSION, calendarScopeKey, emptyCalendarData, type CalendarMutation, type CalendarRepositorySnapshot, type CalendarSnapshotData } from './calendarTypes'
+import { CALENDAR_LOCAL_SCHEMA_VERSION, CALENDAR_PROVIDER_DOMAINS, calendarScopeKey, emptyCalendarData, type CalendarMutation, type CalendarProviderSnapshot, type CalendarRepositorySnapshot, type CalendarSnapshotData, type CalendarSnapshotDomain } from './calendarTypes'
 import { applyPendingCalendarMutations, pendingCalendarRecords } from './calendarMutationQueue'
-import { subscribeToCalendarRealtime, type CalendarRealtimeSubscription } from './calendarRealtime'
-import { classifyCalendarSyncError, SupabaseCalendarRemote, type CalendarRemote } from './calendarSync'
+import { classifyCalendarSyncError, snapshotRange, SupabaseCalendarRemote, type CalendarRemote } from './calendarSync'
 
 interface CalendarRepositoryOptions {
   familyId: string
@@ -12,7 +11,6 @@ interface CalendarRepositoryOptions {
   currentMemberId: string
   store: OfflineLocalStore
   remote?: CalendarRemote
-  realtime?: CalendarRealtimeSubscription
   isOnline?: () => boolean
   now?: () => Date
   createId?: () => string
@@ -25,7 +23,6 @@ export class CalendarRepository {
   private readonly scopeKey: string
   private readonly store: OfflineLocalStore
   private readonly remote: CalendarRemote
-  private readonly realtime: CalendarRealtimeSubscription
   private readonly isOnline: () => boolean
   private readonly now: () => Date
   private readonly createId: () => string
@@ -36,14 +33,17 @@ export class CalendarRepository {
   private localWrite: Promise<void> = Promise.resolve()
   private syncPromise: Promise<void> | null = null
   private startPromise: Promise<void> | null = null
-  private stopRealtime: (() => Promise<void>) | null = null
+  private readonly providerDomains = new Set<CalendarSnapshotDomain>()
+  private deferredReconciliationTimer: ReturnType<typeof globalThis.setTimeout> | null = null
+  private idleCallbackId: number | null = null
   private running = false
   private lifecycle = 0
   private retryTimer: ReturnType<typeof globalThis.setTimeout> | null = null
   private consecutiveSyncFailures = 0
-  private onlineListener = () => { void this.sync() }
+  private remoteFallbackRequired = false
+  private onlineListener = () => { void this.prioritizeReconciliation() }
   private offlineListener = () => this.publish('offline', null)
-  private visibilityListener = () => { if (typeof document !== 'undefined' && document.visibilityState === 'visible') void this.sync() }
+  private visibilityListener = () => { if (typeof document !== 'undefined' && document.visibilityState === 'visible') void this.prioritizeReconciliation() }
 
   constructor(options: CalendarRepositoryOptions) {
     this.familyId = options.familyId
@@ -52,7 +52,6 @@ export class CalendarRepository {
     this.scopeKey = calendarScopeKey(options.userId, options.familyId)
     this.store = options.store
     this.remote = options.remote ?? new SupabaseCalendarRemote()
-    this.realtime = options.realtime ?? subscribeToCalendarRealtime
     this.isOnline = options.isOnline ?? (() => typeof navigator === 'undefined' || navigator.onLine)
     this.now = options.now ?? (() => new Date())
     this.createId = options.createId ?? (() => crypto.randomUUID())
@@ -113,9 +112,8 @@ export class CalendarRepository {
       window.addEventListener('offline', this.offlineListener)
     }
     if (typeof document !== 'undefined') document.addEventListener('visibilitychange', this.visibilityListener)
-    if (this.isOnline()) await this.ensureRealtime(lifecycle)
     if (stored || this.mutations.length > 0) await this.persistLocal()
-    await this.sync()
+    if (this.isOnline()) this.scheduleDeferredReconciliation()
   }
 
   async stop() {
@@ -124,18 +122,16 @@ export class CalendarRepository {
     this.lifecycle += 1
     if (this.retryTimer) globalThis.clearTimeout(this.retryTimer)
     this.retryTimer = null
+    this.cancelDeferredReconciliation()
     if (typeof window !== 'undefined') {
       window.removeEventListener('online', this.onlineListener)
       window.removeEventListener('offline', this.offlineListener)
     }
     if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', this.visibilityListener)
-    const stopRealtime = this.stopRealtime
-    this.stopRealtime = null
-    await stopRealtime?.()
     await Promise.allSettled([this.syncPromise, this.localWrite])
   }
 
-  async sync() {
+  async sync(options: { allowRemoteFallback?: boolean } = {}) {
     if (!this.running) return
     if (this.syncPromise) return this.syncPromise
     if (!this.isOnline()) {
@@ -143,7 +139,7 @@ export class CalendarRepository {
       return
     }
     const lifecycle = this.lifecycle
-    const promise = this.performSync(lifecycle)
+    const promise = this.performSync(lifecycle, options.allowRemoteFallback === true)
     const tracked = promise.finally(() => {
       if (this.syncPromise === tracked) this.syncPromise = null
     })
@@ -151,13 +147,13 @@ export class CalendarRepository {
     return this.syncPromise
   }
 
-  private async performSync(lifecycle: number) {
+  private async performSync(lifecycle: number, allowRemoteFallback: boolean) {
     this.publish('syncing', null)
-    await this.ensureRealtime(lifecycle)
     await this.waitForLocalWrites()
     if (!this.isActive(lifecycle)) return
 
     const successful = new Set<string>()
+    if (allowRemoteFallback && !this.hasCompleteProviderSnapshot()) this.remoteFallbackRequired = true
     try {
       for (const queued of [...this.mutations]) {
         if (!this.isActive(lifecycle)) return
@@ -182,16 +178,22 @@ export class CalendarRepository {
         }
       }
 
-      const fresh = await this.remote.fetchSnapshot(this.familyId)
-      if (!this.isActive(lifecycle)) return
-      this.serverData = fresh
+      const needsRemoteSnapshot = successful.size > 0 || (this.remoteFallbackRequired && !this.hasCompleteProviderSnapshot())
+      if (needsRemoteSnapshot) {
+        const fresh = await this.remote.fetchSnapshot(this.familyId)
+        if (!this.isActive(lifecycle)) return
+        this.serverData = fresh
+        CALENDAR_PROVIDER_DOMAINS.forEach((domain) => this.providerDomains.add(domain))
+        this.remoteFallbackRequired = false
+      }
       this.consecutiveSyncFailures = 0
       this.mutations = this.mutations.filter((mutation) => !successful.has(mutation.operationId))
-      const lastSuccessfulSyncAt = this.now().toISOString()
+      const reconciled = this.hasCompleteProviderSnapshot()
+      const lastSuccessfulSyncAt = reconciled ? this.now().toISOString() : this.snapshot.lastSuccessfulSyncAt
       await this.persistLocal(lastSuccessfulSyncAt)
       const hasFailed = this.mutations.some((mutation) => mutation.status === 'failed')
       this.replaceSnapshot(this.buildSnapshot({
-        status: hasFailed ? 'error' : this.mutations.length > 0 ? 'syncing' : 'synced',
+        status: hasFailed ? 'error' : this.mutations.length > 0 || !reconciled ? 'syncing' : 'synced',
         lastSuccessfulSyncAt,
         error: hasFailed ? 'calendar-mutation-failed' : null,
       }))
@@ -211,6 +213,45 @@ export class CalendarRepository {
       }))
       if (this.isOnline()) this.scheduleRetry()
     }
+  }
+
+  updateFromProviders(familyId: string, update: CalendarProviderSnapshot) {
+    if (!this.running || familyId !== this.familyId) return false
+    const domains = Object.keys(update) as CalendarSnapshotDomain[]
+    if (domains.length === 0) return false
+    const range = snapshotRange(this.now())
+    this.serverData = { ...this.serverData, ...update, rangeStart: range.start, rangeEnd: range.end }
+    domains.forEach((domain) => this.providerDomains.add(domain))
+    const complete = this.hasCompleteProviderSnapshot()
+    const lastSuccessfulSyncAt = complete ? this.now().toISOString() : this.snapshot.lastSuccessfulSyncAt
+    if (complete) {
+      this.remoteFallbackRequired = false
+      this.cancelDeferredReconciliation()
+    }
+    const hasFailedMutation = this.mutations.some((mutation) => mutation.status === 'failed')
+    this.replaceSnapshot(this.buildSnapshot({
+      status: !this.isOnline()
+        ? 'offline'
+        : hasFailedMutation
+          ? 'error'
+          : this.mutations.length > 0
+            ? 'syncing'
+            : complete
+              ? 'synced'
+              : this.snapshot.status,
+      lastSuccessfulSyncAt,
+      error: hasFailedMutation ? this.snapshot.error ?? 'calendar-mutation-failed' : null,
+    }))
+    void this.persistLocal(lastSuccessfulSyncAt).catch((error) => {
+      console.error('Failed to persist provider-backed calendar snapshot:', error)
+    })
+    return true
+  }
+
+  async prioritizeReconciliation() {
+    if (!this.running || !this.isOnline()) return
+    this.cancelDeferredReconciliation()
+    await this.sync({ allowRemoteFallback: true })
   }
 
   async addChore(input: ChoreInput) {
@@ -342,20 +383,29 @@ export class CalendarRepository {
     }, delay)
   }
 
-  private async ensureRealtime(lifecycle: number) {
-    if (this.stopRealtime || !this.isActive(lifecycle) || !this.isOnline()) return
-    try {
-      const stop = await this.realtime(this.familyId, () => {
-        if (this.isActive(lifecycle)) void this.sync()
-      })
-      if (!this.isActive(lifecycle)) {
-        await stop()
-        return
-      }
-      this.stopRealtime = stop
-    } catch (error) {
-      console.error('Calendar Realtime subscription failed:', error)
+  private hasCompleteProviderSnapshot() {
+    return CALENDAR_PROVIDER_DOMAINS.every((domain) => this.providerDomains.has(domain))
+  }
+
+  private scheduleDeferredReconciliation() {
+    this.cancelDeferredReconciliation()
+    const reconcile = () => {
+      this.cancelDeferredReconciliation()
+      if (!this.hasCompleteProviderSnapshot()) void this.sync({ allowRemoteFallback: true })
     }
+    this.deferredReconciliationTimer = globalThis.setTimeout(reconcile, 4_000)
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      this.idleCallbackId = window.requestIdleCallback(reconcile, { timeout: 4_000 })
+    }
+  }
+
+  private cancelDeferredReconciliation() {
+    if (this.deferredReconciliationTimer) globalThis.clearTimeout(this.deferredReconciliationTimer)
+    this.deferredReconciliationTimer = null
+    if (this.idleCallbackId !== null && typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
+      window.cancelIdleCallback(this.idleCallbackId)
+    }
+    this.idleCallbackId = null
   }
 
   private isActive(lifecycle: number) { return this.running && lifecycle === this.lifecycle }

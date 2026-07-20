@@ -5,6 +5,13 @@ import { emptyCalendarData, type CalendarRepositorySnapshot } from '../../calend
 import { getOfflineLocalStore } from '../../shopping/shoppingIndexedDb'
 import type { ChoreInput } from '../../utils/choreModel'
 import { createMemberLookup } from '../../utils/memberLookup'
+import { useFamilyMembersData } from '../family/FamilyMembersContext'
+import { useChoresData } from '../chores/ChoresContext'
+import { useAllowanceData } from '../chores/AllowanceContext'
+import { useActivitiesData } from '../activities/ActivitiesContext'
+import { useOccurrenceAssignmentsData } from '../activities/OccurrenceAssignmentsContext'
+import { useMedicalData } from '../health/MedicalContext'
+import { useMealsDataContext } from '../meals/MealsContext'
 
 const emptySnapshot: CalendarRepositorySnapshot = {
   ready: false,
@@ -18,6 +25,16 @@ const emptySnapshot: CalendarRepositorySnapshot = {
 }
 
 export function useCalendarOfflineDataSource(familyId: string, userId: string, currentMemberId: string) {
+  const { allMembers, membersLoading, membersError } = useFamilyMembersData()
+  const { chores, completions, choresLoading, choresError } = useChoresData()
+  const { allowancePlans, allowancePlansLoading, allowancePlansError } = useAllowanceData()
+  const { activities, activitiesLoading, activitiesError } = useActivitiesData()
+  const {
+    occurrenceOverrides, assignmentHistory, participantHistory,
+    occurrenceAssignmentsLoading, occurrenceAssignmentsError,
+  } = useOccurrenceAssignmentsData()
+  const { medicalRecords, medicalLoading, medicalError } = useMedicalData()
+  const { planEntries, planEntriesLoading, planEntriesError } = useMealsDataContext()
   const repositoryRef = useRef<CalendarRepository | null>(null)
   const [snapshot, setSnapshot] = useState<CalendarRepositorySnapshot>(emptySnapshot)
 
@@ -38,7 +55,31 @@ export function useCalendarOfflineDataSource(familyId: string, userId: string, c
     }
   }, [currentMemberId, familyId, userId])
 
-  const refreshCalendar = useCallback(async () => { await repositoryRef.current?.sync() }, [])
+  useEffect(() => {
+    if (!snapshot.ready || !repositoryRef.current) return
+    const update = {
+      ...(!membersLoading && !membersError
+        ? { members: allMembers.map((member) => ({ ...member, avatar_url: null })) }
+        : {}),
+      ...(!choresLoading && !choresError ? { chores, completions } : {}),
+      ...(!activitiesLoading && !activitiesError ? { activities } : {}),
+      ...(!medicalLoading && !medicalError ? { medicalRecords } : {}),
+      ...(!planEntriesLoading && !planEntriesError ? { planEntries } : {}),
+      ...(!allowancePlansLoading && !allowancePlansError ? { allowancePlans } : {}),
+      ...(!occurrenceAssignmentsLoading && !occurrenceAssignmentsError
+        ? { occurrenceOverrides, assignmentHistory, participantHistory }
+        : {}),
+    }
+    repositoryRef.current.updateFromProviders(familyId, update)
+  }, [
+    activities, activitiesError, activitiesLoading, allowancePlans, allowancePlansError, allowancePlansLoading,
+    allMembers, assignmentHistory, chores, choresError, choresLoading, completions, familyId,
+    medicalError, medicalLoading, medicalRecords, membersError, membersLoading,
+    occurrenceAssignmentsError, occurrenceAssignmentsLoading, occurrenceOverrides, participantHistory,
+    planEntries, planEntriesError, planEntriesLoading, snapshot.ready,
+  ])
+
+  const refreshCalendar = useCallback(async () => { await repositoryRef.current?.prioritizeReconciliation() }, [])
   const addOfflineChore = useCallback(async (input: ChoreInput) => {
     if (!repositoryRef.current) throw new Error('Calendar repository is not ready')
     await repositoryRef.current.addChore(input)
