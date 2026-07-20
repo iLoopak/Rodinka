@@ -58,6 +58,8 @@ export function AllowanceProvider({ familyId, children }: ProviderProps) {
     if (!familyId) return
     const unsubscribe = createRealtimeSubscription({
       channelName: `family:${familyId}:allowance`,
+      owner: 'AllowanceProvider',
+      openReason: 'provider-mount',
       onStatusChange: setAllowanceRealtimeStatus,
       tables: [{
         table: 'allowance_ledger',

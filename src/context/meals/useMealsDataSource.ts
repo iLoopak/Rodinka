@@ -155,6 +155,8 @@ export function useMealsDataSource(familyId: string | undefined, userId: string)
     if (!familyId) return
     const unsubscribe = createRealtimeSubscription({
       channelName: `family:${familyId}:meals`,
+      owner: 'MealsProvider',
+      openReason: 'provider-mount',
       onStatusChange: setMealsRealtimeStatus,
       tables: [
         {

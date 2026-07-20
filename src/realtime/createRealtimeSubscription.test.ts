@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const channelMock = vi.hoisted(() => vi.fn())
 const removeChannelMock = vi.hoisted(() => vi.fn())
@@ -11,6 +11,8 @@ vi.mock('../supabaseClient', () => ({
 }))
 
 const { createRealtimeSubscription } = await import('./createRealtimeSubscription')
+const { getRealtimeRegistrySnapshot, resetRealtimeRegistryForTests } = await import('./realtimeRegistry')
+const { resetRealtimeStatusStoreForTests } = await import('./realtimeStatusStore')
 
 interface FakeChannel {
   on: ReturnType<typeof vi.fn>
@@ -44,6 +46,14 @@ function makeFakeChannel(): FakeChannel {
 }
 
 describe('createRealtimeSubscription', () => {
+  beforeEach(() => {
+    resetRealtimeRegistryForTests()
+    resetRealtimeStatusStoreForTests()
+    channelMock.mockReset()
+    removeChannelMock.mockReset()
+    removeChannelMock.mockResolvedValue('ok')
+  })
+
   it('dispatches INSERT/UPDATE/DELETE payloads to the matching table config only', () => {
     const channel = makeFakeChannel()
     channelMock.mockReturnValue(channel)
@@ -54,6 +64,8 @@ describe('createRealtimeSubscription', () => {
 
     createRealtimeSubscription({
       channelName: 'family:f1:chores',
+      owner: 'ChoresProvider',
+      openReason: 'provider-mount',
       tables: [
         { table: 'chores', filter: 'family_id=eq.f1', onInsert: choresInsert, onUpdate: choresUpdate },
         { table: 'chore_completions', filter: 'family_id=eq.f1', onDelete: completionsDelete },
@@ -80,6 +92,8 @@ describe('createRealtimeSubscription', () => {
 
     createRealtimeSubscription({
       channelName: 'family:f1:activities',
+      owner: 'ActivitiesProvider',
+      openReason: 'provider-mount',
       tables: [{ table: 'activities', filter: 'family_id=eq.f1', onInsert }],
       onStatusChange,
     })
@@ -107,11 +121,50 @@ describe('createRealtimeSubscription', () => {
 
     const unsubscribe = createRealtimeSubscription({
       channelName: 'family:f1:medical',
+      owner: 'MedicalProvider',
+      openReason: 'provider-mount',
       tables: [{ table: 'medical_records', filter: 'family_id=eq.f1', onUpdate: vi.fn() }],
     })
 
     unsubscribe()
+    unsubscribe()
     expect(removeChannelMock).toHaveBeenCalledTimes(1)
     expect(removeChannelMock).toHaveBeenCalledWith(channel)
+  })
+
+  it('contains an async removal failure and remains safe to clean up again', async () => {
+    const channel = makeFakeChannel()
+    channelMock.mockReturnValue(channel)
+    removeChannelMock.mockRejectedValueOnce(new Error('remove failed'))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    const unsubscribe = createRealtimeSubscription({
+      channelName: 'family:f1:messages',
+      owner: 'MessagesProvider',
+      openReason: 'provider-mount',
+      tables: [{ table: 'messages' }],
+    })
+    unsubscribe()
+    unsubscribe()
+    await Promise.resolve()
+
+    expect(removeChannelMock).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalledWith('[Rodinka realtime] channel removal failed', 'family:f1:messages', 'MessagesProvider')
+    warn.mockRestore()
+  })
+
+  it('closes diagnostics if subscribe throws before returning cleanup', () => {
+    const channel = makeFakeChannel()
+    channel.subscribe.mockImplementationOnce(() => { throw new Error('subscribe failed') })
+    channelMock.mockReturnValue(channel)
+
+    expect(() => createRealtimeSubscription({
+      channelName: 'family:f1:allowance',
+      owner: 'AllowanceProvider',
+      openReason: 'provider-mount',
+      tables: [{ table: 'allowance_ledger' }],
+    })).toThrow('subscribe failed')
+    expect(getRealtimeRegistrySnapshot().active).toHaveLength(0)
+    expect(getRealtimeRegistrySnapshot().closed[0]?.closeReason).toBe('subscribe-failed')
   })
 })

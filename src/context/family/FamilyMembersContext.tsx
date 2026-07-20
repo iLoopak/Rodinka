@@ -79,6 +79,8 @@ export function FamilyMembersProvider({ familyId, userId = null, children }: Pro
     if (!familyId) return
     const unsubscribe = createRealtimeSubscription({
       channelName: `family:${familyId}:family-members`,
+      owner: 'FamilyMembersProvider',
+      openReason: 'provider-mount',
       onStatusChange: setMembersRealtimeStatus,
       tables: [{
         table: 'members',

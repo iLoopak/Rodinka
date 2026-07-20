@@ -1,4 +1,6 @@
 import { supabase } from '../supabaseClient'
+import { connectionStateFromSubscribeStatus } from '../realtime/connectionState'
+import { openRealtimeLifecycle } from '../realtime/realtimeRegistry'
 
 export type CalendarRealtimeStop = () => Promise<void>
 export type CalendarRealtimeSubscription = (familyId: string, onRemoteChange: () => void) => Promise<CalendarRealtimeStop>
@@ -23,15 +25,29 @@ export const subscribeToCalendarRealtime: CalendarRealtimeSubscription = async (
   for (const table of ['chore_completions', 'activity_participants']) {
     channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, onRemoteChange)
   }
-  channel.subscribe()
+  const lifecycle = openRealtimeLifecycle({
+    channelName: topic,
+    owner: 'CalendarRepository',
+    openReason: 'repository-start',
+    tables: [...familyTables, 'chore_completions', 'activity_participants'],
+  })
+  try {
+    channel.subscribe((status) => lifecycle.status(connectionStateFromSubscribeStatus(status)))
+  } catch (error) {
+    lifecycle.close('subscribe-failed')
+    throw error
+  }
 
   let stopped = false
   return async () => {
     if (stopped) return
     stopped = true
-    const teardown = supabase.removeChannel(channel).then(() => undefined)
+    const teardown = Promise.resolve(supabase.removeChannel(channel)).then(() => undefined, () => undefined)
     channelTeardowns.set(topic, teardown)
     try { await teardown }
-    finally { if (channelTeardowns.get(topic) === teardown) channelTeardowns.delete(topic) }
+    finally {
+      lifecycle.close('repository-stop')
+      if (channelTeardowns.get(topic) === teardown) channelTeardowns.delete(topic)
+    }
   }
 }
