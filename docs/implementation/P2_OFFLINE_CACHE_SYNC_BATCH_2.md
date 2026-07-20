@@ -65,16 +65,56 @@ Dva contract testy z batche 1 bylo potřeba opravit, ne smazat:
 - `messagingPushContract.test.ts` tvrdil, že `sw.js` nikdy neobsahuje `skipWaiting`. To byl starý záměr; skutečný invariant je nyní „jediné volací místo je message handler" a testuje ho `serviceWorkerUpdates.test.ts`.
 - `realtimeStatusBoundaryContract.test.ts` porovnával víceřádkový úryvek se zdrojákem a byl tiše závislý na line endings — rozbil se, jakmile git soubor vrátil s CRLF. Čte teď přes `readSource()`, který je normalizuje.
 
+## Povinné regresní scénáře #8, #10, #14
+
+Tři scénáře ze zadání, které batch 1 nepokryl.
+
+### #8 — opakovaný reconnect nesmí vytvořit duplicitní záznamy
+
+Dosud to stálo na argumentu, ne na testu: oba RPC deduplikují přes ledger klíčovaný `mutationId` / `operationId`. Ten argument platí jen dokud klient (a) nespustí dva syncy nad jednou frontou a (b) nikdy nepřegeneruje klíč. Obojí je nyní připíchnuté.
+
+`shoppingReconnectStorm.test.ts` a `calendarReconnectStorm.test.ts` drží mutaci na drátě, během toho odpálí `online` třikrát, a ověří jeden apply na mutaci. Další dva testy ověří, že se klíč nemění při retry **ani po reloadu** (fronta se načte z IndexedDB novou instancí repository).
+
+### #10 — manuální retry během automatického syncu
+
+Součást stejných souborů: `retryFailed()` / `retry()` zavolané uprostřed běžícího syncu nesmí nic aplikovat dvakrát.
+
+### #14 — offline cold start service workeru
+
+`serviceWorkerColdStart.test.ts` spouští **skutečný fetch handler** z `sw.js` proti fake Cache Storage a `fetch`, který rejectuje. Ostatní testy nad `sw.js` čtou jen zdroják a hledají řetězce, což o chování při vypnuté síti neřekne nic.
+
+Pokryto: navigace bez sítě dostane cachovaný shell, chybějící shell dá čitelnou 503, cachovaný asset se servíruje bez dotazu na síť, cross-origin request se nezachytává.
+
+### Mutation testing
+
+Každý z těchto testů byl ověřen tím, že se dočasně rozbil produkční kód:
+
+| Mutace | Zachyceno |
+| --- | --- |
+| klíč přegenerován při odeslání | ✅ shopping i calendar |
+| odstraněn `syncPromise` guard | ✅ shopping i calendar |
+| odstraněn fallback na cachovaný shell | ✅ |
+| odstraněn cross-origin guard | ✅ (až po opravě testu, viz níže) |
+
+Dva testy tím prošly jako **falešně zelené** a bylo je potřeba opravit:
+
+- test cross-origin guardu původně používal Supabase REST URL, kterou by handler stejně nezachytil (nesedí `destination` ani cesta). Přepsán na signed URL avataru — cross-origin `image`, přesně tvar, který by runtime asset větev jinak zacachovala. To je zároveň reálné riziko: fotky jedné rodiny v cache sdílené se všemi účty na zařízení.
+- calendar reload test měl per-repository čítač id, takže restartovaná instance razila `id-1` znovu a „přegenerovaný" klíč se náhodou shodoval s persistovaným. Čítač je teď sdílený.
+
 ## Validace
 
 | Příkaz | Výsledek |
 | --- | --- |
 | `npm run lint` | ✅ 0 chyb |
-| `npm test` | ✅ 209 souborů, 1269 testů |
+| `npm test` | ✅ 212 souborů, 1283 testů |
 | `npm run build` | ✅ včetně `check:bundle` |
 | `npm run check:edge-functions` | ✅ |
 | `git diff --check` | ✅ |
 | `npx supabase start` / `db reset` / `npm run test:db` | ⚠️ **nespuštěno** — Docker není na tomto stroji dostupný. Batch neobsahuje změny migrací ani RLS. |
+
+## Zbývající scénáře ze zadání
+
+Nepokryté zůstávají: **#4** (offline start bez snapshotu), **#1** (online start bez cache, pokryto jen nepřímo), **#6** (permission error neodemkne cached data — klasifikace otestovaná, end-to-end cesta ne), **#13** částečně (corrupt entry jen pro query cache, ne pro shopping/calendar store) a **#15** (push deep link při cold startu).
 
 ## Co zůstává neověřené
 
