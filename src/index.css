@@ -409,6 +409,11 @@ textarea:disabled {
 
 .realtime-status-badge.disconnected .realtime-status-dot { background: var(--brick); }
 
+.realtime-status-badge.validating .realtime-status-dot {
+  background: var(--category-meals);
+  animation: realtime-status-pulse 1.4s ease-in-out infinite;
+}
+
 @keyframes realtime-status-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
