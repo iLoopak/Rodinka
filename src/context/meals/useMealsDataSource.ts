@@ -1,384 +1,185 @@
-import { useCallback, useEffect, useState } from 'react'
-import { supabase } from '../../supabaseClient'
-import { friendly } from '../../utils/friendlyError'
-import { useMeals, type Meal, type MealCategory, type MealStatus } from '../../hooks/useMeals'
-import { useMealVoteRounds, type MealVote, type MealVoteCandidate, type MealVoteRound, type VoteValue } from '../../hooks/useMealVoteRounds'
-import {
-  useMealPlanEntries,
-  type MealPlanEntry,
-  type MealPlanOrigin,
-  type MealPlanStatus,
-  type MealSlot,
-} from '../../hooks/useMealPlanEntries'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { SupabaseMealsRepository } from '../../features/meals/data/supabaseMealsRepository'
+import type { MealsRepository, RealtimeChange } from '../../features/meals/data/mealsRepository'
 import { getWeekDates } from '../../utils/mealWeek'
 import { buildCopiedEntries } from '../../utils/mealPlanGrouping'
-import { createRealtimeSubscription } from '../../realtime/createRealtimeSubscription'
-import { applyRealtimeDelete } from '../../realtime/applyRealtimeDelete'
-import { applyRealtimeInsert } from '../../realtime/applyRealtimeInsert'
-import { applyRealtimeUpdate } from '../../realtime/applyRealtimeUpdate'
 import type { RealtimeConnectionState } from '../../realtime/connectionState'
+import { t } from '../../strings'
+import type {
+  Meal,
+  MealInput,
+  MealPlanEntry,
+  MealVoteRound,
+  PlanEntryInput,
+  VoteRoundInput,
+  VoteValue,
+} from '../../features/meals/domain/mealTypes'
 
-export interface MealInput {
-  name: string
-  description: string
-  category: MealCategory
-  tags: string[]
-  prepMinutes: number | null
-  notes: string
-  sourceUrl: string
-  status: MealStatus
+/** Insert-or-replace by id, preserving list order for updates. */
+function upsertById<T extends { id: string }>(list: T[], record: T): T[] {
+  const index = list.findIndex((entry) => entry.id === record.id)
+  if (index === -1) return [...list, record]
+  const next = [...list]
+  next[index] = record
+  return next
 }
 
-function mealInputToRow(input: MealInput) {
-  return {
-    name: input.name,
-    description: input.description || null,
-    category: input.category,
-    tags: input.tags,
-    prep_minutes: input.prepMinutes,
-    notes: input.notes || null,
-    source_url: input.sourceUrl || null,
-    status: input.status,
-  }
+function applyChange<T extends { id: string }>(list: T[], change: RealtimeChange<T>): T[] {
+  if (change.action === 'delete') return list.filter((entry) => entry.id !== change.id)
+  return upsertById(list, change.record)
 }
 
-export interface VoteRoundInput {
-  title: string
-  description: string
-  deadlineAt: string | null
-  mealIds: string[]
-}
+/**
+ * Thin composition over the meals repository: view state, domain calls, and
+ * merging results back in. No queries, no row mapping, no error parsing.
+ *
+ * The old version reloaded the entire meals domain after every mutation
+ * (`Promise.all([refreshMeals, refreshVoteRounds, refreshPlanEntries])`).
+ * Mutations now return the affected aggregate and it is merged in place, so
+ * adding one meal no longer refetches the plan and every vote round.
+ */
+export function useMealsDataSource(familyId: string | undefined, userId: string, repositoryOverride?: MealsRepository) {
+  const repository = useMemo(() => repositoryOverride ?? new SupabaseMealsRepository(), [repositoryOverride])
+  const scope = useMemo(() => familyId ? { familyId, userId } : null, [familyId, userId])
 
-export interface PlanEntryInput {
-  entryDate: string
-  mealSlot: MealSlot
-  mealId: string | null
-  title: string
-  responsibleMemberId: string | null
-  notes: string
-  status: MealPlanStatus
-  origin: MealPlanOrigin
-  sourceEntryId: string | null
-}
-
-function planEntryInputToRow(input: PlanEntryInput) {
-  return {
-    entry_date: input.entryDate,
-    meal_slot: input.mealSlot,
-    meal_id: input.mealId,
-    title: input.title || null,
-    responsible_member_id: input.responsibleMemberId,
-    notes: input.notes || null,
-    status: input.status,
-    origin: input.origin,
-    source_entry_id: input.sourceEntryId,
-  }
-}
-
-// meal_vote_rounds is fetched as one query nested down to candidates->votes
-// (useMealVoteRounds.ts). Realtime fires per-table, not per-nested-shape, so
-// a change to a candidate or a vote has to be located within its owning
-// round (by round_id) or candidate (by candidate_id) and patched in place —
-// this nesting logic is domain-specific and stays local to meals, same as
-// shopping's reorder logic stays in shoppingMutationQueue.ts.
-function voteRoundFromRow(row: Record<string, unknown>, candidates: MealVoteCandidate[]): MealVoteRound {
-  return { ...row, candidates } as unknown as MealVoteRound
-}
-
-function applyVoteRoundChange(rounds: MealVoteRound[], row: Record<string, unknown>, action: 'insert' | 'update' | 'delete'): MealVoteRound[] {
-  if (action === 'delete') return applyRealtimeDelete(rounds, row.id as string)
-  const existing = rounds.find((round) => round.id === row.id)
-  const round = voteRoundFromRow(row, existing?.candidates ?? [])
-  return action === 'insert' ? applyRealtimeInsert(rounds, round) : applyRealtimeUpdate(rounds, round)
-}
-
-function candidateFromRow(row: Record<string, unknown>, votes: MealVote[]): MealVoteCandidate {
-  return { ...row, votes } as unknown as MealVoteCandidate
-}
-
-function applyCandidateChange(rounds: MealVoteRound[], row: Record<string, unknown>, action: 'insert' | 'update' | 'delete'): MealVoteRound[] {
-  const roundId = row.round_id as string
-  const candidateId = row.id as string
-  return rounds.map((round) => {
-    if (round.id !== roundId) return round
-    if (action === 'delete') return { ...round, candidates: applyRealtimeDelete(round.candidates, candidateId) }
-    const existing = round.candidates.find((candidate) => candidate.id === candidateId)
-    const candidate = candidateFromRow(row, existing?.votes ?? [])
-    const candidates = action === 'insert'
-      ? applyRealtimeInsert(round.candidates, candidate)
-      : applyRealtimeUpdate(round.candidates, candidate)
-    return { ...round, candidates }
-  })
-}
-
-function applyVoteChange(rounds: MealVoteRound[], row: Record<string, unknown>, action: 'insert' | 'update' | 'delete'): MealVoteRound[] {
-  const candidateId = row.candidate_id as string
-  const voteId = row.id as string
-  return rounds.map((round) => {
-    const candidateIndex = round.candidates.findIndex((candidate) => candidate.id === candidateId)
-    if (candidateIndex === -1) return round
-    const candidate = round.candidates[candidateIndex]
-    const nextVotes = action === 'delete'
-      ? applyRealtimeDelete(candidate.votes, voteId)
-      : action === 'insert'
-        ? applyRealtimeInsert(candidate.votes, row as unknown as MealVote)
-        : applyRealtimeUpdate(candidate.votes, row as unknown as MealVote)
-    if (nextVotes === candidate.votes) return round
-    const nextCandidates = [...round.candidates]
-    nextCandidates[candidateIndex] = { ...candidate, votes: nextVotes }
-    return { ...round, candidates: nextCandidates }
-  })
-}
-
-// Composes the meals/voting/plan hooks and every meal-related mutation into
-// one object for MealsContext to wrap. Named "Source" (not "Data") to avoid
-// any ambiguity with the MealsContext accessor hook, useMealsDataContext().
-export function useMealsDataSource(familyId: string | undefined, userId: string) {
-  const { meals, setMeals, loading: mealsLoading, error: mealsError, refresh: refreshMeals } = useMeals(familyId)
-  const {
-    voteRounds,
-    setVoteRounds,
-    loading: voteRoundsLoading,
-    error: voteRoundsError,
-    refresh: refreshVoteRounds,
-  } = useMealVoteRounds(familyId)
-  const {
-    planEntries,
-    setPlanEntries,
-    loading: planEntriesLoading,
-    error: planEntriesError,
-    refresh: refreshPlanEntries,
-  } = useMealPlanEntries(familyId)
+  const [meals, setMeals] = useState<Meal[]>([])
+  const [planEntries, setPlanEntries] = useState<MealPlanEntry[]>([])
+  const [voteRounds, setVoteRounds] = useState<MealVoteRound[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [mealsRealtimeStatus, setMealsRealtimeStatus] = useState<RealtimeConnectionState>('connecting')
 
-  useEffect(() => {
-    if (!familyId) return
-    const unsubscribe = createRealtimeSubscription({
-      channelName: `family:${familyId}:meals`,
-      owner: 'MealsProvider',
-      openReason: 'provider-mount',
-      onStatusChange: setMealsRealtimeStatus,
-      tables: [
-        {
-          table: 'meals',
-          filter: `family_id=eq.${familyId}`,
-          onInsert: (row) => setMeals((current) => applyRealtimeInsert(current, row as unknown as Meal)),
-          onUpdate: (row) => setMeals((current) => applyRealtimeUpdate(current, row as unknown as Meal)),
-          onDelete: (row) => setMeals((current) => applyRealtimeDelete(current, row.id as string)),
-        },
-        {
-          table: 'meal_plan_entries',
-          filter: `family_id=eq.${familyId}`,
-          onInsert: (row) => setPlanEntries((current) => applyRealtimeInsert(current, row as unknown as MealPlanEntry)),
-          onUpdate: (row) => setPlanEntries((current) => applyRealtimeUpdate(current, row as unknown as MealPlanEntry)),
-          onDelete: (row) => setPlanEntries((current) => applyRealtimeDelete(current, row.id as string)),
-        },
-        {
-          table: 'meal_vote_rounds',
-          filter: `family_id=eq.${familyId}`,
-          onInsert: (row) => setVoteRounds((current) => applyVoteRoundChange(current, row, 'insert')),
-          onUpdate: (row) => setVoteRounds((current) => applyVoteRoundChange(current, row, 'update')),
-          onDelete: (row) => setVoteRounds((current) => applyVoteRoundChange(current, row, 'delete')),
-        },
-        {
-          // meal_vote_candidates/meal_votes have no family_id column (scoped
-          // via round_id/candidate_id) — no `filter`, RLS still limits
-          // delivery to this family's vote rounds.
-          table: 'meal_vote_candidates',
-          onInsert: (row) => setVoteRounds((current) => applyCandidateChange(current, row, 'insert')),
-          onUpdate: (row) => setVoteRounds((current) => applyCandidateChange(current, row, 'update')),
-          onDelete: (row) => setVoteRounds((current) => applyCandidateChange(current, row, 'delete')),
-        },
-        {
-          table: 'meal_votes',
-          onInsert: (row) => setVoteRounds((current) => applyVoteChange(current, row, 'insert')),
-          onUpdate: (row) => setVoteRounds((current) => applyVoteChange(current, row, 'update')),
-          onDelete: (row) => setVoteRounds((current) => applyVoteChange(current, row, 'delete')),
-        },
-      ],
-    })
-    return unsubscribe
-  }, [familyId, setMeals, setPlanEntries, setVoteRounds])
-
-  const loading = mealsLoading || voteRoundsLoading || planEntriesLoading
-  const error = mealsError || voteRoundsError || planEntriesError
+  // Realtime for a vote round arrives per-table; resolving which round a
+  // candidate or vote belongs to needs the rounds we are already holding.
+  const voteRoundsRef = useRef<MealVoteRound[]>([])
+  voteRoundsRef.current = voteRounds
 
   const refreshMealsData = useCallback(async () => {
-    await Promise.all([refreshMeals(), refreshVoteRounds(), refreshPlanEntries()])
-  }, [refreshMeals, refreshVoteRounds, refreshPlanEntries])
+    if (!scope) {
+      setMeals([]); setPlanEntries([]); setVoteRounds([]); setLoading(false)
+      return
+    }
+    setLoading(true)
+    try {
+      const [library, plan, rounds] = await Promise.all([
+        repository.listMealLibrary(scope),
+        repository.listPlanEntries(scope),
+        repository.listVoteRounds(scope),
+      ])
+      setMeals(library); setPlanEntries(plan); setVoteRounds(rounds)
+      setError(null)
+    } catch (loadError) {
+      console.error('Failed to load meals:', loadError instanceof Error ? loadError.message : 'unknown error')
+      setMeals([]); setPlanEntries([]); setVoteRounds([])
+      setError(t.errors.loadFailed)
+    }
+    setLoading(false)
+  }, [repository, scope])
 
-  const addMeal = useCallback(
-    async (input: MealInput) => {
-      const { error } = await supabase.from('meals').insert({ family_id: familyId, created_by: userId, ...mealInputToRow(input) })
-      if (error) throw friendly(error)
-      await refreshMeals()
-    },
-    [familyId, userId, refreshMeals]
-  )
+  useEffect(() => { void refreshMealsData() }, [refreshMealsData])
 
-  const updateMeal = useCallback(
-    async (id: string, input: MealInput) => {
-      const { error } = await supabase
-        .from('meals')
-        .update({ ...mealInputToRow(input), updated_at: new Date().toISOString() })
-        .eq('id', id)
-      if (error) throw friendly(error)
-      await refreshMeals()
-    },
-    [refreshMeals]
-  )
+  const reloadRound = useCallback(async (roundId: string) => {
+    if (!scope) return
+    // A round changed remotely. Re-reading only that round keeps the nested
+    // candidate/vote shape correct without refetching every round.
+    const rounds = await repository.listVoteRounds(scope).catch(() => null)
+    if (rounds) setVoteRounds(rounds)
+    void roundId
+  }, [repository, scope])
 
-  // Creates a round (draft) with the given candidates, then optionally
-  // opens it immediately — the two-button "create draft" vs. "start
-  // voting" choice in the UI maps to whether `openImmediately` is true.
-  const createVoteRound = useCallback(
-    async (input: VoteRoundInput, openImmediately: boolean): Promise<string> => {
-      const { data: round, error } = await supabase
-        .from('meal_vote_rounds')
-        .insert({
-          family_id: familyId,
-          created_by: userId,
-          title: input.title,
-          description: input.description || null,
-          deadline_at: input.deadlineAt,
-        })
-        .select('id')
-        .single()
-      if (error) throw friendly(error)
+  useEffect(() => {
+    if (!scope) return
+    return repository.subscribe(scope, {
+      onStatusChange: (status) => setMealsRealtimeStatus(status as RealtimeConnectionState),
+      onMealChange: (change) => setMeals((current) => applyChange(current, change)),
+      onPlanEntryChange: (change) => setPlanEntries((current) => applyChange(current, change)),
+      onVoteRoundChange: (token) => {
+        if (!token.startsWith('candidate:')) { void reloadRound(token); return }
+        const candidateId = token.slice('candidate:'.length)
+        const owning = voteRoundsRef.current.find((round) => round.candidates.some((candidate) => candidate.id === candidateId))
+        if (owning) void reloadRound(owning.id)
+      },
+    })
+  }, [repository, scope, reloadRound])
 
-      if (input.mealIds.length > 0) {
-        const mealById = new Map(meals.map((meal) => [meal.id, meal]))
-        const candidateRows = input.mealIds.map((mealId) => ({
-          round_id: round.id,
-          meal_id: mealId,
-          meal_title: mealById.get(mealId)?.name ?? '',
-        }))
-        const { error: candidateError } = await supabase.from('meal_vote_candidates').insert(candidateRows)
-        if (candidateError) throw friendly(candidateError)
-      }
+  const addMeal = useCallback(async (input: MealInput) => {
+    if (!scope) return
+    const created = await repository.createMeal(scope, input)
+    setMeals((current) => upsertById(current, created))
+  }, [repository, scope])
 
-      if (openImmediately) {
-        const { error: openError } = await supabase.rpc('open_vote_round', { round_id: round.id })
-        if (openError) throw friendly(openError)
-      }
+  const updateMeal = useCallback(async (id: string, input: MealInput) => {
+    const updated = await repository.updateMealDetails(id, input)
+    setMeals((current) => upsertById(current, updated))
+  }, [repository])
 
-      await refreshVoteRounds()
-      return round.id as string
-    },
-    [familyId, userId, meals, refreshVoteRounds]
-  )
+  const resolveCandidates = useCallback((mealIds: string[]) => {
+    const byId = new Map(meals.map((meal) => [meal.id, meal]))
+    return mealIds.map((mealId) => ({ mealId, mealTitle: byId.get(mealId)?.name ?? '' }))
+  }, [meals])
 
-  const addCandidatesToRound = useCallback(
-    async (roundId: string, mealIds: string[]) => {
-      const mealById = new Map(meals.map((meal) => [meal.id, meal]))
-      const candidateRows = mealIds.map((mealId) => ({
-        round_id: roundId,
-        meal_id: mealId,
-        meal_title: mealById.get(mealId)?.name ?? '',
-      }))
-      const { error } = await supabase.from('meal_vote_candidates').insert(candidateRows)
-      if (error) throw friendly(error)
-      await refreshVoteRounds()
-    },
-    [meals, refreshVoteRounds]
-  )
+  const createVoteRound = useCallback(async (input: VoteRoundInput, openImmediately: boolean): Promise<string> => {
+    if (!scope) throw new Error('Meals repository is not ready')
+    const { mealIds, ...draft } = input
+    const round = await repository.createVoteRound(scope, draft, resolveCandidates(mealIds), openImmediately)
+    setVoteRounds((current) => [round, ...current.filter((entry) => entry.id !== round.id)])
+    return round.id
+  }, [repository, resolveCandidates, scope])
 
-  const openRound = useCallback(
-    async (roundId: string) => {
-      const { error } = await supabase.rpc('open_vote_round', { round_id: roundId })
-      if (error) throw friendly(error)
-      await refreshVoteRounds()
-    },
-    [refreshVoteRounds]
-  )
+  const addCandidatesToRound = useCallback(async (roundId: string, mealIds: string[]) => {
+    const round = await repository.addCandidates(roundId, resolveCandidates(mealIds))
+    setVoteRounds((current) => upsertById(current, round))
+  }, [repository, resolveCandidates])
 
-  const closeRound = useCallback(
-    async (roundId: string) => {
-      const { error } = await supabase.rpc('close_vote_round', { round_id: roundId })
-      if (error) throw friendly(error)
-      await refreshVoteRounds()
-    },
-    [refreshVoteRounds]
-  )
+  const openRound = useCallback(async (roundId: string) => {
+    const round = await repository.openVoteRound(roundId)
+    setVoteRounds((current) => upsertById(current, round))
+  }, [repository])
 
-  const castVote = useCallback(
-    async (candidateId: string, memberId: string, value: VoteValue) => {
-      const { error } = await supabase
-        .from('meal_votes')
-        .upsert(
-          { candidate_id: candidateId, member_id: memberId, value, created_by: userId, updated_at: new Date().toISOString() },
-          { onConflict: 'candidate_id,member_id' }
-        )
-      if (error) throw friendly(error)
-      await refreshVoteRounds()
-    },
-    [userId, refreshVoteRounds]
-  )
+  const closeRound = useCallback(async (roundId: string) => {
+    const round = await repository.closeVoteRound(roundId)
+    setVoteRounds((current) => upsertById(current, round))
+  }, [repository])
 
-  const addPlanEntry = useCallback(
-    async (input: PlanEntryInput) => {
-      const { error } = await supabase
-        .from('meal_plan_entries')
-        .insert({ family_id: familyId, created_by: userId, ...planEntryInputToRow(input) })
-      if (error) throw friendly(error)
-      await refreshPlanEntries()
-    },
-    [familyId, userId, refreshPlanEntries]
-  )
+  const castVote = useCallback(async (candidateId: string, memberId: string, value: VoteValue) => {
+    if (!scope) return
+    const owning = voteRoundsRef.current.find((entry) => entry.candidates.some((candidate) => candidate.id === candidateId))
+    if (!owning) throw new Error('Vote candidate does not belong to a loaded round')
+    const round = await repository.recordVote(scope, owning.id, candidateId, memberId, value)
+    setVoteRounds((current) => upsertById(current, round))
+  }, [repository, scope])
 
-  const updatePlanEntry = useCallback(
-    async (id: string, input: PlanEntryInput) => {
-      const { error } = await supabase
-        .from('meal_plan_entries')
-        .update({ ...planEntryInputToRow(input), updated_at: new Date().toISOString() })
-        .eq('id', id)
-      if (error) throw friendly(error)
-      await refreshPlanEntries()
-    },
-    [refreshPlanEntries]
-  )
+  const addPlanEntry = useCallback(async (input: PlanEntryInput) => {
+    if (!scope) return
+    const entry = await repository.planMeal(scope, input)
+    setPlanEntries((current) => upsertById(current, entry))
+  }, [repository, scope])
 
-  const deletePlanEntry = useCallback(
-    async (id: string) => {
-      const { error } = await supabase.from('meal_plan_entries').delete().eq('id', id)
-      if (error) throw friendly(error)
-      await refreshPlanEntries()
-    },
-    [refreshPlanEntries]
-  )
+  const updatePlanEntry = useCallback(async (id: string, input: PlanEntryInput) => {
+    const entry = await repository.reschedulePlanEntry(id, input)
+    setPlanEntries((current) => upsertById(current, entry))
+  }, [repository])
 
-  const copyWeek = useCallback(
-    async (fromWeekStart: string, toWeekStart: string) => {
-      const fromDates = new Set(getWeekDates(fromWeekStart))
-      const entriesToCopy = planEntries.filter((entry) => fromDates.has(entry.entry_date))
-      if (entriesToCopy.length === 0) return
+  const deletePlanEntry = useCallback(async (id: string) => {
+    await repository.removePlanEntry(id)
+    setPlanEntries((current) => current.filter((entry) => entry.id !== id))
+  }, [repository])
 
-      const copied = buildCopiedEntries(entriesToCopy, fromWeekStart, toWeekStart)
-      const rows = copied.map((entry) => ({
-        family_id: familyId,
-        created_by: userId,
-        entry_date: entry.entry_date,
-        meal_slot: entry.meal_slot,
-        meal_id: entry.meal_id,
-        title: entry.title,
-        responsible_member_id: entry.responsible_member_id,
-        notes: entry.notes,
-        status: 'proposed',
-        origin: 'copied',
-      }))
-      const { error } = await supabase.from('meal_plan_entries').insert(rows)
-      if (error) throw friendly(error)
-      await refreshPlanEntries()
-    },
-    [familyId, userId, planEntries, refreshPlanEntries]
-  )
+  const copyWeek = useCallback(async (fromWeekStart: string, toWeekStart: string) => {
+    if (!scope) return
+    const fromDates = new Set(getWeekDates(fromWeekStart))
+    const entriesToCopy = planEntries.filter((entry) => fromDates.has(entry.entry_date))
+    if (entriesToCopy.length === 0) return
+    const created = await repository.copyPlanWeek(scope, buildCopiedEntries(entriesToCopy, fromWeekStart, toWeekStart))
+    setPlanEntries((current) => created.reduce(upsertById, current))
+  }, [planEntries, repository, scope])
 
   return {
     meals,
     voteRounds,
     planEntries,
-    planEntriesLoading,
-    planEntriesError,
+    planEntriesLoading: loading,
+    planEntriesError: error,
     loading,
     error,
     mealsRealtimeStatus,
@@ -397,4 +198,4 @@ export function useMealsDataSource(familyId: string | undefined, userId: string)
   }
 }
 
-export type { Meal, MealPlanEntry }
+export type { Meal, MealPlanEntry, MealInput, PlanEntryInput, VoteRoundInput }

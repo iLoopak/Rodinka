@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
-import { supabase } from '../supabaseClient'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
+import { SupabaseAllowanceRepository } from '../features/allowance/data/supabaseAllowanceRepository'
 import { t } from '../strings'
 import { isInitialFamilyDataLoad } from '../utils/familyDataLoading'
 
@@ -15,6 +15,7 @@ export interface LedgerEntry {
 }
 
 export function useAllowanceLedger(familyId: string | undefined) {
+  const repository = useMemo(() => new SupabaseAllowanceRepository(), [])
   const [entries, setEntries] = useState<LedgerEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -28,25 +29,21 @@ export function useAllowanceLedger(familyId: string | undefined) {
       return
     }
 
+    // Only the first load for a family shows a spinner; a settlement refresh
+    // stays in the background so the ledger does not blank out under the user.
     const initialLoad = isInitialFamilyDataLoad(loadedFamilyIdRef.current, familyId)
     if (initialLoad) setLoading(true)
-    const { data, error } = await supabase
-      .from('allowance_ledger')
-      .select('id, member_id, amount, reason, created_at, entry_type, source_chore_completion_id, source_allowance_cycle_id')
-      .eq('family_id', familyId)
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('Failed to load allowance ledger:', error.message)
-      if (initialLoad) setEntries([])
-      setError(t.errors.loadFailed)
-    } else {
-      setEntries(data)
+    try {
+      setEntries(await repository.listLedger({ familyId }))
       setError(null)
       loadedFamilyIdRef.current = familyId
+    } catch (loadError) {
+      console.error('Failed to load allowance ledger:', loadError instanceof Error ? loadError.message : 'unknown error')
+      if (initialLoad) setEntries([])
+      setError(t.errors.loadFailed)
     }
     setLoading(false)
-  }, [familyId])
+  }, [familyId, repository])
 
   useEffect(() => {
     refresh()

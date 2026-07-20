@@ -1,41 +1,32 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { supabase } from '../../supabaseClient'
-import { friendly } from '../../utils/friendlyError'
-import { useActivities, type Activity } from '../../hooks/useActivities'
-import { activityInputToRow, type ActivityInput } from '../../domain/activities/types'
-import { createRealtimeSubscription } from '../../realtime/createRealtimeSubscription'
-import { applyRealtimeDelete } from '../../realtime/applyRealtimeDelete'
-import { applyRealtimeInsert } from '../../realtime/applyRealtimeInsert'
-import { applyRealtimeUpdate } from '../../realtime/applyRealtimeUpdate'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { SupabaseActivitiesRepository } from '../../features/activities/data/supabaseActivitiesRepository'
+import type { ActivitiesRepository, ActivityRealtimeChange } from '../../features/activities/data/activitiesRepository'
+import type { Activity } from '../../features/activities/domain/activityTypes'
+import type { ActivityInput } from '../../domain/activities/types'
 import type { RealtimeConnectionState } from '../../realtime/connectionState'
+import { t } from '../../strings'
 
 export type { ActivityInput } from '../../domain/activities/types'
 
-// A raw `activities` row has no `participant_ids` — that's a client-side
-// join onto activity_participants (see useActivities.ts). A realtime INSERT
-// defaults to no participants (the create RPC's activity_participants rows
-// arrive as separate events right after and self-heal this via
-// applyParticipantChange below); an UPDATE keeps whatever participants the
-// entity already had rather than wiping them out.
-function activityFromRealtimeRow(row: Record<string, unknown>, participantIds: string[]): Activity {
-  return { ...row, participant_ids: participantIds } as unknown as Activity
+function upsertById(list: Activity[], record: Activity): Activity[] {
+  const index = list.findIndex((entry) => entry.id === record.id)
+  if (index === -1) return [...list, record]
+  const next = [...list]
+  next[index] = record
+  return next
 }
 
-// activity_participants is a pure join table: composite primary key
-// (activity_id, member_id), no `id`/`family_id` columns — the generic
-// id-keyed apply primitives don't fit, so participant add/remove patches
-// the owning activity's participant_ids array directly.
-function applyParticipantChange(activities: Activity[], row: Record<string, unknown>, action: 'add' | 'remove'): Activity[] {
-  const activityId = row.activity_id as string
-  const memberId = row.member_id as string
+function applyChange(activities: Activity[], change: ActivityRealtimeChange): Activity[] {
+  if (change.action === 'delete') return activities.filter((activity) => activity.id !== change.id)
+  if (change.action === 'upsert') return upsertById(activities, change.record)
   return activities.map((activity) => {
-    if (activity.id !== activityId) return activity
-    if (action === 'add') {
-      return activity.participant_ids.includes(memberId)
+    if (activity.id !== change.activityId) return activity
+    if (change.action === 'participant-add') {
+      return activity.participant_ids.includes(change.memberId)
         ? activity
-        : { ...activity, participant_ids: [...activity.participant_ids, memberId] }
+        : { ...activity, participant_ids: [...activity.participant_ids, change.memberId] }
     }
-    return { ...activity, participant_ids: activity.participant_ids.filter((id) => id !== memberId) }
+    return { ...activity, participant_ids: activity.participant_ids.filter((id) => id !== change.memberId) }
   })
 }
 
@@ -55,81 +46,69 @@ const ActivitiesContext = createContext<ActivitiesContextValue | null>(null)
 interface ProviderProps {
   familyId: string
   children: ReactNode
+  repository?: ActivitiesRepository
 }
 
-export function ActivitiesProvider({ familyId, children }: ProviderProps) {
-  const {
-    activities,
-    setActivities,
-    loading: activitiesLoading,
-    error: activitiesError,
-    refresh: refreshActivities,
-  } = useActivities(familyId)
+export function ActivitiesProvider({ familyId, children, repository: repositoryOverride }: ProviderProps) {
+  const repository = useMemo(() => repositoryOverride ?? new SupabaseActivitiesRepository(), [repositoryOverride])
+  const scope = useMemo(() => familyId ? { familyId } : null, [familyId])
+
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [activitiesLoading, setActivitiesLoading] = useState(true)
+  const [activitiesError, setActivitiesError] = useState<string | null>(null)
   const [activitiesRealtimeStatus, setActivitiesRealtimeStatus] = useState<RealtimeConnectionState>('connecting')
 
+  // A realtime activities row carries no participants; patching one needs the
+  // participants already on screen.
+  const activitiesRef = useRef<Activity[]>([])
+  activitiesRef.current = activities
+
+  const refreshActivities = useCallback(async () => {
+    if (!scope) { setActivities([]); setActivitiesLoading(false); return }
+    setActivitiesLoading(true)
+    try {
+      setActivities(await repository.listActivities(scope))
+      setActivitiesError(null)
+    } catch (error) {
+      console.error('Failed to load activities:', error instanceof Error ? error.message : 'unknown error')
+      setActivities([])
+      setActivitiesError(t.errors.loadFailed)
+    }
+    setActivitiesLoading(false)
+  }, [repository, scope])
+
+  useEffect(() => { void refreshActivities() }, [refreshActivities])
+
   useEffect(() => {
-    if (!familyId) return
-    const unsubscribe = createRealtimeSubscription({
-      channelName: `family:${familyId}:activities`,
-      owner: 'ActivitiesProvider',
-      openReason: 'provider-mount',
-      onStatusChange: setActivitiesRealtimeStatus,
-      tables: [
-        {
-          table: 'activities',
-          filter: `family_id=eq.${familyId}`,
-          onInsert: (row) => setActivities((current) => applyRealtimeInsert(current, activityFromRealtimeRow(row, []))),
-          onUpdate: (row) => setActivities((current) => {
-            const existing = current.find((activity) => activity.id === row.id)
-            return applyRealtimeUpdate(current, activityFromRealtimeRow(row, existing?.participant_ids ?? []))
-          }),
-          onDelete: (row) => setActivities((current) => applyRealtimeDelete(current, row.id as string)),
-        },
-        {
-          // activity_participants has no id/family_id column (composite key
-          // activity_id+member_id, scoped via the parent activity) — no
-          // `filter`, RLS still limits delivery to this family's activities.
-          table: 'activity_participants',
-          onInsert: (row) => setActivities((current) => applyParticipantChange(current, row, 'add')),
-          onDelete: (row) => setActivities((current) => applyParticipantChange(current, row, 'remove')),
-        },
-      ],
+    if (!scope) return
+    return repository.subscribe(scope, {
+      onStatusChange: (status) => setActivitiesRealtimeStatus(status as RealtimeConnectionState),
+      onActivityChange: (change) => setActivities((current) => applyChange(current, change)),
+      resolveParticipants: (activityId) => activitiesRef.current.find((activity) => activity.id === activityId)?.participant_ids,
     })
-    return unsubscribe
-  }, [familyId, setActivities])
+  }, [repository, scope])
 
-  const addActivity = useCallback(
-    async (input: ActivityInput) => {
-      const { error } = await supabase.rpc('create_activity_with_participants', {
-        activity_data: { family_id: familyId, ...activityInputToRow(input) },
-        participant_ids: input.participantIds,
-      })
-      if (error) throw friendly(error)
-      await refreshActivities()
-    },
-    [familyId, refreshActivities]
-  )
+  // Each mutation returns the affected series, so it is merged in place. The
+  // previous version reloaded every activity in the family after each one.
+  const addActivity = useCallback(async (input: ActivityInput) => {
+    if (!scope) return
+    const created = await repository.createSeries(scope, input)
+    setActivities((current) => upsertById(current, created))
+  }, [repository, scope])
 
-  const updateActivity = useCallback(
-    async (id: string, input: ActivityInput) => {
-      const { error } = await supabase.rpc('update_activity_with_participants', {
-        target_activity_id: id,
-        activity_data: activityInputToRow(input),
-        participant_ids: input.participantIds,
-      })
-      if (error) throw friendly(error)
-      await refreshActivities()
-    },
-    [refreshActivities]
-  )
+  const updateActivity = useCallback(async (id: string, input: ActivityInput) => {
+    if (!scope) return
+    const updated = await repository.updateSeries(scope, id, input)
+    setActivities((current) => upsertById(current, updated))
+  }, [repository, scope])
 
   const markActivityPaymentPaid = useCallback(async (id: string) => {
-    const activity = activities.find((item) => item.id === id)
-    if (!activity?.next_payment_due_date) return
-    const { error } = await supabase.from('activities').update({ payment_paid_at: new Date().toISOString(), payment_paid_for_date: activity.next_payment_due_date }).eq('id', id).eq('family_id', familyId)
-    if (error) throw friendly(error)
-    await refreshActivities()
-  }, [activities, familyId, refreshActivities])
+    if (!scope) return
+    const dueDate = activitiesRef.current.find((activity) => activity.id === id)?.next_payment_due_date
+    if (!dueDate) return
+    const updated = await repository.markPaymentPaid(scope, id, dueDate)
+    setActivities((current) => upsertById(current, updated))
+  }, [repository, scope])
 
   const value: ActivitiesContextValue = {
     activities,

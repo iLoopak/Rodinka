@@ -8,7 +8,7 @@ import { getMealBadges } from '../../utils/mealSuggestions'
 import { onActivateKey } from '../../utils/a11y'
 import { EmptyState } from '../ui/EmptyState'
 import { MealDetailModal } from './MealDetailModal'
-import type { Meal } from '../../hooks/useMeals'
+import type { Meal } from '../../features/meals/domain/mealTypes'
 import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from '../ui/FilterDisclosure'
 import { useCreateRecord } from '../../context/create-record/CreateRecordContext'
 

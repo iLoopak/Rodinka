@@ -1,15 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { supabase } from '../../supabaseClient'
-import { friendly } from '../../utils/friendlyError'
-import { AVATAR_SIGNED_URL_SECONDS, isActiveFamilyMember, useFamilyMembers, type FamilyMember, type FamilyMemberStatus } from '../../hooks/useFamilyMembers'
+import { isActiveFamilyMember, useFamilyMembers, type FamilyMember } from '../../hooks/useFamilyMembers'
 import { useMemberProfiles, type MemberProfileInput } from '../../hooks/useMemberProfiles'
 import { createMemberLookup } from '../../utils/memberLookup'
 import { chooseLeastUsedMemberColor } from '../../utils/memberColor'
 import { MemberLookupBridge } from './currentMemberBridge'
-import { createRealtimeSubscription } from '../../realtime/createRealtimeSubscription'
-import { applyRealtimeDelete } from '../../realtime/applyRealtimeDelete'
-import { applyRealtimeInsert } from '../../realtime/applyRealtimeInsert'
-import { applyRealtimeUpdate } from '../../realtime/applyRealtimeUpdate'
+import { SupabaseFamilyMediaStorage } from '../../features/family/data/familyMediaStorage'
+import { SupabaseFamilyMembersRepository } from '../../features/family/data/supabaseFamilyRepository'
+import type { FamilyMembersRepository } from '../../features/family/data/familyRepository'
 import type { RealtimeConnectionState } from '../../realtime/connectionState'
 
 interface FamilyMembersContextValue {
@@ -37,16 +34,20 @@ interface ProviderProps {
   familyId: string
   userId?: string | null
   children: ReactNode
+  repository?: FamilyMembersRepository
 }
 
-export function FamilyMembersProvider({ familyId, userId = null, children }: ProviderProps) {
+export function FamilyMembersProvider({ familyId, userId = null, children, repository: repositoryOverride }: ProviderProps) {
+  const storage = useMemo(() => new SupabaseFamilyMediaStorage(), [])
+  const repository = useMemo(() => repositoryOverride ?? new SupabaseFamilyMembersRepository(storage), [repositoryOverride, storage])
+  const scope = useMemo(() => ({ familyId, userId }), [familyId, userId])
   const {
     members: allMembers,
     setMembers: setAllMembers,
     loading: membersLoading,
     error: membersError,
     refresh: refreshMembers,
-  } = useFamilyMembers(familyId, userId)
+  } = useFamilyMembers(familyId, userId, repository)
   const { saveMemberProfile } = useMemberProfiles(refreshMembers)
   const [membersRealtimeStatus, setMembersRealtimeStatus] = useState<RealtimeConnectionState>('connecting')
   const activeFamilyIdRef = useRef(familyId)
@@ -57,66 +58,33 @@ export function FamilyMembersProvider({ familyId, userId = null, children }: Pro
   const memberById = useMemo(() => createMemberLookup(allMembers), [allMembers])
   const memberName = useMemo(() => (id: string) => memberById(id)?.display_name ?? '?', [memberById])
 
-  // A raw `members` row only carries `avatar_path` — `avatar_url` is a
-  // client-derived signed URL (see useFamilyMembers.ts), so an inserted/
-  // updated row needs the same signing step before it can be applied to
-  // local state, or avatars would render broken until the next full refresh.
-  const signMemberAvatar = useCallback(async (row: Record<string, unknown>): Promise<FamilyMember> => {
-    const member = {
-      ...row,
-      status: (row.status as FamilyMemberStatus | undefined) ?? 'active',
-      avatar_url: null,
-    } as FamilyMember
-    if (member.avatar_path) {
-      const { data, error } = await supabase.storage.from('member-avatars').createSignedUrl(member.avatar_path, AVATAR_SIGNED_URL_SECONDS)
-      if (error) console.error('Failed to sign realtime member avatar:', error.message)
-      else member.avatar_url = data.signedUrl
-    }
-    return member
-  }, [])
-
   useEffect(() => {
     if (!familyId) return
-    const unsubscribe = createRealtimeSubscription({
-      channelName: `family:${familyId}:family-members`,
-      owner: 'FamilyMembersProvider',
-      openReason: 'provider-mount',
-      onStatusChange: setMembersRealtimeStatus,
-      tables: [{
-        table: 'members',
-        filter: `family_id=eq.${familyId}`,
-        onInsert: (row) => {
-          void signMemberAvatar(row).then((member) => {
-            if (activeFamilyIdRef.current !== familyId) return
-            setAllMembers((current) => applyRealtimeInsert(current, member))
-          })
-        },
-        onUpdate: (row) => {
-          void signMemberAvatar(row).then((member) => {
-            if (activeFamilyIdRef.current !== familyId) return
-            setAllMembers((current) => applyRealtimeUpdate(current, member))
-          })
-        },
-        onDelete: (row) => {
-          setAllMembers((current) => applyRealtimeDelete(current, row.id as string))
-        },
-      }],
+    return repository.subscribe(scope, {
+      onStatusChange: (status) => setMembersRealtimeStatus(status as RealtimeConnectionState),
+      onMemberChange: (change) => {
+        // The repository signs each changed row before handing it over, so a
+        // realtime update never blanks an avatar until the next full refresh.
+        if (activeFamilyIdRef.current !== familyId) return
+        setAllMembers((current) => {
+          if (change.action === 'delete') return current.filter((member) => member.id !== change.id)
+          const index = current.findIndex((member) => member.id === change.record.id)
+          if (index === -1) return [...current, change.record]
+          const next = [...current]
+          next[index] = change.record
+          return next
+        })
+      },
     })
-    return unsubscribe
-  }, [familyId, setAllMembers, signMemberAvatar])
+  }, [familyId, repository, scope, setAllMembers])
 
   const addChild = useCallback(
     async (displayName: string, avatarFile: File | null = null) => {
       const colorKey = chooseLeastUsedMemberColor(members)
-      const { data, error } = await supabase
-        .from('members')
-        .insert({ family_id: familyId, display_name: displayName, role: 'child', color_key: colorKey })
-        .select('id, family_id, display_name, role, user_id, birth_date, color_key, custom_color, avatar_path, grammatical_gender, vocative_name')
-        .single()
-      if (error) throw friendly(error)
+      const created = await repository.createChild(scope, displayName, colorKey)
       if (avatarFile) {
         try {
-          await saveMemberProfile({ ...data, avatar_url: null } as FamilyMember, {
+          await saveMemberProfile(created, {
             displayName,
             birthDate: null,
             colorKey,
@@ -126,12 +94,12 @@ export function FamilyMembersProvider({ familyId, userId = null, children }: Pro
             removeAvatar: false,
           })
         } catch (profileError) {
-          const { error: rollbackError } = await supabase
-            .from('members')
-            .delete()
-            .eq('id', data.id)
-            .eq('family_id', familyId)
-          if (rollbackError) console.error('Failed to roll back member after avatar upload failure:', rollbackError.message)
+          // The member row exists but its avatar never landed. Rolling the row
+          // back is best effort: leaving a half-created child on screen is
+          // worse than leaving an orphaned row the admin can remove.
+          await repository.deleteMemberRow(scope, created.id).catch((rollbackError: unknown) => {
+            console.error('Failed to roll back member after avatar upload failure:', rollbackError instanceof Error ? rollbackError.message : 'unknown error')
+          })
           await refreshMembers()
           throw profileError
         }
@@ -139,7 +107,7 @@ export function FamilyMembersProvider({ familyId, userId = null, children }: Pro
         await refreshMembers()
       }
     },
-    [familyId, members, refreshMembers, saveMemberProfile]
+    [members, refreshMembers, repository, saveMemberProfile, scope]
   )
 
   const editMemberProfile = useCallback(
@@ -150,55 +118,32 @@ export function FamilyMembersProvider({ familyId, userId = null, children }: Pro
   )
 
   const removeMember = useCallback(async (memberId: string, replacementMemberId: string | null, taskStrategy: 'unassign' | 'reassign', activityStrategy: 'clear' | 'reassign', reason = '') => {
-    const { error: removalError } = await supabase.rpc('remove_household_member', {
-      p_member_id: memberId,
-      p_replacement_member_id: replacementMemberId,
-      p_task_strategy: taskStrategy,
-      p_activity_strategy: activityStrategy,
-      p_reason: reason || null,
-      p_allow_self: false,
-    })
-    if (removalError) throw friendly(removalError)
+    await repository.removeMember(memberId, { replacementMemberId, taskStrategy, activityStrategy, reason }, false)
     await refreshMembers()
-  }, [refreshMembers])
+  }, [refreshMembers, repository])
 
   const leaveHousehold = useCallback(async (currentMemberId: string, replacementMemberId: string | null, taskStrategy: 'unassign' | 'reassign', activityStrategy: 'clear' | 'reassign') => {
-    const { error: leaveError } = await supabase.rpc('remove_household_member', {
-      p_member_id: currentMemberId,
-      p_replacement_member_id: replacementMemberId,
-      p_task_strategy: taskStrategy,
-      p_activity_strategy: activityStrategy,
-      p_reason: 'self_leave',
-      p_allow_self: true,
-    })
-    if (leaveError) throw friendly(leaveError)
+    await repository.removeMember(
+      currentMemberId,
+      { replacementMemberId, taskStrategy, activityStrategy, reason: 'self_leave' },
+      true,
+    )
     window.location.assign('/')
-  }, [])
+  }, [repository])
 
   const restoreMember = useCallback(async (memberId: string) => {
-    const { error: restoreError } = await supabase.rpc('restore_household_member', { p_member_id: memberId })
-    if (restoreError) throw friendly(restoreError)
+    await repository.restoreMember(memberId)
     await refreshMembers()
-  }, [refreshMembers])
+  }, [refreshMembers, repository])
 
   const permanentlyDeleteRemovedMember = useCallback(async (memberId: string) => {
-    const { data, error: deleteError } = await supabase.rpc('permanently_delete_removed_member', { p_member_id: memberId })
-    if (deleteError) throw friendly(deleteError)
-    const avatarPath = typeof data === 'object' && data && 'avatar_path' in data ? String(data.avatar_path ?? '') : ''
-    if (avatarPath) {
-      const { error: storageError } = await supabase.storage.from('member-avatars').remove([avatarPath])
-      if (storageError) console.error('Failed to delete member avatar after permanent member deletion:', storageError.message)
-    }
+    const { avatarPath } = await repository.permanentlyDeleteMember(memberId)
+    // The row is gone; the object is cleaned up afterwards and best effort.
+    if (avatarPath) await storage.removeAvatar(avatarPath)
     await refreshMembers()
-  }, [refreshMembers])
+  }, [refreshMembers, repository, storage])
 
-  const createInvite = useCallback(async () => {
-    const { data: code, error } = await supabase.rpc('create_invite', { fid: familyId })
-    if (error) throw friendly(error)
-    // Best-effort: fetch expiry for display. Not fatal if this second read fails.
-    const { data: invite } = await supabase.from('invites').select('expires_at').eq('code', code).single()
-    return { code: code as string, expiresAt: invite?.expires_at ?? null }
-  }, [familyId])
+  const createInvite = useCallback(() => repository.createInvite(scope), [repository, scope])
 
   const value: FamilyMembersContextValue = {
     members,

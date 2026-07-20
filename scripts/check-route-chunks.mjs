@@ -30,7 +30,12 @@ export const ENTRY_BUDGET = {
   rawBytes: 372_000,
   gzipBytes: 110_000,
   eagerRawBytes: 800_000,
-  eagerGzipBytes: 232_000,
+  // Raised from 232_000 in repository Wave 4. The family members and settings
+  // contexts are on the eager startup path, so their data layer is too; the
+  // increase is the cost of that layer and not of new product code. Onboarding
+  // was split into its own module to keep the realtime helper and the mappers
+  // out of the startup graph.
+  eagerGzipBytes: 234_000,
   cssRawBytes: 178_000,
   cssGzipBytes: 43_000,
 }

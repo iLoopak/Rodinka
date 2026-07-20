@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { supabase } from '../../supabaseClient'
+import { SupabaseAllowanceRepository } from '../../features/allowance/data/supabaseAllowanceRepository'
 import { friendly } from '../../utils/friendlyError'
 import { useAllowanceLedger, type LedgerEntry } from '../../hooks/useAllowanceLedger'
 import { useAllowancePlans, type AllowanceCycle, type AllowancePlan, type AllowancePlanInput } from '../../hooks/useAllowancePlans'
@@ -38,6 +38,7 @@ interface ProviderProps {
 }
 
 export function AllowanceProvider({ familyId, children }: ProviderProps) {
+  const repository = useMemo(() => new SupabaseAllowanceRepository(), [])
   const {
     entries,
     setEntries,
@@ -94,63 +95,56 @@ export function AllowanceProvider({ familyId, children }: ProviderProps) {
 
   const payout = useCallback(
     async (memberId: string, amount: number, reason: string) => {
-      const { error } = await supabase.rpc('record_payout', {
-        target_member_id: memberId,
-        payout_amount: amount,
-        payout_reason: reason || null,
-      })
-      if (error) throw friendly(error)
+      try {
+        await repository.recordPayout(memberId, amount, reason)
+      } catch (error) {
+        throw friendly(error)
+      }
       await refreshLedger()
     },
-    [refreshLedger]
+    [refreshLedger, repository]
   )
 
   const saveAllowancePlan = useCallback(async (input: AllowancePlanInput, planId?: string) => {
-    const planData = {
-      family_id: familyId,
-      member_id: input.memberId,
-      amount: input.amount,
-      frequency: input.frequency,
-      payout_day: input.payoutDay,
-      payout_weekday: input.payoutWeekday,
-      note: input.note,
-      starts_on: input.startsOn,
-      status: input.status,
-      condition_mode: input.conditionMode,
+    try {
+      await repository.savePlan({ familyId }, input, planId)
+    } catch (error) {
+      throw friendly(error)
     }
-    const { error } = await supabase.rpc('save_allowance_plan', {
-      target_plan_id: planId ?? null,
-      plan_data: planData,
-      requirements_data: input.requirements.map((requirement) => ({
-        chore_id: requirement.choreId,
-        requirement_type: requirement.requirementType,
-        required_count: requirement.requiredCount,
-      })),
-    })
-    if (error) throw friendly(error)
     await refreshAllowancePlans()
-  }, [familyId, refreshAllowancePlans])
+  }, [familyId, refreshAllowancePlans, repository])
 
   // Server-side this removes the plan outright only when it never settled a
   // cycle; a plan with ledger history is archived instead. Either way it stops
   // appearing, so the caller does not need to tell the two apart.
   const deleteAllowancePlan = useCallback(async (planId: string) => {
-    const { error } = await supabase.rpc('delete_allowance_plan', { target_plan_id: planId })
-    if (error) throw friendly(error)
+    try {
+      await repository.deletePlan(planId)
+    } catch (error) {
+      throw friendly(error)
+    }
     await refreshAllowancePlans()
-  }, [refreshAllowancePlans])
+  }, [refreshAllowancePlans, repository])
 
+  // Crediting writes a ledger entry and settles the cycle in one server
+  // transaction, so both views are re-read afterwards.
   const creditAllowance = useCallback(async (planId: string, payoutDate: string) => {
-    const { error } = await supabase.rpc('credit_monthly_allowance', { plan_id: planId, payout_date: payoutDate })
-    if (error) throw friendly(error)
+    try {
+      await repository.creditCycle(planId, payoutDate)
+    } catch (error) {
+      throw friendly(error)
+    }
     await Promise.all([refreshAllowancePlans(), refreshLedger()])
-  }, [refreshAllowancePlans, refreshLedger])
+  }, [refreshAllowancePlans, refreshLedger, repository])
 
   const skipAllowance = useCallback(async (planId: string, payoutDate: string) => {
-    const { error } = await supabase.rpc('skip_monthly_allowance', { plan_id: planId, payout_date: payoutDate })
-    if (error) throw friendly(error)
+    try {
+      await repository.skipCycle(planId, payoutDate)
+    } catch (error) {
+      throw friendly(error)
+    }
     await refreshAllowancePlans()
-  }, [refreshAllowancePlans])
+  }, [refreshAllowancePlans, repository])
 
   const value: AllowanceContextValue = {
     allowanceEntries: entries,

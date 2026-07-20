@@ -1,4 +1,4 @@
-import type { MealVoteCandidate, MealVote, VoteRoundStatus } from '../hooks/useMealVoteRounds'
+import type { MealVoteCandidate, MealVote, VoteRoundStatus } from '../features/meals/domain/mealTypes'
 
 export interface VoteTally {
   likes: number

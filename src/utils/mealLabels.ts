@@ -1,7 +1,7 @@
 import { t } from '../strings'
-import type { MealCategory } from '../hooks/useMeals'
-import type { MealSlot, MealPlanStatus, MealPlanOrigin } from '../hooks/useMealPlanEntries'
-import type { VoteRoundStatus } from '../hooks/useMealVoteRounds'
+import type { MealCategory } from '../features/meals/domain/mealTypes'
+import type { MealSlot, MealPlanStatus, MealPlanOrigin } from '../features/meals/domain/mealTypes'
+import type { VoteRoundStatus } from '../features/meals/domain/mealTypes'
 import type { MealBadgeType } from './mealSuggestions'
 
 export const MEAL_CATEGORY_VALUES: MealCategory[] = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'other']

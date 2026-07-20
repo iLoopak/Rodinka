@@ -5,7 +5,7 @@ import { ErrorState } from '../ui/ErrorState'
 import { MealLibraryTab } from './MealLibraryTab'
 import { VoteTab } from './VoteTab'
 import { PlanTab, type PlanPrefill } from './PlanTab'
-import type { Meal } from '../../hooks/useMeals'
+import type { Meal } from '../../features/meals/domain/mealTypes'
 import { ScrollableTabs } from '../ui/ScrollableTabs'
 import { ScreenHeader } from '../ui/ScreenHeader'
 

@@ -1,4 +1,4 @@
-import type { MealPlanEntry, MealSlot } from '../hooks/useMealPlanEntries'
+import type { MealPlanEntry, MealSlot } from '../features/meals/domain/mealTypes'
 import { addDays, daysBetweenISO } from './dueDate'
 
 export const MEAL_SLOT_ORDER: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack', 'other']

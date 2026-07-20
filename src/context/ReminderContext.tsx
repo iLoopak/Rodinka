@@ -1,20 +1,20 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { supabase } from '../supabaseClient'
 import { getCurrentLanguage } from '../i18n'
+import { SupabaseReminderProcessingService, SupabaseReminderRepository } from '../features/reminders/data/supabaseReminderRepository'
+import type { ReminderRepository } from '../features/reminders/data/reminderRepository'
+import { createReminderSyncCoordinator } from '../features/reminders/application/reminderSyncCoordinator'
 import { useFamilyCore } from './family/FamilyCoreContext'
 import { useReminderSources } from './reminders/useReminderSources'
 import { reminderCopyFor } from '../notifications/reminderCopy'
 import { t } from '../strings'
 import { useLanguage } from '../i18n/languageContext'
 import {
-  DEFAULT_CATEGORY_PREFERENCES,
   browserTimezone,
   defaultNotificationPreferences,
   generateReminderDrafts,
   isValidTimeZone,
   reminderStatus,
   type NotificationPreferences,
-  type ReminderCategory,
   type ReminderRecord,
 } from '../notifications/reminders'
 import { activeReminders, historyReminders, unreadActiveIds, unreadCount } from '../notifications/reminderPresentation'
@@ -35,6 +35,8 @@ interface ReminderContextValue {
   preferences: NotificationPreferences
   loading: boolean
   error: string | null
+  hasMore: boolean
+  loadMore: () => Promise<void>
   markRead: (id: string) => Promise<void>
   markAllRead: () => Promise<void>
   dismiss: (id: string) => Promise<void>
@@ -53,58 +55,15 @@ const ReminderContext = createContext<ReminderContextValue | null>(null)
 // edit from re-rendering the shell header.
 const ReminderSummaryContext = createContext<ReminderSummaryValue | null>(null)
 
-function mapPreferences(row: Record<string, unknown> | null, memberId: string, familyId: string): NotificationPreferences {
-  const defaults = defaultNotificationPreferences(memberId, familyId, browserTimezone(), getCurrentLanguage())
-  if (!row) return defaults
-  const dailyDigestEnabled = Boolean(row.daily_digest_enabled)
-  const storedTimezone = String(row.timezone ?? defaults.timezone)
-  return {
-    memberId,
-    familyId,
-    inAppEnabled: Boolean(row.in_app_enabled),
-    pushEnabled: Boolean(row.push_enabled),
-    dailyDigestEnabled,
-    weeklyDigestEnabled: !dailyDigestEnabled && Boolean(row.weekly_digest_enabled),
-    quietPushEnabled: Boolean(row.quiet_push_enabled),
-    quietHoursEnabled: Boolean(row.quiet_hours_enabled),
-    quietHoursStart: String(row.quiet_hours_start ?? defaults.quietHoursStart).slice(0, 5),
-    quietHoursEnd: String(row.quiet_hours_end ?? defaults.quietHoursEnd).slice(0, 5),
-    timezone: isValidTimeZone(storedTimezone) ? storedTimezone : 'UTC',
-    timezoneMode: row.timezone_mode === 'explicit' ? 'explicit' : 'auto',
-    locale: row.locale === 'en' ? 'en' : 'cs',
-    categories: { ...DEFAULT_CATEGORY_PREFERENCES, ...((row.category_preferences as Partial<Record<ReminderCategory, boolean>> | null) ?? {}) },
-    // A row written before the batch 4 migration has these columns as SQL
-    // defaults (true); `!== false` keeps a missing column reading as on.
-    messages: {
-      direct: row.message_direct_enabled !== false,
-      group: row.message_group_enabled !== false,
-      replyMention: row.message_reply_mention_enabled !== false,
-      task: row.message_task_enabled !== false,
-      entity: row.message_entity_enabled !== false,
-      sound: row.message_sound_enabled !== false,
-      preview: row.message_preview_enabled !== false,
-    },
-  }
-}
+/** How many reminders the Center holds per page; the bell no longer depends on this. */
+const REMINDER_PAGE_SIZE = 100
 
-function mapReminder(row: Record<string, unknown>): ReminderRecord {
-  const base = {
-    id: String(row.id), familyId: String(row.family_id), targetMemberId: String(row.target_member_id),
-    dedupeKey: String(row.dedupe_key), source: String(row.source) as ReminderRecord['source'], type: String(row.reminder_type),
-    title: String(row.title), description: row.description ? String(row.description) : null,
-    importance: String(row.importance) as ReminderRecord['importance'], eventAt: row.event_at ? String(row.event_at) : null,
-    generatedAt: String(row.generated_at), expiresAt: row.expires_at ? String(row.expires_at) : null,
-    deepLink: row.deep_link ? String(row.deep_link) : null, groupingKey: row.grouping_key ? String(row.grouping_key) : null,
-    metadata: (row.metadata ?? { sourceIds: [] }) as ReminderRecord['metadata'], readAt: row.read_at ? String(row.read_at) : null,
-    dismissedAt: row.dismissed_at ? String(row.dismissed_at) : null, resolvedAt: row.resolved_at ? String(row.resolved_at) : null,
-    lastSeenAt: String(row.last_seen_at),
-  }
-  return { ...base, status: reminderStatus(base) }
-}
-
-export function ReminderProvider({ children }: { children: ReactNode }) {
+export function ReminderProvider({ children, repository: repositoryOverride }: { children: ReactNode; repository?: ReminderRepository }) {
   const { language } = useLanguage()
   const { familyId, currentMember } = useFamilyCore()
+  const repository = useMemo(() => repositoryOverride ?? new SupabaseReminderRepository(), [repositoryOverride])
+  const syncCoordinator = useMemo(() => createReminderSyncCoordinator(new SupabaseReminderProcessingService()), [])
+  const scope = useMemo(() => ({ familyId, memberId: currentMember.id }), [familyId, currentMember.id])
   const sources = useReminderSources()
   const refreshSourceData = sources.refresh
   const [reminders, setReminders] = useState<ReminderRecord[]>([])
@@ -112,6 +71,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [generationTick, setGenerationTick] = useState(0)
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
   const hiddenAt = useRef<number | null>(null)
   const refreshInFlight = useRef<Promise<void> | null>(null)
   const lastSourceRefreshAt = useRef(0)
@@ -129,52 +89,48 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
   }, [currentMember.id, familyId])
 
   const refresh = useCallback(async () => {
-    const { data: rows, error: loadError } = await supabase
-      .from('reminders')
-      .select('*')
-      .eq('family_id', familyId)
-      .eq('target_member_id', currentMember.id)
-      .order('generated_at', { ascending: false })
-      .limit(300)
-    if (loadError) {
-      console.error('Failed to load reminders:', loadError.message)
+    try {
+      const page = await repository.listPage({ scope, limit: REMINDER_PAGE_SIZE })
+      setReminders(page.items)
+      setNextCursor(page.nextCursor)
+      setError(null)
+    } catch (loadError) {
+      console.error('Failed to load reminders:', loadError instanceof Error ? loadError.message : 'unknown error')
       setError(t.reminders.loadFailed)
-      return
     }
-    setReminders(((rows ?? []) as Record<string, unknown>[]).map(mapReminder))
-    setError(null)
-  }, [currentMember.id, familyId])
+  }, [repository, scope])
+
+  const loadMore = useCallback(async () => {
+    if (!nextCursor) return
+    try {
+      const page = await repository.listPage({ scope, limit: REMINDER_PAGE_SIZE, before: nextCursor })
+      // Deduplicated by id: a reminder inserted at the top by the sync RPC
+      // between two page reads must not appear twice.
+      setReminders((current) => {
+        const seen = new Set(current.map((item) => item.id))
+        return [...current, ...page.items.filter((item) => !seen.has(item.id))]
+      })
+      setNextCursor(page.nextCursor)
+    } catch (loadError) {
+      console.error('Failed to load more reminders:', loadError instanceof Error ? loadError.message : 'unknown error')
+    }
+  }, [nextCursor, repository, scope])
 
   const loadPreferences = useCallback(async () => {
-    const { data: row, error: loadError } = await supabase
-      .from('notification_preferences')
-      .select('*')
-      .eq('member_id', currentMember.id)
-      .eq('family_id', familyId)
-      .maybeSingle()
-    if (loadError) {
-      console.error('Failed to load reminder preferences:', loadError.message)
+    try {
+      const stored = await repository.loadPreferences(scope)
+      let next = stored
+      const detectedTimezone = browserTimezone()
+      if (next.timezoneMode === 'auto' && next.timezone !== detectedTimezone) next = { ...next, timezone: detectedTimezone }
+      // Creating the row on first use and correcting a drifted timezone are
+      // the same step: make the stored row match reality.
+      await repository.ensurePreferences(next, stored)
+      setPreferences(next)
+    } catch (loadError) {
+      console.error('Failed to load reminder preferences:', loadError instanceof Error ? loadError.message : 'unknown error')
       setError(t.reminders.preferencesLoadFailed)
-      return
     }
-
-    let next = mapPreferences(row as Record<string, unknown> | null, currentMember.id, familyId)
-    const detectedTimezone = browserTimezone()
-    if (next.timezoneMode === 'auto' && next.timezone !== detectedTimezone) next = { ...next, timezone: detectedTimezone }
-
-    if (!row) {
-      const { error: insertError } = await supabase.from('notification_preferences').upsert({
-        member_id: next.memberId, family_id: next.familyId, timezone: next.timezone, timezone_mode: next.timezoneMode, locale: next.locale,
-      }, { onConflict: 'member_id', ignoreDuplicates: true })
-      if (insertError) console.error('Failed to create reminder preferences:', insertError.message)
-    } else if (String(row.timezone) !== next.timezone || row.timezone_mode !== next.timezoneMode) {
-      const { error: timezoneError } = await supabase.from('notification_preferences').update({
-        timezone: next.timezone, timezone_mode: next.timezoneMode, updated_at: new Date().toISOString(),
-      }).eq('member_id', next.memberId).eq('family_id', next.familyId)
-      if (timezoneError) console.error('Failed to normalize reminder timezone:', timezoneError.message)
-    }
-    setPreferences(next)
-  }, [currentMember.id, familyId])
+  }, [repository, scope])
 
   useEffect(() => {
     let cancelled = false
@@ -188,13 +144,10 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (loading || preferences.locale === language) return
     setPreferences((current) => ({ ...current, locale: language }))
-    void supabase.from('notification_preferences').update({
-      locale: language,
-      updated_at: new Date().toISOString(),
-    }).eq('member_id', currentMember.id).eq('family_id', familyId).then(({ error: localeError }) => {
-      if (localeError) console.error('Failed to synchronize reminder locale:', localeError.message)
+    void repository.updateLocale(scope, language).catch((localeError: unknown) => {
+      console.error('Failed to synchronize reminder locale:', localeError instanceof Error ? localeError.message : 'unknown error')
     })
-  }, [currentMember.id, familyId, language, loading, preferences.locale])
+  }, [language, loading, preferences.locale, repository, scope])
 
   // Renamed from the original `refreshAll`-style bundle to this specific
   // name so the composition stays legible at the call site; still preserves
@@ -279,34 +232,36 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
     if (sources.loading || loading) return
     let cancelled = false
     async function sync() {
-      const { error: syncError } = await supabase.rpc('sync_member_reminders', { p_family_id: familyId, p_reminders: drafts })
-      if (!cancelled) {
-        if (syncError) {
-          console.error('Failed to sync reminders:', syncError.message)
-          setError(t.reminders.syncFailed)
-        } else {
-          await refresh()
-        }
+      try {
+        // The coordinator drops a request whose drafts match the last synced
+        // set, so an unrelated source rerender no longer reaches the server.
+        const outcome = await syncCoordinator.requestSync({ reason: 'drafts-changed', familyId, drafts })
+        if (!cancelled && outcome === 'synced') await refresh()
+      } catch (syncError) {
+        if (cancelled) return
+        console.error('Failed to sync reminders:', syncError instanceof Error ? syncError.message : 'unknown error')
+        setError(t.reminders.syncFailed)
       }
     }
     void sync()
     return () => { cancelled = true }
-  }, [familyId, sources.loading, drafts, loading, refresh])
+  }, [familyId, sources.loading, drafts, loading, refresh, syncCoordinator])
 
   const updateState = useCallback(async (ids: string[], action: 'read' | 'dismiss') => {
     if (ids.length === 0) return
     const timestamp = new Date().toISOString()
-    const { error: updateError } = await supabase.rpc('set_member_reminder_state', {
-      p_family_id: familyId, p_reminder_ids: ids, p_action: action,
-    })
-    if (updateError) throw new Error(t.reminders.reminderSaveFailed)
+    try {
+      await repository.setState(scope, ids, action)
+    } catch {
+      throw new Error(t.reminders.reminderSaveFailed)
+    }
     setReminders((items) => items.map((item) => {
       if (!ids.includes(item.id)) return item
       const next = { ...item, readAt: action === 'read' ? (item.readAt ?? timestamp) : item.readAt, dismissedAt: action === 'dismiss' ? (item.dismissedAt ?? timestamp) : item.dismissedAt }
       return { ...next, status: reminderStatus(next) }
     }))
     broadcastInvalidation('state')
-  }, [broadcastInvalidation, familyId])
+  }, [broadcastInvalidation, repository, scope])
 
   const markRead = useCallback((id: string) => updateState([id], 'read'), [updateState])
   const markAllRead = useCallback(() => updateState(unreadActiveIds(reminders), 'read'), [reminders, updateState])
@@ -315,27 +270,14 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
   const savePreferences = useCallback(async (next: NotificationPreferences) => {
     if (!isValidTimeZone(next.timezone)) throw new Error(t.reminders.invalidTimezone)
     const normalized = next.timezoneMode === 'auto' ? { ...next, timezone: browserTimezone() } : next
-    const { error: saveError } = await supabase.from('notification_preferences').upsert({
-      member_id: currentMember.id, family_id: familyId, in_app_enabled: normalized.inAppEnabled,
-      push_enabled: normalized.pushEnabled, daily_digest_enabled: normalized.dailyDigestEnabled, weekly_digest_enabled: normalized.weeklyDigestEnabled,
-      quiet_push_enabled: normalized.quietPushEnabled, quiet_hours_enabled: normalized.quietHoursEnabled,
-      quiet_hours_start: normalized.quietHoursStart, quiet_hours_end: normalized.quietHoursEnd,
-      timezone: normalized.timezone, timezone_mode: normalized.timezoneMode,
-      locale: normalized.locale,
-      category_preferences: normalized.categories,
-      message_direct_enabled: normalized.messages.direct,
-      message_group_enabled: normalized.messages.group,
-      message_reply_mention_enabled: normalized.messages.replyMention,
-      message_task_enabled: normalized.messages.task,
-      message_entity_enabled: normalized.messages.entity,
-      message_sound_enabled: normalized.messages.sound,
-      message_preview_enabled: normalized.messages.preview,
-      updated_at: new Date().toISOString(),
-    })
-    if (saveError) throw new Error(t.reminders.settingsSaveFailed)
+    try {
+      await repository.savePreferences({ ...normalized, memberId: currentMember.id, familyId })
+    } catch {
+      throw new Error(t.reminders.settingsSaveFailed)
+    }
     setPreferences(normalized)
     broadcastInvalidation('preferences')
-  }, [broadcastInvalidation, currentMember.id, familyId])
+  }, [broadcastInvalidation, currentMember.id, familyId, repository])
 
   const active = useMemo(() => activeReminders(reminders), [reminders])
   const history = useMemo(() => historyReminders(reminders), [reminders])
@@ -349,10 +291,11 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<ReminderContextValue>(() => ({
     reminders, active, history, unreadCount: count, hasImportantUnread, preferences, loading, error,
+    hasMore: nextCursor !== null, loadMore,
     markRead, markAllRead, dismiss, savePreferences, refresh,
   }), [
     reminders, active, history, count, hasImportantUnread, preferences, loading, error,
-    markRead, markAllRead, dismiss, savePreferences, refresh,
+    nextCursor, loadMore, markRead, markAllRead, dismiss, savePreferences, refresh,
   ])
 
   return (

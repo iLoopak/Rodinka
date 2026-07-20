@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { t } from '../../strings'
 import { MEAL_CATEGORY_VALUES, mealCategoryLabel, suggestedTagLabel, SUGGESTED_MEAL_TAGS } from '../../utils/mealLabels'
 import type { MealInput } from '../../context/meals/MealsContext'
-import type { Meal, MealCategory } from '../../hooks/useMeals'
+import type { Meal, MealCategory } from '../../features/meals/domain/mealTypes'
 import { GuidedDisclosure, GuidedLead } from '../create-record/GuidedCreateFields'
 
 const CATEGORY_OPTIONS = MEAL_CATEGORY_VALUES.map((value) => ({ value, label: mealCategoryLabel(value) }))

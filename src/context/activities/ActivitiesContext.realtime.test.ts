@@ -1,14 +1,13 @@
 // @vitest-environment jsdom
-import { createElement, useState } from 'react'
-import { act, cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { Activity } from '../../hooks/useActivities'
-
-const channelMock = vi.hoisted(() => vi.fn())
-const removeChannelMock = vi.hoisted(() => vi.fn())
-vi.mock('../../supabaseClient', () => ({
-  supabase: { channel: channelMock, removeChannel: removeChannelMock },
-}))
+import { createElement } from 'react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it } from 'vitest'
+import type { Activity } from '../../features/activities/domain/activityTypes'
+import type {
+  ActivitiesRealtimeHandlers,
+  ActivitiesRepository,
+} from '../../features/activities/data/activitiesRepository'
+import { ActivitiesProvider, useActivitiesData } from './ActivitiesContext'
 
 const baseActivity: Activity = {
   id: 'a1', family_id: 'family-1', title: 'Swimming', category: 'swimming', kind: 'club', all_day: false,
@@ -20,38 +19,23 @@ const baseActivity: Activity = {
   reminder_days_before: null, created_at: '2026-07-01T00:00:00Z', updated_at: '2026-07-01T00:00:00Z',
 }
 
-// A real (not vi.fn) stateful mock, so the provider's own setActivities calls
-// actually re-render — this is what proves the realtime handler updates
-// state a consumer can see, not just that a mock was called.
-vi.mock('../../hooks/useActivities', () => ({
-  useActivities: () => {
-    const [activities, setActivities] = useState<Activity[]>([baseActivity])
-    return { activities, setActivities, loading: false, error: null, refresh: vi.fn() }
-  },
-}))
-
-const { ActivitiesProvider, useActivitiesData } = await import('./ActivitiesContext')
-
-interface FakeChannel {
-  on: ReturnType<typeof vi.fn>
-  subscribe: ReturnType<typeof vi.fn>
-  emit: (event: string, table: string, row: unknown) => void
-}
-
-function makeFakeChannel(): FakeChannel {
-  const handlers = new Map<string, ((payload: unknown) => void)[]>()
-  const channel = {} as FakeChannel
-  channel.on = vi.fn((_type: string, config: { event: string; table: string }, callback: (payload: unknown) => void) => {
-    const key = `${config.event}:${config.table}`
-    handlers.set(key, [...(handlers.get(key) ?? []), callback])
-    return channel
-  })
-  channel.subscribe = vi.fn(() => channel)
-  channel.emit = (event, table, row) => {
-    const payload = event === 'DELETE' ? { old: row } : { new: row }
-    for (const callback of handlers.get(`${event}:${table}`) ?? []) callback(payload)
+/**
+ * Drives the provider through the repository seam rather than a mocked
+ * Supabase channel: what matters is that a change delivered by realtime
+ * reaches a consumer without anyone calling refresh.
+ */
+function fakeRepository() {
+  let handlers: ActivitiesRealtimeHandlers | null = null
+  let listCalls = 0
+  const repository: ActivitiesRepository = {
+    async listActivities() { listCalls += 1; return [baseActivity] },
+    async getActivity() { return baseActivity },
+    async createSeries() { return baseActivity },
+    async updateSeries() { return baseActivity },
+    async markPaymentPaid() { return baseActivity },
+    subscribe(_scope, next) { handlers = next; return () => { handlers = null } },
   }
-  return channel
+  return { repository, fire: () => handlers, listCalls: () => listCalls }
 }
 
 afterEach(cleanup)
@@ -61,18 +45,54 @@ function ActivityTitle() {
   return createElement('span', { 'data-testid': 'title' }, activities[0]?.title)
 }
 
+async function mounted(repository: ActivitiesRepository) {
+  render(createElement(ActivitiesProvider, { familyId: 'family-1', repository, children: createElement(ActivityTitle) }))
+  await waitFor(() => expect(screen.getByTestId('title').textContent).toBe('Swimming'))
+}
+
 describe('ActivitiesContext realtime', () => {
   it('reflects an activity updated from a second device without a manual refresh', async () => {
-    const channel = makeFakeChannel()
-    channelMock.mockReturnValue(channel)
-
-    render(createElement(ActivitiesProvider, { familyId: 'family-1', children: createElement(ActivityTitle) }))
-    expect(screen.getByTestId('title').textContent).toBe('Swimming')
+    const { repository, fire, listCalls } = fakeRepository()
+    await mounted(repository)
 
     await act(async () => {
-      channel.emit('UPDATE', 'activities', { ...baseActivity, title: 'Swimming (moved to Tuesdays)' })
+      fire()?.onActivityChange({ action: 'upsert', record: { ...baseActivity, title: 'Swimming (moved to Tuesdays)' } })
     })
 
     expect(screen.getByTestId('title').textContent).toBe('Swimming (moved to Tuesdays)')
+    // Patched in place — a realtime event must not reload the family's
+    // activities.
+    expect(listCalls()).toBe(1)
+  })
+
+  it('keeps the participants it already holds when an update arrives', async () => {
+    const { repository, fire } = fakeRepository()
+    await mounted(repository)
+
+    await act(async () => {
+      fire()?.onActivityChange({ action: 'participant-add', activityId: 'a1', memberId: 'mem-1' })
+    })
+    await act(async () => {
+      // A realtime activities row carries no participants; the provider
+      // supplies the ones on screen through resolveParticipants, so an
+      // unrelated title change must not blank them.
+      const resolved = fire()?.resolveParticipants('a1') ?? []
+      fire()?.onActivityChange({ action: 'upsert', record: { ...baseActivity, title: 'Renamed', participant_ids: resolved } })
+    })
+
+    expect(screen.getByTestId('title').textContent).toBe('Renamed')
+    expect(fire()?.resolveParticipants('a1')).toEqual(['mem-1'])
+  })
+
+  it('does not add the same participant twice when an echo arrives', async () => {
+    const { repository, fire } = fakeRepository()
+    await mounted(repository)
+
+    await act(async () => {
+      fire()?.onActivityChange({ action: 'participant-add', activityId: 'a1', memberId: 'mem-1' })
+      fire()?.onActivityChange({ action: 'participant-add', activityId: 'a1', memberId: 'mem-1' })
+    })
+
+    expect(fire()?.resolveParticipants('a1')).toEqual(['mem-1'])
   })
 })

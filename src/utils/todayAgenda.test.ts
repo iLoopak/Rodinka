@@ -9,7 +9,7 @@ import {
   makeMealVoteCandidate,
   makeMedicalRecord,
 } from './testFixtures'
-import type { MealVoteRound } from '../hooks/useMealVoteRounds'
+import type { MealVoteRound } from '../features/meals/domain/mealTypes'
 import type { ChoreCompletion } from '../hooks/useChoreCompletions'
 
 const TODAY = '2026-07-13'

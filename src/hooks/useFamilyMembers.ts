@@ -1,6 +1,8 @@
-import { useEffect, useState, useCallback } from 'react'
-import { supabase } from '../supabaseClient'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { cachedQuery, cacheTimes, familyQueryKey, signedUrlMaxAgeMs } from '../queryCache'
+import { AVATAR_SIGNED_URL_SECONDS } from '../features/family/data/familyMediaStorage'
+import { SupabaseFamilyMembersRepository } from '../features/family/data/supabaseFamilyRepository'
+import type { FamilyMembersRepository } from '../features/family/data/familyRepository'
 import { t } from '../strings'
 
 export type MemberColorKey =
@@ -40,9 +42,10 @@ export function isActiveFamilyMember(member: FamilyMember) {
   return (member.status ?? 'active') === 'active'
 }
 
-export const AVATAR_SIGNED_URL_SECONDS = 12 * 60 * 60
+export { AVATAR_SIGNED_URL_SECONDS }
 
-export function useFamilyMembers(familyId: string | undefined, userId: string | null = null) {
+export function useFamilyMembers(familyId: string | undefined, userId: string | null = null, repositoryOverride?: FamilyMembersRepository) {
+  const repository = useMemo(() => repositoryOverride ?? new SupabaseFamilyMembersRepository(), [repositoryOverride])
   const [members, setMembers] = useState<FamilyMember[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -65,37 +68,17 @@ export function useFamilyMembers(familyId: string | undefined, userId: string | 
         queryName: 'members.list',
         table: 'members,member-avatars',
         reason: 'mount',
-        fetcher: async () => {
-          const { data, error } = await supabase
-            .from('members')
-            .select('id, family_id, display_name, role, user_id, birth_date, color_key, custom_color, avatar_path, grammatical_gender, vocative_name, status, removed_at, removed_by_member_id, removal_reason')
-            .eq('family_id', familyId)
-            .order('display_name')
-          if (error) throw error
-          const loadedMembers = (data ?? []).map((member) => ({ ...member, status: member.status ?? 'active', avatar_url: null })) as FamilyMember[]
-          const avatarPaths = [...new Set(loadedMembers.flatMap((member) => member.avatar_path ?? []))]
-          if (avatarPaths.length > 0) {
-            const { data: signedUrls, error: signedUrlError } = await supabase.storage
-              .from('member-avatars')
-              .createSignedUrls(avatarPaths, AVATAR_SIGNED_URL_SECONDS)
-            if (signedUrlError) console.error('Failed to create member avatar signed URLs:', signedUrlError.message)
-            else {
-              const urlByPath = new Map((signedUrls ?? []).filter((item) => item.signedUrl).map((item) => [item.path, item.signedUrl] as const))
-              for (const member of loadedMembers) member.avatar_url = member.avatar_path ? (urlByPath.get(member.avatar_path) ?? null) : null
-            }
-          }
-          return loadedMembers
-        },
+        fetcher: () => repository.listMembers({ familyId, userId }),
       })
       setMembers(result.data)
       setError(result.stale ? t.errors.loadFailed : null)
-    } catch (error) {
-      console.error('Failed to load family members:', error instanceof Error ? error.message : 'unknown error')
+    } catch (loadError) {
+      console.error('Failed to load family members:', loadError instanceof Error ? loadError.message : 'unknown error')
       setMembers([])
       setError(t.errors.loadFailed)
     }
     setLoading(false)
-  }, [familyId, userId])
+  }, [familyId, repository, userId])
 
   useEffect(() => {
     refresh()

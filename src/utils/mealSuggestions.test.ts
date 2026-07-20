@@ -9,7 +9,7 @@ import {
   topVotedMeals,
 } from './mealSuggestions'
 import { makeMeal, makeMealPlanEntry, makeMealVote, makeMealVoteCandidate } from './testFixtures'
-import type { MealVoteRound } from '../hooks/useMealVoteRounds'
+import type { MealVoteRound } from '../features/meals/domain/mealTypes'
 
 function makeRound(overrides: Partial<MealVoteRound> = {}): MealVoteRound {
   return {

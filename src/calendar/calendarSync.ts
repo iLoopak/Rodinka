@@ -1,6 +1,20 @@
 import type { PostgrestError } from '@supabase/supabase-js'
 import { supabase } from '../supabaseClient'
 import { normalizeChore } from '../utils/choreModel'
+// The calendar snapshot reads the same tables as the feature repositories, so
+// it uses their column lists and mappers rather than a second hand-maintained
+// copy (audit P1-M1).
+import {
+  ACTIVITY_COLUMNS,
+  ACTIVITY_PARTICIPANT_HISTORY_COLUMNS,
+  OCCURRENCE_OVERRIDE_COLUMNS,
+  SERIES_ASSIGNMENT_HISTORY_COLUMNS,
+  mapActivity,
+  mapActivityParticipantHistory,
+  mapOccurrenceOverride,
+  mapSeriesAssignmentHistory,
+} from '../features/activities/domain/activityMappers'
+import { MEAL_PLAN_ENTRY_COLUMNS, mapMealPlanEntry } from '../features/meals/domain/mealMappers'
 import type { CalendarMutation, CalendarSnapshotData } from './calendarTypes'
 
 export interface CalendarRemote {
@@ -61,25 +75,25 @@ export async function fetchCalendarSnapshot(familyId: string): Promise<CalendarS
       .select('id, chore_id, completed_by, completed_at, status, approved_by, approved_at, occurrence_due_date, chore_title, reward_amount, assigned_member_id, assignment_was_override, requires_approval, reward_enabled, task_category, chores!inner(family_id)')
       .eq('chores.family_id', familyId).gte('occurrence_due_date', start).lte('occurrence_due_date', end).order('completed_at', { ascending: false }).limit(2000),
     supabase.from('activities')
-      .select('id, family_id, title, category, kind, all_day, child_id, responsible_member_id, secondary_responsible_member_id, location, coach_name, coach_phone, coach_email, notes, skill_level, start_date, end_date, recurrence_type, recurrence_weekdays, start_time, end_time, payment_amount, payment_frequency, next_payment_due_date, payment_paid_at, payment_paid_for_date, status, reminder_enabled, reminder_days_before, created_at, updated_at, activity_participants(member_id)')
+      .select(ACTIVITY_COLUMNS)
       .eq('family_id', familyId).lte('start_date', end).order('start_date').limit(1500),
     supabase.from('medical_records')
       .select('id, family_id, patient_id, responsible_member_id, record_type, title, provider, location, record_date, start_time, end_time, status, notes, next_due_date, recurrence_interval_months, reminder_enabled, reminder_days_before, vaccine_name, vaccine_dose_number, vaccine_batch_number, vaccine_completed_date, vaccine_next_dose_date, created_at, updated_at')
       .eq('family_id', familyId).order('record_date').limit(1500),
     supabase.from('meal_plan_entries')
-      .select('id, family_id, entry_date, meal_slot, meal_id, title, responsible_member_id, notes, status, origin, source_entry_id, created_by, created_at, updated_at')
+      .select(MEAL_PLAN_ENTRY_COLUMNS)
       .eq('family_id', familyId).gte('entry_date', start).lte('entry_date', end).order('entry_date').limit(1500),
     supabase.from('allowance_plans')
       .select('id, family_id, member_id, amount, frequency, payout_day, payout_weekday, note, starts_on, status, condition_mode, created_at, updated_at, allowance_plan_requirements(id, plan_id, chore_id, requirement_type, required_count, created_at)')
       .eq('family_id', familyId).order('created_at').limit(500),
     supabase.from('occurrence_overrides')
-      .select('id, family_id, series_type, series_id, occurrence_date, companion_member_id, assignee_member_id, cancelled, updated_at')
+      .select(OCCURRENCE_OVERRIDE_COLUMNS)
       .eq('family_id', familyId).gte('occurrence_date', start).lte('occurrence_date', end).limit(2000),
     supabase.from('series_assignment_history')
-      .select('id, family_id, series_type, series_id, effective_from, member_id')
+      .select(SERIES_ASSIGNMENT_HISTORY_COLUMNS)
       .eq('family_id', familyId).lte('effective_from', end).limit(2000),
     supabase.from('activity_participant_history')
-      .select('id, family_id, activity_id, member_id, effective_from, effective_to')
+      .select(ACTIVITY_PARTICIPANT_HISTORY_COLUMNS)
       .eq('family_id', familyId).lte('effective_from', end).limit(2000),
     supabase.from('members')
       .select('id, family_id, display_name, role, user_id, birth_date, color_key, custom_color, avatar_path, grammatical_gender, vocative_name, status, removed_at, removed_by_member_id, removal_reason')
@@ -97,10 +111,7 @@ export async function fetchCalendarSnapshot(familyId: string): Promise<CalendarS
     .filter((activity) => activity.recurrence_type !== 'one_off'
       ? activity.status === 'active' && (!activity.end_date || activity.end_date >= start)
       : Boolean((activity.end_date ?? activity.start_date) >= start))
-    .map((activity) => ({
-      ...activity,
-      participant_ids: activity.activity_participants.map((participant) => participant.member_id),
-    }))
+    .map((activity) => mapActivity(activity as unknown as Record<string, unknown>))
   const medicalRecords = (medicalResult.data ?? []).filter((record) =>
     inRange(record.record_date) || inRange(record.next_due_date) || inRange(record.vaccine_next_dose_date))
 
@@ -109,15 +120,15 @@ export async function fetchCalendarSnapshot(familyId: string): Promise<CalendarS
     completions: (completionsResult.data ?? []).map((row) => ({ ...row, reward_amount: Number(row.reward_amount) })),
     activities,
     medicalRecords,
-    planEntries: mealsResult.data ?? [],
+    planEntries: (mealsResult.data ?? []).map((row) => mapMealPlanEntry(row as unknown as Record<string, unknown>)),
     allowancePlans: (allowanceResult.data ?? []).map((row) => ({
       ...row,
       amount: Number(row.amount),
       requirements: row.allowance_plan_requirements ?? [],
     })),
-    occurrenceOverrides: overridesResult.data ?? [],
-    assignmentHistory: assignmentHistoryResult.data ?? [],
-    participantHistory: participantHistoryResult.data ?? [],
+    occurrenceOverrides: (overridesResult.data ?? []).map((row) => mapOccurrenceOverride(row as unknown as Record<string, unknown>)),
+    assignmentHistory: (assignmentHistoryResult.data ?? []).map((row) => mapSeriesAssignmentHistory(row as unknown as Record<string, unknown>)),
+    participantHistory: (participantHistoryResult.data ?? []).map((row) => mapActivityParticipantHistory(row as unknown as Record<string, unknown>)),
     members: (membersResult.data ?? []).map((member) => ({ ...member, status: member.status ?? 'active', avatar_url: null })),
     rangeStart: start,
     rangeEnd: end,

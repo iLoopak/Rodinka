@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { supabase } from '../supabaseClient'
-
-interface MemberEmailRow {
-  member_id: string
-  email: string
-}
+import { SupabaseFamilyMembersRepository } from '../features/family/data/supabaseFamilyRepository'
 
 // Registered account emails for the adults of a family, keyed by member id.
 // The data comes from the `family_member_emails` RPC, which is security-definer
@@ -24,17 +19,18 @@ export function useFamilyMemberEmails(familyId: string | undefined, enabled: boo
       return
     }
     setLoading(true)
-    const { data, error: loadError } = await supabase.rpc('family_member_emails', { p_family_id: familyId })
-    if (loadError) {
+    try {
+      const data = await new SupabaseFamilyMembersRepository().listMemberEmails({ familyId })
+      setEmails(new Map(Object.entries(data)))
+      setError(null)
+    } catch (loadError) {
       // A child or outsider is filtered out by returning no rows, not by an
       // error, so a failure here is a genuine fault rather than a permission
       // signal — surface it but keep the UI usable with an empty lookup.
-      console.error('Failed to load family member emails:', loadError.message)
+      const message = loadError instanceof Error ? loadError.message : 'unknown error'
+      console.error('Failed to load family member emails:', message)
       setEmails(new Map())
-      setError(loadError.message)
-    } else {
-      setEmails(new Map((data ?? []).map((row: MemberEmailRow) => [row.member_id, row.email])))
-      setError(null)
+      setError(message)
     }
     setLoading(false)
   }, [enabled, familyId])

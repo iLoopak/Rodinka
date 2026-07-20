@@ -1,6 +1,6 @@
-import type { Meal } from '../hooks/useMeals'
-import type { MealPlanEntry } from '../hooks/useMealPlanEntries'
-import type { MealVoteRound } from '../hooks/useMealVoteRounds'
+import type { Meal } from '../features/meals/domain/mealTypes'
+import type { MealPlanEntry } from '../features/meals/domain/mealTypes'
+import type { MealVoteRound } from '../features/meals/domain/mealTypes'
 import { addDays, compareISODates } from './dueDate'
 import { tallyVotes } from './mealVoting'
 
