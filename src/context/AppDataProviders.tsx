@@ -10,7 +10,7 @@ import { OccurrenceAssignmentsProvider } from './activities/OccurrenceAssignment
 import { MedicalProvider } from './health/MedicalContext'
 import { MealsProvider } from './meals/MealsContext'
 import { ShoppingProvider } from './shopping/ShoppingContext'
-import { MessagesProvider } from './messages/MessagesContext'
+import { MessagesSummaryProvider } from './messages/MessagesSummaryContext'
 import { CalendarOfflineProvider } from './calendar/CalendarOfflineContext'
 
 interface Props {
@@ -45,9 +45,9 @@ export function AppDataProviders({ member, userId, userEmail, children }: Props)
                     <MealsProvider familyId={familyId} userId={userId}>
                       <CalendarOfflineProvider familyId={familyId} userId={userId} currentMemberId={currentMemberId}>
                         <ShoppingProvider familyId={familyId} currentMemberId={currentMemberId}>
-                          <MessagesProvider familyId={familyId} currentMemberId={currentMemberId}>
+                          <MessagesSummaryProvider familyId={familyId} currentMemberId={currentMemberId}>
                             {children}
-                          </MessagesProvider>
+                          </MessagesSummaryProvider>
                         </ShoppingProvider>
                       </CalendarOfflineProvider>
                     </MealsProvider>

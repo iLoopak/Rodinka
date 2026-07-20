@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { t } from '../../strings'
-import { useMessagesData } from '../../context/messages/MessagesContext'
+import { useActiveConversationId, useMessagesActions, useMessagesSummary } from '../../context/messages/MessagesSummaryContext'
+import { MessagesContentProvider, useMessagesContent } from '../../context/messages/MessagesContentContext'
 import { useFamilyCore } from '../../context/family/FamilyCoreContext'
 import { useFamilyMembersData } from '../../context/family/FamilyMembersContext'
 import { useRouter } from '../../router'
@@ -47,41 +48,56 @@ const CONVERSATION_QUERY_KEY = 'c'
 const MESSAGE_QUERY_KEY = 'm'
 const LONG_PRESS_MS = 500
 
+// The route owns the chat content lifecycle (Wave 5): message pages,
+// reactions, attachments, signed URLs and entity cards are fetched when this
+// screen mounts and released when it unmounts. The unread summary, the active
+// conversation signal and the push bridge stay global.
 export function MessagesScreen() {
+  return (
+    <MessagesContentProvider>
+      <MessagesScreenContent />
+    </MessagesContentProvider>
+  )
+}
+
+function MessagesScreenContent() {
   const { currentMember } = useFamilyCore()
   const { members, memberById, memberName } = useFamilyMembersData()
-  const messagesData = useMessagesData()
   const {
     loading,
     error,
     conversationViews,
     groupConversation,
     directConversationsByMember,
-    activeConversationId,
+  } = useMessagesSummary()
+  const activeConversationId = useActiveConversationId()
+  const {
     setActiveConversationId,
     ensureGroupConversation,
     ensureDirectConversation,
+    markConversationRead,
+    setConversationMute,
+    refresh,
+  } = useMessagesActions()
+  const {
     getMessages,
     isConversationLoaded,
     isOlderExhausted,
     loadInitialMessages,
     loadOlderMessages,
-    markConversationRead,
     sendMessage,
     editMessage,
     deleteMessage,
     toggleReaction,
     retryFailedMessage,
     discardFailedMessage,
-    setConversationMute,
     getMessageReactions,
     getMessageAttachments,
     getAttachmentUrl,
     getMessageEntity,
     refreshMessageEntity,
     postEntitySystemMessage,
-    refresh,
-  } = messagesData
+  } = useMessagesContent()
   const { searchParams, setQueryParam, removeQueryParam } = useRouter()
   const [openingDirect, setOpeningDirect] = useState<string | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -96,6 +112,12 @@ export function MessagesScreen() {
       setActiveConversationId(null)
     }
   }, [requestedConversation, activeConversationId, setActiveConversationId])
+
+  // The active-conversation signal is global (the push bridge reads it from
+  // any screen), but "open" must mean "this screen is on screen". Leaving the
+  // route without clearing it would keep suppressing pushes for a chat the
+  // user is no longer looking at.
+  useEffect(() => () => setActiveConversationId(null), [setActiveConversationId])
 
   const openConversation = useCallback((conversationId: string) => {
     setActiveConversationId(conversationId)

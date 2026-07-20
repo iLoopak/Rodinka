@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { t } from '../../strings'
 import { Modal } from '../ui/Modal'
 import { MemberAvatar } from '../ui/MemberAvatar'
-import { useMessagesData } from '../../context/messages/MessagesContext'
+import { useMessagesActions, useMessagesSummary } from '../../context/messages/MessagesSummaryContext'
 import { useFamilyCore } from '../../context/family/FamilyCoreContext'
 import { useFamilyMembersData } from '../../context/family/FamilyMembersContext'
 import { isActiveFamilyMember } from '../../hooks/useFamilyMembers'
@@ -54,7 +54,11 @@ type Target =
 function ShareToChatDialog({ entityType, entityId, label, onClose }: DialogProps) {
   const { currentMember } = useFamilyCore()
   const { members, memberName } = useFamilyMembersData()
-  const { groupConversation, directConversationsByMember, ensureGroupConversation, ensureDirectConversation, shareEntity } = useMessagesData()
+  // Reads the summary only: this button lives on Shopping, chore and activity
+  // screens, so it must never be a reason to load chat content. The optimistic
+  // bubble belongs to the Messages route, which is not on screen here anyway.
+  const { groupConversation, directConversationsByMember } = useMessagesSummary()
+  const { ensureGroupConversation, ensureDirectConversation, shareEntity } = useMessagesActions()
   const [selected, setSelected] = useState<Target | null>(
     groupConversation ? { kind: 'group', conversationId: groupConversation.id } : null,
   )

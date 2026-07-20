@@ -33,8 +33,10 @@ const messagesScreen = readFileSync(
   new URL('../../components/messages/MessagesScreen.tsx', import.meta.url),
   'utf8',
 )
+// Wave 5 moved mark-as-read into the summary layer — it must keep working
+// from every screen, not only while the chat route is mounted.
 const dataSource = readFileSync(
-  new URL('./useMessagesDataSource.ts', import.meta.url),
+  new URL('./useMessagesSummarySource.ts', import.meta.url),
   'utf8',
 )
 

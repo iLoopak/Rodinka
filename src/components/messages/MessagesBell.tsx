@@ -1,5 +1,5 @@
 import { Link } from '../../router'
-import { useMessagesData } from '../../context/messages/MessagesContext'
+import { useTotalUnreadCount } from '../../context/messages/MessagesSummaryContext'
 import { t } from '../../strings'
 import { compactReminderCount } from '../reminders/ReminderBell'
 
@@ -7,7 +7,8 @@ import { compactReminderCount } from '../reminders/ReminderBell'
 // two live conversations that families care about (reminders + chat) share
 // the same visual language and don't clash with each other.
 export function MessagesBell() {
-  const { totalUnreadCount } = useMessagesData()
+  // One number, one context — a chat content update cannot re-render the header.
+  const totalUnreadCount = useTotalUnreadCount()
   const label = totalUnreadCount === 0
     ? t.messages.bellLabel
     : t.messages.bellUnread(totalUnreadCount)

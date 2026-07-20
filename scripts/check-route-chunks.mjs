@@ -14,11 +14,14 @@ export const REQUIRED_DEFERRED_MODULES = [
   'src/components/create-record/CreateRecordWizard.tsx',
 ]
 
+// Ratcheted down after Wave 5 moved the chat content data source out of the
+// eager graph (main 348 747 → 336 868 B raw). Headroom is deliberate — this
+// is a regression guard, not a target.
 export const ENTRY_BUDGET = {
-  rawBytes: 390_000,
-  gzipBytes: 112_000,
-  eagerRawBytes: 820_000,
-  eagerGzipBytes: 235_000,
+  rawBytes: 372_000,
+  gzipBytes: 110_000,
+  eagerRawBytes: 800_000,
+  eagerGzipBytes: 232_000,
 }
 
 export function auditRouteChunks(manifest, sizes, budget = ENTRY_BUDGET) {
