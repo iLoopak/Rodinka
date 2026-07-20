@@ -1,5 +1,5 @@
 import type { Route } from '../router'
-import type { Activity } from '../hooks/useActivities'
+import type { Activity } from '../features/activities/domain/activityTypes'
 import type { Chore } from '../hooks/useChores'
 import type { ChoreCompletion } from '../hooks/useChoreCompletions'
 import type { MealPlanEntry, MealSlot } from '../features/meals/domain/mealTypes'

@@ -28,10 +28,9 @@ describe('Calendar realtime ownership', () => {
     const ownershipSources = [
       'src/context/family/FamilyMembersContext.tsx',
       'src/repositories/chores/choresRepository.ts',
-      'src/context/activities/ActivitiesContext.tsx',
+      'src/features/activities/data/supabaseActivitiesRepository.ts',
       'src/repositories/medical/medicalRepository.ts',
       'src/features/meals/data/supabaseMealsRepository.ts',
-      'src/context/activities/OccurrenceAssignmentsContext.tsx',
       'src/context/chores/AllowanceContext.tsx',
     ].map((file) => readFileSync(join(root, file), 'utf8')).join('\n')
     for (const table of [

@@ -1,4 +1,4 @@
-import type { ActivityRecurrenceType } from '../../hooks/useActivities'
+import type { ActivityRecurrenceType } from '../../features/activities/domain/activityTypes'
 import { t } from '../../strings'
 import { activityWeekdayOptions } from '../../utils/activityLabels'
 import { selectedRecurrenceWeekdays } from '../../utils/activityFormModel'

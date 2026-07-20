@@ -1,5 +1,5 @@
 import type { Chore } from '../hooks/useChores'
-import type { Activity } from '../hooks/useActivities'
+import type { Activity } from '../features/activities/domain/activityTypes'
 import type { MedicalRecord } from '../hooks/useMedicalRecords'
 import type { MealVote, MealVoteCandidate, VoteValue } from '../features/meals/domain/mealTypes'
 import type { Meal } from '../features/meals/domain/mealTypes'

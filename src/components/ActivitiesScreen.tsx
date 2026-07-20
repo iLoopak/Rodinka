@@ -12,7 +12,7 @@ import { ACTIVITY_CATEGORY_VALUES, activityCategoryLabel } from '../utils/activi
 import { nextOccurrenceDate } from '../utils/recurrence'
 import { formatFullDate } from '../utils/dueDate'
 import { onActivateKey } from '../utils/a11y'
-import type { Activity } from '../hooks/useActivities'
+import type { Activity } from '../features/activities/domain/activityTypes'
 import { useRouteSearchParams, useRouterActions } from '../router'
 import { resolveDeepLinkedItem } from '../utils/deepLinks'
 import { ScrollableTabs } from './ui/ScrollableTabs'

@@ -3,9 +3,6 @@
   "entries": {
     "src/components/OnboardingScreen.tsx::rpc::create_family": 1,
     "src/components/OnboardingScreen.tsx::rpc::redeem_invite": 1,
-    "src/context/activities/ActivitiesContext.tsx::rpc::create_activity_with_participants": 1,
-    "src/context/activities/ActivitiesContext.tsx::rpc::update_activity_with_participants": 1,
-    "src/context/activities/ActivitiesContext.tsx::table::activities": 1,
     "src/context/family/FamilyMembersContext.tsx::rpc::create_invite": 1,
     "src/context/family/FamilyMembersContext.tsx::rpc::permanently_delete_removed_member": 1,
     "src/context/family/FamilyMembersContext.tsx::rpc::remove_household_member": 2,
@@ -53,7 +50,6 @@
     "src/context/ReminderContext.tsx::table::reminders": 1,
     "src/context/shopping/useShoppingDataSource.ts::rpc::replace_meal_ingredients": 1,
     "src/context/shopping/useShoppingDataSource.ts::table::meal_ingredients": 1,
-    "src/hooks/useActivities.ts::table::activities": 1,
     "src/hooks/useAllowanceLedger.ts::table::allowance_ledger": 1,
     "src/hooks/useAllowancePlans.ts::table::allowance_cycles": 1,
     "src/hooks/useAllowancePlans.ts::table::allowance_plans": 1,
@@ -69,10 +65,6 @@
     "src/hooks/useMedicalRecords.ts::table::medical_records": 1,
     "src/hooks/useMemberProfiles.ts::rpc::update_member_profile": 1,
     "src/hooks/useMemberProfiles.ts::storage::<dynamic:uploadedPath>": 1,
-    "src/hooks/useMemberProfiles.ts::storage::member-avatars": 2,
-    "src/hooks/useOccurrenceAssignments.ts::rpc::set_occurrence_member_override": 1,
-    "src/hooks/useOccurrenceAssignments.ts::table::activity_participant_history": 1,
-    "src/hooks/useOccurrenceAssignments.ts::table::occurrence_overrides": 1,
-    "src/hooks/useOccurrenceAssignments.ts::table::series_assignment_history": 1
+    "src/hooks/useMemberProfiles.ts::storage::member-avatars": 2
   }
 }

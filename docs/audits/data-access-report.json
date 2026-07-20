@@ -3,7 +3,7 @@
   "findings": [
     {
       "file": "src/calendar/calendarSync.ts",
-      "line": 22,
+      "line": 36,
       "kind": "rpc",
       "method": "rpc",
       "target": "apply_calendar_mutation",
@@ -14,7 +14,7 @@
     },
     {
       "file": "src/calendar/calendarSync.ts",
-      "line": 57,
+      "line": 71,
       "kind": "table",
       "method": "from",
       "target": "chores",
@@ -25,7 +25,7 @@
     },
     {
       "file": "src/calendar/calendarSync.ts",
-      "line": 60,
+      "line": 74,
       "kind": "table",
       "method": "from",
       "target": "chore_completions",
@@ -36,7 +36,7 @@
     },
     {
       "file": "src/calendar/calendarSync.ts",
-      "line": 63,
+      "line": 77,
       "kind": "table",
       "method": "from",
       "target": "activities",
@@ -47,7 +47,7 @@
     },
     {
       "file": "src/calendar/calendarSync.ts",
-      "line": 66,
+      "line": 80,
       "kind": "table",
       "method": "from",
       "target": "medical_records",
@@ -58,7 +58,7 @@
     },
     {
       "file": "src/calendar/calendarSync.ts",
-      "line": 69,
+      "line": 83,
       "kind": "table",
       "method": "from",
       "target": "meal_plan_entries",
@@ -69,7 +69,7 @@
     },
     {
       "file": "src/calendar/calendarSync.ts",
-      "line": 72,
+      "line": 86,
       "kind": "table",
       "method": "from",
       "target": "allowance_plans",
@@ -80,7 +80,7 @@
     },
     {
       "file": "src/calendar/calendarSync.ts",
-      "line": 75,
+      "line": 89,
       "kind": "table",
       "method": "from",
       "target": "occurrence_overrides",
@@ -91,7 +91,7 @@
     },
     {
       "file": "src/calendar/calendarSync.ts",
-      "line": 78,
+      "line": 92,
       "kind": "table",
       "method": "from",
       "target": "series_assignment_history",
@@ -102,7 +102,7 @@
     },
     {
       "file": "src/calendar/calendarSync.ts",
-      "line": 81,
+      "line": 95,
       "kind": "table",
       "method": "from",
       "target": "activity_participant_history",
@@ -113,7 +113,7 @@
     },
     {
       "file": "src/calendar/calendarSync.ts",
-      "line": 84,
+      "line": 98,
       "kind": "table",
       "method": "from",
       "target": "members",
@@ -140,36 +140,6 @@
       "target": "redeem_invite",
       "domain": "family",
       "layer": "ui",
-      "isTest": false
-    },
-    {
-      "file": "src/context/activities/ActivitiesContext.tsx",
-      "line": 103,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "create_activity_with_participants",
-      "domain": "activities",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/activities/ActivitiesContext.tsx",
-      "line": 115,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "update_activity_with_participants",
-      "domain": "activities",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/activities/ActivitiesContext.tsx",
-      "line": 129,
-      "kind": "table",
-      "method": "from",
-      "target": "activities",
-      "domain": "activities",
-      "layer": "state",
       "isTest": false
     },
     {
@@ -883,6 +853,105 @@
       "isTest": false
     },
     {
+      "file": "src/features/activities/data/supabaseActivitiesRepository.ts",
+      "line": 42,
+      "kind": "table",
+      "method": "from",
+      "target": "activities",
+      "domain": "activities",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/activities/data/supabaseActivitiesRepository.ts",
+      "line": 48,
+      "kind": "table",
+      "method": "from",
+      "target": "activities",
+      "domain": "activities",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/activities/data/supabaseActivitiesRepository.ts",
+      "line": 59,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "create_activity_with_participants",
+      "domain": "activities",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/activities/data/supabaseActivitiesRepository.ts",
+      "line": 69,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "update_activity_with_participants",
+      "domain": "activities",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/activities/data/supabaseActivitiesRepository.ts",
+      "line": 80,
+      "kind": "table",
+      "method": "from",
+      "target": "activities",
+      "domain": "activities",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/activities/data/supabaseActivitiesRepository.ts",
+      "line": 128,
+      "kind": "table",
+      "method": "from",
+      "target": "occurrence_overrides",
+      "domain": "activities",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/activities/data/supabaseActivitiesRepository.ts",
+      "line": 131,
+      "kind": "table",
+      "method": "from",
+      "target": "series_assignment_history",
+      "domain": "activities",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/activities/data/supabaseActivitiesRepository.ts",
+      "line": 134,
+      "kind": "table",
+      "method": "from",
+      "target": "activity_participant_history",
+      "domain": "activities",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/activities/data/supabaseActivitiesRepository.ts",
+      "line": 148,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "set_occurrence_member_override",
+      "domain": "activities",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
       "file": "src/features/family-jump/storage/familyJumpRemote.ts",
       "line": 17,
       "kind": "table",
@@ -1092,16 +1161,6 @@
       "allowed": "Per-feature data layer introduced by the repository waves."
     },
     {
-      "file": "src/hooks/useActivities.ts",
-      "line": 76,
-      "kind": "table",
-      "method": "from",
-      "target": "activities",
-      "domain": "activities",
-      "layer": "state",
-      "isTest": false
-    },
-    {
       "file": "src/hooks/useAllowanceLedger.ts",
       "line": 33,
       "kind": "table",
@@ -1268,46 +1327,6 @@
       "method": "rpc",
       "target": "update_member_profile",
       "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/hooks/useOccurrenceAssignments.ts",
-      "line": 26,
-      "kind": "table",
-      "method": "from",
-      "target": "occurrence_overrides",
-      "domain": "activities",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/hooks/useOccurrenceAssignments.ts",
-      "line": 27,
-      "kind": "table",
-      "method": "from",
-      "target": "series_assignment_history",
-      "domain": "activities",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/hooks/useOccurrenceAssignments.ts",
-      "line": 28,
-      "kind": "table",
-      "method": "from",
-      "target": "activity_participant_history",
-      "domain": "activities",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/hooks/useOccurrenceAssignments.ts",
-      "line": 56,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "set_occurrence_member_override",
-      "domain": "activities",
       "layer": "state",
       "isTest": false
     },

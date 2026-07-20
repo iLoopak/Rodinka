@@ -1,5 +1,5 @@
 import { activityInputToRow } from '../domain/activities/types'
-import type { Activity } from '../hooks/useActivities'
+import type { Activity } from '../features/activities/domain/activityTypes'
 import { choreInputToRow, type Chore } from '../utils/choreModel'
 import type { CalendarMutation, CalendarSnapshotData } from './calendarTypes'
 

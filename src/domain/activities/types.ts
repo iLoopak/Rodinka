@@ -4,7 +4,7 @@ import type {
   ActivityPaymentFrequency,
   ActivityRecurrenceType,
   ActivityStatus,
-} from '../../hooks/useActivities'
+} from '../../features/activities/domain/activityTypes'
 
 export interface ActivityInput {
   title: string

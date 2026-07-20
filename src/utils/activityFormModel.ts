@@ -1,4 +1,4 @@
-import type { Activity, ActivityCategory, ActivityKind, ActivityRecurrenceType } from '../hooks/useActivities'
+import type { Activity, ActivityCategory, ActivityKind, ActivityRecurrenceType } from '../features/activities/domain/activityTypes'
 import { toUTCDate } from './dueDate'
 
 export function defaultActivityCategory(kind: ActivityKind): ActivityCategory {

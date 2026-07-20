@@ -1,5 +1,5 @@
 import { useId, useMemo, useState } from 'react'
-import type { Activity } from '../../hooks/useActivities'
+import type { Activity } from '../../features/activities/domain/activityTypes'
 import type { Chore } from '../../hooks/useChores'
 import type { FamilyMember } from '../../hooks/useFamilyMembers'
 import { t } from '../../strings'

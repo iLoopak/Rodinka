@@ -1,5 +1,5 @@
 import type { ActivityInput } from '../domain/activities/types'
-import type { Activity } from '../hooks/useActivities'
+import type { Activity } from '../features/activities/domain/activityTypes'
 import type { AllowancePlan } from '../hooks/useAllowancePlans'
 import type { ChoreCompletion } from '../hooks/useChoreCompletions'
 import type { FamilyMember } from '../hooks/useFamilyMembers'

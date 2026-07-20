@@ -1,7 +1,7 @@
 import { t } from '../strings'
 import type { Chore } from '../hooks/useChores'
 import type { ChoreCompletion } from '../hooks/useChoreCompletions'
-import type { Activity } from '../hooks/useActivities'
+import type { Activity } from '../features/activities/domain/activityTypes'
 import type { MedicalRecord } from '../hooks/useMedicalRecords'
 import type { MealPlanEntry, MealSlot } from '../features/meals/domain/mealTypes'
 import type { CalendarItemType } from './itemTypeStyle'
