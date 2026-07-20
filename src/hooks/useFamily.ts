@@ -133,7 +133,9 @@ export function useFamily(userId: string | undefined) {
 
     const next = data ? ({ ...data, avatar_url: null } as Member) : null
     console.info('BOOT 4 membership loaded', { found: Boolean(next) })
-    console.info('BOOT 5 family loaded', { familyId: next?.family_id ?? null })
+    // Presence, not identity: every other BOOT line logs a boolean or a stable
+    // label, and these land in real users' consoles and in bug reports.
+    console.info('BOOT 5 family loaded', { hasFamily: Boolean(next?.family_id) })
     // Wholesale replace: a confirmed empty membership clears a cached member
     // and routes to onboarding, and a different family replaces the cached one.
     setState({ userId, status: 'resolved', member: next, connectionError: null, dataError: null })
