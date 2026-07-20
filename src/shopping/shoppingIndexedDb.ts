@@ -74,6 +74,18 @@ export class IndexedDbShoppingStore implements ShoppingLocalStore {
     return this.databasePromise
   }
 
+  /**
+   * Releases the connection. An open handle blocks `deleteDatabase` and any
+   * future `versionchange` transaction, so anything that tears a store down
+   * has to call this rather than just dropping the reference.
+   */
+  async close() {
+    const pending = this.databasePromise
+    this.databasePromise = null
+    if (!pending) return
+    await pending.then((database) => database.close(), () => undefined)
+  }
+
   async loadItems(scope: ShoppingScope) {
     const rows = await getAllByIndex<StoredItem>(await this.database(), 'shoppingItems', 'scopeKey', shoppingScopeKey(scope))
     return rows.map((row) => row.item)
