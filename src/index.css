@@ -1488,7 +1488,8 @@ details.manage .add-child-form + .add-chore-form {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 32px;
+  /* Drag handles have to be hit first time; 32px was measurably too narrow. */
+  min-width: 44px;
   min-height: 44px;
   padding: 0;
   border: 0;
@@ -4222,8 +4223,10 @@ button.btn-danger:hover:not(:disabled) {
 }
 
 .month-nav button.btn-secondary {
+  /* 44px is the iOS minimum. This rule used to shrink the shared secondary
+     button to 40, which is the whole reason tap-target drift is guarded now. */
   min-width: 44px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 6px 14px;
   font-size: 1.1rem;
   line-height: 1;

@@ -18,7 +18,8 @@
 }
 
 .messages-new-button {
-  min-height: 40px;
+  /* Was 40px: below the iOS touch minimum for the screen's primary action. */
+  min-height: 44px;
   padding: 8px 14px;
   font-size: var(--font-size-action);
 }
