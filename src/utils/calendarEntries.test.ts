@@ -1,9 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { buildCalendarEntries, deduplicateAgendaRanges, entryMatchesMember, groupEntriesForAgenda } from './calendarEntries'
 import { makeActivity, makeChore, makeMealPlanEntry, makeMedicalRecord } from './testFixtures'
+import type { ChoreCompletion } from '../hooks/useChoreCompletions'
 
 const RANGE_START = '2026-07-01'
 const RANGE_END = '2026-07-31'
+
+function completion(overrides: Partial<ChoreCompletion> = {}): ChoreCompletion {
+  return {
+    id: 'completion-1', chore_id: 'chore-1', completed_by: 'member-1', completed_at: '2026-07-12T10:00:00Z',
+    status: 'pending_approval', approved_by: null, approved_at: null, occurrence_due_date: '2026-07-10',
+    chore_title: 'Chore', reward_amount: 0, ...overrides,
+  }
+}
 
 describe('buildCalendarEntries — chores', () => {
   it('projects a chore on its due_date when within range', () => {
@@ -237,5 +246,50 @@ describe('groupEntriesForAgenda', () => {
     const groups = groupEntriesForAgenda(entries, '2026-07-13')
     expect(groups).toHaveLength(1)
     expect(groups[0].bucket).toBe('today')
+  })
+
+  it('keeps only overdue approval chores and never accumulates historical event backlogs', () => {
+    const today = '2026-07-13'
+    const entries = buildCalendarEntries({
+      chores: [
+        makeChore({ id: 'eligible', due_date: '2026-07-10', requires_approval: true }),
+        makeChore({ id: 'pending', due_date: '2026-07-10', requires_approval: true }),
+        makeChore({ id: 'approved', due_date: '2026-07-10', requires_approval: true }),
+        makeChore({ id: 'no-approval', due_date: '2026-07-10', requires_approval: false }),
+        makeChore({ id: 'cancelled', due_date: '2026-07-10', requires_approval: true }),
+        makeChore({ id: 'archived', due_date: '2026-07-10', requires_approval: true, status: 'archived' }),
+      ],
+      choreCompletions: [
+        completion({ id: 'pending-completion', chore_id: 'pending', status: 'pending_approval' }),
+        completion({ id: 'approved-completion', chore_id: 'approved', status: 'approved' }),
+      ],
+      activities: [makeActivity({ id: 'recurring-club', recurrence_type: 'weekly', start_date: '2026-07-01' })],
+      medicalRecords: [makeMedicalRecord({ id: 'past-checkup', record_date: '2026-07-05' })],
+      mealPlanEntries: [makeMealPlanEntry({ id: 'past-meal', status: 'confirmed', entry_date: '2026-07-06' })],
+      occurrenceOverrides: [{
+        id: 'cancelled-override', family_id: 'family-1', series_type: 'task', series_id: 'cancelled',
+        occurrence_date: '2026-07-10', companion_member_id: null, assignee_member_id: null,
+        cancelled: true, updated_at: '2026-07-09T10:00:00Z',
+      }],
+      rangeStart: RANGE_START,
+      rangeEnd: RANGE_END,
+    })
+
+    const overdue = groupEntriesForAgenda(entries, today).find((group) => group.bucket === 'overdue')
+    expect(overdue?.entries.map((entry) => entry.sourceId)).toEqual(['eligible', 'pending'])
+  })
+
+  it('does not apply overdue eligibility rules to today or future entries', () => {
+    const entries = buildCalendarEntries({
+      chores: [makeChore({ id: 'today-no-approval', due_date: '2026-07-13', requires_approval: false })],
+      activities: [makeActivity({ id: 'tomorrow-activity', start_date: '2026-07-14' })],
+      medicalRecords: [],
+      rangeStart: RANGE_START,
+      rangeEnd: RANGE_END,
+    })
+
+    const groups = groupEntriesForAgenda(entries, '2026-07-13')
+    expect(groups.find((group) => group.bucket === 'today')?.entries.map((entry) => entry.sourceId)).toEqual(['today-no-approval'])
+    expect(groups.find((group) => group.bucket === 'tomorrow')?.entries.map((entry) => entry.sourceId)).toEqual(['tomorrow-activity'])
   })
 })

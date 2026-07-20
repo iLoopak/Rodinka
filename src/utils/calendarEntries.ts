@@ -1,5 +1,6 @@
 import { t } from '../strings'
 import type { Chore } from '../hooks/useChores'
+import type { ChoreCompletion } from '../hooks/useChoreCompletions'
 import type { Activity } from '../hooks/useActivities'
 import type { MedicalRecord } from '../hooks/useMedicalRecords'
 import type { MealPlanEntry, MealSlot } from '../hooks/useMealPlanEntries'
@@ -25,6 +26,11 @@ export interface CalendarEntry {
   subtitle: string | null
   location?: string | null
   completed?: boolean
+  /** Chore-only overdue eligibility metadata. */
+  requiresApproval?: boolean
+  approvalStatus?: ChoreCompletion['status'] | null
+  cancelled?: boolean
+  deleted?: boolean
   /** The child/patient this entry is about, if any. */
   childOrPatientId: string | null
   /** The accompanying/responsible adult, or the chore assignee. */
@@ -54,6 +60,7 @@ function withinRange(date: string, rangeStart: string, rangeEnd: string): boolea
 
 interface BuildCalendarEntriesInput {
   chores: Chore[]
+  choreCompletions?: ChoreCompletion[]
   activities: Activity[]
   medicalRecords: MedicalRecord[]
   // Optional and additive: meal plan entries were not part of the original
@@ -80,6 +87,7 @@ interface BuildCalendarEntriesInput {
 // counts as "done" differs per record type.
 export function buildCalendarEntries({
   chores,
+  choreCompletions = [],
   activities,
   medicalRecords,
   mealPlanEntries = [],
@@ -91,6 +99,12 @@ export function buildCalendarEntries({
   participantHistory = [],
 }: BuildCalendarEntriesInput): CalendarEntry[] {
   const entries: CalendarEntry[] = []
+  const completionByOccurrence = new Map<string, ChoreCompletion>()
+  for (const completion of choreCompletions) {
+    const key = `${completion.chore_id}:${completion.occurrence_due_date}`
+    const existing = completionByOccurrence.get(key)
+    if (!existing || completion.completed_at > existing.completed_at) completionByOccurrence.set(key, completion)
+  }
 
   for (const chore of chores) {
     if (!chore.due_date) continue
@@ -99,6 +113,12 @@ export function buildCalendarEntries({
       seriesType: 'task', seriesId: chore.id, occurrenceDate: chore.due_date,
       defaultMemberId: chore.assigned_to, overrides: occurrenceOverrides, assignmentHistory,
     })
+    const occurrenceOverride = occurrenceOverrides.find((item) =>
+      item.series_type === 'task'
+      && item.series_id === chore.id
+      && item.occurrence_date === chore.due_date
+    )
+    const completion = completionByOccurrence.get(`${chore.id}:${chore.due_date}`)
     entries.push({
       id: `chore:${chore.id}`,
       type: 'chore',
@@ -107,6 +127,10 @@ export function buildCalendarEntries({
       allDay: false,
       title: chore.title,
       subtitle: null,
+      requiresApproval: chore.requires_approval,
+      approvalStatus: completion?.status ?? null,
+      cancelled: occurrenceOverride?.cancelled ?? false,
+      deleted: chore.status === 'archived',
       childOrPatientId: assignment.memberId,
       responsibleMemberId: assignment.memberId,
       defaultResponsibleMemberId: chore.assigned_to,
@@ -313,6 +337,15 @@ export interface AgendaGroup {
 
 const AGENDA_BUCKET_ORDER: DueUrgency[] = ['overdue', 'today', 'tomorrow', 'thisWeek', 'upcoming']
 
+export function isEligibleForAgendaOverdue(entry: CalendarEntry): boolean {
+  return entry.type === 'chore'
+    && entry.sourceType === 'chore'
+    && entry.requiresApproval === true
+    && entry.approvalStatus !== 'approved'
+    && entry.cancelled !== true
+    && entry.deleted !== true
+}
+
 // Groups already-projected entries into the overdue/today/tomorrow/this
 // week/later buckets used by the agenda view.
 export function groupEntriesForAgenda(
@@ -327,7 +360,9 @@ export function groupEntriesForAgenda(
     upcoming: [],
   }
   for (const entry of entries) {
-    buckets[classifyDueDate(entry.date, today)].push(entry)
+    const bucket = classifyDueDate(entry.date, today)
+    if (bucket === 'overdue' && !isEligibleForAgendaOverdue(entry)) continue
+    buckets[bucket].push(entry)
   }
 
   const labels: Record<DueUrgency, string> = {

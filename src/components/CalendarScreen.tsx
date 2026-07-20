@@ -60,6 +60,7 @@ export function CalendarScreen() {
 
   const {
     chores,
+    completions,
     activities,
     medicalRecords,
     planEntries,
@@ -123,6 +124,7 @@ export function CalendarScreen() {
         const entry = sourceDate
           ? buildCalendarEntries({
               chores,
+              choreCompletions: completions,
               activities,
               medicalRecords: capabilities.isChild ? [] : medicalRecords,
               mealPlanEntries: planEntries,
@@ -150,7 +152,7 @@ export function CalendarScreen() {
     }
 
     setDeepLinkError(invalid)
-  }, [activities, allowancePlans, assignmentHistory, capabilities.isChild, chores, dateParam, error, eventParam, loading, medicalRecords, occurrenceOverrides, participantHistory, planEntries])
+  }, [activities, allowancePlans, assignmentHistory, capabilities.isChild, chores, completions, dateParam, error, eventParam, loading, medicalRecords, occurrenceOverrides, participantHistory, planEntries])
 
   const today = todayISODate()
   const range =
@@ -170,7 +172,7 @@ export function CalendarScreen() {
     })
     const visibleMedical = capabilities.isChild ? [] : medicalRecords.filter((record) => record.status !== 'cancelled')
     let projected = buildCalendarEntries({
-      chores: visibleChores, activities, medicalRecords: visibleMedical, mealPlanEntries: planEntries,
+      chores: visibleChores, choreCompletions: completions, activities, medicalRecords: visibleMedical, mealPlanEntries: planEntries,
       allowancePlans: capabilities.isChild ? [] : allowancePlans, rangeStart: range.start, rangeEnd: range.end,
       occurrenceOverrides, assignmentHistory,
       participantHistory,
@@ -180,7 +182,7 @@ export function CalendarScreen() {
     else if (filterPerson) projected = projected.filter((entry) => entry.type === 'meal' || entryMatchesMember(entry, filterPerson))
     if (filterType) projected = projected.filter((entry) => entry.type === filterType)
     return projected.map((entry) => ({ ...entry, syncStatus: pendingCalendarRecords.get(entry.sourceId)?.status }))
-  }, [activities, allowancePlans, assignmentHistory, capabilities.isChild, chores, currentMember.id, filterPerson, filterType, latestCompletionFor, medicalRecords, occurrenceOverrides, participantHistory, pendingCalendarRecords, planEntries, range.end, range.start])
+  }, [activities, allowancePlans, assignmentHistory, capabilities.isChild, chores, completions, currentMember.id, filterPerson, filterType, latestCompletionFor, medicalRecords, occurrenceOverrides, participantHistory, pendingCalendarRecords, planEntries, range.end, range.start])
 
   if (loading) return <p className="loading">{t.loading.generic}</p>
   if (error) return <ErrorState message={t.calendar.dataUnavailable} onRetry={refresh} />
