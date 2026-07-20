@@ -10,7 +10,7 @@ import { useActivitiesData } from '../../context/activities/ActivitiesContext'
 import { useFamilyCore } from '../../context/family/FamilyCoreContext'
 import { useFamilyMembersData } from '../../context/family/FamilyMembersContext'
 import { useFamilySettings } from '../../context/family/FamilySettingsContext'
-import { useMessagesData } from '../../context/messages/MessagesContext'
+import { useMessagesContent } from '../../context/messages/MessagesContentContext'
 import type { SharedEntityType } from '../../context/messages/types'
 
 export type CreateFromMessageKind = 'task' | 'shopping_item' | 'event'
@@ -37,7 +37,7 @@ export function CreateFromMessageDialog({ kind, sourceText, conversationId, onCl
   const chores = useChoresData()
   const shopping = useShopping()
   const activities = useActivitiesData()
-  const { shareEntity } = useMessagesData()
+  const { shareEntity } = useMessagesContent()
 
   const [created, setCreated] = useState<{ type: SharedEntityType; id: string; label: string } | null>(null)
   const [failed, setFailed] = useState(false)

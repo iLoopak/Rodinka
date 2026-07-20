@@ -1,19 +1,8 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { MessageRow } from './types'
-
-// The module we're testing imports the supabase client, which throws
-// at module scope if env vars are missing. Stub them before the
-// dynamic import so the test file can load even without a real .env.
-let mergeIncomingMessage: typeof import('./useMessagesDataSource').mergeIncomingMessage
-let mergeInitialLoad: typeof import('./useMessagesDataSource').mergeInitialLoad
-
-beforeAll(async () => {
-  vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co')
-  vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'anon')
-  const mod = await import('./useMessagesDataSource')
-  mergeIncomingMessage = mod.mergeIncomingMessage
-  mergeInitialLoad = mod.mergeInitialLoad
-})
+// Since Wave 5 these merge rules live in their own supabase-free module, so
+// the test imports them directly instead of stubbing env for the data source.
+import { mergeIncomingMessage, mergeInitialLoad } from './messageMerge'
 
 // Reproduction of the "message appears briefly then disappears" bug.
 // The failure mode was:

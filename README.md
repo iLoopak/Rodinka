@@ -222,7 +222,8 @@ Aplikace nemá jeden sdílený "god" kontext. Každá doména má vlastní React
 | `health/MedicalContext.tsx` | `useMedicalData()` | zdravotní záznamy včetně očkování |
 | `meals/MealsContext.tsx` | `useMealsDataContext()` | jídla, hlasování, jídelní plán |
 | `shopping/ShoppingContext.tsx` | `useShopping()` | nákupní seznam — tenká obálka nad offline-first repozitářem v `src/shopping` |
-| `messages/MessagesContext.tsx` | `useMessagesData()` | rodinné zprávy — konverzace, členové, zprávy, unread počty, `send_message`/`mark_conversation_read` RPC a realtime pro `conversations`/`conversation_members`/`messages` |
+| `messages/MessagesSummaryContext.tsx` | `useMessagesSummary()`, `useMessagesActions()`, `useTotalUnreadCount()`, `useActiveConversationId()` | globální polovina zpráv — metadata konverzací, unread počty, aktivní konverzace pro push, `mark_conversation_read`/`ensure_*_conversation`/`share_entity_to_conversation` RPC a realtime pro `conversations`/`conversation_members`/`messages` |
+| `messages/MessagesContentContext.tsx` | `useMessagesContent()` | route-scoped polovina zpráv — stránky zpráv, reakce, přílohy, signed URL a entity karty; mountuje ji pouze `MessagesScreen`, takže se nikdy nenačítá při startu |
 
 `src/context/AppDataProviders.tsx` tyto providery skládá do jednoho stromu. Až na dvě výjimky (kapesné čerpá ID úkolů od domény úkolů; schválení úkolu smí dobít i žebříček kapesného, viz níže) každý provider potřebuje jen `familyId`/`userId` předané jako prop — providery mezi sebou navzájem neimportují svůj kontext.
 
@@ -247,6 +248,8 @@ Rodinka používá Supabase Realtime jako výchozí způsob, jak se změny jedno
 | `applyRealtimeInsert.ts` / `applyRealtimeUpdate.ts` / `applyRealtimeDelete.ts` | generické `(items, row) => items` operace nad polem entit klíčovaným podle `id` |
 
 **Pojmenování kanálů:** jeden kanál na doménu (ne na tabulku, ne jeden globální), `family:<familyId>:<domena>` — např. `family:<id>:chores`, `family:<id>:activities`, `family:<id>:medical`. Doména vlastnící víc tabulek (úkoly + jejich dokončení, tři tabulky pro výjimky termínů, jídla + plán + hlasování) registruje víc tabulek na tomtéž kanálu.
+
+**Výjimka — zprávy jsou rozdělené podle životního cyklu, ne podle tabulek.** `family:<id>:messages` je globální a vlastní `conversations`, `conversation_members` a `messages`, protože unread počty musí být živé na každé obrazovce. `family:<id>:messages-content` otevírá až route `/messages` a vlastní `message_reactions`, `message_attachments` a `message_entity_refs`. Tabulka `messages` má i tak jediného vlastníka odběru: řádky se do route vrstvy dostávají přes malý emitter `src/context/messages/messageStream.ts`, ne přes druhý odběr.
 
 **Cyklus odběru:** efekt v každém provideru se spouští, jen když `familyId` existuje, a vrací funkci pro `supabase.removeChannel(channel)` — při odhlášení uživatele, přepnutí rodiny nebo odmountování providera se kanál korektně uzavře, žádný nezůstává viset.
 

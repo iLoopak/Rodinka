@@ -25,8 +25,8 @@ vi.mock('../../context/activities/ActivitiesContext', () => ({
 vi.mock('../../context/family/FamilyMembersContext', () => ({
   useFamilyMembersData: () => ({ memberName: (id: string) => (id === 'm-1' ? 'Tereza' : 'Někdo') }),
 }))
-vi.mock('../../context/messages/MessagesContext', () => ({
-  useMessagesData: () => ({ shareEntity }),
+vi.mock('../../context/messages/MessagesContentContext', () => ({
+  useMessagesContent: () => ({ shareEntity }),
 }))
 
 import { ShareExistingEntityDialog } from './ShareExistingEntityDialog'

@@ -1,11 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../../supabaseClient'
 import { friendly } from '../../utils/friendlyError'
 import { createRealtimeSubscription } from '../../realtime/createRealtimeSubscription'
-import { applyRealtimeInsert } from '../../realtime/applyRealtimeInsert'
-import { applyRealtimeUpdate } from '../../realtime/applyRealtimeUpdate'
-import { applyRealtimeDelete } from '../../realtime/applyRealtimeDelete'
-import type { RealtimeConnectionState } from '../../realtime/connectionState'
 import {
   buildMessageAttachmentPath,
   compressMessageAttachment,
@@ -13,11 +9,9 @@ import {
   validateMessageAttachmentFile,
   type MessageAttachmentValidationError,
 } from '../../utils/messageAttachment'
+import { compareMessages, mergeIncomingMessage, mergeInitialLoad } from './messageMerge'
+import type { MessagesSummaryActions, ShareEntityPayload } from './useMessagesSummarySource'
 import type {
-  ConversationMemberRow,
-  ConversationMuteScope,
-  ConversationRow,
-  ConversationView,
   MessageAttachmentRow,
   MessageEntityResolution,
   MessageReactionRow,
@@ -35,14 +29,10 @@ const ATTACHMENT_SIGNED_URL_SECONDS = 60 * 60
 const MESSAGE_SELECT_COLUMNS =
   'id, conversation_id, family_id, sender_member_id, content_type, body, client_id, reply_to_message_id, system_kind, edited_at, deleted_at, has_attachments, created_at'
 
-interface UseMessagesDataSourceArgs {
+interface UseMessagesContentSourceArgs {
   familyId: string | undefined
   currentMemberId: string | undefined
-}
-
-interface DirectConversationTarget {
-  id: string
-  memberId: string
+  actions: MessagesSummaryActions
 }
 
 export interface UploadAttachmentResult {
@@ -50,13 +40,14 @@ export interface UploadAttachmentResult {
   signedUrl: string
 }
 
-// One provider owns three tables (conversations, conversation_members,
-// messages) behind a single `family:<id>:messages` channel — same
-// convention every other domain follows. This batch adds reactions and
-// attachments alongside the base messages stream on the same channel.
-export function useMessagesDataSource({ familyId, currentMemberId }: UseMessagesDataSourceArgs) {
-  const [conversations, setConversations] = useState<ConversationRow[]>([])
-  const [members, setMembers] = useState<ConversationMemberRow[]>([])
+// The route-scoped half of the messaging module (Wave 5).
+//
+// Mounted by the Messages route only, so message pages, reactions,
+// attachments, signed URLs and entity cards are never startup work. It owns
+// one channel for the three content-only tables; message rows themselves
+// arrive through the summary layer's stream so the `messages` table keeps a
+// single subscription owner.
+export function useMessagesContentSource({ familyId, currentMemberId, actions }: UseMessagesContentSourceArgs) {
   const [messagesByConversation, setMessagesByConversation] = useState<Record<string, MessageRow[]>>({})
   const [reactionsByMessage, setReactionsByMessage] = useState<Record<string, MessageReactionRow[]>>({})
   const [attachmentsByMessage, setAttachmentsByMessage] = useState<Record<string, MessageAttachmentRow[]>>({})
@@ -66,10 +57,6 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
   const [entityByMessage, setEntityByMessage] = useState<Record<string, MessageEntityResolution>>({})
   const [loadedConversations, setLoadedConversations] = useState<Set<string>>(() => new Set())
   const [olderExhausted, setOlderExhausted] = useState<Set<string>>(() => new Set())
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [messagesRealtimeStatus, setMessagesRealtimeStatus] = useState<RealtimeConnectionState>('connecting')
   const activeFamilyIdRef = useRef(familyId)
   activeFamilyIdRef.current = familyId
   const messagesByConversationRef = useRef(messagesByConversation)
@@ -79,145 +66,114 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
   // outside state on purpose — it must update synchronously with the
   // fetch call, not on the next render.
   const initialLoadInFlightRef = useRef<Set<string>>(new Set())
+  const { registerLoadedMessages, messageStream, shareEntity: shareEntityWrite } = actions
 
   // ------------------------------------------------------------
-  // Initial load: everything the caller can already see (RLS scopes).
+  // Entity / extra resolution.
   // ------------------------------------------------------------
 
-  const refresh = useCallback(async () => {
-    if (!familyId) {
-      setConversations([])
-      setMembers([])
-      setLoading(false)
+  // Resolve the live state of any shared entities on these messages. Safe
+  // to call repeatedly — it overwrites the cached resolution so a card
+  // reflects the entity's current state after an action or a refetch.
+  const resolveEntitiesFor = useCallback(async (messageIds: string[]) => {
+    if (messageIds.length === 0) return
+    const { data, error: rpcError } = await supabase.rpc('resolve_message_entities', {
+      p_message_ids: messageIds,
+    })
+    if (rpcError) {
+      console.error('Failed to resolve shared entities:', rpcError.message)
       return
     }
-    setLoading(true)
-    setError(null)
-    try {
-      const groupResult = await supabase.rpc('ensure_family_group_conversation', { p_family_id: familyId })
-      if (groupResult.error) throw groupResult.error
+    const rows = (data ?? []) as Array<{
+      ref_id: string
+      message_id: string
+      entity_type: SharedEntityType
+      entity_id: string
+      entity_exists: boolean
+      state: Record<string, unknown> | null
+    }>
+    if (rows.length === 0) return
+    setEntityByMessage((current) => {
+      const next = { ...current }
+      for (const row of rows) {
+        next[row.message_id] = {
+          refId: row.ref_id,
+          messageId: row.message_id,
+          entityType: row.entity_type,
+          entityId: row.entity_id,
+          exists: row.entity_exists,
+          state: row.state ?? {},
+        }
+      }
+      return next
+    })
+  }, [])
 
-      const [{ data: convData, error: convError }, { data: memberData, error: memberError }] = await Promise.all([
-        supabase
-          .from('conversations')
-          .select('id, family_id, kind, title, direct_key, created_by_member_id, last_message_at, last_message_preview, created_at, updated_at')
-          .eq('family_id', familyId)
-          .order('last_message_at', { ascending: false, nullsFirst: false }),
-        supabase
-          .from('conversation_members')
-          .select('conversation_id, member_id, role, joined_at, last_read_at, muted_at, muted_until, mute_scope, archived_at'),
-      ])
-      if (convError) throw convError
-      if (memberError) throw memberError
-
-      setConversations((convData ?? []) as ConversationRow[])
-      setMembers((memberData ?? []) as ConversationMemberRow[])
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e)
-      console.error('Failed to load messaging data:', message)
-      setError(message)
-    } finally {
-      setLoading(false)
+  const ensureAttachmentSignedUrl = useCallback(async (attachment: MessageAttachmentRow) => {
+    const { data, error: signedUrlError } = await supabase.storage
+      .from(attachment.storage_bucket)
+      .createSignedUrl(attachment.storage_path, ATTACHMENT_SIGNED_URL_SECONDS)
+    if (signedUrlError) {
+      console.error('Failed to create attachment signed URL:', signedUrlError.message)
+      return
     }
-  }, [familyId])
+    setAttachmentSignedUrls((current) => ({ ...current, [attachment.id]: data.signedUrl }))
+  }, [])
 
-  useEffect(() => {
-    void refresh()
-  }, [refresh])
+  const hydrateMessageExtras = useCallback(async (messageIds: string[]) => {
+    if (messageIds.length === 0) return
+    const [{ data: reactions }, { data: attachments }] = await Promise.all([
+      supabase
+        .from('message_reactions')
+        .select('message_id, member_id, emoji, family_id, created_at')
+        .in('message_id', messageIds),
+      supabase
+        .from('message_attachments')
+        .select('id, message_id, family_id, conversation_id, storage_bucket, storage_path, mime_type, byte_size, width, height, created_at')
+        .in('message_id', messageIds),
+    ])
+    if (reactions) {
+      setReactionsByMessage((current) => {
+        const next = { ...current }
+        for (const id of messageIds) next[id] = []
+        for (const row of reactions as MessageReactionRow[]) {
+          const list = next[row.message_id] ?? []
+          list.push(row)
+          next[row.message_id] = list
+        }
+        return next
+      })
+    }
+    if (attachments) {
+      const rows = attachments as MessageAttachmentRow[]
+      setAttachmentsByMessage((current) => {
+        const next = { ...current }
+        for (const id of messageIds) next[id] = []
+        for (const row of rows) {
+          const list = next[row.message_id] ?? []
+          list.push(row)
+          next[row.message_id] = list
+        }
+        return next
+      })
+      await Promise.all(rows.map(ensureAttachmentSignedUrl))
+    }
+    await resolveEntitiesFor(messageIds)
+  }, [ensureAttachmentSignedUrl, resolveEntitiesFor])
 
   // ------------------------------------------------------------
-  // Realtime — one channel, five tables. Dedup on inserts by (id) and
-  // by (conversation_id, client_id) so an optimistic echo is a no-op.
+  // Realtime — content-only tables. `messages` is owned by the summary
+  // layer and reaches this store through its stream (see below), so no
+  // event is ever applied twice and no table has two subscribers.
   // ------------------------------------------------------------
 
   useEffect(() => {
     if (!familyId) return
     const unsubscribe = createRealtimeSubscription({
-      channelName: `family:${familyId}:messages`,
-      owner: 'MessagesProvider',
-      openReason: 'provider-mount',
-      onStatusChange: setMessagesRealtimeStatus,
+      channelName: `family:${familyId}:messages-content`,
+      owner: 'MessagesContentProvider',
+      openReason: 'messages-route-mount',
       tables: [
-        {
-          table: 'conversations',
-          filter: `family_id=eq.${familyId}`,
-          onInsert: (row) => {
-            if (activeFamilyIdRef.current !== familyId) return
-            setConversations((current) => applyRealtimeInsert(current, row as unknown as ConversationRow))
-          },
-          onUpdate: (row) => {
-            if (activeFamilyIdRef.current !== familyId) return
-            setConversations((current) => applyRealtimeUpdate(current, row as unknown as ConversationRow))
-          },
-          onDelete: (row) => {
-            if (activeFamilyIdRef.current !== familyId) return
-            setConversations((current) => applyRealtimeDelete(current, row.id as string))
-          },
-        },
-        {
-          table: 'conversation_members',
-          onInsert: (row) => {
-            if (activeFamilyIdRef.current !== familyId) return
-            const next = row as unknown as ConversationMemberRow
-            setMembers((current) =>
-              current.some((m) => m.conversation_id === next.conversation_id && m.member_id === next.member_id)
-                ? current
-                : [...current, next]
-            )
-          },
-          onUpdate: (row) => {
-            if (activeFamilyIdRef.current !== familyId) return
-            const next = row as unknown as ConversationMemberRow
-            setMembers((current) =>
-              current.map((m) =>
-                m.conversation_id === next.conversation_id && m.member_id === next.member_id ? next : m
-              )
-            )
-          },
-          onDelete: (row) => {
-            if (activeFamilyIdRef.current !== familyId) return
-            const gone = row as unknown as ConversationMemberRow
-            setMembers((current) =>
-              current.filter(
-                (m) => !(m.conversation_id === gone.conversation_id && m.member_id === gone.member_id)
-              )
-            )
-          },
-        },
-        {
-          table: 'messages',
-          filter: `family_id=eq.${familyId}`,
-          onInsert: (row) => {
-            if (activeFamilyIdRef.current !== familyId) return
-            const next = row as unknown as MessageRow
-            setMessagesByConversation((current) => mergeIncomingMessage(current, next))
-          },
-          onUpdate: (row) => {
-            if (activeFamilyIdRef.current !== familyId) return
-            const next = row as unknown as MessageRow
-            setMessagesByConversation((current) => {
-              const existing = current[next.conversation_id]
-              if (!existing) return current
-              return {
-                ...current,
-                [next.conversation_id]: existing.map((m) => (m.id === next.id ? { ...m, ...next } : m)),
-              }
-            })
-          },
-          onDelete: (row) => {
-            if (activeFamilyIdRef.current !== familyId) return
-            const gone = row as { id?: string; conversation_id?: string }
-            if (!gone.id || !gone.conversation_id) return
-            setMessagesByConversation((current) => {
-              const existing = current[gone.conversation_id as string]
-              if (!existing) return current
-              return {
-                ...current,
-                [gone.conversation_id as string]: existing.filter((m) => m.id !== gone.id),
-              }
-            })
-          },
-        },
         {
           table: 'message_reactions',
           filter: `family_id=eq.${familyId}`,
@@ -303,8 +259,37 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
       ],
     })
     return unsubscribe
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [familyId])
+  }, [familyId, ensureAttachmentSignedUrl, resolveEntitiesFor])
+
+  // Message rows forwarded from the single `messages` subscription.
+  useEffect(() => {
+    return messageStream.subscribe((event) => {
+      if (event.type === 'insert') {
+        setMessagesByConversation((current) => mergeIncomingMessage(current, event.row))
+        return
+      }
+      if (event.type === 'update') {
+        const next = event.row
+        setMessagesByConversation((current) => {
+          const existing = current[next.conversation_id]
+          if (!existing) return current
+          return {
+            ...current,
+            [next.conversation_id]: existing.map((m) => (m.id === next.id ? { ...m, ...next } : m)),
+          }
+        })
+        return
+      }
+      setMessagesByConversation((current) => {
+        const existing = current[event.conversationId]
+        if (!existing) return current
+        return {
+          ...current,
+          [event.conversationId]: existing.filter((m) => m.id !== event.id),
+        }
+      })
+    })
+  }, [messageStream])
 
   // ------------------------------------------------------------
   // Load messages for a conversation on demand.
@@ -347,6 +332,10 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
           next.add(conversationId)
           return next
         })
+        // Hand the metadata to the summary layer so its badge switches from
+        // "at least one" to an exact count, and keeps that precision after
+        // this route unmounts.
+        registerLoadedMessages(conversationId, rows)
         if (rows.length < INITIAL_MESSAGES_LIMIT) {
           setOlderExhausted((current) => {
             if (current.has(conversationId)) return current
@@ -360,7 +349,7 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
         initialLoadInFlightRef.current.delete(conversationId)
       }
     },
-    [loadedConversations]
+    [loadedConversations, registerLoadedMessages, hydrateMessageExtras]
   )
 
   const loadOlderMessages = useCallback(
@@ -397,6 +386,7 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
         const merged = [...ascending.filter((m) => !seen.has(m.id)), ...currentList]
         return { ...current, [conversationId]: merged }
       })
+      registerLoadedMessages(conversationId, rows)
       if (rows.length < OLDER_PAGE_SIZE) {
         setOlderExhausted((current) => {
           const next = new Set(current)
@@ -407,101 +397,8 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
       await hydrateMessageExtras(rows.map((r) => r.id))
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [messagesByConversation, olderExhausted]
+    [messagesByConversation, olderExhausted, registerLoadedMessages, hydrateMessageExtras]
   )
-
-  const hydrateMessageExtras = useCallback(async (messageIds: string[]) => {
-    if (messageIds.length === 0) return
-    const [{ data: reactions }, { data: attachments }] = await Promise.all([
-      supabase
-        .from('message_reactions')
-        .select('message_id, member_id, emoji, family_id, created_at')
-        .in('message_id', messageIds),
-      supabase
-        .from('message_attachments')
-        .select('id, message_id, family_id, conversation_id, storage_bucket, storage_path, mime_type, byte_size, width, height, created_at')
-        .in('message_id', messageIds),
-    ])
-    if (reactions) {
-      setReactionsByMessage((current) => {
-        const next = { ...current }
-        for (const id of messageIds) next[id] = []
-        for (const row of reactions as MessageReactionRow[]) {
-          const list = next[row.message_id] ?? []
-          list.push(row)
-          next[row.message_id] = list
-        }
-        return next
-      })
-    }
-    if (attachments) {
-      const rows = attachments as MessageAttachmentRow[]
-      setAttachmentsByMessage((current) => {
-        const next = { ...current }
-        for (const id of messageIds) next[id] = []
-        for (const row of rows) {
-          const list = next[row.message_id] ?? []
-          list.push(row)
-          next[row.message_id] = list
-        }
-        return next
-      })
-      await Promise.all(rows.map(ensureAttachmentSignedUrl))
-    }
-    await resolveEntitiesFor(messageIds)
-  }, [])
-
-  // Resolve the live state of any shared entities on these messages. Safe
-  // to call repeatedly — it overwrites the cached resolution so a card
-  // reflects the entity's current state after an action or a refetch.
-  const resolveEntitiesFor = useCallback(async (messageIds: string[]) => {
-    if (messageIds.length === 0) return
-    const { data, error: rpcError } = await supabase.rpc('resolve_message_entities', {
-      p_message_ids: messageIds,
-    })
-    if (rpcError) {
-      console.error('Failed to resolve shared entities:', rpcError.message)
-      return
-    }
-    const rows = (data ?? []) as Array<{
-      ref_id: string
-      message_id: string
-      entity_type: SharedEntityType
-      entity_id: string
-      entity_exists: boolean
-      state: Record<string, unknown> | null
-    }>
-    if (rows.length === 0) return
-    setEntityByMessage((current) => {
-      const next = { ...current }
-      for (const row of rows) {
-        next[row.message_id] = {
-          refId: row.ref_id,
-          messageId: row.message_id,
-          entityType: row.entity_type,
-          entityId: row.entity_id,
-          exists: row.entity_exists,
-          state: row.state ?? {},
-        }
-      }
-      return next
-    })
-  }, [])
-
-  const ensureAttachmentSignedUrl = useCallback(async (attachment: MessageAttachmentRow) => {
-    setAttachmentSignedUrls((current) => {
-      if (current[attachment.id]) return current
-      return current
-    })
-    const { data, error: signedUrlError } = await supabase.storage
-      .from(attachment.storage_bucket)
-      .createSignedUrl(attachment.storage_path, ATTACHMENT_SIGNED_URL_SECONDS)
-    if (signedUrlError) {
-      console.error('Failed to create attachment signed URL:', signedUrlError.message)
-      return
-    }
-    setAttachmentSignedUrls((current) => ({ ...current, [attachment.id]: data.signedUrl }))
-  }, [])
 
   // ------------------------------------------------------------
   // Attachment upload — used by the composer BEFORE calling sendMessage.
@@ -515,8 +412,7 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
     file: File,
     signal?: AbortSignal,
   ): Promise<UploadAttachmentResult> => {
-    const conversation = conversations.find((c) => c.id === conversationId)
-    if (!conversation) throw new Error('Conversation not found')
+    if (!familyId) throw new Error('No family')
     const validationError: MessageAttachmentValidationError | null = validateMessageAttachmentFile(file)
     if (validationError) throw new Error(validationError)
 
@@ -524,7 +420,7 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
     if (signal?.aborted) throw new DOMException('Upload cancelled', 'AbortError')
 
     const extension = messageAttachmentExtension(compressed.file.type)
-    const storagePath = buildMessageAttachmentPath(conversation.family_id, conversation.id, extension)
+    const storagePath = buildMessageAttachmentPath(familyId, conversationId, extension)
     const { error: uploadError } = await supabase.storage
       .from('message-attachments')
       .upload(storagePath, compressed.file, {
@@ -566,7 +462,7 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
       return { ...current, [attachment.message_id]: [...list, attachment] }
     })
     return { attachment, signedUrl }
-  }, [conversations])
+  }, [familyId])
 
   const discardPendingAttachment = useCallback(async (attachmentId: string, storagePath: string) => {
     try {
@@ -594,21 +490,8 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
   }, [])
 
   // ------------------------------------------------------------
-  // Actions.
+  // Message actions.
   // ------------------------------------------------------------
-
-  const ensureGroupConversation = useCallback(async () => {
-    if (!familyId) throw new Error('No family')
-    const { data, error: rpcError } = await supabase.rpc('ensure_family_group_conversation', { p_family_id: familyId })
-    if (rpcError) throw friendly(rpcError)
-    return data as string
-  }, [familyId])
-
-  const ensureDirectConversation = useCallback(async ({ memberId }: DirectConversationTarget) => {
-    const { data, error: rpcError } = await supabase.rpc('ensure_direct_conversation', { p_other_member_id: memberId })
-    if (rpcError) throw friendly(rpcError)
-    return data as string
-  }, [])
 
   interface SendMessagePayload {
     body: string
@@ -724,18 +607,9 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
     })
   }, [])
 
-  interface ShareEntityPayload {
-    entityType: SharedEntityType
-    entityId: string
-    body?: string
-    fallbackLabel?: string
-    clientId?: string
-  }
-
-  // Share a live planner entity into a conversation. Optimistically shows
-  // a "sending" entity message; the RPC creates the real message + ref and
-  // we reconcile by client_id exactly like sendMessage. The card resolves
-  // its state once the real id lands.
+  // Share a live planner entity into the open conversation. Same write the
+  // rest of the app uses (owned by the summary layer); this wrapper adds the
+  // optimistic bubble that only makes sense when the thread is on screen.
   const shareEntity = useCallback(async (conversationId: string, payload: ShareEntityPayload) => {
     if (!currentMemberId) throw new Error('No active member')
     const clientId = payload.clientId ?? crypto.randomUUID()
@@ -777,16 +651,7 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
       }))
     }
     try {
-      const { data, error: rpcError } = await supabase.rpc('share_entity_to_conversation', {
-        p_conversation_id: conversationId,
-        p_entity_type: payload.entityType,
-        p_entity_id: payload.entityId,
-        p_body: payload.body?.trim() ?? null,
-        p_client_id: clientId,
-        p_fallback_label: payload.fallbackLabel ?? null,
-      })
-      if (rpcError) throw friendly(rpcError)
-      const inserted = (Array.isArray(data) ? data[0] : data) as MessageRow | null
+      const inserted = await shareEntityWrite(conversationId, { ...payload, clientId })
       if (inserted) {
         setMessagesByConversation((current) => {
           const existing = current[conversationId] ?? []
@@ -817,7 +682,7 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
       })
       throw e
     }
-  }, [currentMemberId, familyId, resolveEntitiesFor])
+  }, [currentMemberId, familyId, shareEntityWrite, resolveEntitiesFor])
 
   // Re-resolve a single message's card after an action that changed the
   // underlying entity (complete task, mark purchased) so the card reflects
@@ -896,10 +761,13 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
           [updated.conversation_id]: list.map((m) => (m.id === updated.id ? { ...m, ...updated } : m)),
         }
       })
+      // The badge must lose a message the moment it is deleted, even though
+      // the row itself only gets a `deleted_at` stamp.
+      registerLoadedMessages(updated.conversation_id, [updated])
       setReactionsByMessage((current) => ({ ...current, [updated.id]: [] }))
       setAttachmentsByMessage((current) => ({ ...current, [updated.id]: [] }))
     }
-  }, [])
+  }, [registerLoadedMessages])
 
   const toggleReaction = useCallback(async (messageId: string, emoji: string) => {
     if (!currentMemberId) return
@@ -944,164 +812,9 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
     }
   }, [reactionsByMessage, currentMemberId, familyId])
 
-  // `until = null` means indefinite; a timestamp means the mute lapses on
-  // its own. The server caps it, so a bad clock cannot silence a
-  // conversation permanently through this path.
-  const setConversationMute = useCallback(async (
-    conversationId: string,
-    scope: ConversationMuteScope,
-    until: string | null = null,
-  ) => {
-    if (!currentMemberId) return
-    const mutedUntil = scope === 'none' ? null : until
-    setMembers((current) =>
-      current.map((m) =>
-        m.conversation_id === conversationId && m.member_id === currentMemberId
-          ? {
-            ...m,
-            mute_scope: scope,
-            muted_at: scope === 'none' ? null : m.muted_at ?? new Date().toISOString(),
-            muted_until: mutedUntil,
-          }
-          : m,
-      ),
-    )
-    const { error: rpcError } = await supabase.rpc('set_conversation_mute', {
-      p_conversation_id: conversationId,
-      p_scope: scope,
-      p_until: mutedUntil,
-    })
-    if (rpcError) throw friendly(rpcError)
-  }, [currentMemberId])
-
-  // Coalescing guard: any code path that calls markConversationRead in
-  // a hot loop (e.g. a useEffect whose deps churn every render, which
-  // is precisely how this used to catch fire — see the ConversationDetail
-  // fix in MessagesScreen) will otherwise fire an unbounded stream of
-  // RPCs. The browser eventually exhausts the connection pool to the
-  // Supabase host and every subsequent request — including send_message
-  // — starts failing with `TypeError: Failed to fetch`, which surfaces
-  // in the UI as "sending messages always fails". Belt-and-braces: the
-  // useEffect side is stabilized too; this ref is defence in depth so a
-  // future caller can't reintroduce the loop.
-  const markReadInFlightRef = useRef<Set<string>>(new Set())
-  const lastMarkReadAtRef = useRef<Record<string, number>>({})
-
-  const markConversationRead = useCallback(async (conversationId: string) => {
-    if (!currentMemberId) return
-    if (markReadInFlightRef.current.has(conversationId)) return
-    // Coalesce bursts within 500ms — normal "user is actively reading"
-    // patterns cross this threshold, so a truly new mark still lands,
-    // but a runaway effect is capped at ~2 RPCs/sec instead of
-    // hundreds/sec.
-    const nowMs = Date.now()
-    const lastAt = lastMarkReadAtRef.current[conversationId]
-    if (lastAt !== undefined && nowMs - lastAt < 500) return
-    lastMarkReadAtRef.current[conversationId] = nowMs
-    markReadInFlightRef.current.add(conversationId)
-    const now = new Date(nowMs).toISOString()
-    try {
-      let didAdvance = false
-      setMembers((current) => {
-        const target = current.find(
-          (m) => m.conversation_id === conversationId && m.member_id === currentMemberId,
-        )
-        if (!target) return current
-        // Never move the cursor backwards — protects against a
-        // realtime UPDATE that arrives with an older last_read_at
-        // interleaved with a local advance.
-        if (target.last_read_at >= now) return current
-        didAdvance = true
-        return current.map((m) => (m === target ? { ...m, last_read_at: now } : m))
-      })
-      if (!didAdvance) return
-      const { error: rpcError } = await supabase.rpc('mark_conversation_read', {
-        p_conversation_id: conversationId,
-        p_up_to: now,
-      })
-      if (rpcError) {
-        console.error('Failed to mark conversation read:', rpcError.message)
-      }
-    } finally {
-      markReadInFlightRef.current.delete(conversationId)
-    }
-  }, [currentMemberId])
-
   // ------------------------------------------------------------
-  // Derived views.
+  // Readers.
   // ------------------------------------------------------------
-
-  const membersByConversation = useMemo(() => {
-    const map = new Map<string, ConversationMemberRow[]>()
-    for (const m of members) {
-      const list = map.get(m.conversation_id)
-      if (list) list.push(m)
-      else map.set(m.conversation_id, [m])
-    }
-    return map
-  }, [members])
-
-  const conversationViews = useMemo<ConversationView[]>(() => {
-    return conversations.map((c) => {
-      const list = membersByConversation.get(c.id) ?? []
-      const memberIds = list.map((m) => m.member_id)
-      const selfRow = currentMemberId ? list.find((m) => m.member_id === currentMemberId) : undefined
-      const lastReadAt = selfRow?.last_read_at ?? new Date(0).toISOString()
-      const mutedUntil = selfRow?.muted_until ?? null
-      // A lapsed timed mute reads as unmuted without needing a write: the
-      // server applies the same rule when it decides whether to push.
-      const storedScope: ConversationMuteScope = selfRow?.mute_scope ?? 'none'
-      const muteScope: ConversationMuteScope =
-        mutedUntil && Date.parse(mutedUntil) <= Date.now() ? 'none' : storedScope
-      const messages = messagesByConversation[c.id] ?? []
-      let unreadCount = 0
-      if (loadedConversations.has(c.id)) {
-        for (const m of messages) {
-          if (m.sender_member_id === currentMemberId) continue
-          if (m.deleted_at) continue
-          if (m.created_at > lastReadAt) unreadCount += 1
-        }
-      } else if (c.last_message_at && c.last_message_at > lastReadAt) {
-        unreadCount = 1
-      }
-      const otherMemberId = c.kind === 'direct'
-        ? memberIds.find((id) => id !== currentMemberId) ?? null
-        : null
-      return {
-        id: c.id,
-        kind: c.kind,
-        title: c.title,
-        familyId: c.family_id,
-        lastMessageAt: c.last_message_at,
-        lastMessagePreview: c.last_message_preview,
-        memberIds,
-        unreadCount,
-        lastReadAt,
-        otherMemberId,
-        muteScope,
-        mutedUntil: muteScope === 'none' ? null : mutedUntil,
-      }
-    })
-  }, [conversations, membersByConversation, messagesByConversation, loadedConversations, currentMemberId])
-
-  const totalUnreadCount = useMemo(
-    () => conversationViews.reduce((acc, c) => acc + (c.muteScope === 'all' ? 0 : c.unreadCount), 0),
-    [conversationViews]
-  )
-
-  const groupConversation = useMemo(
-    () => conversationViews.find((c) => c.kind === 'group') ?? null,
-    [conversationViews]
-  )
-
-  const directConversationsByMember = useMemo(() => {
-    const map = new Map<string, ConversationView>()
-    for (const c of conversationViews) {
-      if (c.kind !== 'direct' || !c.otherMemberId) continue
-      map.set(c.otherMemberId, c)
-    }
-    return map
-  }, [conversationViews])
 
   const getMessages = useCallback(
     (conversationId: string): MessageRow[] => messagesByConversation[conversationId] ?? [],
@@ -1139,27 +852,17 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
   )
 
   return {
-    loading,
-    error,
-    messagesRealtimeStatus,
-    conversationViews,
-    groupConversation,
-    directConversationsByMember,
-    totalUnreadCount,
-    activeConversationId,
-    setActiveConversationId,
     getMessages,
     isConversationLoaded,
     isOlderExhausted,
-    ensureGroupConversation,
-    ensureDirectConversation,
+    loadInitialMessages,
+    loadOlderMessages,
     sendMessage,
     retryFailedMessage,
     discardFailedMessage,
     editMessage,
     deleteMessage,
     toggleReaction,
-    setConversationMute,
     uploadAttachment,
     discardPendingAttachment,
     getMessageReactions,
@@ -1169,67 +872,7 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
     shareEntity,
     refreshMessageEntity,
     postEntitySystemMessage,
-    markConversationRead,
-    loadInitialMessages,
-    loadOlderMessages,
-    refresh,
   }
 }
 
-function compareMessages(a: MessageRow, b: MessageRow) {
-  if (a.created_at === b.created_at) return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
-  return a.created_at < b.created_at ? -1 : 1
-}
-
-export function mergeIncomingMessage(current: Record<string, MessageRow[]>, next: MessageRow): Record<string, MessageRow[]> {
-  // `existing === undefined` used to short-circuit here and drop the
-  // realtime insert, on the assumption that "conversation not loaded →
-  // caller has no view to update". That's wrong: initial load can be
-  // in flight when the insert arrives, and its snapshot was taken
-  // BEFORE this row landed, so returning early would lose the message
-  // until the next full refresh. Treat missing as empty so the row is
-  // captured and the pending initial-load merge picks it up.
-  const existing = current[next.conversation_id] ?? []
-  // Dedup by id or client_id — optimistic insert path uses client_id
-  // before the server round-trip, and the realtime echo carries the
-  // same client_id back. Falling back to id covers the plain "same
-  // event twice" case.
-  if (existing.some((m) => m.id === next.id || (m.client_id && next.client_id && m.client_id === next.client_id))) {
-    return {
-      ...current,
-      [next.conversation_id]: existing.map((m) =>
-        m.id === next.id || (m.client_id && next.client_id && m.client_id === next.client_id)
-          ? { ...m, ...next, deliveryStatus: 'sent' as const }
-          : m
-      ),
-    }
-  }
-  return { ...current, [next.conversation_id]: [...existing, next] }
-}
-
-// Fold the initial page of server rows into whatever the client already
-// has locally. Blindly replacing (the previous behaviour) drops
-// optimistic sends and any realtime rows that landed while the load
-// was in flight — that's the source of the "message appears briefly
-// then disappears" bug.
-export function mergeInitialLoad(existing: MessageRow[] | undefined, serverRows: MessageRow[]): MessageRow[] {
-  if (!existing || existing.length === 0) return serverRows
-  const serverIds = new Set(serverRows.map((m) => m.id))
-  const serverClientIds = new Set(
-    serverRows.map((m) => m.client_id).filter((cid): cid is string => Boolean(cid)),
-  )
-  const preserved: MessageRow[] = []
-  for (const m of existing) {
-    // Server row wins for anything the server already knows about.
-    if (serverIds.has(m.id)) continue
-    if (m.client_id && serverClientIds.has(m.client_id)) continue
-    // Keep everything else: pending optimistic sends, failed sends the
-    // user hasn't retried, and real rows that arrived via realtime
-    // while this load was in flight.
-    preserved.push(m)
-  }
-  if (preserved.length === 0) return serverRows
-  return [...serverRows, ...preserved].sort(compareMessages)
-}
-
-export type MessagesDataSource = ReturnType<typeof useMessagesDataSource>
+export type MessagesContentSource = ReturnType<typeof useMessagesContentSource>

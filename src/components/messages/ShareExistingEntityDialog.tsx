@@ -5,7 +5,7 @@ import { useChoresData } from '../../context/chores/ChoresContext'
 import { useShopping } from '../../context/shopping/ShoppingContext'
 import { useActivitiesData } from '../../context/activities/ActivitiesContext'
 import { useFamilyMembersData } from '../../context/family/FamilyMembersContext'
-import { useMessagesData } from '../../context/messages/MessagesContext'
+import { useMessagesContent } from '../../context/messages/MessagesContentContext'
 import type { SharedEntityType } from '../../context/messages/types'
 import { formatEntityPickerDate } from '../../utils/entityPicker'
 
@@ -41,7 +41,7 @@ export function ShareExistingEntityDialog({ kind, conversationId, onClose }: Pro
   const { shoppingItems, shoppingLoading, shoppingError } = useShopping()
   const { activities, activitiesLoading, activitiesError } = useActivitiesData()
   const { memberName } = useFamilyMembersData()
-  const { shareEntity } = useMessagesData()
+  const { shareEntity } = useMessagesContent()
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)

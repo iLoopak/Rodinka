@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react'
 import { t } from '../../strings'
-import { useMessagesData } from '../../context/messages/MessagesContext'
+import { useMessagesContent } from '../../context/messages/MessagesContentContext'
 import {
   MESSAGE_ATTACHMENT_ALLOWED_TYPES,
   validateMessageAttachmentFile,
@@ -57,7 +57,7 @@ interface DraftAttachment {
 // Creating a record *from* a message is a separate action on the message
 // context menu, where it can prefill from that message's text.
 export function Composer({ conversationId, replyingTo, onCancelReply, onSend, onShareEntity, mentionCandidates }: Props) {
-  const { uploadAttachment, discardPendingAttachment } = useMessagesData()
+  const { uploadAttachment, discardPendingAttachment } = useMessagesContent()
   const [value, setValue] = useState('')
   const [mentionQuery, setMentionQuery] = useState<MentionQuery | null>(null)
   const [mentionIndex, setMentionIndex] = useState(0)
