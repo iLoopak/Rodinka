@@ -101,12 +101,33 @@ Dva testy tím prošly jako **falešně zelené** a bylo je potřeba opravit:
 - test cross-origin guardu původně používal Supabase REST URL, kterou by handler stejně nezachytil (nesedí `destination` ani cesta). Přepsán na signed URL avataru — cross-origin `image`, přesně tvar, který by runtime asset větev jinak zacachovala. To je zároveň reálné riziko: fotky jedné rodiny v cache sdílené se všemi účty na zařízení.
 - calendar reload test měl per-repository čítač id, takže restartovaná instance razila `id-1` znovu a „přegenerovaný" klíč se náhodou shodoval s persistovaným. Čítač je teď sdílený.
 
+## Scénář #6 — permission chyba nesmí odemknout cached data (a nález P0-6)
+
+Tohle mělo být doplnění testu. Ukázalo se, že jde o skutečnou chybu, kterou audit minul.
+
+`useFamily.ts` rozlišuje síťovou a permission chybu správně a má na to testy. Audit z toho usoudil, že acceptance criterion platí — ale neprověřil druhou cestu ke stejným datům: `cachedQuery`. Její stale fallback se spouštěl na **jakoukoli** chybu, tedy i na RLS odmítnutí.
+
+Důsledek: rodič odebraný z rodiny viděl po vypršení `staleTime` dál její roster — jména, data narození, signed URL avatarů — až po dobu `maxAgeMs`, což je pro členy 11 hodin.
+
+`deniesCachedData()` z batche 1 přitom existovalo a bylo otestované, jen nebylo **nikde zapojené**. To je poučení samo o sobě: helper bez volajícího je jen dokumentace záměru.
+
+Oprava v `cachedQuery`:
+
+- `permission-denied`, `auth-expired`, `not-found` → stale fallback se nepoužije, chyba propadne volajícímu,
+- `permission-denied` a `not-found` navíc **zahodí i persistentní kopii** — ztráta přístupu není totéž co vypršelý token,
+- `auth-expired` kopii nechá: po refreshi session jsou data zase legitimně uživatelova a nemá smysl vynucovat studený refetch,
+- transportní chyby a timeouty fungují beze změny, jinak by oprava stála offline režim.
+
+Testy: `src/queryCachePermission.test.ts` (7 scénářů) a `src/hooks/useFamilyMembers.permission.test.tsx` (2 scénáře na user-visible dopad). Ověřeno mutací — odstranění guardu shodí 5 z 9.
+
+**Poznámka k rozsahu:** uvnitř `staleTime` (45 min pro členy) se na server vůbec nesahá, takže tam odebraného člena uklidí až realtime event. To je vlastnost cachování, ne díra v této opravě — ale stojí za to vědět, že okno není nulové.
+
 ## Validace
 
 | Příkaz | Výsledek |
 | --- | --- |
 | `npm run lint` | ✅ 0 chyb |
-| `npm test` | ✅ 212 souborů, 1283 testů |
+| `npm test` | ✅ 214 souborů, 1292 testů |
 | `npm run build` | ✅ včetně `check:bundle` |
 | `npm run check:edge-functions` | ✅ |
 | `git diff --check` | ✅ |
@@ -114,7 +135,7 @@ Dva testy tím prošly jako **falešně zelené** a bylo je potřeba opravit:
 
 ## Zbývající scénáře ze zadání
 
-Nepokryté zůstávají: **#4** (offline start bez snapshotu), **#1** (online start bez cache, pokryto jen nepřímo), **#6** (permission error neodemkne cached data — klasifikace otestovaná, end-to-end cesta ne), **#13** částečně (corrupt entry jen pro query cache, ne pro shopping/calendar store) a **#15** (push deep link při cold startu).
+Nepokryté zůstávají: **#4** (offline start bez snapshotu), **#1** (online start bez cache, pokryto jen nepřímo), **#13** částečně (corrupt entry jen pro query cache, ne pro shopping/calendar store) a **#15** (push deep link při cold startu).
 
 ## Co zůstává neověřené
 

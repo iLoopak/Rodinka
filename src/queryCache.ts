@@ -1,4 +1,4 @@
-import { classifyStorageError } from './errors/errorCodes'
+import { classifyAppError, classifyStorageError, deniesCachedData } from './errors/errorCodes'
 
 export type QueryCacheReason = 'mount' | 'manual' | 'mutation' | 'realtime' | 'bootstrap'
 
@@ -329,6 +329,26 @@ export async function cachedQuery<T>(options: QueryCacheOptions<T>): Promise<{ d
     log('miss', { queryName: options.queryName, table: options.table, reason: options.reason ?? 'mount', durationMs: Math.round(performance.now() - startedAt), bytes: approxBytes(value) })
     return { data: value, cacheHit: false, stale: false }
   } catch (error) {
+    // The stale fallback exists for outages. An authorization failure is not
+    // an outage: serving the cached value there would keep showing family
+    // data to someone the server just refused, for as long as maxAge allows.
+    const code = classifyAppError(error)
+    if (deniesCachedData(code)) {
+      memory.delete(key)
+      // Losing access is not the same as a stale token. If the server says
+      // this is no longer theirs, the local copy goes too; an expired session
+      // only withholds, because re-authenticating makes it theirs again.
+      if (code !== 'auth-expired') {
+        epochs.set(key, epochOf(key) + 1)
+        if (options.persist) {
+          void persistence.deleteByPrefix(key).catch((storageError: unknown) => {
+            log('storage-error', { code: classifyStorageError(storageError), queryName: options.queryName })
+          })
+        }
+      }
+      log('denied', { queryName: options.queryName, table: options.table, code })
+      throw error
+    }
     if (existing && now() - existing.updatedAt <= maxAge && epochOf(key) === startEpoch) {
       log('stale-fallback', { queryName: options.queryName, table: options.table, reason: options.reason ?? 'mount' })
       return { data: existing.value, cacheHit: true, stale: true }

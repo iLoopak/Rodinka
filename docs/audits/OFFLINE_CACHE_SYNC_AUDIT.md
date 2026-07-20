@@ -435,6 +435,18 @@ Navržený uzavřený výčet (implementován v `src/errors/errorCodes.ts`):
 | P1-6 | Schema bump query cache tiše vypne persistenci | `queryCache.ts:60-66` | Persistence trvale mrtvá bez signálu | Guard `objectStoreNames.contains` |
 | P1-7 | `AppShell.offlineBlocked` bere feature stav jako globální | `AppShell.tsx:54,62` | Selhání shopping repository zablokuje nesouvisející route | Použít centralizovaný connectivity snapshot |
 
+### Nález nalezený až při implementaci
+
+| ID | Nález | Soubory | Stav |
+| --- | --- | --- | --- |
+| **P0-6** | Stale fallback query cache vracel cached data i při permission chybě | `queryCache.ts` | ✅ opraveno (batch 2) |
+
+Audit tuto cestu **minul**. Sekce 6 ověřila `useFamily.ts`, kde je rozlišení síťové a permission chyby správné, a z toho usoudila, že acceptance criterion „permission/auth chyba nikdy neodemkne cached family data" platí. Neprověřila ale `cachedQuery`, kde se stale fallback spouštěl na **jakoukoli** chybu.
+
+Dopad: rodič odebraný z rodiny viděl po vypršení `staleTime` a neúspěšném refreshi dál její roster — jména, data narození, signed URL avatarů — až po dobu `maxAgeMs` (11 h). `deniesCachedData()` z batche 1 existovalo, ale nebylo nikde zapojené.
+
+Oprava: `cachedQuery` klasifikuje chybu a při `permission-denied` / `auth-expired` / `not-found` stale fallback nepoužije. U `permission-denied` a `not-found` navíc zahodí i persistentní kopii — ztráta přístupu není totéž co vypršelý token.
+
 ### P2
 
 | ID | Nález | Soubory | Stav |
