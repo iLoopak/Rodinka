@@ -11,7 +11,19 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(caches.keys().then((keys) => Promise.all(keys
     .filter((key) => key.startsWith('rodinka-runtime-') && key !== CACHE_NAME)
-    .map((key) => caches.delete(key)))))
+    .map((key) => caches.delete(key))))
+    // Take over the open tabs straight away. Without this a freshly activated
+    // worker only controls pages loaded after it, so an installed PWA whose
+    // tab is never closed keeps being served by the old one.
+    .then(() => self.clients.claim()))
+})
+
+// Activation is deliberately NOT automatic. Skipping the waiting phase during
+// install would swap the worker under a tab mid-edit, and the reload that
+// follows could throw away what someone was typing. The page asks first, then
+// sends this message.
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting()
 })
 
 self.addEventListener('fetch', (event) => {
