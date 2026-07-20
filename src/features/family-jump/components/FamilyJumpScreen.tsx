@@ -4,7 +4,7 @@ import { useFamilyMembersData } from '../../../context/family/FamilyMembersConte
 import { useFamilyCore } from '../../../context/family/FamilyCoreContext'
 import type { FamilyMember } from '../../../hooks/useFamilyMembers'
 import { useLanguage } from '../../../i18n/languageContext'
-import { useRouter } from '../../../router'
+import { useRouterActions } from '../../../router'
 import { getMemberColorTheme, memberColorStyle } from '../../../utils/memberColor'
 import { familyJumpCopy, type FamilyJumpCopy } from '../copy'
 import { FamilyJumpEngine } from '../game/FamilyJumpEngine'
@@ -46,7 +46,7 @@ function createRunId() {
 }
 
 export function FamilyJumpScreen() {
-  const { navigate } = useRouter()
+  const { navigate } = useRouterActions()
   const { familyId, currentMember } = useFamilyCore()
   const { members, membersLoading } = useFamilyMembersData()
   const { language } = useLanguage()

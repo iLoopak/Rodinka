@@ -23,7 +23,9 @@ vi.mock('./components/UnlinkedChildAccountScreen', () => ({ UnlinkedChildAccount
 vi.mock('./components/FamilyMark', () => ({ FamilyMark: () => <span data-testid="loading-mark" /> }))
 vi.mock('./router', () => ({
   RouterProvider: ({ children }: { children: ReactNode }) => children,
-  useRouter: () => ({ path: '/', navigate: vi.fn() }),
+  useRoutePath: () => '/',
+  useRouteSearchParams: () => new URLSearchParams(),
+  useRouterActions: () => ({ navigate: vi.fn(), navigateHref: vi.fn(), setQueryParam: vi.fn(), removeQueryParam: vi.fn() }),
 }))
 // Records one entry per MOUNT (not per render), so the test can tell a keyed
 // remount apart from a re-render that reuses the previous scope's state.

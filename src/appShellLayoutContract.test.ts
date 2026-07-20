@@ -3,9 +3,10 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { appStyles } from './utils/testStylesheets'
 
 const root = process.cwd()
-const css = readFileSync(join(root, 'src/index.css'), 'utf8')
+const css = appStyles()
 const appShell = readFileSync(join(root, 'src/components/AppShell.tsx'), 'utf8')
 
 describe('AppShell native mobile scrolling contract', () => {

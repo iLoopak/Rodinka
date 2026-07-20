@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { t } from '../../strings'
+import './messages.css'
 import { useActiveConversationId, useMessagesActions, useMessagesSummary } from '../../context/messages/MessagesSummaryContext'
 import { MessagesContentProvider, useMessagesContent } from '../../context/messages/MessagesContentContext'
 import { useFamilyCore } from '../../context/family/FamilyCoreContext'
 import { useFamilyMembersData } from '../../context/family/FamilyMembersContext'
-import { useRouter } from '../../router'
+import { useRouteSearchParams, useRouterActions } from '../../router'
 import { ScreenHeader } from '../ui/ScreenHeader'
 import { MemberAvatar } from '../ui/MemberAvatar'
 import { EmptyState } from '../ui/EmptyState'
@@ -98,7 +99,8 @@ function MessagesScreenContent() {
     refreshMessageEntity,
     postEntitySystemMessage,
   } = useMessagesContent()
-  const { searchParams, setQueryParam, removeQueryParam } = useRouter()
+  const searchParams = useRouteSearchParams()
+  const { setQueryParam, removeQueryParam } = useRouterActions()
   const [openingDirect, setOpeningDirect] = useState<string | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
   const requestedConversation = searchParams.get(CONVERSATION_QUERY_KEY)
@@ -470,7 +472,8 @@ function ConversationDetail(props: ConversationDetailProps) {
   // Scroll-to-message for push deep links (`?m=<id>`). If the message is
   // older than the initially loaded page it simply is not in the DOM yet —
   // the conversation still opens at the bottom, which is the sane fallback.
-  const { searchParams: detailParams, removeQueryParam: dropDetailParam } = useRouter()
+  const detailParams = useRouteSearchParams()
+  const { removeQueryParam: dropDetailParam } = useRouterActions()
   const requestedMessageId = detailParams.get(MESSAGE_QUERY_KEY)
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null)
 

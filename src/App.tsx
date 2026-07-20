@@ -13,7 +13,7 @@ import { t } from './strings'
 import { FamilyMark } from './components/FamilyMark'
 import { useLanguage } from './i18n/languageContext'
 import { OfflineFallbackScreen } from './components/OfflineFallbackScreen'
-import { useRouter } from './router'
+import { useRoutePath, useRouterActions } from './router'
 import { isManagedChildSession } from './lib/managedChildSession'
 import { UnlinkedChildAccountScreen } from './components/UnlinkedChildAccountScreen'
 import { CreateRecordProvider } from './context/create-record/CreateRecordContext'
@@ -125,7 +125,8 @@ export default function App() {
 }
 
 function OfflineStartupGate({ children, networkStatus, connectionError, refresh }: { children: ReactNode; networkStatus: ReturnType<typeof useNetworkStatus>; connectionError: string | null; refresh: () => Promise<void> }) {
-  const { path, navigate } = useRouter()
+  const path = useRoutePath()
+  const { navigate } = useRouterActions()
   const { calendarHasUsableData } = useCalendarOffline()
   const showFallback = networkStatus === 'offline' && Boolean(connectionError) && !routeIsAvailableOffline(path)
   if (showFallback) {

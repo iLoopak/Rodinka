@@ -21,16 +21,26 @@ export function normalizeRoute(pathname: string): Route {
   return (ROUTES as readonly string[]).includes(pathname) ? (pathname as Route) : '/'
 }
 
-interface RouterContextValue {
-  path: Route
-  searchParams: URLSearchParams
+export interface RouterActions {
   navigate: (to: Route, hash?: string) => void
   navigateHref: (href: string) => void
   setQueryParam: (name: string, value: string, mode?: QueryHistoryMode) => void
   removeQueryParam: (name: string, mode?: QueryHistoryMode) => void
 }
 
-const RouterContext = createContext<RouterContextValue | null>(null)
+interface RouterContextValue extends RouterActions {
+  path: Route
+  searchParams: URLSearchParams
+}
+
+// Three contexts, because the three change at completely different rates:
+// `path` on navigation, `searchParams` on things like opening a conversation
+// (`?c=`), and the actions never — every one is a useCallback keyed on a
+// stable dependency. A component that only navigates has no business
+// re-rendering because a query parameter moved.
+const RoutePathContext = createContext<Route | null>(null)
+const RouteSearchContext = createContext<URLSearchParams | null>(null)
+const RouterActionsContext = createContext<RouterActions | null>(null)
 
 export function RouterProvider({ children }: { children: ReactNode }) {
   const [path, setPath] = useState<Route>(() => normalizeRoute(window.location.pathname))
@@ -79,13 +89,48 @@ export function RouterProvider({ children }: { children: ReactNode }) {
 
   const searchParams = useMemo(() => new URLSearchParams(search), [search])
 
-  return <RouterContext.Provider value={{ path, searchParams, navigate, navigateHref, setQueryParam, removeQueryParam }}>{children}</RouterContext.Provider>
+  // Stable for the provider's whole lifetime: every callback below is keyed on
+  // `syncLocation`, which is itself keyed on nothing.
+  const actions = useMemo<RouterActions>(
+    () => ({ navigate, navigateHref, setQueryParam, removeQueryParam }),
+    [navigate, navigateHref, setQueryParam, removeQueryParam],
+  )
+
+  return (
+    <RouterActionsContext.Provider value={actions}>
+      <RouteSearchContext.Provider value={searchParams}>
+        <RoutePathContext.Provider value={path}>{children}</RoutePathContext.Provider>
+      </RouteSearchContext.Provider>
+    </RouterActionsContext.Provider>
+  )
 }
 
-export function useRouter() {
-  const ctx = useContext(RouterContext)
-  if (!ctx) throw new Error('useRouter must be used within a RouterProvider')
-  return ctx
+export function useRoutePath(): Route {
+  const path = useContext(RoutePathContext)
+  if (path === null) throw new Error('useRoutePath must be used within a RouterProvider')
+  return path
+}
+
+export function useRouteSearchParams(): URLSearchParams {
+  const searchParams = useContext(RouteSearchContext)
+  if (!searchParams) throw new Error('useRouteSearchParams must be used within a RouterProvider')
+  return searchParams
+}
+
+export function useRouterActions(): RouterActions {
+  const actions = useContext(RouterActionsContext)
+  if (!actions) throw new Error('useRouterActions must be used within a RouterProvider')
+  return actions
+}
+
+// Compatibility facade for the handful of components that genuinely need all
+// three. Prefer the narrow hooks above: this one re-renders on any routing
+// change by definition.
+export function useRouter(): RouterContextValue {
+  const path = useRoutePath()
+  const searchParams = useRouteSearchParams()
+  const actions = useRouterActions()
+  return useMemo(() => ({ path, searchParams, ...actions }), [path, searchParams, actions])
 }
 
 interface LinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> {
@@ -94,7 +139,8 @@ interface LinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'
 }
 
 export function Link({ to, hash, children, onClick, ...rest }: LinkProps) {
-  const { path, navigate } = useRouter()
+  const path = useRoutePath()
+  const { navigate } = useRouterActions()
   const href = hash ? `${to}${hash}` : to
 
   return (

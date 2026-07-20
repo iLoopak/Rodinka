@@ -1,9 +1,9 @@
 import { Link } from '../../router'
-import { useReminders } from '../../context/ReminderContext'
+import { useReminderSummary } from '../../context/ReminderContext'
 import { t } from '../../strings'
 
 export function ReminderBell() {
-  const { unreadCount, hasImportantUnread } = useReminders()
+  const { unreadCount, hasImportantUnread } = useReminderSummary()
   return <ReminderBellView unreadCount={unreadCount} hasImportantUnread={hasImportantUnread} />
 }
 

@@ -14,14 +14,25 @@ export const REQUIRED_DEFERRED_MODULES = [
   'src/components/create-record/CreateRecordWizard.tsx',
 ]
 
-// Ratcheted down after Wave 5 moved the chat content data source out of the
-// eager graph (main 348 747 → 336 868 B raw). Headroom is deliberate — this
-// is a regression guard, not a target.
+// Route CSS that must ship with its own chunk rather than the main stylesheet.
+// Family Jump already did; Wave 7 moved the chat sheet the same way. Vite keys
+// emitted CSS by the importing module, so each entry names the route component
+// that owns the stylesheet.
+export const REQUIRED_ROUTE_STYLESHEETS = [
+  { stylesheet: 'src/features/family-jump/familyJump.css', owner: 'src/features/family-jump/components/FamilyJumpScreen.tsx' },
+  { stylesheet: 'src/components/messages/messages.css', owner: 'src/components/messages/MessagesScreen.tsx' },
+]
+
+// Ratcheted after Wave 7 pulled the chat stylesheet out of the main sheet
+// (CSS 185 366 → 162 285 B raw). Headroom is deliberate — these are regression
+// guards, not targets. Every number here was measured, not guessed.
 export const ENTRY_BUDGET = {
   rawBytes: 372_000,
   gzipBytes: 110_000,
   eagerRawBytes: 800_000,
   eagerGzipBytes: 232_000,
+  cssRawBytes: 178_000,
+  cssGzipBytes: 43_000,
 }
 
 export function auditRouteChunks(manifest, sizes, budget = ENTRY_BUDGET) {
@@ -61,6 +72,33 @@ export function auditRouteChunks(manifest, sizes, budget = ENTRY_BUDGET) {
   if (sizes.eagerGzipBytes > budget.eagerGzipBytes) {
     errors.push(`Eager JS graph is ${sizes.eagerGzipBytes} B gzip; budget is ${budget.eagerGzipBytes} B.`)
   }
+  if (sizes.cssRawBytes > budget.cssRawBytes) {
+    errors.push(`Main stylesheet is ${sizes.cssRawBytes} B raw; budget is ${budget.cssRawBytes} B.`)
+  }
+  if (sizes.cssGzipBytes > budget.cssGzipBytes) {
+    errors.push(`Main stylesheet is ${sizes.cssGzipBytes} B gzip; budget is ${budget.cssGzipBytes} B.`)
+  }
+
+  // A route stylesheet belongs to its route chunk. If Vite folds one back into
+  // the entry CSS, every session pays for a screen most of them never open.
+  const entryCssFiles = new Set(
+    entries.filter(([, chunk]) => chunk.isEntry || chunk.file === 'index.html').flatMap(([, chunk]) => chunk.css ?? []),
+  )
+  for (const { stylesheet, owner } of REQUIRED_ROUTE_STYLESHEETS) {
+    const match = entries.find(([key, chunk]) => key === owner || chunk.src === owner)
+    if (!match) {
+      errors.push(`Route component ${owner} is missing from the manifest.`)
+      continue
+    }
+    const ownedCss = match[1].css ?? []
+    if (ownedCss.length === 0) {
+      errors.push(`${stylesheet} no longer ships with its route chunk — it was folded into the main stylesheet.`)
+      continue
+    }
+    for (const file of ownedCss) {
+      if (entryCssFiles.has(file)) errors.push(`${stylesheet} was merged into the main stylesheet.`)
+    }
+  }
 
   return errors
 }
@@ -82,11 +120,18 @@ async function main() {
   }
   collectEagerImports(appEntryId)
   const eagerBuffers = await Promise.all([...eagerChunkIds].map((chunkId) => readFile(path.join(projectRoot, 'dist', manifest[chunkId].file))))
+  // Vite attaches the entry stylesheet to the html entry, not the JS chunk.
+  const entryCssFiles = [...new Set(
+    Object.values(manifest).filter((chunk) => chunk.isEntry || chunk.file === 'index.html').flatMap((chunk) => chunk.css ?? []),
+  )]
+  const entryCssBuffers = await Promise.all(entryCssFiles.map((file) => readFile(path.join(projectRoot, 'dist', file))))
   const sizes = {
     rawBytes: entryStat.size,
     gzipBytes: gzipSync(entryBuffer).byteLength,
     eagerRawBytes: eagerBuffers.reduce((total, buffer) => total + buffer.byteLength, 0),
     eagerGzipBytes: eagerBuffers.reduce((total, buffer) => total + gzipSync(buffer).byteLength, 0),
+    cssRawBytes: entryCssBuffers.reduce((total, buffer) => total + buffer.byteLength, 0),
+    cssGzipBytes: entryCssBuffers.reduce((total, buffer) => total + gzipSync(buffer).byteLength, 0),
   }
   const errors = auditRouteChunks(manifest, sizes)
   const productionFiles = [...new Set(Object.values(manifest).map((chunk) => chunk.file).filter((file) => file.endsWith('.js')))]
@@ -105,7 +150,7 @@ async function main() {
     return
   }
 
-  console.log(`Route chunk guard passed (main file: ${sizes.rawBytes} B raw / ${sizes.gzipBytes} B gzip; eager graph: ${sizes.eagerRawBytes} B raw / ${sizes.eagerGzipBytes} B gzip).`)
+  console.log(`Route chunk guard passed (main file: ${sizes.rawBytes} B raw / ${sizes.gzipBytes} B gzip; eager graph: ${sizes.eagerRawBytes} B raw / ${sizes.eagerGzipBytes} B gzip; main CSS: ${sizes.cssRawBytes} B raw / ${sizes.cssGzipBytes} B gzip).`)
 }
 
 const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : ''

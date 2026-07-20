@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { appStyles } from './utils/testStylesheets'
 
 const root = process.cwd()
-const css = readFileSync(join(root, 'src/index.css'), 'utf8')
+const css = appStyles()
 const html = readFileSync(join(root, 'index.html'), 'utf8')
 
 describe('iOS input auto-zoom prevention contract', () => {

@@ -5,7 +5,7 @@ import { useChoresData } from '../../context/chores/ChoresContext'
 import { useActivitiesData } from '../../context/activities/ActivitiesContext'
 import { useMedicalData } from '../../context/health/MedicalContext'
 import { useOccurrenceAssignmentsData } from '../../context/activities/OccurrenceAssignmentsContext'
-import { useRouter, type Route } from '../../router'
+import { useRouterActions, type Route } from '../../router'
 import { t } from '../../strings'
 import type { CalendarEntry } from '../../utils/calendarEntries'
 import { getChoreState } from '../../utils/choreState'
@@ -35,7 +35,7 @@ export function CalendarEntryDetailModal({ entry, onClose, openAssignmentInitial
   const { medicalRecords: liveMedicalRecords, updateMedicalRecord } = useMedicalData()
   const { refreshActivities } = useActivitiesData()
   const { setOccurrenceMember } = useOccurrenceAssignmentsData()
-  const { navigate } = useRouter()
+  const { navigate } = useRouterActions()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [assignmentOpen, setAssignmentOpen] = useState(openAssignmentInitially)
