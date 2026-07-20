@@ -12,6 +12,8 @@
     "test:db": "node scripts/run-db-authorization-tests.mjs",
     "check:edge-functions": "node scripts/check-edge-imports.mjs",
     "check:bundle": "node scripts/check-route-chunks.mjs",
+    "audit:data-access": "node scripts/audit-data-access.mjs",
+    "check:data-access": "node scripts/audit-data-access.mjs --check",
     "preview": "vite preview"
   },
   "dependencies": {

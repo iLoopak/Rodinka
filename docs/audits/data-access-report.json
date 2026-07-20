@@ -1,0 +1,1409 @@
+{
+  "generatedFrom": "scripts/audit-data-access.mjs",
+  "findings": [
+    {
+      "file": "src/calendar/calendarSync.ts",
+      "line": 22,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "apply_calendar_mutation",
+      "domain": "calendar",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Offline calendar repository and its sync adapter, already on the target pattern."
+    },
+    {
+      "file": "src/calendar/calendarSync.ts",
+      "line": 57,
+      "kind": "table",
+      "method": "from",
+      "target": "chores",
+      "domain": "calendar",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Offline calendar repository and its sync adapter, already on the target pattern."
+    },
+    {
+      "file": "src/calendar/calendarSync.ts",
+      "line": 60,
+      "kind": "table",
+      "method": "from",
+      "target": "chore_completions",
+      "domain": "calendar",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Offline calendar repository and its sync adapter, already on the target pattern."
+    },
+    {
+      "file": "src/calendar/calendarSync.ts",
+      "line": 63,
+      "kind": "table",
+      "method": "from",
+      "target": "activities",
+      "domain": "calendar",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Offline calendar repository and its sync adapter, already on the target pattern."
+    },
+    {
+      "file": "src/calendar/calendarSync.ts",
+      "line": 66,
+      "kind": "table",
+      "method": "from",
+      "target": "medical_records",
+      "domain": "calendar",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Offline calendar repository and its sync adapter, already on the target pattern."
+    },
+    {
+      "file": "src/calendar/calendarSync.ts",
+      "line": 69,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_plan_entries",
+      "domain": "calendar",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Offline calendar repository and its sync adapter, already on the target pattern."
+    },
+    {
+      "file": "src/calendar/calendarSync.ts",
+      "line": 72,
+      "kind": "table",
+      "method": "from",
+      "target": "allowance_plans",
+      "domain": "calendar",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Offline calendar repository and its sync adapter, already on the target pattern."
+    },
+    {
+      "file": "src/calendar/calendarSync.ts",
+      "line": 75,
+      "kind": "table",
+      "method": "from",
+      "target": "occurrence_overrides",
+      "domain": "calendar",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Offline calendar repository and its sync adapter, already on the target pattern."
+    },
+    {
+      "file": "src/calendar/calendarSync.ts",
+      "line": 78,
+      "kind": "table",
+      "method": "from",
+      "target": "series_assignment_history",
+      "domain": "calendar",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Offline calendar repository and its sync adapter, already on the target pattern."
+    },
+    {
+      "file": "src/calendar/calendarSync.ts",
+      "line": 81,
+      "kind": "table",
+      "method": "from",
+      "target": "activity_participant_history",
+      "domain": "calendar",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Offline calendar repository and its sync adapter, already on the target pattern."
+    },
+    {
+      "file": "src/calendar/calendarSync.ts",
+      "line": 84,
+      "kind": "table",
+      "method": "from",
+      "target": "members",
+      "domain": "calendar",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Offline calendar repository and its sync adapter, already on the target pattern."
+    },
+    {
+      "file": "src/components/OnboardingScreen.tsx",
+      "line": 29,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "create_family",
+      "domain": "family",
+      "layer": "ui",
+      "isTest": false
+    },
+    {
+      "file": "src/components/OnboardingScreen.tsx",
+      "line": 47,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "redeem_invite",
+      "domain": "family",
+      "layer": "ui",
+      "isTest": false
+    },
+    {
+      "file": "src/context/activities/ActivitiesContext.tsx",
+      "line": 103,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "create_activity_with_participants",
+      "domain": "activities",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/activities/ActivitiesContext.tsx",
+      "line": 115,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "update_activity_with_participants",
+      "domain": "activities",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/activities/ActivitiesContext.tsx",
+      "line": 129,
+      "kind": "table",
+      "method": "from",
+      "target": "activities",
+      "domain": "activities",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilyMembersContext.tsx",
+      "line": 71,
+      "kind": "storage",
+      "method": "createSignedUrl",
+      "target": "<dynamic:member.avatar_path>",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilyMembersContext.tsx",
+      "line": 71,
+      "kind": "storage",
+      "method": "from",
+      "target": "member-avatars",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilyMembersContext.tsx",
+      "line": 111,
+      "kind": "table",
+      "method": "from",
+      "target": "members",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilyMembersContext.tsx",
+      "line": 129,
+      "kind": "table",
+      "method": "from",
+      "target": "members",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilyMembersContext.tsx",
+      "line": 153,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "remove_household_member",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilyMembersContext.tsx",
+      "line": 166,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "remove_household_member",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilyMembersContext.tsx",
+      "line": 179,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "restore_household_member",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilyMembersContext.tsx",
+      "line": 185,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "permanently_delete_removed_member",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilyMembersContext.tsx",
+      "line": 189,
+      "kind": "storage",
+      "method": "from",
+      "target": "member-avatars",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilyMembersContext.tsx",
+      "line": 196,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "create_invite",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilyMembersContext.tsx",
+      "line": 199,
+      "kind": "table",
+      "method": "from",
+      "target": "invites",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilySettingsContext.tsx",
+      "line": 70,
+      "kind": "table",
+      "method": "from",
+      "target": "families",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilySettingsContext.tsx",
+      "line": 74,
+      "kind": "storage",
+      "method": "createSignedUrl",
+      "target": "<dynamic:data.hero_image_path>",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilySettingsContext.tsx",
+      "line": 74,
+      "kind": "storage",
+      "method": "from",
+      "target": "family-hero-images",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilySettingsContext.tsx",
+      "line": 96,
+      "kind": "table",
+      "method": "from",
+      "target": "families",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilySettingsContext.tsx",
+      "line": 106,
+      "kind": "table",
+      "method": "from",
+      "target": "families",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilySettingsContext.tsx",
+      "line": 123,
+      "kind": "storage",
+      "method": "upload",
+      "target": "<dynamic:uploadedPath>",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilySettingsContext.tsx",
+      "line": 123,
+      "kind": "storage",
+      "method": "from",
+      "target": "family-hero-images",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilySettingsContext.tsx",
+      "line": 129,
+      "kind": "storage",
+      "method": "createSignedUrl",
+      "target": "<dynamic:uploadedPath>",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilySettingsContext.tsx",
+      "line": 129,
+      "kind": "storage",
+      "method": "from",
+      "target": "family-hero-images",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilySettingsContext.tsx",
+      "line": 131,
+      "kind": "storage",
+      "method": "from",
+      "target": "family-hero-images",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilySettingsContext.tsx",
+      "line": 138,
+      "kind": "table",
+      "method": "from",
+      "target": "families",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilySettingsContext.tsx",
+      "line": 140,
+      "kind": "storage",
+      "method": "from",
+      "target": "family-hero-images",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilySettingsContext.tsx",
+      "line": 147,
+      "kind": "storage",
+      "method": "from",
+      "target": "family-hero-images",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilySettingsContext.tsx",
+      "line": 165,
+      "kind": "storage",
+      "method": "createSignedUrl",
+      "target": "<dynamic:heroImagePath>",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/family/FamilySettingsContext.tsx",
+      "line": 165,
+      "kind": "storage",
+      "method": "from",
+      "target": "family-hero-images",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/chores/AllowanceContext.tsx",
+      "line": 97,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "record_payout",
+      "domain": "allowance",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/chores/AllowanceContext.tsx",
+      "line": 121,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "save_allowance_plan",
+      "domain": "allowance",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/chores/AllowanceContext.tsx",
+      "line": 138,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "delete_allowance_plan",
+      "domain": "allowance",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/chores/AllowanceContext.tsx",
+      "line": 144,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "credit_monthly_allowance",
+      "domain": "allowance",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/chores/AllowanceContext.tsx",
+      "line": 150,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "skip_monthly_allowance",
+      "domain": "allowance",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/meals/useMealsDataSource.ts",
+      "line": 212,
+      "kind": "table",
+      "method": "from",
+      "target": "meals",
+      "domain": "meals",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/meals/useMealsDataSource.ts",
+      "line": 221,
+      "kind": "table",
+      "method": "from",
+      "target": "meals",
+      "domain": "meals",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/meals/useMealsDataSource.ts",
+      "line": 236,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_vote_rounds",
+      "domain": "meals",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/meals/useMealsDataSource.ts",
+      "line": 256,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_vote_candidates",
+      "domain": "meals",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/meals/useMealsDataSource.ts",
+      "line": 261,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "open_vote_round",
+      "domain": "meals",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/meals/useMealsDataSource.ts",
+      "line": 279,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_vote_candidates",
+      "domain": "meals",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/meals/useMealsDataSource.ts",
+      "line": 288,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "open_vote_round",
+      "domain": "meals",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/meals/useMealsDataSource.ts",
+      "line": 297,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "close_vote_round",
+      "domain": "meals",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/meals/useMealsDataSource.ts",
+      "line": 306,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_votes",
+      "domain": "meals",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/meals/useMealsDataSource.ts",
+      "line": 320,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_plan_entries",
+      "domain": "meals",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/meals/useMealsDataSource.ts",
+      "line": 331,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_plan_entries",
+      "domain": "meals",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/meals/useMealsDataSource.ts",
+      "line": 343,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_plan_entries",
+      "domain": "meals",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/meals/useMealsDataSource.ts",
+      "line": 369,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_plan_entries",
+      "domain": "meals",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 80,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "resolve_message_entities",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 113,
+      "kind": "storage",
+      "method": "createSignedUrl",
+      "target": "<dynamic:attachment.storage_path>",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 113,
+      "kind": "storage",
+      "method": "from",
+      "target": "<dynamic:attachment.storage_bucket>",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 126,
+      "kind": "table",
+      "method": "from",
+      "target": "message_reactions",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 130,
+      "kind": "table",
+      "method": "from",
+      "target": "message_attachments",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 313,
+      "kind": "table",
+      "method": "from",
+      "target": "messages",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 361,
+      "kind": "table",
+      "method": "from",
+      "target": "messages",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 424,
+      "kind": "storage",
+      "method": "upload",
+      "target": "<dynamic:storagePath>",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 424,
+      "kind": "storage",
+      "method": "from",
+      "target": "message-attachments",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 436,
+      "kind": "storage",
+      "method": "from",
+      "target": "message-attachments",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 440,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "register_message_attachment",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 449,
+      "kind": "storage",
+      "method": "from",
+      "target": "message-attachments",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 453,
+      "kind": "storage",
+      "method": "createSignedUrl",
+      "target": "<dynamic:storagePath>",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 453,
+      "kind": "storage",
+      "method": "from",
+      "target": "message-attachments",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 469,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "discard_pending_attachment",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 474,
+      "kind": "storage",
+      "method": "from",
+      "target": "message-attachments",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 545,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "send_message",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 704,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "post_entity_system_message",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 731,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "edit_message",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 750,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "delete_message",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 783,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "remove_message_reaction",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesContentSource.ts",
+      "line": 801,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "add_message_reaction",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesSummarySource.ts",
+      "line": 90,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "ensure_family_group_conversation",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesSummarySource.ts",
+      "line": 94,
+      "kind": "table",
+      "method": "from",
+      "target": "conversations",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesSummarySource.ts",
+      "line": 99,
+      "kind": "table",
+      "method": "from",
+      "target": "conversation_members",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesSummarySource.ts",
+      "line": 231,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "ensure_family_group_conversation",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesSummarySource.ts",
+      "line": 237,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "ensure_direct_conversation",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesSummarySource.ts",
+      "line": 248,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "share_entity_to_conversation",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesSummarySource.ts",
+      "line": 282,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "set_conversation_mute",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/messages/useMessagesSummarySource.ts",
+      "line": 331,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "mark_conversation_read",
+      "domain": "messages",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/ReminderContext.tsx",
+      "line": 132,
+      "kind": "table",
+      "method": "from",
+      "target": "reminders",
+      "domain": "reminders",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/ReminderContext.tsx",
+      "line": 149,
+      "kind": "table",
+      "method": "from",
+      "target": "notification_preferences",
+      "domain": "reminders",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/ReminderContext.tsx",
+      "line": 166,
+      "kind": "table",
+      "method": "from",
+      "target": "notification_preferences",
+      "domain": "reminders",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/ReminderContext.tsx",
+      "line": 171,
+      "kind": "table",
+      "method": "from",
+      "target": "notification_preferences",
+      "domain": "reminders",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/ReminderContext.tsx",
+      "line": 191,
+      "kind": "table",
+      "method": "from",
+      "target": "notification_preferences",
+      "domain": "reminders",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/ReminderContext.tsx",
+      "line": 282,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "sync_member_reminders",
+      "domain": "reminders",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/ReminderContext.tsx",
+      "line": 299,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "set_member_reminder_state",
+      "domain": "reminders",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/ReminderContext.tsx",
+      "line": 318,
+      "kind": "table",
+      "method": "from",
+      "target": "notification_preferences",
+      "domain": "reminders",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/shopping/useShoppingDataSource.ts",
+      "line": 55,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_ingredients",
+      "domain": "shopping",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/context/shopping/useShoppingDataSource.ts",
+      "line": 173,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "replace_meal_ingredients",
+      "domain": "shopping",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/features/family-jump/storage/familyJumpRemote.ts",
+      "line": 17,
+      "kind": "table",
+      "method": "from",
+      "target": "family_game_scores",
+      "domain": "family-jump",
+      "layer": "other",
+      "isTest": false,
+      "allowed": "Per-feature remote adapters, e.g. the Family Jump score remote."
+    },
+    {
+      "file": "src/features/family-jump/storage/familyJumpRemote.ts",
+      "line": 31,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "record_family_game_score",
+      "domain": "family-jump",
+      "layer": "other",
+      "isTest": false,
+      "allowed": "Per-feature remote adapters, e.g. the Family Jump score remote."
+    },
+    {
+      "file": "src/hooks/useActivities.ts",
+      "line": 76,
+      "kind": "table",
+      "method": "from",
+      "target": "activities",
+      "domain": "activities",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useAllowanceLedger.ts",
+      "line": 33,
+      "kind": "table",
+      "method": "from",
+      "target": "allowance_ledger",
+      "domain": "allowance",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useAllowancePlans.ts",
+      "line": 75,
+      "kind": "table",
+      "method": "from",
+      "target": "allowance_plans",
+      "domain": "allowance",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useAllowancePlans.ts",
+      "line": 78,
+      "kind": "table",
+      "method": "from",
+      "target": "allowance_cycles",
+      "domain": "allowance",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useFamily.ts",
+      "line": 87,
+      "kind": "table",
+      "method": "from",
+      "target": "members",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useFamilyMemberEmails.ts",
+      "line": 27,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "family_member_emails",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useFamilyMembers.ts",
+      "line": 69,
+      "kind": "table",
+      "method": "from",
+      "target": "members",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useFamilyMembers.ts",
+      "line": 78,
+      "kind": "storage",
+      "method": "createSignedUrls",
+      "target": "<dynamic:avatarPaths>",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useFamilyMembers.ts",
+      "line": 78,
+      "kind": "storage",
+      "method": "from",
+      "target": "member-avatars",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useChildAccounts.ts",
+      "line": 39,
+      "kind": "table",
+      "method": "from",
+      "target": "child_accounts",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useChoreCompletions.ts",
+      "line": 42,
+      "kind": "table",
+      "method": "from",
+      "target": "chore_completions",
+      "domain": "chores",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useChores.ts",
+      "line": 25,
+      "kind": "table",
+      "method": "from",
+      "target": "chores",
+      "domain": "chores",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useChores.ts",
+      "line": 54,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "reorder_household_tasks",
+      "domain": "chores",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useMealPlanEntries.ts",
+      "line": 39,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_plan_entries",
+      "domain": "meals",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useMeals.ts",
+      "line": 37,
+      "kind": "table",
+      "method": "from",
+      "target": "meals",
+      "domain": "meals",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useMealVoteRounds.ts",
+      "line": 53,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_vote_rounds",
+      "domain": "meals",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useMedicalRecords.ts",
+      "line": 57,
+      "kind": "table",
+      "method": "from",
+      "target": "medical_records",
+      "domain": "medical",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useMemberProfiles.ts",
+      "line": 36,
+      "kind": "storage",
+      "method": "from",
+      "target": "member-avatars",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useMemberProfiles.ts",
+      "line": 65,
+      "kind": "storage",
+      "method": "upload",
+      "target": "<dynamic:uploadedPath>",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useMemberProfiles.ts",
+      "line": 65,
+      "kind": "storage",
+      "method": "from",
+      "target": "member-avatars",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useMemberProfiles.ts",
+      "line": 80,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "update_member_profile",
+      "domain": "family",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useOccurrenceAssignments.ts",
+      "line": 26,
+      "kind": "table",
+      "method": "from",
+      "target": "occurrence_overrides",
+      "domain": "activities",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useOccurrenceAssignments.ts",
+      "line": 27,
+      "kind": "table",
+      "method": "from",
+      "target": "series_assignment_history",
+      "domain": "activities",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useOccurrenceAssignments.ts",
+      "line": 28,
+      "kind": "table",
+      "method": "from",
+      "target": "activity_participant_history",
+      "domain": "activities",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/hooks/useOccurrenceAssignments.ts",
+      "line": 56,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "set_occurrence_member_override",
+      "domain": "activities",
+      "layer": "state",
+      "isTest": false
+    },
+    {
+      "file": "src/push/conversationPresence.ts",
+      "line": 38,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "touch_conversation_presence",
+      "domain": "messages",
+      "layer": "infrastructure",
+      "isTest": false,
+      "allowed": "Push subscription and presence transport."
+    },
+    {
+      "file": "src/push/conversationPresence.ts",
+      "line": 43,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "clear_conversation_presence",
+      "domain": "messages",
+      "layer": "infrastructure",
+      "isTest": false,
+      "allowed": "Push subscription and presence transport."
+    },
+    {
+      "file": "src/push/pushClient.ts",
+      "line": 107,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "register_push_subscription",
+      "domain": "push",
+      "layer": "infrastructure",
+      "isTest": false,
+      "allowed": "Push subscription and presence transport."
+    },
+    {
+      "file": "src/push/pushClient.ts",
+      "line": 154,
+      "kind": "table",
+      "method": "from",
+      "target": "push_subscriptions",
+      "domain": "push",
+      "layer": "infrastructure",
+      "isTest": false,
+      "allowed": "Push subscription and presence transport."
+    },
+    {
+      "file": "src/push/pushClient.ts",
+      "line": 166,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "revoke_push_subscription",
+      "domain": "push",
+      "layer": "infrastructure",
+      "isTest": false,
+      "allowed": "Push subscription and presence transport."
+    },
+    {
+      "file": "src/push/pushClient.ts",
+      "line": 173,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "revoke_push_subscription_by_endpoint",
+      "domain": "push",
+      "layer": "infrastructure",
+      "isTest": false,
+      "allowed": "Push subscription and presence transport."
+    },
+    {
+      "file": "src/push/pushClient.ts",
+      "line": 200,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "revoke_push_subscription_by_endpoint",
+      "domain": "push",
+      "layer": "infrastructure",
+      "isTest": false,
+      "allowed": "Push subscription and presence transport."
+    },
+    {
+      "file": "src/realtime/createRealtimeSubscription.ts",
+      "line": 46,
+      "kind": "channel",
+      "method": "channel",
+      "target": "<dynamic:channelName>",
+      "domain": "shared",
+      "layer": "infrastructure",
+      "isTest": false,
+      "allowed": "Dedicated realtime infrastructure. Owns .channel() so feature code does not have to."
+    },
+    {
+      "file": "src/shopping/shoppingRealtime.ts",
+      "line": 13,
+      "kind": "channel",
+      "method": "channel",
+      "target": "<dynamic:topic>",
+      "domain": "shopping",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Offline-first shopping repository, already on the target pattern."
+    },
+    {
+      "file": "src/shopping/shoppingSync.ts",
+      "line": 14,
+      "kind": "table",
+      "method": "from",
+      "target": "shopping_items",
+      "domain": "shopping",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Offline-first shopping repository, already on the target pattern."
+    },
+    {
+      "file": "src/shopping/shoppingSync.ts",
+      "line": 25,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "apply_shopping_mutation",
+      "domain": "shopping",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Offline-first shopping repository, already on the target pattern."
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "note": "Places where low-level Supabase access is legitimate. Every entry is a specific path or module boundary, never a wildcard over src. Adding an entry is a review decision, not a way to silence the guard.",
+  "exceptions": [
+    {
+      "path": "src/supabaseClient.ts",
+      "reason": "Client bootstrap. This is the module every other exception is defined relative to.",
+      "owner": "infrastructure"
+    },
+    {
+      "path": "src/auth/**",
+      "reason": "Session and sign-out infrastructure. Operates on auth rather than feature data.",
+      "owner": "infrastructure"
+    },
+    {
+      "path": "src/lib/**",
+      "reason": "Account administration and managed child sessions: privileged operations that are not a feature domain.",
+      "owner": "infrastructure"
+    },
+    {
+      "path": "src/realtime/**",
+      "reason": "Dedicated realtime infrastructure. Owns .channel() so feature code does not have to.",
+      "owner": "infrastructure"
+    },
+    {
+      "path": "src/push/**",
+      "reason": "Push subscription and presence transport.",
+      "owner": "infrastructure"
+    },
+    {
+      "path": "src/repositories/**",
+      "reason": "Repository implementations. This is the layer the guard is steering everything towards.",
+      "owner": "data"
+    },
+    {
+      "path": "src/shopping/**",
+      "reason": "Offline-first shopping repository, already on the target pattern.",
+      "owner": "data"
+    },
+    {
+      "path": "src/calendar/**",
+      "reason": "Offline calendar repository and its sync adapter, already on the target pattern.",
+      "owner": "data"
+    },
+    {
+      "path": "src/features/*/data/**",
+      "reason": "Per-feature data layer introduced by the repository waves.",
+      "owner": "data"
+    },
+    {
+      "path": "src/features/*/storage/**",
+      "reason": "Per-feature remote adapters, e.g. the Family Jump score remote.",
+      "owner": "data"
+    },
+    {
+      "path": "**/*.test.ts",
+      "reason": "Test fixtures and fakes.",
+      "owner": "tests"
+    },
+    {
+      "path": "**/*.test.tsx",
+      "reason": "Test fixtures and fakes.",
+      "owner": "tests"
+    }
+  ]
+}
