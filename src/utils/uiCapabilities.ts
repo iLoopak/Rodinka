@@ -1,12 +1,9 @@
 import type { FamilyMember } from '../hooks/useFamilyMembers'
 import type { Route } from '../router'
+import { getRouteDefinition, routeIsAllowedForRole } from '../routes/routeRegistry'
 
 type Actor = Pick<FamilyMember, 'id' | 'family_id' | 'role'>
 type TargetMember = Pick<FamilyMember, 'id' | 'family_id'>
-
-const CHILD_ROUTES = new Set<Route>([
-  '/', '/calendar', '/chores', '/activities', '/meals', '/shopping', '/messages', '/more', '/reminders', '/family-jump',
-])
 
 export const ADULT_PRIMARY_ROUTES = ['/', '/calendar', '/plan', '/family', '/more'] as const satisfies readonly Route[]
 export const CHILD_PRIMARY_ROUTES = ['/', '/calendar', '/chores', '/shopping', '/more'] as const satisfies readonly Route[]
@@ -57,7 +54,7 @@ export function capabilitiesFor(actor: Actor | null | undefined): UiCapabilities
     manageMedicalRecords: isAdult,
     manageMeals: isAdult,
     manageShoppingSettings: isAdult,
-    accessRoute: (route) => Boolean(actor && (isAdult || CHILD_ROUTES.has(route))),
+    accessRoute: (route) => routeIsAllowedForRole(route, actor?.role),
     completeTaskFor: (familyId, effectiveAssigneeId) => Boolean(
       actor && actor.family_id === familyId && (isAdult || (isChild && actor.id === effectiveAssigneeId))
     ),
@@ -67,8 +64,5 @@ export function capabilitiesFor(actor: Actor | null | undefined): UiCapabilities
 }
 
 export function childRouteFallback(route: Route): Route {
-  if (route === '/plan') return '/chores'
-  if (route === '/health' || route === '/family') return '/more'
-  if (route === '/messages') return '/more'
-  return '/'
+  return getRouteDefinition(route).fallback
 }

@@ -1,10 +1,11 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { strings } from './strings'
 import { ROUTES } from './router'
 
-const src = new URL('.', import.meta.url).pathname
+const src = fileURLToPath(new URL('.', import.meta.url))
 const read = (relative: string) => readFileSync(join(src, relative), 'utf8')
 
 const moreScreen = read('components/MoreScreen.tsx')
