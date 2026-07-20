@@ -377,6 +377,8 @@ export function useMealsDataSource(familyId: string | undefined, userId: string)
     meals,
     voteRounds,
     planEntries,
+    planEntriesLoading,
+    planEntriesError,
     loading,
     error,
     mealsRealtimeStatus,

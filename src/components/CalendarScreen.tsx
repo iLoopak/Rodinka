@@ -82,6 +82,10 @@ export function CalendarScreen() {
   } = useCalendarSources()
 
   useEffect(() => {
+    if (!loading) void refresh()
+  }, [loading, refresh])
+
+  useEffect(() => {
     try { localStorage.setItem(CALENDAR_VIEW_KEY, viewMode) } catch { /* Private browsing can deny storage. */ }
   }, [viewMode])
 

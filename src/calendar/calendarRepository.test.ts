@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ActivityInput } from '../domain/activities/types'
 import { MemoryShoppingStore } from '../shopping/shoppingIndexedDb'
 import { applyPendingCalendarMutations } from './calendarMutationQueue'
 import { CalendarRepository } from './calendarRepository'
-import { emptyCalendarData, type CalendarMutation, type CalendarSnapshotData } from './calendarTypes'
+import { CALENDAR_LOCAL_SCHEMA_VERSION, emptyCalendarData, type CalendarMutation, type CalendarProviderSnapshot, type CalendarSnapshotData } from './calendarTypes'
 import type { CalendarRemote } from './calendarSync'
 
 const activityInput: ActivityInput = {
@@ -42,6 +42,8 @@ class FakeRemote implements CalendarRemote {
   data = serverData()
   operationIds = new Set<string>()
   calls = 0
+  fetchCalls = 0
+  fetchFailures = 0
   failAfterCommit = false
   permanentFailure = false
 
@@ -55,7 +57,11 @@ class FakeRemote implements CalendarRemote {
     if (this.failAfterCommit) throw new TypeError('connection lost after commit')
   }
 
-  async fetchSnapshot() { return structuredClone(this.data) }
+  async fetchSnapshot() {
+    this.fetchCalls += 1
+    if (this.fetchFailures > 0) { this.fetchFailures -= 1; throw new TypeError('snapshot unavailable') }
+    return structuredClone(this.data)
+  }
 }
 
 function repository(input: {
@@ -72,13 +78,168 @@ function repository(input: {
     store: input.store,
     remote: input.remote,
     isOnline: input.isOnline,
-    realtime: async () => async () => undefined,
     createId: () => `00000000-0000-4000-8000-${String(++sequence).padStart(12, '0')}`,
     now: () => new Date('2026-07-18T20:00:00Z'),
   })
 }
 
+function providerSnapshot(): CalendarProviderSnapshot {
+  const { rangeStart: _rangeStart, rangeEnd: _rangeEnd, ...domains } = serverData()
+  return domains
+}
+
+afterEach(() => {
+  vi.useRealTimers()
+  vi.unstubAllGlobals()
+})
+
 describe('offline calendar repository', () => {
+  it('publishes a stored snapshot before deferred online reconciliation starts', async () => {
+    vi.useFakeTimers()
+    const store = new MemoryShoppingStore()
+    const remote = new FakeRemote()
+    const stored = serverData()
+    stored.chores = [{ id: 'stored-chore' } as CalendarSnapshotData['chores'][number]]
+    await store.saveCalendarSnapshot({
+      scopeKey: 'user-1:family-1', userId: 'user-1', familyId: 'family-1',
+      schemaVersion: CALENDAR_LOCAL_SCHEMA_VERSION, hasSnapshot: true, data: stored,
+      lastSuccessfulSyncAt: '2026-07-18T10:00:00Z',
+    })
+    const calendar = repository({ store, remote, isOnline: () => true })
+
+    await calendar.start()
+
+    expect(calendar.getSnapshot()).toMatchObject({ ready: true, hasUsableData: true })
+    expect(calendar.getSnapshot().data.chores[0].id).toBe('stored-chore')
+    expect(remote.fetchCalls).toBe(0)
+    await calendar.stop()
+  })
+
+  it('uses provider domains for reconciliation and cancels the remote fallback', async () => {
+    vi.useFakeTimers()
+    const store = new MemoryShoppingStore()
+    const remote = new FakeRemote()
+    const calendar = repository({ store, remote, isOnline: () => true })
+    await calendar.start()
+
+    expect(calendar.updateFromProviders('other-family', providerSnapshot())).toBe(false)
+    expect(calendar.updateFromProviders('family-1', providerSnapshot())).toBe(true)
+    expect(calendar.getSnapshot()).toMatchObject({ status: 'synced', hasUsableData: true })
+    await vi.advanceTimersByTimeAsync(4_000)
+    expect(remote.fetchCalls).toBe(0)
+    await calendar.stop()
+  })
+
+  it('falls back to one deferred remote reconciliation when provider data stays incomplete', async () => {
+    vi.useFakeTimers()
+    const store = new MemoryShoppingStore()
+    const remote = new FakeRemote()
+    const calendar = repository({ store, remote, isOnline: () => true })
+    await calendar.start()
+    expect(remote.fetchCalls).toBe(0)
+
+    await vi.advanceTimersByTimeAsync(3_999)
+    expect(remote.fetchCalls).toBe(0)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(remote.fetchCalls).toBe(1)
+    await calendar.stop()
+  })
+
+  it('reconciles when the browser becomes idle before the timeout fallback', async () => {
+    vi.useFakeTimers()
+    let idleCallback: IdleRequestCallback | null = null
+    vi.stubGlobal('window', {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      requestIdleCallback: vi.fn((callback: IdleRequestCallback) => {
+        idleCallback = callback
+        return 1
+      }),
+      cancelIdleCallback: vi.fn(),
+    })
+    const store = new MemoryShoppingStore()
+    const remote = new FakeRemote()
+    const calendar = repository({ store, remote, isOnline: () => true })
+    await calendar.start()
+    expect(remote.fetchCalls).toBe(0)
+
+    expect(idleCallback).not.toBeNull()
+    idleCallback!({ didTimeout: false, timeRemaining: () => 50 })
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(remote.fetchCalls).toBe(1)
+    await vi.advanceTimersByTimeAsync(4_000)
+    expect(remote.fetchCalls).toBe(1)
+    await calendar.stop()
+  })
+
+  it('lets a Calendar route prioritize reconciliation without leaving a second fallback', async () => {
+    vi.useFakeTimers()
+    const store = new MemoryShoppingStore()
+    const remote = new FakeRemote()
+    const calendar = repository({ store, remote, isOnline: () => true })
+    await calendar.start()
+
+    await calendar.prioritizeReconciliation()
+    expect(remote.fetchCalls).toBe(1)
+    await vi.advanceTimersByTimeAsync(4_000)
+    expect(remote.fetchCalls).toBe(1)
+    await calendar.stop()
+  })
+
+  it('retains deferred fallback intent across a retryable backend failure', async () => {
+    vi.useFakeTimers()
+    const store = new MemoryShoppingStore()
+    const remote = new FakeRemote()
+    remote.fetchFailures = 1
+    const calendar = repository({ store, remote, isOnline: () => true })
+    await calendar.start()
+
+    await vi.advanceTimersByTimeAsync(4_000)
+    expect(remote.fetchCalls).toBe(1)
+    expect(calendar.getSnapshot().status).toBe('error')
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(remote.fetchCalls).toBe(2)
+    expect(calendar.getSnapshot().status).toBe('synced')
+    await calendar.stop()
+  })
+
+  it('does not let provider data overwrite a pending offline record', async () => {
+    const store = new MemoryShoppingStore()
+    const remote = new FakeRemote()
+    const calendar = repository({ store, remote, isOnline: () => false })
+    await calendar.start()
+    const localId = await calendar.addActivity(activityInput)
+
+    calendar.updateFromProviders('family-1', { ...providerSnapshot(), activities: [] })
+
+    expect(calendar.getSnapshot().data.activities).toEqual([
+      expect.objectContaining({ id: localId, title: 'Swimming' }),
+    ])
+    expect(calendar.getSnapshot().mutations).toHaveLength(1)
+    expect(calendar.getSnapshot().status).toBe('offline')
+    expect(remote.fetchCalls).toBe(0)
+    await calendar.stop()
+  })
+
+  it('keeps a usable stored snapshot when deferred reconciliation is degraded', async () => {
+    vi.useFakeTimers()
+    const store = new MemoryShoppingStore()
+    const remote = new FakeRemote()
+    remote.fetchFailures = 1
+    await store.saveCalendarSnapshot({
+      scopeKey: 'user-1:family-1', userId: 'user-1', familyId: 'family-1',
+      schemaVersion: CALENDAR_LOCAL_SCHEMA_VERSION, hasSnapshot: true, data: serverData(),
+      lastSuccessfulSyncAt: '2026-07-18T10:00:00Z',
+    })
+    const calendar = repository({ store, remote, isOnline: () => true })
+    await calendar.start()
+    await vi.advanceTimersByTimeAsync(4_000)
+
+    expect(calendar.getSnapshot()).toMatchObject({ ready: true, hasUsableData: true, status: 'error' })
+    await calendar.stop()
+  })
+
   it('persists an offline create and restores it after an app restart', async () => {
     const store = new MemoryShoppingStore()
     const remote = new FakeRemote()
@@ -112,6 +273,23 @@ describe('offline calendar repository', () => {
     expect(remote.data.activities[0].id).toBe(localId)
     expect(calendar.getSnapshot()).toMatchObject({ status: 'synced', mutations: [] })
     expect(remote.calls).toBe(1)
+    await calendar.stop()
+  })
+
+  it('deduplicates manual retry against an in-flight automatic queue sync', async () => {
+    let online = false
+    const store = new MemoryShoppingStore()
+    const remote = new FakeRemote()
+    const calendar = repository({ store, remote, isOnline: () => online })
+    await calendar.start()
+    await calendar.addActivity(activityInput)
+    online = true
+
+    await Promise.all([calendar.sync(), calendar.retry()])
+
+    expect(remote.calls).toBe(1)
+    expect(remote.data.activities).toHaveLength(1)
+    expect(calendar.getSnapshot().mutations).toHaveLength(0)
     await calendar.stop()
   })
 

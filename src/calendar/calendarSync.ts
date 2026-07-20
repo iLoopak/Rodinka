@@ -124,7 +124,7 @@ export async function fetchCalendarSnapshot(familyId: string): Promise<CalendarS
   } as CalendarSnapshotData
 }
 
-function snapshotRange(now: Date) {
+export function snapshotRange(now: Date) {
   const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 6, 1))
   const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 13, 0))
   return { start: isoDate(start), end: isoDate(end) }
