@@ -76,7 +76,7 @@ function ShoppingConsumer() {
 
 function MedicalShoppingTree({ children }: { children?: ReactNode }) {
   return createElement(MedicalProvider, { familyId: 'family-1', userId: 'user-1', children:
-    createElement(ShoppingProvider, { familyId: 'family-1', currentMemberId: 'member-1', children }) })
+    createElement(ShoppingProvider, { familyId: 'family-1', userId: 'user-1', currentMemberId: 'member-1', children }) })
 }
 
 describe('provider isolation: Shopping mutation vs. Medical consumer', () => {
@@ -129,7 +129,7 @@ describe('provider isolation: Chores mutation vs. unrelated consumer', () => {
           familyId: 'family-1', userId: 'user-1', children:
           createElement('div', null, [
             createElement(ChoresConsumer, { key: 'c' }),
-            createElement(ShoppingProvider, { key: 's', familyId: 'family-1', currentMemberId: 'member-1', children: createElement(ShoppingConsumer) }),
+            createElement(ShoppingProvider, { key: 's', familyId: 'family-1', userId: 'user-1', currentMemberId: 'member-1', children: createElement(ShoppingConsumer) }),
           ]),
         }),
       })

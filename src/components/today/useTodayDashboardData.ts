@@ -11,6 +11,7 @@ import { useMealsDataContext } from '../../context/meals/MealsContext'
 import { useShopping } from '../../context/shopping/ShoppingContext'
 import { useCalendarOffline } from '../../context/calendar/CalendarOfflineContext'
 import { useOccurrenceAssignmentsData } from '../../context/activities/OccurrenceAssignmentsContext'
+import { useConnectivityState } from '../../network/connectivity'
 
 // Composes every feature context Today's dashboard actually renders. The
 // page shell (header/greeting/quick-todo widget) only needs identity +
@@ -48,7 +49,7 @@ export function useTodayDashboardData() {
   const displayParticipantHistory = useOfflineCalendarSnapshot ? calendar.participantHistory : participantHistory
   const displayMembers = useOfflineCalendarSnapshot && calendar.members.length > 0 ? calendar.members : members
   const displayLatestCompletionFor = useOfflineCalendarSnapshot ? calendar.latestCompletionFor : latestCompletionFor
-  const browserOffline = typeof navigator !== 'undefined' && !navigator.onLine
+  const browserOffline = useConnectivityState() === 'offline'
   const offlineShellReady = browserOffline && (calendar.calendarHasUsableData || shoppingHasUsableData || calendar.calendarSyncStatus === 'offline')
   const loading = useOfflineCalendarSnapshot || offlineShellReady ? false : choresLoading
   const error = useOfflineCalendarSnapshot || offlineShellReady ? null : choresError

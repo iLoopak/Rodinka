@@ -39,7 +39,7 @@ afterEach(cleanup)
 
 describe('meal ingredient deferral', () => {
   it('does not read meal_ingredients during shopping startup or refresh', async () => {
-    const { result } = renderHook(() => useShoppingDataSource('family-1', 'member-1'))
+    const { result } = renderHook(() => useShoppingDataSource('family-1', 'user-1', 'member-1'))
     await waitFor(() => expect(mocks.repositoryStart).toHaveBeenCalledTimes(1))
     expect(mocks.from).not.toHaveBeenCalled()
     await act(async () => { await result.current.refreshShopping() })
@@ -50,7 +50,7 @@ describe('meal ingredient deferral', () => {
   it('deduplicates concurrent ingredient consumers', async () => {
     let resolveQuery!: (result: { data: never[]; error: null }) => void
     mocks.limit.mockReturnValue(new Promise((resolve) => { resolveQuery = resolve }))
-    const { result } = renderHook(() => useShoppingDataSource('family-1', 'member-1'))
+    const { result } = renderHook(() => useShoppingDataSource('family-1', 'user-1', 'member-1'))
     await waitFor(() => expect(mocks.repositoryStart).toHaveBeenCalledTimes(1))
 
     await act(async () => {

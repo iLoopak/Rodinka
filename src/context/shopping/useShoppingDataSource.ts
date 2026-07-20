@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../../supabaseClient'
 import { ShoppingRepository, type ShoppingRepositorySnapshot } from '../../shopping/shoppingRepository'
 import { getShoppingLocalStore } from '../../shopping/shoppingIndexedDb'
+import { classifyStorageError } from '../../errors/errorCodes'
+import { adaptRepositorySync, publishFeatureSync, retireFeatureSync } from '../../sync/featureSyncRegistry'
 import {
   buildCommonShoppingTemplates,
   buildShoppingSessions,
@@ -23,7 +25,7 @@ const emptySnapshot: ShoppingRepositorySnapshot = {
 
 // "Source" (not "Data") to avoid ambiguity with the ShoppingContext
 // accessor hook, useShopping().
-export function useShoppingDataSource(familyId: string | undefined, currentMemberId: string | undefined) {
+export function useShoppingDataSource(familyId: string | undefined, userId: string | undefined, currentMemberId: string | undefined) {
   const repositoryRef = useRef<ShoppingRepository | null>(null)
   const [snapshot, setSnapshot] = useState<ShoppingRepositorySnapshot>(emptySnapshot)
   const [mealIngredients, setMealIngredients] = useState<MealIngredient[]>([])
@@ -72,7 +74,7 @@ export function useShoppingDataSource(familyId: string | undefined, currentMembe
   }, [familyId])
 
   useEffect(() => {
-    if (!familyId || !currentMemberId) {
+    if (!familyId || !userId || !currentMemberId) {
       void repositoryRef.current?.stop()
       repositoryRef.current = null
       setSnapshot({ ...emptySnapshot, ready: true, status: 'synced' })
@@ -91,6 +93,7 @@ export function useShoppingDataSource(familyId: string | undefined, currentMembe
     let active = true
     const repository = new ShoppingRepository({
       familyId,
+      userId,
       currentMemberId,
       store: getShoppingLocalStore(),
     })
@@ -98,7 +101,7 @@ export function useShoppingDataSource(familyId: string | undefined, currentMembe
     const unsubscribe = repository.subscribe((next) => { if (active) setSnapshot(next) })
     repository.start().catch((error) => {
       console.error('Failed to initialize offline shopping:', error)
-      if (active) setSnapshot((current) => ({ ...current, ready: true, status: 'error', error: 'initialization-failed' }))
+      if (active) setSnapshot((current) => ({ ...current, ready: true, status: 'error', error: classifyStorageError(error) }))
     })
     return () => {
       active = false
@@ -106,7 +109,22 @@ export function useShoppingDataSource(familyId: string | undefined, currentMembe
       void repository.stop()
       if (repositoryRef.current === repository) repositoryRef.current = null
     }
-  }, [currentMemberId, familyId])
+  }, [currentMemberId, familyId, userId])
+
+  // Adapt into the shared read-only sync model. The repository keeps its own
+  // snapshot shape; this only republishes it under one vocabulary so global UI
+  // does not have to import this context (audit section 4).
+  useEffect(() => {
+    if (!familyId) return
+    publishFeatureSync(adaptRepositorySync({
+      feature: 'shopping',
+      status: snapshot.status,
+      pendingCount: snapshot.pendingCount,
+      lastSyncedAt: snapshot.lastSuccessfulSyncAt,
+      errorCode: snapshot.error,
+    }))
+    return () => retireFeatureSync('shopping')
+  }, [familyId, snapshot.error, snapshot.lastSuccessfulSyncAt, snapshot.pendingCount, snapshot.status])
 
   const refreshShopping = useCallback(async () => {
     await repositoryRef.current?.sync()

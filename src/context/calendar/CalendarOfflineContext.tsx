@@ -5,6 +5,8 @@ import { emptyCalendarData, type CalendarRepositorySnapshot } from '../../calend
 import { getOfflineLocalStore } from '../../shopping/shoppingIndexedDb'
 import type { ChoreInput } from '../../utils/choreModel'
 import { createMemberLookup } from '../../utils/memberLookup'
+import { classifyStorageError, type AppErrorCode } from '../../errors/errorCodes'
+import { adaptRepositorySync, publishFeatureSync, retireFeatureSync } from '../../sync/featureSyncRegistry'
 import { useFamilyMembersData } from '../family/FamilyMembersContext'
 import { useChoresData } from '../chores/ChoresContext'
 import { useAllowanceData } from '../chores/AllowanceContext'
@@ -45,7 +47,7 @@ export function useCalendarOfflineDataSource(familyId: string, userId: string, c
     const unsubscribe = repository.subscribe((next) => { if (active) setSnapshot(next) })
     repository.start().catch((error) => {
       console.error('Failed to initialize offline calendar:', error)
-      if (active) setSnapshot((current) => ({ ...current, ready: true, status: 'error', error: 'initialization-failed' }))
+      if (active) setSnapshot((current) => ({ ...current, ready: true, status: 'error', error: classifyStorageError(error) }))
     })
     return () => {
       active = false
@@ -78,6 +80,17 @@ export function useCalendarOfflineDataSource(familyId: string, userId: string, c
     occurrenceAssignmentsError, occurrenceAssignmentsLoading, occurrenceOverrides, participantHistory,
     planEntries, planEntriesError, planEntriesLoading, snapshot.ready,
   ])
+
+  useEffect(() => {
+    publishFeatureSync(adaptRepositorySync({
+      feature: 'calendar',
+      status: snapshot.status,
+      pendingCount: snapshot.mutations.length,
+      lastSyncedAt: snapshot.lastSuccessfulSyncAt,
+      errorCode: snapshot.error as AppErrorCode | null,
+    }))
+    return () => retireFeatureSync('calendar')
+  }, [snapshot.error, snapshot.lastSuccessfulSyncAt, snapshot.mutations.length, snapshot.status])
 
   const refreshCalendar = useCallback(async () => { await repositoryRef.current?.prioritizeReconciliation() }, [])
   const addOfflineChore = useCallback(async (input: ChoreInput) => {

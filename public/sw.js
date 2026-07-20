@@ -33,8 +33,14 @@ self.addEventListener('fetch', (event) => {
       const response = await fetch(request)
       if (response.ok) {
         const copy = response.clone()
-        const cache = await caches.open(CACHE_NAME)
-        await cache.put(request, copy)
+        // Caching is opportunistic. Hashed asset names mean this bucket only
+        // grows across deployments, so a full quota is a question of when, not
+        // if — and an unguarded cache.put() would reject the whole
+        // respondWith and fail an asset the network had already delivered.
+        try {
+          const cache = await caches.open(CACHE_NAME)
+          await cache.put(request, copy)
+        } catch { /* serve the response anyway */ }
       }
       return response
     }))

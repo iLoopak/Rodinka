@@ -29,10 +29,11 @@ const FamilySettingsContext = createContext<FamilySettingsContextValue | null>(n
 
 interface ProviderProps {
   familyId: string
+  userId: string
   children: ReactNode
 }
 
-export function FamilySettingsProvider({ familyId, children }: ProviderProps) {
+export function FamilySettingsProvider({ familyId, userId, children }: ProviderProps) {
   const activeFamilyIdRef = useRef(familyId)
   activeFamilyIdRef.current = familyId
 
@@ -58,7 +59,7 @@ export function FamilySettingsProvider({ familyId, children }: ProviderProps) {
     try {
       const { data } = await cachedQuery({
         key: familyQueryKey('settings', familyId),
-        scope: { userId: null, familyId },
+        scope: { userId, familyId },
         staleTimeMs: cacheTimes.stable,
         maxAgeMs: 11 * 60 * 60 * 1000,
         persist: true,
@@ -87,7 +88,7 @@ export function FamilySettingsProvider({ familyId, children }: ProviderProps) {
       setError(t.errors.loadFailed)
       setFamilyNameState({ familyId, name: null, heroImagePath: null, heroImageUrl: null, shoppingCategorySettings: cachedCategorySettings ?? defaultShoppingCategorySettings(), loading: false })
     }
-  }, [familyId])
+  }, [familyId, userId])
 
   const updateFamilyName = useCallback(async (name: string) => {
     const normalized = name.trim().replace(/\s+/g, ' ')
@@ -96,9 +97,9 @@ export function FamilySettingsProvider({ familyId, children }: ProviderProps) {
     if (updateError) throw friendly(updateError)
     if (activeFamilyIdRef.current !== familyId) return
     setFamilyNameState((current) => ({ ...current, familyId, name: normalized, loading: false }))
-    void invalidateQueryCache(familyQueryKey('settings', familyId), { userId: null, familyId })
+    void invalidateQueryCache(familyQueryKey('settings', familyId), { userId, familyId })
     setError(null)
-  }, [familyId])
+  }, [familyId, userId])
 
   const updateShoppingCategorySettings = useCallback(async (settings: ShoppingCategorySettings) => {
     const normalized = normalizeShoppingCategorySettings(settings)
@@ -107,8 +108,8 @@ export function FamilySettingsProvider({ familyId, children }: ProviderProps) {
     await getShoppingLocalStore().saveCategorySettings(familyId, normalized)
     if (activeFamilyIdRef.current !== familyId) return
     setFamilyNameState((current) => ({ ...current, familyId, shoppingCategorySettings: normalized, loading: false }))
-    void invalidateQueryCache(familyQueryKey('settings', familyId), { userId: null, familyId })
-  }, [familyId])
+    void invalidateQueryCache(familyQueryKey('settings', familyId), { userId, familyId })
+  }, [familyId, userId])
 
   const updateFamilyHeroImage = useCallback(async (file: File | null) => {
     const previousPath = familyNameState.familyId === familyId ? familyNameState.heroImagePath : null
@@ -141,12 +142,12 @@ export function FamilySettingsProvider({ familyId, children }: ProviderProps) {
     }
     if (activeFamilyIdRef.current !== familyId) return
     setFamilyNameState((current) => ({ ...current, familyId, heroImagePath: nextPath, heroImageUrl: nextUrl, loading: false }))
-    void invalidateQueryCache(familyQueryKey('settings', familyId), { userId: null, familyId })
+    void invalidateQueryCache(familyQueryKey('settings', familyId), { userId, familyId })
     if (previousPath && previousPath !== nextPath) {
       const { error: removeError } = await supabase.storage.from('family-hero-images').remove([previousPath])
       if (removeError) console.error('Failed to remove previous family hero image:', removeError.message)
     }
-  }, [familyId, familyNameState])
+  }, [familyId, familyNameState, userId])
 
   useEffect(() => {
     refreshFamilySettings()

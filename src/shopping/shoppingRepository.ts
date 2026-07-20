@@ -9,7 +9,7 @@ import {
   type ShoppingItem,
   type ShoppingItemInput,
 } from '../utils/shopping'
-import type { ShoppingLocalStore } from './shoppingIndexedDb'
+import type { ShoppingLocalStore, ShoppingScope } from './shoppingIndexedDb'
 import {
   applyShoppingMutation,
   applyPendingShoppingMutations,
@@ -20,6 +20,7 @@ import {
 } from './shoppingMutationQueue'
 import { subscribeToShoppingRealtime, type ShoppingRealtimeSubscription } from './shoppingRealtime'
 import { SupabaseShoppingRemote, synchronizeShopping, type ShoppingRemote } from './shoppingSync'
+import { classifyAppError, type AppErrorCode } from '../errors/errorCodes'
 
 export type ShoppingSyncStatus = 'offline' | 'syncing' | 'synced' | 'error'
 
@@ -31,11 +32,13 @@ export interface ShoppingRepositorySnapshot {
   pendingCount: number
   status: ShoppingSyncStatus
   lastSuccessfulSyncAt: string | null
-  error: string | null
+  /** A semantic code, never a raw Supabase message (audit section 9). */
+  error: AppErrorCode | null
 }
 
 interface ShoppingRepositoryOptions {
   familyId: string
+  userId: string
   currentMemberId: string
   store: ShoppingLocalStore
   remote?: ShoppingRemote
@@ -47,6 +50,7 @@ interface ShoppingRepositoryOptions {
 
 export class ShoppingRepository {
   private readonly familyId: string
+  private readonly scope: ShoppingScope
   private readonly currentMemberId: string
   private readonly store: ShoppingLocalStore
   private readonly remote: ShoppingRemote
@@ -71,6 +75,7 @@ export class ShoppingRepository {
 
   constructor(options: ShoppingRepositoryOptions) {
     this.familyId = options.familyId
+    this.scope = { userId: options.userId, familyId: options.familyId }
     this.currentMemberId = options.currentMemberId
     this.store = options.store
     this.remote = options.remote ?? new SupabaseShoppingRemote()
@@ -111,9 +116,9 @@ export class ShoppingRepository {
 
   private async startLifecycle(lifecycle: number) {
     const [items, mutations, metadata] = await Promise.all([
-      this.store.loadItems(this.familyId),
-      this.store.loadMutations(this.familyId),
-      this.store.loadMetadata(this.familyId),
+      this.store.loadItems(this.scope),
+      this.store.loadMutations(this.scope),
+      this.store.loadMetadata(this.scope),
     ])
     if (!this.isActive(lifecycle)) return
     this.mutations = mutations
@@ -185,12 +190,18 @@ export class ShoppingRepository {
         pendingCount: this.mutations.length,
         status: !this.realtimeHealthy ? 'error' : this.mutations.length > 0 ? 'syncing' : 'synced',
         lastSuccessfulSyncAt: result.lastSuccessfulSyncAt,
-        error: this.realtimeHealthy ? null : 'realtime-unavailable',
+        error: this.realtimeHealthy ? null : 'realtime-disconnected',
       })
       return this.mutations.length > 0
     } catch (error) {
       if (!this.isActive(lifecycle)) return false
-      this.mutations = [...uploading, ...this.mutations]
+      // Fold the returned batch back through the same coalescing rule new
+      // mutations go through. A plain concat let two `update` mutations for
+      // one item coexist in the queue after a failed sync (audit P1-3).
+      this.mutations = [...this.mutations].reduce(
+        (queue, mutation) => enqueueShoppingMutation(queue, mutation),
+        [...uploading],
+      )
       this.inFlightMutations = []
       try { await this.persistLocal(this.snapshot.items) }
       catch (persistenceError) { console.error('Failed to preserve the shopping mutation queue:', persistenceError) }
@@ -199,7 +210,7 @@ export class ShoppingRepository {
         pendingItemIds: pendingShoppingItemIds(this.mutations),
         pendingCount: this.mutations.length,
         status: this.isOnline() ? 'error' : 'offline',
-        error: error instanceof Error ? error.message : String(error),
+        error: classifyAppError(error, { browserOnline: this.isOnline() }),
       })
       return false
     }
@@ -314,10 +325,10 @@ export class ShoppingRepository {
     const templates = buildCommonShoppingTemplates(items, items.filter((item) => !item.purchased && item.archived_at === null))
     this.localWrite = this.localWrite.catch(() => undefined).then(async () => {
       await Promise.all([
-        this.store.replaceItems(this.familyId, items),
-        this.store.replaceMutations(this.familyId, mutations),
-        this.store.saveTemplates(this.familyId, templates),
-        this.store.saveMetadata({ familyId: this.familyId, hasSnapshot: true, lastSuccessfulSyncAt }),
+        this.store.replaceItems(this.scope, items),
+        this.store.replaceMutations(this.scope, mutations),
+        this.store.saveTemplates(this.scope, templates),
+        this.store.saveMetadata(this.scope, { familyId: this.familyId, hasSnapshot: true, lastSuccessfulSyncAt }),
       ])
     })
     return this.localWrite
