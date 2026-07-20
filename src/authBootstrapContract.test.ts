@@ -63,7 +63,12 @@ describe('bootstrap safety', () => {
 describe('bootstrap logging carries no personal data', () => {
   // BOOT lines land in real users' consoles and in bug reports. They may say
   // what happened, never who it happened to.
-  const forbidden = /console\.(info|error|warn|debug|log)\([^)]*\b(email|display_name|vocative|user_id|userId|session\.user|\.user\.id|member\.id|familyId: [^n])/
+  //
+  // `familyId:` used to be allowed as long as the value started with `n` — a
+  // carve-out for `familyId: next?.family_id ?? null` that was meant to permit
+  // a null but in practice waved through the resolved UUID as well. Opaque
+  // identifiers are still identifiers, so the key is simply banned now.
+  const forbidden = /console\.(info|error|warn|debug|log)\([^)]*\b(email|display_name|vocative|user_id|userId|session\.user|\.user\.id|member\.id|familyId)/
 
   it.each([
     ['src/hooks/useSession.ts', useSession],
@@ -76,6 +81,20 @@ describe('bootstrap logging carries no personal data', () => {
   it('logs membership results as presence, not identity', () => {
     expect(useFamily).toContain('{ found: Boolean(next) }')
     expect(useFamily).toContain('{ cached: Boolean(cached) }')
+    expect(useFamily).toContain('{ hasFamily: Boolean(next?.family_id) }')
     expect(useSession).toContain('authenticated: Boolean(nextSession)')
+  })
+
+  it('leaks no raw identifier into any bootstrap log line', () => {
+    for (const source of [useSession, useFamily, app]) {
+      for (const line of source.split('\n')) {
+        if (!/console\.(info|error|warn|debug|log)/.test(line)) continue
+        // An id inside Boolean(...) reaches the console as true/false, which
+        // is the whole point — only an id that is logged as its own value is
+        // a leak, so drop the coerced ones before looking.
+        const logged = line.replace(/Boolean\([^)]*\)/g, 'Boolean(_)')
+        expect(logged).not.toMatch(/\.(id|family_id|user_id|member_id)\b/)
+      }
+    }
   })
 })
