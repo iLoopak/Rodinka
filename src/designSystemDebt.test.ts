@@ -1,10 +1,9 @@
 /// <reference types="node" />
 
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { appStyles } from './utils/testStylesheets'
 
-const css = readFileSync(join(process.cwd(), 'src/index.css'), 'utf8')
+const css = appStyles()
 const scopedVariables = new Set(['--area-accent', '--week-entry-accent', '--week-entry-surface'])
 
 describe('design-system CSS contract', () => {

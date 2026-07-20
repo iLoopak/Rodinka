@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useReminders } from '../../context/ReminderContext'
-import { useRouter } from '../../router'
+import { useRouterActions } from '../../router'
 import { buildDigest, reminderSection, type ReminderSection } from '../../notifications/reminderPresentation'
 import { REMINDER_CATEGORIES, browserTimezone, type NotificationPreferences, type ReminderRecord } from '../../notifications/reminders'
 import { usePush } from '../../context/PushContext'
@@ -48,7 +48,7 @@ export function ReminderCenter() {
   const { active, history, preferences, loading, error, markRead, markAllRead, dismiss, savePreferences } = useReminders()
   const { currentMember } = useFamilyCore()
   const capabilities = capabilitiesFor(currentMember)
-  const { navigateHref } = useRouter()
+  const { navigateHref } = useRouterActions()
   const [tab, setTab] = useState<Tab>(() => window.location.hash === '#settings' ? 'settings' : 'active')
   const [saving, setSaving] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)

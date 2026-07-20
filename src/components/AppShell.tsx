@@ -1,4 +1,4 @@
-import { useRouter } from '../router'
+import { useRoutePath, useRouterActions } from '../router'
 import { BottomNavigation } from './BottomNavigation'
 import { InstallAppBanner } from './InstallAppBanner'
 import { ReminderBell } from './reminders/ReminderBell'
@@ -23,7 +23,7 @@ import { getRouteDefinition, type RouteDefinition } from '../routes/routeRegistr
 import { RouteRenderer } from '../routes/RouteRenderer'
 
 export function AppShell() {
-  const { path } = useRouter()
+  const path = useRoutePath()
   const definition = getRouteDefinition(path)
 
   return <AppRouteOutlet definition={definition} />
@@ -36,7 +36,8 @@ export function AppRouteOutlet({ definition }: { definition: RouteDefinition }) 
 }
 
 function StandardAppShell({ definition }: { definition: RouteDefinition }) {
-  const { path, navigate } = useRouter()
+  const path = useRoutePath()
+  const { navigate } = useRouterActions()
   const { language } = useLanguage()
   const { currentMember } = useFamilyCore()
   const activeConversationId = useActiveConversationId()
@@ -102,7 +103,7 @@ function RestrictedChildRoute({ onContinue }: { onContinue: () => void }) {
 }
 
 function OfflineModuleState() {
-  const { navigate } = useRouter()
+  const { navigate } = useRouterActions()
   return <section className="empty-state offline-module-state">
     <p className="eyebrow">{t.offline.statusLabel}</p>
     <h1>{t.offline.moduleTitle}</h1>

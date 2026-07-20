@@ -13,7 +13,7 @@ import { EmptyState } from './ui/EmptyState'
 import { CalendarEntryDetailModal } from './calendar/CalendarEntryDetailModal'
 import { WeekAgenda } from './calendar/WeekAgenda'
 import { CalendarDayAgendaCard } from './calendar/CalendarDayAgendaCard'
-import { useRouter } from '../router'
+import { useRouteSearchParams, useRouterActions } from '../router'
 import { isValidISODate, isValidUuid } from '../utils/deepLinks'
 import { getWeekDates, getWeekStart } from '../utils/weekCalendar'
 import { ScrollableTabs } from './ui/ScrollableTabs'
@@ -52,7 +52,8 @@ export function CalendarScreen() {
   const [selectedEntry, setSelectedEntry] = useState<CalendarEntry | null>(null)
   const [openAssignmentInitially, setOpenAssignmentInitially] = useState(false)
   const [deepLinkError, setDeepLinkError] = useState(false)
-  const { searchParams, setQueryParam, removeQueryParam } = useRouter()
+  const searchParams = useRouteSearchParams()
+  const { setQueryParam, removeQueryParam } = useRouterActions()
   const { openCreateRecord } = useCreateRecord()
   const dateParam = searchParams.get('date')
   const eventParam = searchParams.get('event')

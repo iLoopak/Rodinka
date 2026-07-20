@@ -12,7 +12,7 @@ import { formatFullDate, todayISODate } from '../utils/dueDate'
 import { isMedicalRecordOverdue } from '../utils/medicalDueState'
 import { onActivateKey } from '../utils/a11y'
 import type { MedicalRecord } from '../hooks/useMedicalRecords'
-import { useRouter } from '../router'
+import { useRouteSearchParams, useRouterActions } from '../router'
 import { resolveDeepLinkedItem } from '../utils/deepLinks'
 import { ScrollableTabs } from './ui/ScrollableTabs'
 import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from './ui/FilterDisclosure'
@@ -29,7 +29,8 @@ export function HealthScreen() {
   const [filterType, setFilterType] = useState('')
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [deepLinkError, setDeepLinkError] = useState(false)
-  const { searchParams, setQueryParam, removeQueryParam } = useRouter()
+  const searchParams = useRouteSearchParams()
+  const { setQueryParam, removeQueryParam } = useRouterActions()
   const { openCreateRecord } = useCreateRecord()
   const recordParam = searchParams.get('record')
 

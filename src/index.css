@@ -1,201 +1,9 @@
-:root {
-  /* Semantic foundation. Legacy aliases below remain the compatibility API. */
-  --surface-canvas: #f7f2e8;
-  --surface-paper: #fffdf8;
-  --surface-subtle: #f1eadf;
-  --surface-elevated: #ffffff;
-  --text-primary: #243128;
-  --text-muted: #667068;
-  --text-faint: #667068;
-  --border-default: #ddd5c8;
-  --border-subtle: #e9e2d7;
-  --interactive-primary: #a94738;
-  --interactive-primary-hover: #8e382f;
-  --interactive-primary-pressed: #772f29;
-  --focus-ring: #a94738;
-  --state-danger: #9c3e3e;
-  --state-danger-soft: #f9e8e5;
-  --state-warning: #7a5900;
-  --state-warning-soft: #fff3cf;
-  --state-success: #39745c;
-  --state-success-soft: #e5f3eb;
-  --state-info: #376c79;
-  --state-info-soft: #e5f1f4;
-  --state-offline: #6c5a32;
-  --state-offline-soft: #f4eddc;
-  --danger: var(--state-danger);
-  --brand-coral: #e9785e;
-  --brand-coral-dark: #ce5d47;
-  --brand-honey: #f2c85b;
-  --brand-mint: #8bc6ad;
-  --brand-blue: #8db9c7;
-  --radius-small: 10px;
-  --radius-medium: 16px;
-  --radius-large: 22px;
-  --shadow-low: 0 5px 16px rgba(64, 51, 38, 0.06), 0 1px 2px rgba(64, 51, 38, 0.04);
-  --shadow-elevated: 0 18px 48px rgba(54, 44, 34, 0.14);
-  --motion-fast: 140ms;
-  --motion-standard: 200ms;
-  --motion-slow: 260ms;
-  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
-
-  --ink: var(--text-primary);
-  --ink-muted: var(--text-muted);
-  --ink-faint: var(--text-faint);
-  --canvas: var(--surface-canvas);
-  --paper: var(--surface-paper);
-  --paper-raised: var(--surface-elevated);
-  --neutral-soft: var(--surface-subtle);
-  --border: var(--border-default);
-  --border-soft: var(--border-subtle);
-  --brick: var(--interactive-primary);
-  --brick-dark: var(--interactive-primary-hover);
-  --coral: var(--brand-coral);
-  --coral-light: #efad9d;
-  --coral-soft: #fae8e2;
-  --coral-mist: #fff3ed;
-
-  --accent-sky: #527f8d;
-  --accent-sage: #4f8068;
-  --accent-honey: #947016;
-  --accent-lavender: #7563a8;
-  --accent-berry: #a34f64;
-
-  /* Canonical member identity palette. */
-  --member-coral: #E9785E;
-  --member-coral-soft: #F1C9BC;
-  --member-honey: #F2C85B;
-  --member-honey-soft: #F1DDA1;
-  --member-mint: #8BC6AD;
-  --member-mint-soft: #B9D8CA;
-  --member-blue: #8DB9C7;
-  --member-blue-soft: #9CC7D1;
-  --member-lavender: #A89BCB;
-  --member-lavender-soft: #D8D2E8;
-  --member-berry: #CC859F;
-  --member-berry-soft: #E7C4D1;
-  --member-peach: #E6A47D;
-  --member-peach-soft: #F1D0BC;
-  --member-sage: #9EBA82;
-  --member-sage-soft: #CDDDBD;
-  --member-ink: #243128;
-  --member-border: var(--member-coral);
-  --member-foreground: var(--member-ink);
-
-  --category-tasks: #4f8068;
-  --category-tasks-soft: #eaf4ed;
-  --category-tasks-border: #c9dfd0;
-  --category-activities: #7563a8;
-  --category-activities-soft: #f0edf9;
-  --category-activities-border: #d9d1ee;
-  --category-health: #b1554f;
-  --category-health-strong: #8f536e;
-  --category-health-soft: #f8e9e7;
-  --category-health-border: #edd1cd;
-  --category-meals: #a75f3d;
-  --category-meals-soft: #fbeddf;
-  --category-meals-border: #edcfbb;
-  --category-family: #987026;
-  --category-family-soft: #fbf2d8;
-  --category-family-border: #eadba8;
-
-  --radius-card: var(--radius-large);
-  --radius-row: var(--radius-medium);
-  --radius-button: var(--radius-medium);
-  --radius-input: 12px;
-  --shadow-card: var(--shadow-low);
-  --shadow-float: var(--shadow-elevated);
-  --font-family: 'Manrope', system-ui, -apple-system, sans-serif;
-  /* The landing page's serif accent. System fonts only: no runtime download,
-     works offline. Reserved for genuinely human, non-functional phrases. */
-  --font-family-accent: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
-  --font-size-page-title: clamp(1.55rem, 5vw, 1.9rem);
-  --font-size-section-title: 1.12rem;
-  --font-size-subsection-title: 1rem;
-  --font-size-item-title: 0.92rem;
-  --font-size-body: 0.9rem;
-  --font-size-action: 0.82rem;
-  --font-size-control: 1rem;
-  --font-size-meta: 0.78rem;
-  --font-size-caption: 0.72rem;
-  --font-weight-regular: 500;
-  --font-weight-medium: 600;
-  --font-weight-strong: 700;
-  --font-weight-emphasis: 800;
-  --line-height-tight: 1.25;
-  --line-height-body: 1.5;
-  --line-height-meta: 1.4;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body,
-#root {
-  width: 100%;
-  height: 100%;
-  min-height: 100%;
-}
-
-html,
-body,
-#root {
-  overflow: hidden;
-}
-
-body {
-  margin: 0;
-  font-family: var(--font-family);
-  font-weight: var(--font-weight-regular);
-  background:
-    radial-gradient(circle at 12% 0%, rgba(242, 170, 161, 0.18), transparent 30rem),
-    radial-gradient(circle at 88% 18%, rgba(201, 222, 236, 0.22), transparent 28rem),
-    linear-gradient(155deg, #fffaf4 0%, var(--canvas) 52%, #f8f1e9 100%);
-  background-attachment: fixed;
-  color: var(--ink);
-  -webkit-font-smoothing: antialiased;
-}
-
-h1,
-h2,
-h3,
-h4 {
-  font-weight: var(--font-weight-strong);
-  margin: 0 0 4px;
-  line-height: var(--line-height-tight);
-  letter-spacing: -0.01em;
-}
-
-h1 {
-  font-size: 1.5rem;
-}
-h2 {
-  font-size: var(--font-size-section-title);
-}
-h3 {
-  font-size: var(--font-size-subsection-title);
-  font-weight: var(--font-weight-strong);
-}
-h4 {
-  font-size: var(--font-size-item-title);
-  font-weight: var(--font-weight-strong);
-}
-
-p {
-  margin: 0 0 12px;
-  line-height: var(--line-height-body);
-}
-
-.font-tabular {
-  font-variant-numeric: tabular-nums;
-}
+/* Tokens and element defaults live in their own files. The @import order is
+   the cascade order, so these two must stay first. Feature styling follows. */
+@import './styles/tokens.css';
+@import './styles/base.css';
 
 /* ------------------------------------------------------------------ */
-/* Buttons                                                             */
-/* ------------------------------------------------------------------ */
-
 button {
   font-family: inherit;
   font-weight: var(--font-weight-strong);
@@ -284,9 +92,6 @@ button.btn-link:hover:not(:disabled) {
 button.btn-link.destructive-link { color: var(--state-danger); }
 
 /* ------------------------------------------------------------------ */
-/* Forms                                                                */
-/* ------------------------------------------------------------------ */
-
 form {
   display: flex;
   flex-direction: column;
@@ -359,9 +164,6 @@ textarea:disabled {
 }
 
 /* ------------------------------------------------------------------ */
-/* Layout                                                               */
-/* ------------------------------------------------------------------ */
-
 .app-shell {
   max-width: 640px;
   height: 100vh;
@@ -465,7 +267,9 @@ button.family-brand-game-button {
 }
 
 button.family-brand-game-button .family-mark { margin: 0; }
+
 button.family-brand-game-button:hover { background: color-mix(in srgb, var(--surface-subtle) 65%, transparent); }
+
 button.family-brand-game-button:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--interactive-primary) 40%, transparent);
   outline-offset: 1px;
@@ -511,9 +315,6 @@ main {
 }
 
 /* ------------------------------------------------------------------ */
-/* Install-app banner                                                   */
-/* ------------------------------------------------------------------ */
-
 .install-banner {
   display: flex;
   flex: 0 0 auto;
@@ -610,8 +411,11 @@ button.calendar-filter-button {
 }
 
 button.calendar-filter-button svg { display: block; }
+
 button.calendar-filter-button:hover:not(:disabled) { color: var(--ink); }
+
 button.calendar-filter-button.active { border-color: var(--coral-light); background: var(--coral-soft); color: var(--brick-dark); }
+
 .calendar-filter-count {
   position: absolute;
   top: -5px;
@@ -641,9 +445,6 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
 }
 
 /* ------------------------------------------------------------------ */
-/* Cards & sections                                                     */
-/* ------------------------------------------------------------------ */
-
 .section-list {
   list-style: none;
   margin: 0;
@@ -711,9 +512,6 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
 }
 
 /* ------------------------------------------------------------------ */
-/* Today agenda                                                         */
-/* ------------------------------------------------------------------ */
-
 .today-date {
   margin: 6px 0 0;
   color: var(--ink);
@@ -729,10 +527,6 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
   font-size: var(--font-size-meta);
   line-height: var(--line-height-meta);
 }
-
-/* ------------------------------------------------------------------ */
-/* The Rodinka section system — shared by every route                  */
-/* ------------------------------------------------------------------ */
 
 /* A section is a heading sitting directly on the warm canvas plus exactly one
    paper surface around the content, so nothing is a bordered box inside a
@@ -959,11 +753,7 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
   margin-right: 4px;
 }
 
-
 /* ------------------------------------------------------------------ */
-/* Badges                                                               */
-/* ------------------------------------------------------------------ */
-
 .badge {
   display: inline-flex;
   align-items: center;
@@ -1004,10 +794,6 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
   color: var(--ink-muted);
 }
 
-/* ------------------------------------------------------------------ */
-/* Item type icon                                                       */
-/* ------------------------------------------------------------------ */
-
 /* The one shared identity mark for "what kind of thing is this" across
    calendar, today, planner and the create modal — a tinted icon container
    instead of a colored border/stripe. Sizing/radius/tint are set inline per
@@ -1020,9 +806,6 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
 }
 
 /* ------------------------------------------------------------------ */
-/* Member avatars                                                       */
-/* ------------------------------------------------------------------ */
-
 .member-avatar {
   position: relative;
   overflow: hidden;
@@ -1053,9 +836,6 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
 }
 
 /* ------------------------------------------------------------------ */
-/* Manage disclosure                                                    */
-/* ------------------------------------------------------------------ */
-
 details.manage {
   background: var(--paper);
   border: 1px solid var(--border);
@@ -1101,9 +881,6 @@ details.manage .add-child-form + .add-chore-form {
 }
 
 /* ------------------------------------------------------------------ */
-/* Auth / onboarding                                                    */
-/* ------------------------------------------------------------------ */
-
 .auth-screen {
   position: relative;
   isolation: isolate;
@@ -1243,9 +1020,6 @@ details.manage .add-child-form + .add-chore-form {
 }
 
 /* ------------------------------------------------------------------ */
-/* Misc                                                                 */
-/* ------------------------------------------------------------------ */
-
 .error {
   color: var(--accent-berry);
   font-weight: 600;
@@ -1283,91 +1057,160 @@ details.manage .add-child-form + .add-chore-form {
 }
 
 .push-settings { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 0; padding-top: 0; }
+
 .push-summary { flex-wrap: wrap; min-width: 0; }
+
 .status-pill { flex: 0 0 auto; padding: 5px 9px; border-radius: 999px; background: var(--neutral-soft); color: var(--ink-muted); font-size: var(--font-size-meta); font-weight: var(--font-weight-strong); line-height: var(--line-height-meta); }
+
 .status-pill.active { background: var(--state-success-soft); color: var(--state-success); }
+
 .push-actions, .modal-actions { display: flex; align-items: center; flex-wrap: wrap; min-width: 0; gap: 10px; }
+
 .push-actions button, .modal-actions button { max-width: 100%; white-space: normal; }
+
 .push-settings > .btn-secondary { width: 100%; min-height: 44px; margin: 12px 0 14px; }
+
 .push-consent, .push-guidance { padding: 16px; border: 1px solid var(--border-soft); border-radius: 16px; background: var(--paper); }
+
 .push-consent p, .push-guidance ol { margin: 8px 0 14px; color: var(--ink-muted); line-height: 1.5; }
+
 .push-guidance ol { padding-left: 22px; }
+
 .push-warning { padding: 10px 12px; border-radius: 12px; background: var(--category-meals-soft); }
+
 .push-devices { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 8px; padding-top: 6px; border-top: 1px solid var(--border-soft); }
+
 .push-devices h3 { margin: 0; font-size: 0.9rem; }
+
 .push-device { display: flex; align-items: center; justify-content: space-between; min-width: 0; gap: 12px; padding: 10px 12px; border-radius: 13px; background: var(--neutral-soft); }
+
 .push-device span { display: grid; flex: 1 1 auto; min-width: 0; gap: 2px; overflow-wrap: anywhere; }
+
 .push-device small { color: var(--ink-muted); }
+
 .push-device button { flex: 0 0 auto; }
+
 .danger-link { color: var(--brick-dark); justify-self: start; }
 
 /* Reminder Center */
 .reminder-bell { position: relative; z-index: 1; display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--border-soft); border-radius: 50%; background: var(--paper-raised); color: var(--ink-muted); box-shadow: var(--shadow-low); }
+
 .reminder-bell svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
 .reminder-bell.important { color: var(--brick-dark); border-color: rgba(185, 71, 66, .25); background: var(--coral-soft); }
+
 .reminder-badge { position: absolute; top: -4px; right: -5px; display: grid; place-items: center; min-width: 19px; height: 19px; padding: 0 4px; border: 2px solid var(--paper); border-radius: 999px; background: var(--brick-dark); color: white; font-size: .68rem; font-weight: 800; }
+
 .reminder-center { width: 100%; min-width: 0; }
+
 .reminder-center .tabs { width: 100%; overflow-x: visible; }
+
 .reminder-center .tab-button { flex: 1 1 0; min-width: 0; padding-inline: 12px; white-space: normal; }
+
 .reminder-center-header { align-items: flex-start; }
+
 .reminder-center-header .home-subtitle { max-width: 430px; }
+
 .reminder-sections { display: grid; padding: 10px 0; }
+
 .reminder-section + .reminder-section { margin-top: 18px; }
+
 .reminder-section h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; padding-inline: 15px; font-size: 1rem; }
+
 .reminder-section h2 span { display: grid; place-items: center; min-width: 22px; height: 22px; border-radius: 999px; background: var(--neutral-soft); color: var(--ink-muted); font-size: .74rem; }
+
 .reminder-list { display: grid; }
+
 .reminder-history { margin-top: 18px; }
+
 .reminder-card.important { background: color-mix(in srgb, var(--coral-soft) 55%, transparent); }
+
 .reminder-card.read { opacity: .76; }
+
 .reminder-open { display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 15px; background: transparent; color: inherit; text-align: left; }
+
 .reminder-icon { display: grid; place-items: center; flex: 0 0 38px; height: 38px; border-radius: 13px; background: var(--neutral-soft); color: var(--brick-dark); font-weight: 800; }
+
 .reminder-copy { display: grid; flex: 1; min-width: 0; gap: 4px; overflow-wrap: anywhere; }
+
 .reminder-card-title { color: var(--ink); font-size: var(--font-size-item-title); font-weight: var(--font-weight-strong); line-height: var(--line-height-tight); }
+
 .reminder-description { color: var(--ink-muted); font-size: var(--font-size-body); line-height: var(--line-height-body); }
+
 .reminder-meta { color: var(--ink-faint); font-size: var(--font-size-caption); line-height: var(--line-height-meta); text-transform: capitalize; }
+
 .unread-dot { flex: 0 0 8px; width: 8px; height: 8px; margin-top: 4px; border-radius: 50%; background: var(--state-info); }
+
 .reminder-actions { display: flex; justify-content: flex-end; gap: 14px; padding: 0 15px 11px 65px; }
+
 .reminder-actions .link { font-size: .78rem; }
+
 .reminder-empty { display: grid; justify-items: center; gap: 6px; margin-top: 28px; padding: 38px 22px; border: 1px dashed var(--border); border-radius: 24px; background: rgba(255,255,255,.52); text-align: center; }
+
 .reminder-empty > span { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--state-success-soft); color: var(--state-success); font-size: 1.5rem; }
+
 .reminder-empty h2 { margin: 8px 0 0; font-size: 1.12rem; }
+
 .reminder-empty p { margin: 0; color: var(--ink-muted); }
+
 .reminder-settings { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; margin-top: 20px; }
+
 .reminder-settings .page-section { gap: 10px; margin-bottom: 24px; }
+
 .reminder-settings .section-heading {
   font-size: var(--font-size-section-title);
   font-weight: var(--font-weight-strong);
   line-height: var(--line-height-tight);
   letter-spacing: -0.02em;
 }
+
 .reminder-settings-panel { width: 100%; min-width: 0; padding: 0 16px; }
+
 .setting-row { display: flex; flex-direction: row; align-items: center; justify-content: space-between; min-width: 0; gap: 16px; margin: 0; padding: 14px 0; border-bottom: 1px solid var(--border-soft); color: var(--ink); font-size: var(--font-size-item-title); font-weight: var(--font-weight-strong); line-height: var(--line-height-tight); }
+
 .setting-row:last-child { border-bottom: 0; }
+
 .setting-row > span:not(.status-pill) { display: grid; flex: 1 1 auto; min-width: 0; gap: 4px; color: var(--ink); font-size: var(--font-size-item-title); font-weight: var(--font-weight-strong); line-height: var(--line-height-tight); overflow-wrap: anywhere; }
+
 .setting-row > span:not(.status-pill) strong { color: inherit; font: inherit; }
+
 .setting-row small { color: var(--ink-muted); font-size: var(--font-size-meta); font-weight: var(--font-weight-regular); line-height: var(--line-height-meta); }
+
 .setting-row input[type='checkbox'] { flex: 0 0 22px; width: 22px; height: 22px; accent-color: var(--brick-dark); }
+
 .setting-row select { min-width: 0; }
+
 .setting-row.disabled { opacity: .62; }
+
 .category-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; }
+
 .reminder-settings-panel > .row-meta { margin: 0; color: var(--ink-muted); font-weight: var(--font-weight-regular); }
+
 .reminder-settings-panel > .row-meta:first-child { padding: 14px 0 12px; border-bottom: 1px solid var(--border-soft); font-size: var(--font-size-body); line-height: var(--line-height-body); }
+
 .reminder-settings-panel > .row-meta:last-child { padding: 12px 0 14px; font-size: var(--font-size-meta); line-height: var(--line-height-meta); }
+
 .digest-preview { display: flex; justify-content: space-between; min-width: 0; gap: 12px; margin: 12px 0 14px; padding: 13px; border-radius: 14px; background: var(--state-info-soft); color: var(--ink-muted); font-size: var(--font-size-meta); line-height: var(--line-height-meta); }
+
 .digest-preview > * { min-width: 0; overflow-wrap: anywhere; }
+
 .reminder-digest { align-items: center; margin: 18px 0 0; }
+
 .reminder-digest > span { display: grid; gap: 3px; }
+
 .quiet-hours { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); min-width: 0; gap: 16px; margin: 0; padding: 14px 0; border-bottom: 1px solid var(--border-soft); }
+
 .quiet-hours label { display: grid; min-width: 0; gap: 5px; margin: 0; color: var(--ink-muted); font-size: var(--font-size-meta); font-weight: var(--font-weight-regular); line-height: var(--line-height-meta); }
+
 .quiet-hours input { min-width: 0; padding: 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--paper-raised); }
+
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
 @media (min-width: 481px) { .category-settings .setting-row:nth-last-child(-n + 2) { border-bottom: 0; } }
+
 @media (max-width: 480px) { .category-settings { grid-template-columns: 1fr; } .reminder-center-header { gap: 10px; } .reminder-center-header .btn-secondary { padding-inline: 11px; } .reminder-settings-panel { padding-inline: 14px; } }
 
 /* ------------------------------------------------------------------ */
-/* Shared shopping list                                                */
-/* ------------------------------------------------------------------ */
-
 .shopping-header { align-items: flex-start; margin-bottom: 12px; }
 
 .shopping-quick-add {
@@ -1382,8 +1225,11 @@ details.manage .add-child-form + .add-chore-form {
 }
 
 .shopping-quick-add input { min-height: 48px; border-color: transparent; background: var(--paper-raised); }
+
 .shopping-quick-add button { min-width: 94px; padding-inline: 15px; }
+
 .shopping-feedback { margin: 8px 4px 12px; color: var(--category-tasks); font-size: 0.84rem; font-weight: 700; }
+
 .shopping-sync-status {
   display: flex;
   align-items: center;
@@ -1394,8 +1240,11 @@ details.manage .add-child-form + .add-chore-form {
   font-size: var(--font-size-meta);
   line-height: var(--line-height-meta);
 }
+
 .shopping-sync-status > span:nth-child(2) { min-width: 0; overflow-wrap: anywhere; }
+
 .shopping-sync-status .link { margin-left: auto; flex: 0 0 auto; }
+
 .shopping-sync-status-dot,
 .shopping-item-pending {
   width: 8px;
@@ -1404,17 +1253,24 @@ details.manage .add-child-form + .add-chore-form {
   border-radius: 999px;
   background: var(--ink-muted);
 }
+
 .shopping-sync-status.syncing .shopping-sync-status-dot,
 .shopping-item-pending {
   background: var(--category-health);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--category-health) 18%, transparent);
   animation: shopping-sync-pulse 1.35s ease-in-out infinite;
 }
+
 .shopping-sync-status.offline .shopping-sync-status-dot { background: var(--category-meals); }
+
 .shopping-sync-status.error .shopping-sync-status-dot { background: var(--danger); }
+
 .shopping-sync-status.synced .shopping-sync-status-dot { background: var(--category-tasks); }
+
 .shopping-item-pending { width: 7px; height: 7px; margin-inline: 2px; }
+
 .calendar-sync-status { margin: 8px 4px 14px; }
+
 .calendar-pending-label {
   display: inline-flex;
   align-items: center;
@@ -1425,27 +1281,42 @@ details.manage .add-child-form + .add-chore-form {
   font-weight: var(--font-weight-strong);
   line-height: 1.2;
 }
+
 .calendar-pending-label.failed { color: var(--danger); }
+
 .calendar-pending-label.failed .shopping-item-pending,
 .calendar-detail-sync.failed .shopping-item-pending { background: var(--danger); animation: none; box-shadow: none; }
+
 .calendar-detail-sync { width: fit-content; margin: 0; }
+
 .month-grid-indicator.is-pending,
 .month-grid-indicator.is-syncing { box-shadow: 0 0 0 2px var(--state-warning-soft); }
+
 .month-grid-indicator.is-failed { box-shadow: 0 0 0 2px var(--state-danger-soft); }
+
 @keyframes shopping-sync-pulse { 50% { opacity: .42; transform: scale(.84); } }
+
 @media (prefers-reduced-motion: reduce) {
   .shopping-sync-status-dot,
   .shopping-item-pending { animation: none; }
 }
 
 .shopping-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+
 .shopping-toolbar button { flex: 0 0 auto; min-height: 42px; padding: 8px 14px; border-radius: 999px; font-size: 0.84rem; }
+
 .shopping-tools-panel { display: grid; gap: 10px; margin-top: 10px; }
+
 .shopping-filter { display: flex; align-items: center; gap: 8px; margin: 0; padding: 0; background: transparent; }
+
 .shopping-filter select { min-width: 0; }
+
 .shopping-filter-clear { flex: 0 0 auto; min-height: 44px; }
+
 .shopping-category-settings { display: grid; gap: 16px; }
+
 .shopping-category-settings-list { display: grid; gap: 10px; }
+
 .shopping-category-setting {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr) 64px;
@@ -1456,11 +1327,16 @@ details.manage .add-child-form + .add-chore-form {
   border-radius: 14px;
   background: var(--surface-subtle);
 }
+
 .shopping-category-setting label { display: grid; gap: 5px; margin: 0; }
+
 .shopping-category-setting label > span { color: var(--ink-muted); font-size: var(--font-size-meta); }
+
 .shopping-category-setting input[type="text"],
 .shopping-category-setting input:not([type]) { min-height: 42px; }
+
 .shopping-category-color-preview { align-self: center; width: 18px; height: 42px; border-radius: 999px; }
+
 .shopping-category-color-field input[type="color"] {
   width: 54px;
   height: 42px;
@@ -1468,9 +1344,11 @@ details.manage .add-child-form + .add-chore-form {
   border-radius: 10px;
   cursor: pointer;
 }
+
 .shopping-category-settings-actions { flex-wrap: wrap; }
 
 .shopping-category-groups { display: grid; }
+
 .shopping-category {
   --shopping-accent: var(--category-family);
   --shopping-soft: var(--category-family-soft);
@@ -1485,9 +1363,13 @@ details.manage .add-child-form + .add-chore-form {
 .shopping-category.drop-enabled {
   background: color-mix(in srgb, var(--shopping-accent) 6%, transparent);
 }
+
 .shopping-category-produce { --shopping-accent: var(--category-tasks); --shopping-soft: var(--category-tasks-soft); --shopping-border: var(--category-tasks-border); }
+
 .shopping-category-bakery, .shopping-category-meat { --shopping-accent: var(--category-meals); --shopping-soft: var(--category-meals-soft); --shopping-border: var(--category-meals-border); }
+
 .shopping-category-dairy { --shopping-accent: var(--category-health); --shopping-soft: var(--category-health-soft); --shopping-border: var(--category-health-border); }
+
 .shopping-category-household, .shopping-category-pharmacy { --shopping-accent: var(--category-activities); --shopping-soft: var(--category-activities-soft); --shopping-border: var(--category-activities-border); }
 
 .shopping-category > h2 {
@@ -1501,9 +1383,11 @@ details.manage .add-child-form + .add-chore-form {
   letter-spacing: 0.025em;
   text-transform: uppercase;
 }
+
 .shopping-category > h2 > span { margin-left: auto; min-width: 24px; padding: 2px 7px; border-radius: 999px; background: color-mix(in srgb, var(--shopping-accent) 14%, var(--paper)); text-align: center; font-size: .72rem; }
 
 .shopping-list, .shopping-template-list, .ingredient-list { list-style: none; margin: 0; padding: 0; }
+
 .shopping-item {
   display: grid;
   grid-template-columns: 32px 44px minmax(0, 1fr);
@@ -1511,6 +1395,7 @@ details.manage .add-child-form + .add-chore-form {
   min-height: 68px;
   border-top: 1px solid color-mix(in srgb, var(--shopping-border) 65%, transparent);
 }
+
 /* Rows without a drag handle drop its 32px track, otherwise the name lands in
    the checkbox column. Purchased rows never have one; neither does any row a
    child sees, because nothing is reorderable for them. */
@@ -1532,6 +1417,7 @@ details.manage .add-child-form + .add-chore-form {
   background: transparent;
   box-shadow: none;
 }
+
 .completion-checkbox > span {
   display: grid;
   place-items: center;
@@ -1542,8 +1428,11 @@ details.manage .add-child-form + .add-chore-form {
   background: var(--paper-raised);
   color: transparent;
 }
+
 .completion-checkbox:hover:not(:disabled) > span { background: var(--paper-raised); }
+
 .completion-checkbox[aria-pressed='true'] > span { background: var(--category-tasks); color: white; border-color: var(--category-tasks); }
+
 .completion-checkbox:focus-visible { outline-offset: 0; }
 
 .list-drag-handle {
@@ -1562,13 +1451,18 @@ details.manage .add-child-form + .add-chore-form {
   cursor: grab;
   touch-action: none;
 }
+
 .list-drag-handle:active { cursor: grabbing; }
+
 .list-drag-handle span { font-size: 1.05rem; letter-spacing: -0.18em; }
+
 button.list-drag-handle:hover:not(:disabled) {
   background: color-mix(in srgb, var(--ink-muted) 9%, transparent);
   color: var(--ink);
 }
+
 .dragging { opacity: 0.48; }
+
 .list-drag-preview {
   position: fixed;
   z-index: 10000;
@@ -1587,32 +1481,40 @@ button.list-drag-handle:hover:not(:disabled) {
   pointer-events: none;
   transform: translate(14px, 12px) rotate(1deg);
 }
+
 .list-drag-preview-handle {
   flex: 0 0 auto;
   color: var(--ink-muted);
   font-size: 1.05rem;
   letter-spacing: -0.18em;
 }
+
 .list-drag-preview-copy {
   display: grid;
   min-width: 0;
 }
+
 .list-drag-preview-copy strong {
   overflow: hidden;
   font-size: var(--font-size-item-title);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .list-drag-preview-copy small {
   color: var(--ink-muted);
   font-size: var(--font-size-meta);
 }
+
 .quick-todo-drag-overlay {
   position: static;
   transform: none;
 }
+
 .shopping-category.drop-enabled { min-height: 72px; }
+
 .shopping-drop-empty { margin: 0; padding: 12px 16px 15px; color: var(--ink-muted); font-size: var(--font-size-meta); }
+
 .shopping-item-main {
   display: flex;
   align-items: stretch;
@@ -1626,12 +1528,19 @@ button.list-drag-handle:hover:not(:disabled) {
   color: var(--ink);
   text-align: left;
 }
+
 .shopping-item-main:hover:not(:disabled) { background: rgba(255,255,255,.4); }
+
 .shopping-item-top { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+
 .shopping-item-top strong { overflow-wrap: anywhere; }
+
 .shopping-item-top b { margin-left: auto; color: var(--shopping-accent, var(--ink)); font-size: .86rem; white-space: nowrap; }
+
 .shopping-item-note { color: var(--ink-muted); font-size: var(--font-size-meta); line-height: var(--line-height-meta); overflow-wrap: anywhere; }
+
 .shopping-item-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 7px; color: var(--ink-muted); font-size: var(--font-size-caption); font-weight: var(--font-weight-medium); line-height: var(--line-height-meta); }
+
 .shopping-responsible { padding: 2px 7px; border-radius: 999px; background: var(--category-family-soft); color: var(--category-family); }
 
 .shopping-purchased {
@@ -1641,32 +1550,53 @@ button.list-drag-handle:hover:not(:disabled) {
   border-radius: var(--radius-card);
   background: rgba(244,237,228,.64);
 }
+
 .shopping-purchased summary { cursor: pointer; font-weight: 800; color: var(--ink-muted); }
+
 .shopping-purchased[open] summary { margin-bottom: 10px; }
+
 .shopping-purchased .shopping-list { overflow: hidden; border-radius: var(--radius-row); }
+
 .shopping-purchased .shopping-item { --shopping-accent: var(--ink-muted); background: rgba(255,255,255,.45); opacity: .7; }
+
 .shopping-purchased .shopping-item-top strong { text-decoration: line-through; }
 
 .shopping-form-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+
 .shopping-delete-action { margin-top: 8px; color: var(--brick); }
 
 .shopping-template-list { display: grid; gap: 9px; }
+
 .shopping-template-list li { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: var(--radius-row); background: var(--neutral-soft); }
+
 .shopping-template-list li > span { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
+
 .shopping-template-list small { color: var(--ink-muted); overflow-wrap: anywhere; }
+
 .shopping-template-list button { flex: 0 0 auto; min-height: 40px; padding: 7px 12px; font-size: .8rem; }
+
 .shopping-copy-picker { display: grid; gap: 7px; margin-bottom: 14px; }
+
 .shopping-copy-picker .checkbox-label { padding: 9px 10px; border-radius: 12px; background: var(--neutral-soft); }
 
 .meal-ingredients-section { margin: 18px 0; padding-top: 16px; border-top: 1px solid var(--border-soft); }
+
 .meal-ingredients-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+
 .ingredient-list { display: grid; gap: 6px; }
+
 .ingredient-list li { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 11px; background: var(--category-meals-soft); }
+
 .ingredient-list small { color: var(--ink-muted); text-align: right; }
+
 .ingredients-import-action, .ingredient-add-row { width: 100%; margin-top: 10px; }
+
 .ingredient-editor, .ingredient-import-list { display: grid; gap: 10px; margin-bottom: 12px; }
+
 .ingredient-edit-row, .ingredient-import-row { display: grid; gap: 7px; padding: 11px; border: 1px solid var(--border-soft); border-radius: var(--radius-row); background: var(--neutral-soft); }
+
 .ingredient-import-row .checkbox-label { margin: 0; }
+
 .ingredient-import-row .shopping-form-grid { align-items: center; }
 
 @media (max-width: 390px) {
@@ -1675,9 +1605,6 @@ button.list-drag-handle:hover:not(:disabled) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Bottom navigation                                                    */
-/* ------------------------------------------------------------------ */
-
 .bottom-nav {
   position: fixed;
   left: 50%;
@@ -1720,9 +1647,6 @@ button.list-drag-handle:hover:not(:disabled) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Tabs                                                                 */
-/* ------------------------------------------------------------------ */
-
 .tabs {
   display: flex;
   gap: 6px;
@@ -1768,9 +1692,6 @@ button.list-drag-handle:hover:not(:disabled) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Modal / sheet                                                        */
-/* ------------------------------------------------------------------ */
-
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -2497,9 +2418,6 @@ body.has-modal-open .app-main {
 }
 
 /* ------------------------------------------------------------------ */
-/* Empty / error states                                                 */
-/* ------------------------------------------------------------------ */
-
 .empty-state-card,
 .error-state-card {
   text-align: center;
@@ -2537,9 +2455,6 @@ body.has-modal-open .app-main {
 }
 
 /* ------------------------------------------------------------------ */
-/* Family / More screens                                                */
-/* ------------------------------------------------------------------ */
-
 .family-actions {
   display: flex;
   flex-wrap: wrap;
@@ -2645,9 +2560,13 @@ label.profile-photo-picker:focus-within {
 }
 
 .family-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
 .family-title-row .home-title { margin-right: auto; }
+
 .family-name-edit { flex: none; }
+
 .family-name-form { margin-top: 12px; padding: 14px; border: 1px solid var(--border-soft); border-radius: 16px; background: var(--paper-raised); }
+
 .family-name-form .modal-actions { justify-content: flex-start; }
 
 .profile-avatar-button {
@@ -2710,6 +2629,7 @@ label.profile-photo-picker:focus-within {
 }
 
 .avatar-crop-header h3 { margin: 0 0 6px; }
+
 .avatar-crop-header p { margin: 0; color: var(--ink-muted); font-size: 0.9rem; }
 
 .avatar-crop-viewport {
@@ -2764,6 +2684,7 @@ label.profile-photo-picker:focus-within {
 }
 
 .avatar-crop-zoom input { width: 100%; margin: 0; }
+
 .avatar-crop-zoom output { color: var(--ink-muted); font-variant-numeric: tabular-nums; text-align: right; }
 
 .avatar-crop-actions {
@@ -3066,9 +2987,6 @@ label.member-gender-option {
 }
 
 /* ------------------------------------------------------------------ */
-/* Planner                                                              */
-/* ------------------------------------------------------------------ */
-
 .planner-section h2 {
   margin-bottom: 12px;
 }
@@ -3159,9 +3077,6 @@ label.member-gender-option {
 }
 
 /* ------------------------------------------------------------------ */
-/* Filters                                                              */
-/* ------------------------------------------------------------------ */
-
 .filter-row {
   display: flex;
   flex-wrap: wrap;
@@ -3184,15 +3099,16 @@ label.member-gender-option {
   background: rgba(244, 237, 228, 0.78);
   box-shadow: var(--shadow-card);
 }
+
 .calendar-filter-panel[hidden] { display: none; }
+
 .calendar-filter-panel-header { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 4px; }
+
 .calendar-filter-panel-header button.link { min-height: 44px; }
+
 .calendar-filter-panel .filter-row { margin: 0; padding: 0; background: transparent; }
 
 /* ------------------------------------------------------------------ */
-/* Clickable rows (activities, medical, calendar entries)              */
-/* ------------------------------------------------------------------ */
-
 .clickable-row {
   cursor: pointer;
 }
@@ -3209,9 +3125,6 @@ label.member-gender-option {
 }
 
 /* ------------------------------------------------------------------ */
-/* Sectioned forms (activities, medical records)                       */
-/* ------------------------------------------------------------------ */
-
 .sectioned-form .form-section {
   padding-top: 16px;
   margin-top: 16px;
@@ -3280,9 +3193,6 @@ label.member-gender-option {
 }
 
 /* ------------------------------------------------------------------ */
-/* Progressive activity form                                          */
-/* ------------------------------------------------------------------ */
-
 .modal-sheet.activity-form-modal {
   height: 100dvh;
   max-height: 100dvh;
@@ -3634,10 +3544,12 @@ label.member-gender-option {
 }
 
 .family-hero-crop-dialog { max-width: 680px; }
+
 .family-hero-crop-viewport {
   width: min(92vw, 620px);
   aspect-ratio: 16 / 7;
 }
+
 .family-hero-crop-frame {
   position: absolute;
   inset: 0;
@@ -3653,6 +3565,7 @@ label.member-gender-option {
   align-items: center;
   gap: 12px;
 }
+
 .family-photo-setting-preview {
   display: grid;
   place-items: center;
@@ -3663,8 +3576,11 @@ label.member-gender-option {
   border-radius: 14px;
   background: linear-gradient(135deg, var(--coral-soft), var(--neutral-soft));
 }
+
 .family-photo-setting-preview img { width: 100%; height: 100%; object-fit: cover; }
+
 .family-photo-setting-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+
 label.family-photo-picker {
   display: inline-flex;
   align-items: center;
@@ -3674,8 +3590,11 @@ label.family-photo-picker {
   padding: 8px 12px;
   cursor: pointer;
 }
+
 .family-photo-picker input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
 .family-photo-picker:focus-within { outline: 2px solid var(--brick); outline-offset: 2px; }
+
 .more-setting-feedback { grid-column: 2 / -1; margin: 0; }
 
 @media (max-width: 620px) {
@@ -3847,9 +3766,6 @@ label.family-photo-picker {
 }
 
 /* ------------------------------------------------------------------ */
-/* Detail views (activity / medical / calendar entry)                  */
-/* ------------------------------------------------------------------ */
-
 .detail-view {
   margin-bottom: 16px;
 }
@@ -3909,9 +3825,6 @@ button.btn-danger:hover:not(:disabled) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Member editor (sectioned profile modal)                             */
-/* ------------------------------------------------------------------ */
-
 .modal-sheet.member-editor-sheet {
   width: 100%;
   height: 100vh;
@@ -4245,9 +4158,6 @@ button.btn-danger:hover:not(:disabled) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Calendar: month view                                                 */
-/* ------------------------------------------------------------------ */
-
 .month-nav {
   display: flex;
   align-items: center;
@@ -4351,10 +4261,6 @@ button.btn-danger:hover:not(:disabled) {
   color: var(--ink-muted);
 }
 
-/* ------------------------------------------------------------------ */
-/* Calendar: agenda view                                                */
-/* ------------------------------------------------------------------ */
-
 /* A date bucket is a section: label on the warm canvas, one paper surface
    around its rows, dividers between them — the same shape as Today. */
 .agenda-group {
@@ -4420,12 +4326,19 @@ button.btn-danger:hover:not(:disabled) {
 }
 
 .calendar-entry-row-shell .calendar-entry-row:hover:not(:disabled) { background: rgba(255, 255, 255, 0.58); color: var(--ink); }
+
 .calendar-entry-content { display: grid; min-width: 0; gap: 3px; }
+
 .calendar-entry-content .row-title { overflow-wrap: anywhere; font-size: var(--font-size-item-title); font-weight: var(--font-weight-strong); line-height: var(--line-height-tight); }
+
 .calendar-entry-meta-line { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; color: var(--ink-muted); font-size: var(--font-size-meta); line-height: var(--line-height-meta); }
+
 .calendar-entry-people { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+
 .calendar-entry-side { display: grid; justify-items: end; gap: 5px; min-width: 0; }
+
 .calendar-entry-side .row-meta { color: var(--ink-muted); font-size: var(--font-size-meta); line-height: var(--line-height-meta); white-space: nowrap; }
+
 .calendar-entry-side .badge { white-space: nowrap; }
 
 @media (max-width: 420px) {
@@ -4463,10 +4376,6 @@ button.btn-danger:hover:not(:disabled) {
   font-weight: 800;
   line-height: 1;
 }
-
-/* ------------------------------------------------------------------ */
-/* Weekly meal planner                                                  */
-/* ------------------------------------------------------------------ */
 
 /* One day = one card, always. Never a fixed 7-column "spreadsheet" grid —
    auto-fill naturally gives 1 column on a phone, 2 on a tablet/small
@@ -4582,9 +4491,6 @@ button.btn-danger:hover:not(:disabled) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Meal voting                                                          */
-/* ------------------------------------------------------------------ */
-
 .vote-round-header {
   display: flex;
   align-items: center;
@@ -4745,9 +4651,6 @@ button.btn-danger:hover:not(:disabled) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Warm notebook visual system                                         */
-/* ------------------------------------------------------------------ */
-
 :where(button, a, input, select, textarea, [tabindex]):focus-visible {
   outline: 3px solid rgba(185, 71, 66, 0.28);
   outline-offset: 3px;
@@ -5090,8 +4993,11 @@ button.btn-danger:hover:not(:disabled) {
 }
 
 .today-hero-copy { min-width: 0; }
+
 .today-hero .home-title { max-width: 15ch; }
+
 .today-hero .today-date { color: var(--ink); margin-top: 8px; }
+
 .today-hero .today-summary { color: var(--ink-muted); font-size: 0.84rem; margin-top: 2px; }
 
 .hero-action-button {
@@ -5124,9 +5030,6 @@ button.btn-danger:hover:not(:disabled) {
   );
 }
 
-/* The stored image is already cropped to 16:7 by the hero crop editor, so
-   matching that ratio renders exactly the crop the family chose. The cap stops
-   it becoming a billboard on wide screens. */
 /* Copy sits bottom-left inside the scrim; the action goes top-right, over the
    open part of the frame. They never compete for one row, and the control
    never lands on the people. */
@@ -5739,6 +5642,7 @@ button.today-shopping-open {
 }
 
 .empty-state-title { font-size: 1rem; }
+
 .empty-state-body { max-width: 36ch; margin-inline: auto; }
 
 .bottom-nav {
@@ -5758,13 +5662,16 @@ button.today-shopping-open {
 }
 
 .bottom-nav-item svg { transition: transform 180ms ease; }
+
 .bottom-nav-item:hover { background: var(--neutral-soft); }
+
 .bottom-nav-item.active {
   color: var(--brick-dark);
   background: linear-gradient(135deg, var(--coral-soft), #fff0e9);
   box-shadow: inset 0 0 0 1px rgba(233, 108, 98, 0.1), 0 5px 14px rgba(185, 71, 66, 0.08);
   font-weight: 800;
 }
+
 .bottom-nav-item.active svg { transform: translateY(-1px) scale(1.05); }
 
 .tabs {
@@ -5794,19 +5701,24 @@ button.today-shopping-open {
   color: var(--brick);
   box-shadow: 0 5px 15px rgba(76, 56, 42, 0.05);
 }
+
 .planner-create-button:hover:not(:disabled) { background: var(--coral-mist); }
 
 .planner-area-card {
   transition: background var(--motion-fast) var(--motion-ease);
 }
+
 .planner-area-card:hover {
   background: color-mix(in srgb, var(--surface-subtle) 55%, transparent);
 }
+
 .planner-area-icon {
   width: 40px;
   height: 40px;
 }
+
 .planner-area-icon svg { width: 22px; height: 22px; }
+
 /* A destination name is an ordinary label: dark ink, sentence case. The module
    colour is carried by the icon surface beside it, not by shouting the title. */
 .planner-area-heading {
@@ -5816,6 +5728,7 @@ button.today-shopping-open {
   line-height: var(--line-height-tight);
   letter-spacing: -0.015em;
 }
+
 .planner-area-summary { color: var(--ink-muted); font-size: var(--font-size-meta); font-weight: var(--font-weight-regular); line-height: var(--line-height-meta); }
 
 .filter-row {
@@ -5823,13 +5736,16 @@ button.today-shopping-open {
   border-radius: 18px;
   background: rgba(244, 237, 228, 0.72);
 }
+
 .filter-row select { border-color: transparent; background: var(--paper-raised); }
 
 .month-nav {
   justify-content: space-between;
   padding: 0 6px;
 }
+
 .month-nav-label { font-size: 1.05rem; letter-spacing: -0.02em; }
+
 .month-nav button.btn-secondary {
   border-color: transparent;
   border-radius: 999px;
@@ -5843,11 +5759,17 @@ button.today-shopping-open {
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(250, 245, 239, 0.94));
   box-shadow: var(--shadow-card);
 }
+
 .month-grid-day { min-height: 58px; transition: transform 150ms ease, background 150ms ease; }
+
 .month-grid-day:hover:not(:disabled) { background: var(--neutral-soft); transform: translateY(-1px); }
+
 .month-grid-day.selected { background: var(--coral-soft); box-shadow: inset 0 0 0 1px rgba(185, 71, 66, 0.12); }
+
 .month-grid-day.today .month-grid-day-number { box-shadow: 0 4px 10px rgba(185, 71, 66, 0.22); }
+
 .month-grid-day-dots { gap: 2px; min-height: 15px; }
+
 .month-grid-indicator {
   display: inline-grid;
   place-items: center;
@@ -5857,9 +5779,13 @@ button.today-shopping-open {
   border: 0;
   border-radius: 50%;
 }
+
 .month-grid-indicator.has-member { background: transparent !important; }
+
 .month-grid-indicator .member-avatar { border: 0; }
+
 .month-grid-indicator-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
 .month-grid-more { margin-left: 1px; }
 
 .calendar-day-close {
@@ -5871,10 +5797,13 @@ button.today-shopping-open {
   color: var(--ink-muted);
   font-size: 1.2rem;
 }
+
 .calendar-day-close:hover:not(:disabled) { background: var(--paper-raised); color: var(--ink); }
 
 .week-calendar { min-width: 0; }
+
 .week-nav { margin-bottom: 8px; }
+
 .week-nav .month-nav-label {
   flex: 1;
   min-width: 0;
@@ -5911,10 +5840,15 @@ button.today-shopping-open {
   background: transparent;
   color: var(--ink);
 }
+
 .week-strip-day:hover:not(:disabled) { background: var(--neutral-soft); color: var(--ink); }
+
 .week-strip-day.selected { border-color: var(--border); background: var(--neutral-soft); }
+
 .week-strip-day.weekend { color: var(--ink-muted); }
+
 .week-strip-weekday { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+
 .week-strip-number {
   display: grid;
   place-items: center;
@@ -5925,11 +5859,17 @@ button.today-shopping-open {
   font-size: 0.88rem;
   font-weight: 800;
 }
+
 .week-strip-day.today .week-strip-number { background: var(--brick); color: #fff; box-shadow: 0 4px 10px rgba(185, 71, 66, 0.22); }
+
 .week-strip-indicators { display: flex; align-items: center; justify-content: center; min-height: 16px; margin-top: 2px; }
+
 .week-strip-indicators > * + * { margin-left: -4px; }
+
 .week-strip-more { z-index: 1; padding: 1px 3px; border-radius: 999px; background: var(--neutral-soft); font-size: 0.55rem; font-weight: 800; }
+
 .week-strip-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--brick); }
+
 .week-strip-count {
   position: absolute;
   top: 4px;
@@ -5953,6 +5893,7 @@ button.today-shopping-open {
   max-width: 960px;
   margin-inline: auto;
 }
+
 .week-day-card {
   width: 100%;
   min-width: 0;
@@ -5963,16 +5904,27 @@ button.today-shopping-open {
   background: var(--paper-raised);
   box-shadow: var(--shadow-card);
 }
+
 .week-day-card.today { background: linear-gradient(145deg, var(--coral-soft), var(--paper-raised) 60%); }
+
 .week-day-card.selected .week-day-header h2 { color: var(--brick-dark); }
+
 .week-day-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+
 .week-day-header h2 { font-size: var(--font-size-section-title); font-weight: var(--font-weight-strong); line-height: var(--line-height-tight); text-transform: capitalize; }
+
 .week-day-header p { display: flex; align-items: center; gap: 7px; margin-top: 4px; color: var(--ink-muted); font-size: var(--font-size-meta); line-height: var(--line-height-meta); }
+
 .today-badge { padding: 2px 7px; border-radius: 999px; background: var(--brick); color: #fff; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
+
 .week-day-empty { min-height: 32px; padding: 3px 2px 8px; color: var(--ink-muted); font-size: var(--font-size-body); line-height: var(--line-height-body); }
+
 .week-day-groups { display: grid; gap: 12px; }
+
 .week-day-group h3 { margin: 0 0 7px 2px; color: var(--ink-muted); font-size: 0.66rem; letter-spacing: 0.07em; text-transform: uppercase; }
+
 .week-day-group ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+
 .week-day-add { display: inline-flex; align-items: center; width: fit-content; min-height: 44px; margin-top: 8px; padding: 7px 2px; color: var(--brick); font-size: var(--font-size-action); font-weight: var(--font-weight-strong); }
 
 .week-entry {
@@ -5984,7 +5936,9 @@ button.today-shopping-open {
   border-radius: var(--radius-row);
   background: var(--paper-raised);
 }
+
 .week-entry.completed { opacity: 0.7; }
+
 .week-entry-layout {
   grid-row: 1;
   display: grid;
@@ -5992,6 +5946,7 @@ button.today-shopping-open {
   min-width: 0;
   padding: 13px 14px 14px;
 }
+
 .week-entry-open {
   position: absolute;
   z-index: 1;
@@ -6002,21 +5957,34 @@ button.today-shopping-open {
   border: 0;
   background: transparent;
 }
+
 .week-entry-open:hover:not(:disabled) { background: color-mix(in srgb, var(--week-entry-surface) 45%, transparent); }
+
 .week-entry-open:focus-visible { outline: 3px solid color-mix(in srgb, var(--week-entry-accent) 38%, transparent); outline-offset: -3px; }
+
 .week-entry-heading { display: flex; align-items: center; gap: 9px; min-width: 0; padding-right: 2px; }
+
 .week-entry-heading strong { min-width: 0; overflow-wrap: break-word; font-size: 1.02rem; font-weight: var(--font-weight-strong); line-height: 1.24; }
+
 .week-entry.completed .week-entry-heading strong { text-decoration: line-through; }
+
 .week-entry-time { padding-left: 49px; color: var(--ink-muted); font-size: var(--font-size-body); font-weight: var(--font-weight-strong); line-height: var(--line-height-body); white-space: nowrap; }
+
 .week-entry-status { padding: 1px 5px; border-radius: 999px; background: var(--neutral-soft); color: var(--ink-muted); font-size: 0.58rem; font-weight: 800; text-transform: uppercase; }
+
 .week-entry-metadata { display: grid; gap: 6px; min-width: 0; padding-left: 49px; color: var(--ink-muted); font-size: var(--font-size-meta); line-height: 1.35; }
+
 .week-entry-meta-row,
 .week-entry-assignment { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 30px; }
+
 .week-entry-meta-row > span:last-child,
 .week-entry-assignment > span { min-width: 0; overflow-wrap: break-word; }
+
 .week-entry-meta-icon { display: grid; place-items: center; width: 20px; height: 20px; flex: 0 0 20px; color: var(--ink-muted); }
+
 .week-entry-meta-icon svg,
 .week-entry-swap { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
 .week-entry-assignment {
   position: relative;
   z-index: 2;
@@ -6033,8 +6001,11 @@ button.today-shopping-open {
   font-weight: var(--font-weight-strong);
   text-align: left;
 }
+
 .week-entry-assignment:hover:not(:disabled) { background: var(--week-entry-surface); color: var(--ink); }
+
 .week-entry-swap { flex: 0 0 18px; color: var(--week-entry-accent); }
+
 .week-entry-override-dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: var(--week-entry-accent); }
 
 @media (min-width: 680px) {
@@ -6088,6 +6059,7 @@ button.today-shopping-open {
   overflow-y: auto;
   background: linear-gradient(155deg, #fffaf4 0%, var(--canvas) 52%, #f8f1e9 100%);
 }
+
 .offline-card,
 .offline-module-state {
   width: min(100%, 520px);
@@ -6098,10 +6070,13 @@ button.today-shopping-open {
   box-shadow: var(--shadow-card);
   padding: 22px;
 }
+
 .offline-card h1,
 .offline-module-state h1 { margin: 0 0 8px; }
+
 .offline-card p,
 .offline-module-state p { color: var(--ink-muted); }
+
 .offline-module-state { margin: 24px auto; }
 
 .offline-actions {
@@ -6153,9 +6128,6 @@ button.today-shopping-open {
 }
 
 /* ------------------------------------------------------------------ */
-/* Shared destructive actions                                          */
-/* ------------------------------------------------------------------ */
-
 .sr-only {
   position: absolute;
   width: 1px;
@@ -6276,9 +6248,6 @@ button.danger-action:focus-visible:not(:disabled) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Wave 2: application shell and Today                                */
-/* ------------------------------------------------------------------ */
-
 .app-shell {
   width: min(100%, 760px);
   max-width: 760px;
@@ -6304,6 +6273,7 @@ button.danger-action:focus-visible:not(:disabled) {
 }
 
 .app-header .brand { gap: 9px; }
+
 .app-header .family-mark { flex: 0 0 auto; margin-left: -4px; }
 
 /* Findable, not a floating bubble: the container only appears on interaction. */
@@ -6412,7 +6382,6 @@ button.danger-action:focus-visible:not(:disabled) {
   padding: 18px;
 }
 
-
 @media (max-width: 390px) {
   .app-main { padding-inline: 14px; }
   .app-header { padding-inline: calc(12px + env(safe-area-inset-left)) calc(12px + env(safe-area-inset-right)); }
@@ -6453,32 +6422,38 @@ button.danger-action:focus-visible:not(:disabled) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Wave 3: planning navigation and calendar                           */
-/* ------------------------------------------------------------------ */
-
 .scrollable-tabs-shell {
   position: relative;
   min-width: 0;
 }
 
 /* ------------------------------------------------------------------ */
-/* Wave 4: shared feature-module structure                            */
-/* ------------------------------------------------------------------ */
-
 .feature-screen-header { align-items: flex-start; flex-wrap: wrap; }
+
 .feature-screen-header .header-actions { flex-wrap: wrap; justify-content: flex-end; }
+
 .feature-screen-heading { display: flex; align-items: center; min-width: 0; gap: 11px; }
+
 .feature-screen-heading > div { min-width: 0; }
+
 .feature-screen-heading .home-subtitle { max-width: 52ch; }
 
 .person-role-group { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; min-width: 0; }
+
 .person-role { display: flex; align-items: center; min-width: 0; gap: 8px; }
+
 .person-role > span { display: grid; min-width: 0; line-height: 1.25; }
+
 .person-role strong { overflow-wrap: anywhere; font-size: var(--font-size-meta); }
+
 .person-role small { color: var(--text-muted); font-size: var(--font-size-caption); }
+
 .person-role-group.compact { gap: 5px 10px; }
+
 .person-role-group.compact .person-role { gap: 5px; }
+
 .person-role-group.compact .person-role strong { font-weight: var(--font-weight-emphasis); }
+
 .section-list li > .person-role-group { flex: 1 1 190px; }
 
 @media (max-width: 390px) {
@@ -6511,13 +6486,17 @@ button.danger-action:focus-visible:not(:disabled) {
 }
 
 .scrollable-tabs::-webkit-scrollbar { display: none; }
+
 .scrollable-tabs .tab-button { flex: 0 0 auto; min-height: 44px; white-space: nowrap; }
 
 /* The toggle sits in the screen header; this wrapper only groups what stays
    with the content, so it must not add spacing of its own. */
 .filter-disclosure { display: contents; }
+
 .filter-disclosure-toggle { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; }
+
 .filter-disclosure-toggle.active { border-color: var(--interactive-primary); color: var(--interactive-primary-hover); }
+
 .filter-active-count {
   display: inline-grid;
   place-items: center;
@@ -6528,21 +6507,30 @@ button.danger-action:focus-visible:not(:disabled) {
   background: var(--coral-soft);
   font-size: var(--font-size-caption);
 }
+
 .filter-active-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; color: var(--text-muted); font-size: var(--font-size-caption); }
+
 .filter-disclosure-panel { margin: 9px 0 12px; padding: 12px; border: 1px solid var(--border-subtle); border-radius: var(--radius-medium); background: var(--surface-paper); }
+
 .filter-disclosure-panel[hidden] { display: none; }
+
 .filter-disclosure-panel .filter-row { margin: 0; }
 
 .planner-area-link { min-height: 0; padding: 4px 0; align-items: center; }
+
 .planner-area-link:focus-visible { outline-offset: -3px; border-radius: var(--radius-row); }
 
 .calendar-entry-assignment,
 .week-entry-assignment { min-width: 44px; min-height: 44px; }
+
 .assignment-change-indicator { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 999px; color: var(--interactive-primary-hover); background: var(--coral-soft); font-weight: 800; }
+
 .assignment-change-indicator.overridden { box-shadow: 0 0 0 2px var(--interactive-primary); }
 
 .tab-toolbar { align-items: center; flex-wrap: wrap; }
+
 .tab-toolbar > .header-action-button { margin-right: auto; }
+
 .tab-toolbar-actions { margin-left: auto; }
 
 @media (max-width: 390px) {
@@ -6566,7 +6554,9 @@ button.danger-action:focus-visible:not(:disabled) {
 
 /* Wave 4 feature lists are grouped surfaces, not collections of raised cards. */
 .reminder-center .scrollable-tabs { overflow-x: auto; }
+
 .reminder-center .tab-button { flex: 0 0 auto; min-width: max-content; white-space: nowrap; }
+
 .reminder-list {
   margin: 0;
   padding: 0;
@@ -6577,11 +6567,13 @@ button.danger-action:focus-visible:not(:disabled) {
   border-radius: var(--radius-large);
   background: var(--surface-paper);
 }
+
 .reminder-sections .reminder-list,
 .reminder-history .reminder-list {
   border: 0;
   border-radius: 0;
 }
+
 .reminder-card {
   border: 0;
   border-bottom: 1px solid var(--border-subtle);
@@ -6589,10 +6581,15 @@ button.danger-action:focus-visible:not(:disabled) {
   background: transparent;
   box-shadow: none;
 }
+
 .reminder-card:last-child { border-bottom: 0; }
+
 .reminder-card.important { background: var(--coral-soft); }
+
 .reminder-card.important .unread-dot { background: var(--brick-dark); }
+
 .reminder-card.quiet { background: transparent; box-shadow: none; }
+
 .reminder-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; }
 
 .section-list.more-settings-list > .more-settings-group-heading {
@@ -6600,7 +6597,9 @@ button.danger-action:focus-visible:not(:disabled) {
   padding: 20px 2px 7px;
   border-bottom: 0;
 }
+
 .section-list.more-settings-list > .more-settings-group-heading:first-child { padding-top: 12px; }
+
 .more-settings-group-heading h2 {
   margin: 0;
   color: var(--text-muted);
@@ -6618,9 +6617,6 @@ button.danger-action:focus-visible:not(:disabled) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Allowance                                                           */
-/* ------------------------------------------------------------------ */
-
 .allowance-section {
   display: grid;
   gap: 8px;
@@ -6664,9 +6660,6 @@ button.danger-action:focus-visible:not(:disabled) {
 .allowance-settings-row .allowance-summary-line { font-weight: inherit; }
 
 /* ------------------------------------------------------------------ */
-/* Managed child accounts                                              */
-/* ------------------------------------------------------------------ */
-
 .child-account-section {
   display: grid;
   gap: 8px;
@@ -6690,6 +6683,7 @@ button.danger-action:focus-visible:not(:disabled) {
 }
 
 .child-account-status.is-active .badge-dot { background: var(--state-success); }
+
 .child-account-status.is-revoked .badge-dot { background: var(--state-danger); }
 
 .child-account-meta {
@@ -6748,9 +6742,6 @@ button.danger-action:focus-visible:not(:disabled) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Messages                                                            */
-/* ------------------------------------------------------------------ */
-
 .messages-bell {
   position: relative;
   z-index: 1;
@@ -6797,827 +6788,10 @@ button.danger-action:focus-visible:not(:disabled) {
   font-weight: 800;
 }
 
-.messages-screen {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
-  height: 100%;
-  min-height: 0;
-}
-
-.messages-pane {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  min-width: 0;
-}
-
-.messages-new-button {
-  min-height: 40px;
-  padding: 8px 14px;
-  font-size: var(--font-size-action);
-}
-
-.messages-loading {
-  padding: 24px 20px;
-  color: var(--ink-muted);
-  text-align: center;
-}
-
-.messages-conversation-list {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.messages-conversation-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 14px 16px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-card);
-  background: var(--paper);
-  box-shadow: var(--shadow-card);
-  color: var(--ink);
-  text-align: left;
-  min-height: 68px;
-  transition: background var(--motion-fast) var(--motion-ease), transform var(--motion-fast) var(--motion-ease);
-}
-
-.messages-conversation-row:hover:not(:disabled) {
-  background: var(--paper-raised);
-}
-
-.messages-conversation-row:active:not(:disabled) {
-  transform: scale(0.995);
-}
-
-.messages-conversation-body {
-  display: grid;
-  flex: 1;
-  min-width: 0;
-  gap: 4px;
-}
-
-.messages-conversation-title-row {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.messages-conversation-title {
-  flex: 1;
-  min-width: 0;
-  font-weight: var(--font-weight-strong);
-  font-size: var(--font-size-item-title);
-  color: var(--ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.messages-conversation-timestamp {
-  flex: 0 0 auto;
-  color: var(--ink-faint);
-  font-size: var(--font-size-caption);
-  font-variant-numeric: tabular-nums;
-}
-
-.messages-conversation-preview {
-  color: var(--ink-muted);
-  font-size: var(--font-size-body);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: var(--line-height-body);
-}
-
-.messages-conversation-avatar {
-  flex: 0 0 auto;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-}
-
-.messages-avatar-group {
-  background: var(--category-family-soft);
-  border: 1px solid var(--category-family-border);
-  color: var(--category-family);
-}
-
-.messages-unread-badge {
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 8px;
-  border-radius: 999px;
-  background: var(--state-info);
-  color: white;
-  font-weight: var(--font-weight-strong);
-  font-size: var(--font-size-caption);
-  font-variant-numeric: tabular-nums;
-}
-
-/* The single owner of the conversation column. `position: relative`
-   anchors the jump-to-latest button; `overscroll-behavior: contain` stops
-   an iOS keyboard scroll from dragging the whole app shell — the thread
-   inside has its own scroll container. */
-.messages-conversation {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  height: 100%;
-  position: relative;
-  background: var(--paper);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-  overflow: hidden;
-  overscroll-behavior: contain;
-}
-
-.messages-conversation-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border-soft);
-  background: var(--paper-raised);
-}
-
-.messages-conversation-header h2 {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.messages-conversation-header p {
-  margin: 2px 0 0;
-  color: var(--ink-muted);
-  font-size: var(--font-size-caption);
-}
-
-.messages-back-button {
-  width: 40px;
-  min-width: 40px;
-  min-height: 40px;
-  padding: 0;
-  display: grid;
-  place-items: center;
-}
-
-.messages-conversation-header-copy {
-  flex: 1;
-  min-width: 0;
-}
-
-.messages-thread {
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 14px 14px 12px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  display: flex;
-  flex-direction: column;
-}
-
-.messages-thread-loading,
-.messages-thread-empty {
-  margin: auto;
-  color: var(--ink-muted);
-  text-align: center;
-}
-
-.messages-load-older {
-  align-self: center;
-  margin-bottom: 8px;
-}
-
-.messages-thread-clusters {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.messages-thread-cluster {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: flex-start;
-}
-
-.messages-thread-cluster.is-mine {
-  align-items: flex-end;
-}
-
-.messages-cluster-header {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding-inline: 4px;
-  color: var(--ink-muted);
-  font-size: var(--font-size-caption);
-}
-
-.messages-cluster-sender {
-  font-weight: var(--font-weight-strong);
-  color: var(--ink);
-}
-
-.messages-cluster-time {
-  color: var(--ink-faint);
-  font-variant-numeric: tabular-nums;
-}
-
-.messages-day-divider {
-  display: flex;
-  justify-content: center;
-  margin: 12px 0 6px;
-  color: var(--ink-faint);
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-strong);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.messages-day-divider span {
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: var(--neutral-soft);
-}
-
-.messages-bubble {
-  max-width: min(78%, 520px);
-  /* Floor for emoji-only and one-letter messages so they still read as a
-     bubble. Small on purpose: the timestamp inside already sets a natural
-     minimum for anything with meta, so this rarely binds and never widens
-     an ordinary message. */
-  min-width: 3.5rem;
-  padding: 10px 14px;
-  border-radius: 18px;
-  background: var(--neutral-soft);
-  color: var(--ink);
-  line-height: var(--line-height-body);
-  white-space: pre-wrap;
-  /* `break-word`, NOT `anywhere`. They look identical for wrapping, but
-     `anywhere` also shrinks the element's min-content contribution to a
-     single character. Inside the column-flex thread (which sizes the bubble
-     to fit-content) that made "A"/"OK" collapse into a one-character-wide
-     tower. `break-word` keeps max-content intact while still breaking a long
-     unbroken URL that would otherwise overflow. */
-  overflow-wrap: break-word;
-  border: 1px solid transparent;
-  box-shadow: var(--shadow-card);
-  position: relative;
-}
-
-.messages-bubble + .messages-bubble {
-  margin-top: 4px;
-}
-
-.messages-bubble.is-mine {
-  background: color-mix(in srgb, var(--coral) 22%, var(--paper));
-  border-color: color-mix(in srgb, var(--coral) 32%, transparent);
-  color: var(--ink);
-}
-
-.messages-bubble.is-pending {
-  opacity: 0.6;
-}
-
-.messages-bubble-body {
-  margin: 0;
-  font-size: var(--font-size-body);
-}
-
-.messages-bubble-time {
-  display: block;
-  margin-top: 4px;
-  font-size: 0.66rem;
-  color: var(--ink-faint);
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  /* "09:30 PM" must never split into "09:30" / "PM" — the bubble inherits
-     `pre-wrap`, so the space in a 12-hour clock is a real break opportunity. */
-  white-space: nowrap;
-}
-
-.messages-composer {
-  /* Explicit row: the global `form { flex-direction: column }` reset
-     would otherwise stack the plus button, textarea, and send button
-     vertically. That layout not only looked broken, it pushed the plus
-     against the right edge where the popup menu clipped out of the
-     viewport — the bug this rule fixes. */
-  display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  gap: 10px;
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--border-soft);
-  background: var(--paper-raised);
-  flex: 0 0 auto;
-}
-
-.messages-composer textarea {
-  flex: 1 1 auto;
-  min-height: 40px;
-  max-height: 160px;
-  padding: 10px 14px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--paper);
-  color: var(--ink);
-  font-family: inherit;
-  font-size: var(--font-size-control);
-  line-height: var(--line-height-body);
-  resize: none;
-  outline: none;
-}
-
-.messages-composer textarea:focus-visible {
-  border-color: var(--focus-ring);
-  outline: 3px solid color-mix(in srgb, var(--focus-ring) 22%, transparent);
-}
-
-.messages-send-button {
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  min-height: 44px;
-  padding: 0;
-  border-radius: 22px;
-}
-
-.messages-send-button svg {
-  color: currentColor;
-}
-
-.messages-picker {
-  max-width: 420px;
-}
-
-.messages-picker-header h2 {
-  margin: 0 0 6px;
-  font-size: 1.05rem;
-}
-
-.messages-picker-header p {
-  margin: 0 0 12px;
-  color: var(--ink-muted);
-  font-size: var(--font-size-body);
-}
-
-.messages-picker-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.messages-picker-empty {
-  padding: 16px;
-  color: var(--ink-muted);
-  text-align: center;
-}
-
-.messages-picker-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: var(--radius-medium);
-  background: var(--neutral-soft);
-  color: var(--ink);
-  text-align: left;
-}
-
-.messages-picker-row:disabled { opacity: 0.6; }
-
-.messages-picker-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 14px;
-}
-
-/* Mobile: the conversation detail is portaled to <body> (see
-   MobileChatPortal) and rendered as a true fullscreen overlay via
-   `.messages-fullscreen` below. The in-flow list is all that remains
-   inside the app shell. */
-@media (max-width: 720px) {
-  .messages-screen {
-    display: block;
-  }
-  .messages-pane {
-    height: 100%;
-  }
-  .messages-pane-list.is-collapsed-mobile {
-    display: none;
-  }
-}
-
-/* Fullscreen mobile chat overlay.
-
-   Portaled out of `.app-main` (an `overflow-y: auto` scroll container)
-   so `position: fixed` pins to the layout viewport on every engine —
-   including iOS standalone PWA, where a fixed element trapped inside a
-   scrolling ancestor was being clipped below the app-shell header. This
-   is the single owner of the fullscreen frame: it fills the dynamic
-   viewport and the chat's own header/composer handle the safe-area
-   insets, so there is no doubled top padding. */
-.messages-fullscreen {
-  position: fixed;
-  inset: 0;
-  /* 100dvh (not 100vh) so iOS dynamic browser toolbars and the PWA
-     status bar don't leave a gap or force a document scroll. */
-  height: 100vh;
-  height: 100dvh;
-  /* Sits above the app header (z 12) and bottom nav; below modals/sheets
-     (which use their own higher layer) so entity sheets can still open
-     over the chat. */
-  z-index: 60;
-  display: flex;
-  background: var(--surface-canvas);
-  overscroll-behavior: contain;
-}
-.messages-fullscreen .messages-conversation {
-  flex: 1 1 auto;
-  height: 100%;
-  min-height: 0;
-  border-radius: 0;
-  border: none;
-  box-shadow: none;
-}
-/* The chat header is the ONLY top bar in fullscreen mode, so it absorbs
-   the top safe-area inset (notch / status bar). The app-shell header is
-   not in this subtree, so there's no doubled inset. */
-.messages-fullscreen .messages-conversation-header {
-  padding-top: calc(12px + env(safe-area-inset-top));
-}
-
-/* Desktop / tablet: keep both panes side by side. */
-@media (min-width: 721px) {
-  .messages-screen {
-    grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
-    align-items: stretch;
-    height: calc(100dvh - 180px);
-  }
-  .messages-back-button {
-    display: none;
-  }
-  .messages-pane-list {
-    overflow-y: auto;
-  }
-}
-
-/* ============================================================
-   Batch 2 — reactions, replies, edit/delete, attachments, mute
-   ============================================================ */
-
-.messages-conversation-mute-button {
-  margin-left: auto;
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--ink-muted);
-  cursor: pointer;
-}
-.messages-conversation-mute-button:hover { color: var(--ink); background: var(--neutral-soft); }
-.messages-conversation-mute-button.is-muted { color: var(--state-warning); }
-
-.messages-conversation-muted {
-  display: inline-grid;
-  place-items: center;
-  margin-left: 4px;
-  color: var(--ink-faint);
-}
-
-/* Per-message wrapper (day divider + bubble row). The thread cluster is a
-   column flex with align-items other than `stretch`, so without an explicit
-   width this shrinks to fit-content and drags the bubble down with it —
-   that is what squeezed short messages and pinned day dividers to the edge.
-   The bubble's own alignment is handled by .messages-bubble-row below. */
-.messages-thread-item {
-  width: 100%;
-}
-
-.messages-bubble-row {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  margin-top: 4px;
-}
-.messages-bubble-row.is-mine { align-items: flex-end; }
-
-.messages-bubble.is-failed {
-  border-color: var(--state-danger);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--state-danger) 30%, transparent);
-}
-
-.messages-bubble.is-deleted {
-  background: transparent;
-  border-color: var(--border-soft);
-  color: var(--ink-faint);
-  font-style: italic;
-  box-shadow: none;
-}
-
-.messages-bubble-reply {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 0 0 6px;
-  padding: 6px 10px;
-  background: color-mix(in srgb, var(--coral) 12%, color-mix(in srgb, var(--ink) 3%, transparent));
-  border-radius: 8px;
-  font-size: 0.8rem;
-  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--coral) 55%, var(--border));
-}
-
-.messages-bubble-reply-author {
-  font-weight: 600;
-  color: var(--ink-muted);
-}
-
-.messages-bubble-reply-body {
-  color: var(--ink-muted);
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.messages-bubble-attachments {
-  list-style: none;
-  margin: 0 0 6px;
-  padding: 0;
-  display: grid;
-  gap: 6px;
-}
-
-.messages-bubble-attachment-button {
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: zoom-in;
-  border-radius: 12px;
-  overflow: hidden;
-  display: block;
-  max-width: 100%;
-}
-
-.messages-bubble-attachment-image {
-  display: block;
-  width: 100%;
-  max-width: 320px;
-  max-height: 360px;
-  object-fit: cover;
-  border-radius: 12px;
-}
-
-.messages-bubble-attachment-placeholder {
-  display: grid;
-  place-items: center;
-  width: 240px;
-  height: 160px;
-  background: var(--neutral-soft);
-  color: var(--ink-faint);
-  border-radius: 12px;
-}
-
-.messages-bubble-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-  color: var(--ink-faint);
-  font-size: 0.66rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.messages-bubble-edited { font-style: italic; }
-.messages-bubble-status.is-failed { color: var(--state-danger); font-weight: 700; }
-.messages-bubble-status.is-pending { color: var(--ink-faint); }
-
-.messages-spin {
-  animation: messages-spin-anim 0.9s linear infinite;
-}
 @keyframes messages-spin-anim {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
-
-.messages-bubble-actions {
-  position: absolute;
-  top: -14px;
-  right: 8px;
-  display: none;
-  gap: 4px;
-  padding: 2px;
-  background: var(--paper-raised);
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  box-shadow: var(--shadow-card);
-}
-
-.messages-bubble:hover .messages-bubble-actions,
-.messages-bubble:focus-within .messages-bubble-actions {
-  display: inline-flex;
-}
-
-.messages-bubble-action-button {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--ink-muted);
-  border: none;
-  cursor: pointer;
-  font-size: 0.85rem;
-}
-.messages-bubble-action-button:hover { background: var(--neutral-soft); color: var(--ink); }
-
-.messages-bubble-edit {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.messages-bubble-edit textarea {
-  width: 100%;
-  min-width: 200px;
-  min-height: 60px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--paper);
-  font-family: inherit;
-  font-size: var(--font-size-control);
-  resize: vertical;
-}
-.messages-bubble-edit-error { color: var(--state-danger); font-size: 0.75rem; margin: 0; }
-.messages-bubble-edit-actions { display: inline-flex; gap: 8px; justify-content: flex-end; }
-
-.messages-bubble-failed-actions {
-  display: inline-flex;
-  gap: 10px;
-  padding: 2px 6px;
-  font-size: 0.75rem;
-}
-
-.messages-reactions-row {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.messages-reaction-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--border-soft);
-  background: var(--paper-raised);
-  color: var(--ink);
-  font-size: 0.78rem;
-  cursor: pointer;
-}
-.messages-reaction-chip.is-mine {
-  border-color: color-mix(in srgb, var(--coral) 55%, transparent);
-  background: color-mix(in srgb, var(--coral) 15%, var(--paper-raised));
-}
-.messages-reaction-count { font-variant-numeric: tabular-nums; }
-
-.messages-unread-divider {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 12px 0 6px;
-  color: var(--state-info);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.messages-unread-divider::before,
-.messages-unread-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: color-mix(in srgb, var(--state-info) 40%, transparent);
-}
-
-.messages-jump-latest {
-  position: absolute;
-  right: 16px;
-  bottom: calc(96px + env(safe-area-inset-bottom));
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--paper-raised);
-  color: var(--ink);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-card);
-  z-index: 5;
-  cursor: pointer;
-}
-
-/* Context menu + emoji picker */
-.messages-context-menu,
-.messages-emoji-picker {
-  z-index: 60;
-  background: var(--paper-raised);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow-card);
-  padding: 4px;
-}
-
-.messages-context-menu { min-width: 160px; }
-
-.messages-emoji-picker {
-  display: inline-flex;
-  gap: 4px;
-}
-
-.messages-emoji-picker-item {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 1.2rem;
-}
-.messages-emoji-picker-item:hover { background: var(--neutral-soft); }
-
-.messages-context-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: none;
-  background: transparent;
-  color: var(--ink);
-  text-align: left;
-  font-size: var(--font-size-body);
-  cursor: pointer;
-}
-.messages-context-menu-item:hover { background: var(--neutral-soft); }
-.messages-context-menu-item.is-destructive { color: var(--state-danger); }
-
-/* Composer batch 2 */
-.messages-composer-shell {
-  display: flex;
-  flex-direction: column;
-  flex: 0 0 auto;
-  background: var(--paper-raised);
-  border-top: 1px solid var(--border-soft);
-}
-.messages-composer-shell .messages-composer { border-top: none; }
-
-.messages-composer-reply-strip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  background: color-mix(in srgb, var(--ink) 3%, transparent);
-  font-size: 0.78rem;
-}
-.messages-composer-reply-author { font-weight: 600; color: var(--ink-muted); }
-.messages-composer-reply-preview { flex: 1; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .btn-icon-plain {
   display: grid;
@@ -7630,257 +6804,8 @@ button.danger-action:focus-visible:not(:disabled) {
   color: var(--ink-muted);
   cursor: pointer;
 }
+
 .btn-icon-plain:hover { background: var(--neutral-soft); color: var(--ink); }
-
-.messages-composer-attachment-tray {
-  display: flex;
-  gap: 8px;
-  padding: 8px 12px;
-  overflow-x: auto;
-}
-
-.messages-composer-attachment {
-  position: relative;
-  width: 68px;
-  height: 68px;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  background: var(--neutral-soft);
-  flex: 0 0 auto;
-}
-.messages-composer-attachment.is-error { border-color: var(--state-danger); }
-.messages-composer-attachment-image { width: 100%; height: 100%; object-fit: cover; }
-.messages-composer-attachment-overlay {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  background: rgba(0,0,0,0.35);
-  color: white;
-  font-weight: 700;
-}
-.messages-composer-attachment-spinner {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 3px solid rgba(255,255,255,0.4);
-  border-top-color: white;
-  animation: messages-spin-anim 0.9s linear infinite;
-}
-.messages-composer-attachment-remove {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0,0,0,0.55);
-  color: white;
-  cursor: pointer;
-}
-.messages-composer-error {
-  margin: 0;
-  padding: 4px 12px 0;
-  color: var(--state-danger);
-  font-size: 0.75rem;
-}
-
-.messages-composer-plus-wrapper { position: relative; flex: 0 0 auto; }
-/* Match the send button's dimensions and shape so the two circles
-   read as a matched pair either side of the input. The explicit
-   overrides for padding/min-height are needed because the global
-   `button { padding: 12px 22px; min-height: 48px }` reset would
-   otherwise stretch this into an oblong pill. */
-.messages-composer-plus-button {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0;
-  border-radius: 50%;
-  border: 1.5px solid var(--border);
-  background: var(--paper);
-  color: var(--ink);
-  cursor: pointer;
-  flex: 0 0 auto;
-}
-.messages-composer-plus-button:hover:not(:disabled) {
-  background: var(--canvas);
-}
-.messages-composer-plus-menu {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  /* Anchor to the LEFT of the wrapper, which sits at the left of the
-     composer. Explicit `right: auto` guards against any inherited
-     right value that would otherwise stretch the menu across the
-     composer. */
-  left: 0;
-  right: auto;
-  min-width: 160px;
-  /* Cap so a very long localized menu item can't push the menu past
-     the viewport edge on narrow phones. */
-  max-width: calc(100vw - 24px);
-  padding: 4px;
-  background: var(--paper-raised);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: var(--shadow-card);
-  z-index: 20;
-}
-.messages-composer-plus-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: none;
-  background: transparent;
-  color: var(--ink);
-  cursor: pointer;
-  font-size: var(--font-size-body);
-  text-align: left;
-}
-.messages-composer-plus-menu-item:hover { background: var(--neutral-soft); }
-
-/* ------------------------------------------------------------
-   Shared entity cards (batch 3)
-
-   A compact card inside a message bubble. Reuses the app's card tokens
-   (paper surface, hairline border, card radius) so it reads as one
-   system with the module cards it mirrors — never as an embedded web
-   page. One accent colour per entity type is the ONLY per-type styling;
-   no aggressive colours, no nested frames, no double borders.
-   ------------------------------------------------------------ */
-.messages-entity-card {
-  --entity-accent: var(--brick);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-  max-width: 320px;
-  margin: 2px 0;
-  padding: 10px 12px;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-row, 12px);
-  background: var(--paper);
-}
-.messages-bubble.is-mine .messages-entity-card {
-  background: color-mix(in srgb, var(--paper) 88%, transparent);
-}
-.messages-entity-card[data-entity-type="Úkol"],
-.messages-entity-card[data-entity-type="Task"] { --entity-accent: var(--blue, #4a7ab5); }
-.messages-entity-card[data-entity-type="Nákup"],
-.messages-entity-card[data-entity-type="Shopping"] { --entity-accent: var(--sage, #6f9e6f); }
-.messages-entity-card[data-entity-type="Událost"],
-.messages-entity-card[data-entity-type="Event"] { --entity-accent: var(--honey, #c9962f); }
-.messages-entity-card[data-entity-type="Připomínka"],
-.messages-entity-card[data-entity-type="Reminder"] { --entity-accent: var(--lavender, #8b7fb5); }
-.messages-entity-card.is-deleted { --entity-accent: var(--border); opacity: 0.82; }
-
-.messages-entity-card-head {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-width: 0;
-}
-.messages-entity-card-icon {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  flex: 0 0 auto;
-  border-radius: 8px;
-  color: var(--entity-accent);
-  background: color-mix(in srgb, var(--entity-accent) 12%, var(--paper));
-}
-.messages-entity-card-headings {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.messages-entity-card-kind {
-  font-size: 0.68rem;
-  font-weight: var(--font-weight-strong);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink-faint, var(--ink-muted));
-}
-.messages-entity-card-title {
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-strong);
-  color: var(--ink);
-  /* Long titles wrap to two lines, then ellipsize — never overflow. */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.messages-entity-card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-.messages-entity-chip {
-  display: inline-flex;
-  align-items: center;
-  max-width: 100%;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 0.74rem;
-  font-weight: var(--font-weight-medium);
-  color: var(--member-color-main, var(--ink-muted));
-  background: color-mix(in srgb, var(--member-color-main, var(--ink-muted)) 12%, var(--paper));
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.messages-entity-chip.is-quiet {
-  color: var(--ink-muted);
-  background: var(--neutral-soft);
-}
-.messages-entity-status {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: var(--font-weight-strong);
-}
-.messages-entity-status.is-done { color: var(--state-success, #4c8a4c); background: color-mix(in srgb, var(--state-success, #4c8a4c) 14%, var(--paper)); }
-.messages-entity-status.is-pending { color: var(--state-warning, #b8860b); background: color-mix(in srgb, var(--state-warning, #b8860b) 14%, var(--paper)); }
-.messages-entity-status.is-open { color: var(--ink-muted); background: var(--neutral-soft); }
-.messages-entity-card-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.messages-entity-card-primary {
-  min-height: 34px;
-  padding: 6px 14px;
-  font-size: 0.82rem;
-  border-radius: 999px;
-}
-.messages-entity-card-open {
-  min-height: 34px;
-  padding: 6px 8px;
-  font-size: 0.82rem;
-}
-.messages-entity-card-deleted-note,
-.messages-entity-card-error {
-  margin: 0;
-  font-size: 0.78rem;
-  color: var(--ink-muted);
-}
-.messages-entity-card-error { color: var(--state-danger); }
 
 /* Share-to-chat dialog + create-from-message. Reuses the modal sheet,
    the app's row/chip tokens and button variants — no bespoke surfaces. */
@@ -7889,6 +6814,7 @@ button.danger-action:focus-visible:not(:disabled) {
   color: var(--ink-muted);
   font-size: var(--font-size-body);
 }
+
 .messages-share-targets {
   list-style: none;
   margin: 0 0 14px;
@@ -7899,6 +6825,7 @@ button.danger-action:focus-visible:not(:disabled) {
   max-height: 40vh;
   overflow-y: auto;
 }
+
 .messages-share-target {
   display: flex;
   align-items: center;
@@ -7911,62 +6838,12 @@ button.danger-action:focus-visible:not(:disabled) {
   background: var(--neutral-soft);
   cursor: pointer;
 }
-/* Existing-record picker opened from the composer "+" menu. Mirrors the
-   share-target list above so the two share/pick surfaces read the same. */
-.messages-entity-picker-list {
-  list-style: none;
-  margin: 0 0 14px;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 45vh;
-  overflow-y: auto;
-}
-.messages-entity-picker-option {
-  display: flex;
-  /* Explicit: the global `label { flex-direction: column }` reset would
-     otherwise stack the radio above the text. */
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-  min-height: 48px;
-  padding: 8px 10px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-row, 12px);
-  background: var(--neutral-soft);
-  cursor: pointer;
-}
-.messages-entity-picker-option.is-selected {
-  border-color: var(--focus-ring);
-  background: var(--paper);
-}
-.messages-entity-picker-option input[type='radio'] {
-  flex: 0 0 auto;
-  width: auto;
-  margin: 0;
-}
-.messages-entity-picker-text {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  flex-direction: column;
-  gap: 2px;
-  text-align: left;
-}
-.messages-entity-picker-text strong {
-  /* A long chore title must not stretch the dialog. */
-  overflow-wrap: break-word;
-}
-.messages-entity-picker-text small {
-  color: var(--ink-muted);
-  font-size: 0.78rem;
-}
 
 .messages-share-target.is-selected {
   border-color: var(--focus-ring);
   background: var(--paper);
 }
+
 .messages-share-target-avatar {
   display: grid;
   place-items: center;
@@ -7977,12 +6854,14 @@ button.danger-action:focus-visible:not(:disabled) {
   color: var(--ink-muted);
   background: var(--paper);
 }
+
 .messages-share-note {
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin-bottom: 12px;
 }
+
 .messages-share-note textarea {
   width: 100%;
   padding: 10px 12px;
@@ -7995,220 +6874,22 @@ button.danger-action:focus-visible:not(:disabled) {
   font-size: var(--font-size-control);
   resize: none;
 }
+
 .messages-share-error {
   margin: 0 0 10px;
   color: var(--state-danger);
   font-size: 0.82rem;
 }
-.messages-context-menu-separator {
-  height: 1px;
-  margin: 4px 2px;
-  background: var(--border-soft);
-}
 
-/* System notices: deliberately quieter than a normal message — a small
-   centred line, never a bubble, so they never dominate the thread. */
-.messages-system-row {
-  margin: 6px auto;
-  max-width: 80%;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--ink) 4%, transparent);
-  color: var(--ink-muted);
-  font-size: 0.74rem;
-  text-align: center;
-}
-
-/* Mute dialog */
-.messages-mute-sheet {
-  max-width: 420px;
-}
-.messages-mute-options {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 16px 20px;
-}
-.messages-mute-option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border-soft);
-  cursor: pointer;
-  background: var(--paper);
-}
-.messages-mute-option.is-selected {
-  border-color: var(--focus-ring);
-  background: color-mix(in srgb, var(--focus-ring) 10%, var(--paper));
-}
-.messages-mute-scope {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 0;
-  padding: 8px 20px 0;
-  border: 0;
-}
-.messages-mute-scope legend {
-  padding: 0 0 6px;
-  font-size: 0.85rem;
-  color: var(--ink-muted);
-}
-/* The shared form styles stack label contents inside a fieldset; the mute
-   options are a radio beside its text, so restore the row. */
-.messages-mute-scope .messages-mute-option {
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-start;
-}
-.messages-mute-scope .messages-mute-option span {
-  flex: 1;
-  text-align: left;
-}
-/* Global form styles stretch inputs to fill their row; a radio must stay
-   its intrinsic size or it eats the label's width. */
-.messages-mute-scope .messages-mute-option input[type='radio'] {
-  flex: 0 0 auto;
-  width: auto;
-  margin: 0;
-}
-.messages-mute-current {
-  margin: 0;
-  padding: 12px 20px 0;
-  font-size: 0.85rem;
-  color: var(--ink-muted);
-}
-.messages-mute-duration {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border-soft);
-  background: var(--paper);
-  cursor: pointer;
-  font: inherit;
-  /* Global `button` styling paints light-on-dark; these sit on paper. */
-  color: var(--ink);
-}
-.messages-mute-duration:hover {
-  border-color: var(--focus-ring);
-}
-.messages-mute-unmute {
-  margin: 0 20px 16px;
-}
-
-/* Mention autocomplete + highlighting */
-.messages-mention-list {
-  list-style: none;
-  margin: 0 12px 6px;
-  padding: 4px;
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  background: var(--paper);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  max-height: 220px;
-  overflow-y: auto;
-}
-.messages-mention-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-}
-.messages-mention-option.is-active {
-  background: color-mix(in srgb, var(--focus-ring) 12%, var(--paper));
-}
-.messages-mention-option-at {
-  color: var(--ink-muted);
-}
-.messages-mention {
-  font-weight: 600;
-  color: var(--focus-ring);
-}
-/* A mention of the reader is the one that actually pinged them. */
-.messages-mention.is-self {
-  border-radius: 4px;
-  padding: 0 3px;
-  background: color-mix(in srgb, var(--focus-ring) 18%, transparent);
-}
-
-/* Push deep-link target: brief flash so the user sees which message the
-   notification was about, then fades back to normal. */
-.messages-thread-item.is-push-target {
-  animation: messages-push-target-flash 2.4s ease-out;
-  border-radius: 12px;
-}
 @keyframes messages-push-target-flash {
   0%, 40% { background: color-mix(in srgb, var(--focus-ring) 16%, transparent); }
   100% { background: transparent; }
 }
+
 @media (prefers-reduced-motion: reduce) {
   .messages-thread-item.is-push-target { animation: none; background: color-mix(in srgb, var(--focus-ring) 10%, transparent); }
 }
 
-/* Contextual push prompt, shown after a first received message */
-.messages-push-prompt {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin: 0 12px 8px;
-  padding: 12px 14px;
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  background: var(--paper-soft, var(--paper));
-}
-.messages-push-prompt-text {
-  font-size: 0.9rem;
-}
-.messages-push-prompt-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Fullscreen lightbox */
-.messages-attachment-lightbox {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: rgba(0,0,0,0.88);
-  display: grid;
-  place-items: center;
-  padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
-}
-.messages-attachment-lightbox-close {
-  position: absolute;
-  top: calc(12px + env(safe-area-inset-top));
-  right: 12px;
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 20px;
-  border: none;
-  background: rgba(255,255,255,0.12);
-  color: white;
-  cursor: pointer;
-}
-.messages-attachment-lightbox-image {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  border-radius: 8px;
-  cursor: default;
-}
 body.has-attachment-lightbox { overflow: hidden; }
 
 .member-color-option.member-color-custom {

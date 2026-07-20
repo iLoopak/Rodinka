@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTodayDashboardData } from './today/useTodayDashboardData'
-import { useRouter } from '../router'
+import { useRouteSearchParams, useRouterActions } from '../router'
 import { t } from '../strings'
 import { getCurrentLanguage } from '../i18n'
 import type { CalendarEntry } from '../utils/calendarEntries'
@@ -68,7 +68,8 @@ export function TodayDashboard() {
     error,
     refresh,
   } = useTodayDashboardData()
-  const { navigate, searchParams, setQueryParam, removeQueryParam } = useRouter()
+  const searchParams = useRouteSearchParams()
+  const { navigate, setQueryParam, removeQueryParam } = useRouterActions()
   const capabilities = capabilitiesFor(currentMember)
 
   if (loading) return <p className="loading">{t.loading.generic}</p>

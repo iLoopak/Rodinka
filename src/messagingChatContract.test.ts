@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { appStyles } from './utils/testStylesheets'
 
-const css = readFileSync(new URL('./index.css', import.meta.url), 'utf8')
+const css = appStyles()
 const composer = readFileSync(new URL('./components/messages/Composer.tsx', import.meta.url), 'utf8')
 const screen = readFileSync(new URL('./components/messages/MessagesScreen.tsx', import.meta.url), 'utf8')
 const picker = readFileSync(new URL('./components/messages/ShareExistingEntityDialog.tsx', import.meta.url), 'utf8')

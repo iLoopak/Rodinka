@@ -10,7 +10,7 @@ import { PendingApprovals } from './PendingApprovals'
 import { AllowanceBalances } from './AllowanceBalances'
 import { ErrorState } from './ui/ErrorState'
 import { ChoreDetailModal } from './ChoreDetailModal'
-import { useRouter } from '../router'
+import { useRouteSearchParams, useRouterActions } from '../router'
 import { resolveDeepLinkedItem } from '../utils/deepLinks'
 import type { Chore } from '../hooks/useChores'
 import { getChoreState } from '../utils/choreState'
@@ -39,7 +39,8 @@ export function ChoresScreen() {
   const [selectedChore, setSelectedChore] = useState<Chore | null>(null)
   const [deepLinkError, setDeepLinkError] = useState(false)
   const [approvalFeedback, setApprovalFeedback] = useState<string | null>(null)
-  const { searchParams, setQueryParam, removeQueryParam } = useRouter()
+  const searchParams = useRouteSearchParams()
+  const { setQueryParam, removeQueryParam } = useRouterActions()
   const { openCreateRecord } = useCreateRecord()
   const choreParam = searchParams.get('chore')
   const editParam = searchParams.get('edit') === '1'

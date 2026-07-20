@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { t } from '../../strings'
-import { useRouter } from '../../router'
+import { useRouterActions } from '../../router'
 import { useChoresData } from '../../context/chores/ChoresContext'
 import { useShopping } from '../../context/shopping/ShoppingContext'
 import { useActivitiesData } from '../../context/activities/ActivitiesContext'
@@ -75,7 +75,7 @@ function str(value: unknown): string | null {
 // ------------------------------------------------------------ Task
 
 function TaskCard({ resolution, onAfterAction, onSystemNotice }: Props) {
-  const { navigate } = useRouter()
+  const { navigate } = useRouterActions()
   const { currentMember, isParentOrAdmin } = useFamilyCore()
   const memberName = useMemberName()
   const { members } = useFamilyMembersData()
@@ -164,7 +164,7 @@ function TaskCard({ resolution, onAfterAction, onSystemNotice }: Props) {
 // ------------------------------------------------------------ Shopping
 
 function ShoppingCard({ resolution, onAfterAction, onSystemNotice }: Props) {
-  const { navigate } = useRouter()
+  const { navigate } = useRouterActions()
   const { currentMember } = useFamilyCore()
   const memberName = useMemberName()
   const { members } = useFamilyMembersData()
@@ -241,7 +241,7 @@ function ShoppingCard({ resolution, onAfterAction, onSystemNotice }: Props) {
 // ------------------------------------------------------------ Event
 
 function EventCard({ resolution }: { resolution: MessageEntityResolution }) {
-  const { navigate } = useRouter()
+  const { navigate } = useRouterActions()
   const activities = useActivitiesData()
   const s = resolution.state
   const live = activities.activities.find((a) => a.id === resolution.entityId)
@@ -280,7 +280,7 @@ function EventCard({ resolution }: { resolution: MessageEntityResolution }) {
 // ------------------------------------------------------------ Reminder
 
 function ReminderCard({ resolution }: { resolution: MessageEntityResolution }) {
-  const { navigate } = useRouter()
+  const { navigate } = useRouterActions()
   const s = resolution.state
   const restricted = Boolean(s.restricted)
   const title = str(s.title) ?? (str(s.fallback_label) as string) ?? ''

@@ -13,7 +13,7 @@ import { nextOccurrenceDate } from '../utils/recurrence'
 import { formatFullDate } from '../utils/dueDate'
 import { onActivateKey } from '../utils/a11y'
 import type { Activity } from '../hooks/useActivities'
-import { useRouter } from '../router'
+import { useRouteSearchParams, useRouterActions } from '../router'
 import { resolveDeepLinkedItem } from '../utils/deepLinks'
 import { ScrollableTabs } from './ui/ScrollableTabs'
 import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from './ui/FilterDisclosure'
@@ -31,7 +31,8 @@ export function ActivitiesScreen() {
   const [filterKind, setFilterKind] = useState('')
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [deepLinkError, setDeepLinkError] = useState(false)
-  const { searchParams, setQueryParam, removeQueryParam } = useRouter()
+  const searchParams = useRouteSearchParams()
+  const { setQueryParam, removeQueryParam } = useRouterActions()
   const { openCreateRecord } = useCreateRecord()
   const activityParam = searchParams.get('activity')
 

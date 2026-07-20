@@ -42,7 +42,16 @@ interface ReminderContextValue {
   refresh: () => Promise<void>
 }
 
+interface ReminderSummaryValue {
+  unreadCount: number
+  hasImportantUnread: boolean
+}
+
 const ReminderContext = createContext<ReminderContextValue | null>(null)
+// The header bell needs two numbers out of a provider that recomputes whenever
+// any of eight feature domains changes. Its own context keeps a shopping item
+// edit from re-rendering the shell header.
+const ReminderSummaryContext = createContext<ReminderSummaryValue | null>(null)
 
 function mapPreferences(row: Record<string, unknown> | null, memberId: string, familyId: string): NotificationPreferences {
   const defaults = defaultNotificationPreferences(memberId, familyId, browserTimezone(), getCurrentLanguage())
@@ -240,12 +249,30 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('storage', onStorage)
   }, [currentMember.id, familyId, loadPreferences, refresh])
 
+  // Draft generation is cheap; the sync RPC that follows it is not. Because
+  // `draftInputs` changes identity whenever ANY of the eight source domains
+  // emits — a shopping item toggled, a chore renamed — this memo used to hand
+  // back a brand new array every time, and the effect below fired
+  // sync_member_reminders plus a full reminders refresh for changes that could
+  // not possibly alter a reminder.
+  //
+  // Keeping the previous array when the generated content is identical makes
+  // the effect's dependency honest: it now re-runs only when the drafts really
+  // differ. The refs are a memoization cache, not state — recomputing under
+  // StrictMode yields the same answer.
+  const draftsRef = useRef<ReturnType<typeof generateReminderDrafts>>([])
+  const draftsSignatureRef = useRef<string | null>(null)
   const drafts = useMemo(() => {
     void generationTick
-    return generateReminderDrafts({
+    const next = generateReminderDrafts({
       ...sources.draftInputs,
       preferences: { ...preferences, locale: language }, copy: reminderCopyFor(language), now: new Date(),
     })
+    const signature = JSON.stringify(next)
+    if (signature === draftsSignatureRef.current) return draftsRef.current
+    draftsSignatureRef.current = signature
+    draftsRef.current = next
+    return next
   }, [sources.draftInputs, preferences, language, generationTick])
 
   useEffect(() => {
@@ -315,11 +342,34 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
   const count = unreadCount(reminders)
   const hasImportantUnread = active.some((item) => !item.readAt && item.importance === 'important')
 
-  return <ReminderContext.Provider value={{ reminders, active, history, unreadCount: count, hasImportantUnread, preferences, loading, error, markRead, markAllRead, dismiss, savePreferences, refresh }}>{children}</ReminderContext.Provider>
+  const summary = useMemo<ReminderSummaryValue>(
+    () => ({ unreadCount: count, hasImportantUnread }),
+    [count, hasImportantUnread],
+  )
+
+  const value = useMemo<ReminderContextValue>(() => ({
+    reminders, active, history, unreadCount: count, hasImportantUnread, preferences, loading, error,
+    markRead, markAllRead, dismiss, savePreferences, refresh,
+  }), [
+    reminders, active, history, count, hasImportantUnread, preferences, loading, error,
+    markRead, markAllRead, dismiss, savePreferences, refresh,
+  ])
+
+  return (
+    <ReminderSummaryContext.Provider value={summary}>
+      <ReminderContext.Provider value={value}>{children}</ReminderContext.Provider>
+    </ReminderSummaryContext.Provider>
+  )
 }
 
 export function useReminders() {
   const context = useContext(ReminderContext)
   if (!context) throw new Error('useReminders must be used within ReminderProvider')
+  return context
+}
+
+export function useReminderSummary(): ReminderSummaryValue {
+  const context = useContext(ReminderSummaryContext)
+  if (!context) throw new Error('useReminderSummary must be used within ReminderProvider')
   return context
 }

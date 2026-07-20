@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useRouter } from '../router'
+import { useRouterActions } from '../router'
 import {
   PRESENCE_HEARTBEAT_MS,
   clearConversationPresence,
@@ -21,7 +21,7 @@ import {
 // better than making the worker wait out its timeout).
 
 export function useConversationPushBridge(activeConversationId: string | null) {
-  const { navigateHref } = useRouter()
+  const { navigateHref } = useRouterActions()
   const activeRef = useRef<string | null>(activeConversationId)
   activeRef.current = activeConversationId
 

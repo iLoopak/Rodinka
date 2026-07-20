@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Link, useRouter, type Route } from '../router'
+import { Link, useRoutePath, type Route } from '../router'
 import { t } from '../strings'
 import { isNavigationItemActive } from '../utils/navigation'
 import { useFamilyCore } from '../context/family/FamilyCoreContext'
@@ -90,7 +90,7 @@ const items: NavigationItem[] = [
 ]
 
 export function BottomNavigation() {
-  const { path } = useRouter()
+  const path = useRoutePath()
   const { currentMember } = useFamilyCore()
   const capabilities = capabilitiesFor(currentMember)
   const visibleRoutes = new Set(primaryNavigationRoutes(currentMember))
