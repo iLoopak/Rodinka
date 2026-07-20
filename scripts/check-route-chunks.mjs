@@ -9,11 +9,16 @@ export const REQUIRED_ROUTE_MODULES = [
   'src/components/meals/MealPlanScreen.tsx',
 ]
 
+export const REQUIRED_DEFERRED_MODULES = [
+  ...REQUIRED_ROUTE_MODULES,
+  'src/components/create-record/CreateRecordWizard.tsx',
+]
+
 export const ENTRY_BUDGET = {
-  rawBytes: 1_050_000,
-  gzipBytes: 310_000,
-  eagerRawBytes: 950_000,
-  eagerGzipBytes: 280_000,
+  rawBytes: 390_000,
+  gzipBytes: 112_000,
+  eagerRawBytes: 820_000,
+  eagerGzipBytes: 235_000,
 }
 
 export function auditRouteChunks(manifest, sizes, budget = ENTRY_BUDGET) {
@@ -23,10 +28,10 @@ export function auditRouteChunks(manifest, sizes, budget = ENTRY_BUDGET) {
   if (!appEntry) return ['Vite manifest does not contain an application entry.']
 
   const [appEntryId, appChunk] = appEntry
-  const routeChunks = REQUIRED_ROUTE_MODULES.map((moduleId) => {
+  const deferredChunks = REQUIRED_DEFERRED_MODULES.map((moduleId) => {
     const match = entries.find(([key, chunk]) => key === moduleId || chunk.src === moduleId)
     if (!match) {
-      errors.push(`Missing dynamic route entry for ${moduleId}.`)
+      errors.push(`Missing dynamic entry for deferred module ${moduleId}.`)
       return null
     }
     const [manifestId, chunk] = match
@@ -37,6 +42,7 @@ export function auditRouteChunks(manifest, sizes, budget = ENTRY_BUDGET) {
     return chunk.file
   }).filter(Boolean)
 
+  const routeChunks = deferredChunks.slice(0, REQUIRED_ROUTE_MODULES.length)
   if (new Set(routeChunks).size !== routeChunks.length) {
     errors.push('Required heavy routes no longer produce three separate chunks.')
   }
@@ -80,6 +86,11 @@ async function main() {
     eagerGzipBytes: eagerBuffers.reduce((total, buffer) => total + gzipSync(buffer).byteLength, 0),
   }
   const errors = auditRouteChunks(manifest, sizes)
+  const productionFiles = [...new Set(Object.values(manifest).map((chunk) => chunk.file).filter((file) => file.endsWith('.js')))]
+  const productionSources = await Promise.all(productionFiles.map((file) => readFile(path.join(projectRoot, 'dist', file), 'utf8')))
+  if (productionSources.some((source) => source.includes('[Rodinka startup]'))) {
+    errors.push('Development-only startup diagnostics leaked into the production bundle.')
+  }
 
   if (errors.length) {
     console.error('Route chunk guard failed:')

@@ -61,7 +61,12 @@ export function FamilyScreen() {
   const { refreshOccurrenceAssignments } = useOccurrenceAssignmentsData()
 
   const childMemberIds = allMembers.filter((candidate) => candidate.role === 'child').map((candidate) => candidate.id)
-  const { accounts: childAccounts, refresh: refreshChildAccounts } = useChildAccounts(childMemberIds, isParentOrAdmin)
+  const childAccessSignature = allMembers
+    .filter((candidate) => candidate.role === 'child')
+    .map((candidate) => `${candidate.id}:${candidate.user_id ?? ''}:${candidate.status ?? 'active'}`)
+    .sort()
+    .join(',')
+  const { accounts: childAccounts, refresh: refreshChildAccounts } = useChildAccounts(childMemberIds, isParentOrAdmin, childAccessSignature)
 
   // Adult account emails, readable only by adults of the same family (enforced
   // server-side by the family_member_emails RPC). Children never appear here.
@@ -71,15 +76,6 @@ export function FamilyScreen() {
   // Realtime, so a revoke performed by another adult flips the status here
   // without a reload. Refetch the account rows too, for the login name and
   // lifecycle timestamps that only child_accounts carries.
-  const childAccessSignature = allMembers
-    .filter((candidate) => candidate.role === 'child')
-    .map((candidate) => `${candidate.id}:${candidate.user_id ?? ''}:${candidate.status ?? 'active'}`)
-    .sort()
-    .join(',')
-  useEffect(() => {
-    void refreshChildAccounts()
-  }, [childAccessSignature, refreshChildAccounts])
-
   const loading = membersLoading || familyNameLoading
   const error = membersError || familyNameError
   async function refreshAll() {

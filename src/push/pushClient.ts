@@ -167,8 +167,12 @@ export async function revokePushDevice(id: string) {
   if (error || !data) throw new Error(t.reminders.deviceRemoveFailed)
 }
 
-export async function unsubscribeCurrentDevice(deviceId: string | null) {
+export async function unsubscribeCurrentDevice(deviceId: string | null, endpoint: string | null = null) {
   if (deviceId) await revokePushDevice(deviceId)
+  else if (endpoint) {
+    const { error } = await supabase.rpc('revoke_push_subscription_by_endpoint', { p_endpoint: endpoint })
+    if (error) throw new Error(t.reminders.deviceRemoveFailed)
+  }
   if (!('serviceWorker' in navigator)) return
   const registration = await navigator.serviceWorker.ready
   const subscription = await registration.pushManager.getSubscription()

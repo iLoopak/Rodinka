@@ -5723,6 +5723,16 @@ button.today-shopping-open {
   background: var(--paper);
 }
 
+.create-record-loading {
+  display: flex;
+  min-height: 240px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
 .empty-state-title { font-size: 1rem; }
 .empty-state-body { max-width: 36ch; margin-inline: auto; }
 

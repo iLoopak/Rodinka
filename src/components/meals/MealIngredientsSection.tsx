@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useFamilyCore } from '../../context/family/FamilyCoreContext'
 import { useShopping } from '../../context/shopping/ShoppingContext'
 import { t } from '../../strings'
@@ -17,13 +17,25 @@ const EMPTY_INGREDIENT: MealIngredientInput = { name: '', quantity: null, unit: 
 
 export function MealIngredientsSection({ mealId, sourcePlanEntryId = null, allowEdit = true }: Props) {
   const { isParentOrAdmin } = useFamilyCore()
-  const { ingredientsForMeal, replaceMealIngredients, importShoppingItems } = useShopping()
+  const {
+    ingredientsForMeal,
+    mealIngredientsStatus,
+    mealIngredientsError,
+    ensureMealIngredients,
+    retryMealIngredients,
+    replaceMealIngredients,
+    importShoppingItems,
+  } = useShopping()
   const ingredients = ingredientsForMeal(mealId)
   const [editing, setEditing] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [rows, setRows] = useState<MealIngredientInput[]>([])
   const [busy, setBusy] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
+
+  useEffect(() => {
+    void ensureMealIngredients()
+  }, [ensureMealIngredients])
 
   function startEditing() {
     setRows(ingredients.length > 0 ? ingredients.map((item) => ({ name: item.name, quantity: item.quantity, unit: item.unit, note: item.note ?? '', category: item.category })) : [{ ...EMPTY_INGREDIENT }])
@@ -38,8 +50,10 @@ export function MealIngredientsSection({ mealId, sourcePlanEntryId = null, allow
   }
 
   return <section className="meal-ingredients-section">
-    <div className="meal-ingredients-header"><h4>{t.shopping.ingredientsTitle}</h4>{allowEdit && isParentOrAdmin && !editing && <button type="button" className="link" onClick={startEditing}>{t.shopping.editIngredients}</button>}</div>
-    {editing ? <>
+    <div className="meal-ingredients-header"><h4>{t.shopping.ingredientsTitle}</h4>{mealIngredientsStatus === 'ready' && allowEdit && isParentOrAdmin && !editing && <button type="button" className="link" onClick={startEditing}>{t.shopping.editIngredients}</button>}</div>
+    {(mealIngredientsStatus === 'idle' || mealIngredientsStatus === 'loading') ? <p className="loading" role="status">{t.shopping.ingredientsLoading}</p>
+      : mealIngredientsStatus === 'error' ? <div className="empty-state"><p role="alert">{mealIngredientsError === 'offline' ? t.offline.body : t.shopping.ingredientsLoadFailed}</p><button type="button" onClick={() => { void retryMealIngredients() }}>{t.errors.retry}</button></div>
+        : editing ? <>
       <div className="ingredient-editor">{rows.map((row, index) => <IngredientRow key={index} value={row} onChange={(value) => setRows((current) => current.map((item, itemIndex) => itemIndex === index ? value : item))} onRemove={() => setRows((current) => current.filter((_, itemIndex) => itemIndex !== index))} />)}</div>
       <button type="button" className="btn-secondary ingredient-add-row" onClick={() => setRows((current) => [...current, { ...EMPTY_INGREDIENT }])}>+ {t.shopping.addIngredient}</button>
       <button type="button" onClick={save} disabled={busy}>{busy ? t.shopping.saving : t.shopping.saveIngredients}</button>

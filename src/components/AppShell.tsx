@@ -14,7 +14,7 @@ import { useFamilyCore } from '../context/family/FamilyCoreContext'
 import { capabilitiesFor, childRouteFallback } from '../utils/uiCapabilities'
 import { useMessagesData } from '../context/messages/MessagesContext'
 import { useConversationPushBridge } from '../hooks/useConversationPushBridge'
-import { CreateRecordWizard } from './create-record/CreateRecordWizard'
+import { CreateRecordWizardController } from './create-record/CreateRecordWizardController'
 import { useCalendarOffline } from '../context/calendar/CalendarOfflineContext'
 import { useFamilyLogoAnimation } from '../hooks/useFamilyLogoAnimation'
 import { useLanguage } from '../i18n/languageContext'
@@ -86,7 +86,7 @@ function StandardAppShell({ definition }: { definition: RouteDefinition }) {
         {!offlineBlocked && routeAllowed && <RouteRenderer definition={definition} />}
       </main>
       <BottomNavigation />
-      <CreateRecordWizard />
+      <CreateRecordWizardController />
     </div>
   )
 }

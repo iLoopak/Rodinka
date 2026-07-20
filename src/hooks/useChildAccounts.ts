@@ -18,7 +18,7 @@ export interface ChildAccount {
 // a log, or an error payload.
 const SAFE_COLUMNS = 'member_id, login_name, status, activated_at, password_reset_at, revoked_at'
 
-export function useChildAccounts(memberIds: string[], enabled: boolean) {
+export function useChildAccounts(memberIds: string[], enabled: boolean, scopeVersion = '') {
   const [accounts, setAccounts] = useState<Map<string, ChildAccount>>(new Map())
   const [loading, setLoading] = useState(enabled)
   const [error, setError] = useState<string | null>(null)
@@ -27,6 +27,9 @@ export function useChildAccounts(memberIds: string[], enabled: boolean) {
   const memberKey = [...memberIds].sort().join(',')
 
   const refresh = useCallback(async () => {
+    // The version is intentionally not part of the query filter. It is a
+    // lifecycle signal for account-link/status changes within the same IDs.
+    void scopeVersion
     if (!enabled || !memberKey) {
       setAccounts(new Map())
       setLoading(false)
@@ -49,7 +52,7 @@ export function useChildAccounts(memberIds: string[], enabled: boolean) {
       setError(null)
     }
     setLoading(false)
-  }, [enabled, memberKey])
+  }, [enabled, memberKey, scopeVersion])
 
   useEffect(() => {
     void refresh()

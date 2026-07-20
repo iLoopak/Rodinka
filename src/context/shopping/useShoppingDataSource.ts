@@ -27,16 +27,48 @@ export function useShoppingDataSource(familyId: string | undefined, currentMembe
   const repositoryRef = useRef<ShoppingRepository | null>(null)
   const [snapshot, setSnapshot] = useState<ShoppingRepositorySnapshot>(emptySnapshot)
   const [mealIngredients, setMealIngredients] = useState<MealIngredient[]>([])
+  const [mealIngredientsStatus, setMealIngredientsStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
+  const [mealIngredientsError, setMealIngredientsError] = useState<string | null>(null)
+  const mealIngredientsStatusRef = useRef(mealIngredientsStatus)
+  const mealIngredientsRequestRef = useRef<Promise<void> | null>(null)
+  const familyIdRef = useRef(familyId)
+  mealIngredientsStatusRef.current = mealIngredientsStatus
+  familyIdRef.current = familyId
 
-  const refreshMealIngredients = useCallback(async () => {
-    if (!familyId || typeof navigator !== 'undefined' && !navigator.onLine) return
-    const { data, error } = await supabase
-      .from('meal_ingredients')
-      .select('id, meal_id, name, quantity, unit, note, category, sort_order, created_at, updated_at')
-      .order('sort_order')
-      .limit(500)
-    if (error) console.error('Failed to refresh meal ingredients:', error.message)
-    else setMealIngredients((data ?? []) as MealIngredient[])
+  const loadMealIngredients = useCallback((force = false): Promise<void> => {
+    if (!familyId) return Promise.resolve()
+    if (!force && mealIngredientsStatusRef.current === 'ready') return Promise.resolve()
+    if (mealIngredientsRequestRef.current) return mealIngredientsRequestRef.current
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setMealIngredientsStatus('error')
+      setMealIngredientsError('offline')
+      return Promise.resolve()
+    }
+
+    const requestFamilyId = familyId
+    setMealIngredientsStatus('loading')
+    setMealIngredientsError(null)
+    const request = (async () => {
+      const { data, error } = await supabase
+        .from('meal_ingredients')
+        .select('id, meal_id, name, quantity, unit, note, category, sort_order, created_at, updated_at')
+        .order('sort_order')
+        .limit(500)
+      if (familyIdRef.current !== requestFamilyId) return
+      if (error) {
+        console.error('Failed to refresh meal ingredients:', error.message)
+        setMealIngredientsStatus('error')
+        setMealIngredientsError(error.message)
+        return
+      }
+      setMealIngredients((data ?? []) as MealIngredient[])
+      setMealIngredientsStatus('ready')
+      setMealIngredientsError(null)
+    })().finally(() => {
+      if (mealIngredientsRequestRef.current === request) mealIngredientsRequestRef.current = null
+    })
+    mealIngredientsRequestRef.current = request
+    return request
   }, [familyId])
 
   useEffect(() => {
@@ -45,8 +77,16 @@ export function useShoppingDataSource(familyId: string | undefined, currentMembe
       repositoryRef.current = null
       setSnapshot({ ...emptySnapshot, ready: true, status: 'synced' })
       setMealIngredients([])
+      setMealIngredientsStatus('idle')
+      setMealIngredientsError(null)
+      mealIngredientsRequestRef.current = null
       return
     }
+
+    setMealIngredients([])
+    setMealIngredientsStatus('idle')
+    setMealIngredientsError(null)
+    mealIngredientsRequestRef.current = null
 
     let active = true
     const repository = new ShoppingRepository({
@@ -60,19 +100,17 @@ export function useShoppingDataSource(familyId: string | undefined, currentMembe
       console.error('Failed to initialize offline shopping:', error)
       if (active) setSnapshot((current) => ({ ...current, ready: true, status: 'error', error: 'initialization-failed' }))
     })
-    void refreshMealIngredients()
-
     return () => {
       active = false
       unsubscribe()
       void repository.stop()
       if (repositoryRef.current === repository) repositoryRef.current = null
     }
-  }, [currentMemberId, familyId, refreshMealIngredients])
+  }, [currentMemberId, familyId])
 
   const refreshShopping = useCallback(async () => {
-    await Promise.all([repositoryRef.current?.sync(), refreshMealIngredients()])
-  }, [refreshMealIngredients])
+    await repositoryRef.current?.sync()
+  }, [])
 
   const addShoppingItem = useCallback((input: ShoppingItemInput, forceSeparate = false) => {
     if (!repositoryRef.current) throw new Error('Shopping repository is not ready')
@@ -107,8 +145,12 @@ export function useShoppingDataSource(familyId: string | undefined, currentMembe
   const replaceMealIngredients = useCallback(async (mealId: string, ingredients: MealIngredientInput[]) => {
     const { error } = await supabase.rpc('replace_meal_ingredients', { p_meal_id: mealId, p_ingredients: ingredients })
     if (error) throw new Error(error.message)
-    await refreshMealIngredients()
-  }, [refreshMealIngredients])
+    await mealIngredientsRequestRef.current
+    await loadMealIngredients(true)
+  }, [loadMealIngredients])
+
+  const ensureMealIngredients = useCallback(() => loadMealIngredients(false), [loadMealIngredients])
+  const retryMealIngredients = useCallback(() => loadMealIngredients(true), [loadMealIngredients])
 
   const reorderShoppingItems = useCallback((movedItemId: string, targetCategory: Parameters<ShoppingRepository['reorderItem']>[1], orderedTargetIds: string[]) => {
     if (!repositoryRef.current) throw new Error('Shopping repository is not ready')
@@ -146,7 +188,11 @@ export function useShoppingDataSource(familyId: string | undefined, currentMembe
     commonShoppingItems,
     shoppingSessions,
     mealIngredients,
+    mealIngredientsStatus,
+    mealIngredientsError,
     ingredientsForMeal,
+    ensureMealIngredients,
+    retryMealIngredients,
     shoppingLoading: !snapshot.ready,
     shoppingHasUsableData: snapshot.hasUsableData,
     shoppingError: snapshot.ready && snapshot.status === 'error' && !snapshot.hasUsableData ? 'shopping-unavailable' : null,
