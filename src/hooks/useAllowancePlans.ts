@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
-import { supabase } from '../supabaseClient'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { SupabaseAllowanceRepository } from '../features/allowance/data/supabaseAllowanceRepository'
 import { t } from '../strings'
 import type { AllowanceConditionMode, AllowanceFrequency, AllowancePlanStatus, AllowanceRequirementType } from '../utils/allowanceCycles'
 
@@ -61,6 +61,7 @@ export interface AllowancePlanInput {
 }
 
 export function useAllowancePlans(familyId: string | undefined) {
+  const repository = useMemo(() => new SupabaseAllowanceRepository(), [])
   const [plans, setPlans] = useState<AllowancePlan[]>([])
   const [cycles, setCycles] = useState<AllowanceCycle[]>([])
   const [loading, setLoading] = useState(true)
@@ -71,27 +72,17 @@ export function useAllowancePlans(familyId: string | undefined) {
       setPlans([]); setCycles([]); setLoading(false); return
     }
     setLoading(true)
-    const [plansResult, cyclesResult] = await Promise.all([
-      supabase.from('allowance_plans')
-        .select('id, family_id, member_id, amount, frequency, payout_day, payout_weekday, note, starts_on, status, condition_mode, created_at, updated_at, allowance_plan_requirements(id, plan_id, chore_id, requirement_type, required_count, created_at)')
-        .eq('family_id', familyId).order('created_at'),
-      supabase.from('allowance_cycles')
-        .select('id, plan_id, payout_date, period_start, period_end, status, credited_amount, ledger_entry_id, evaluated_at, allowance_plans!inner(family_id)')
-        .eq('allowance_plans.family_id', familyId).order('payout_date', { ascending: false }),
-    ])
-    if (plansResult.error || cyclesResult.error) {
-      console.error('Failed to load allowance plans:', plansResult.error?.message ?? cyclesResult.error?.message)
-      setPlans([]); setCycles([]); setError(t.errors.loadFailed)
-    } else {
-      setPlans((plansResult.data ?? []).map((row) => ({
-        ...row,
-        requirements: row.allowance_plan_requirements ?? [],
-      })) as AllowancePlan[])
-      setCycles((cyclesResult.data ?? []) as AllowanceCycle[])
+    try {
+      const state = await repository.loadPlans({ familyId })
+      setPlans(state.plans)
+      setCycles(state.cycles)
       setError(null)
+    } catch (loadError) {
+      console.error('Failed to load allowance plans:', loadError instanceof Error ? loadError.message : 'unknown error')
+      setPlans([]); setCycles([]); setError(t.errors.loadFailed)
     }
     setLoading(false)
-  }, [familyId])
+  }, [familyId, repository])
 
   useEffect(() => { void refresh() }, [refresh])
   return { plans, cycles, loading, error, refresh }

@@ -123,56 +123,6 @@
       "allowed": "Offline calendar repository and its sync adapter, already on the target pattern."
     },
     {
-      "file": "src/context/chores/AllowanceContext.tsx",
-      "line": 97,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "record_payout",
-      "domain": "allowance",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/chores/AllowanceContext.tsx",
-      "line": 121,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "save_allowance_plan",
-      "domain": "allowance",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/chores/AllowanceContext.tsx",
-      "line": 138,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "delete_allowance_plan",
-      "domain": "allowance",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/chores/AllowanceContext.tsx",
-      "line": 144,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "credit_monthly_allowance",
-      "domain": "allowance",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/chores/AllowanceContext.tsx",
-      "line": 150,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "skip_monthly_allowance",
-      "domain": "allowance",
-      "layer": "state",
-      "isTest": false
-    },
-    {
       "file": "src/context/messages/useMessagesContentSource.ts",
       "line": 80,
       "kind": "rpc",
@@ -592,6 +542,94 @@
       "allowed": "Per-feature data layer introduced by the repository waves."
     },
     {
+      "file": "src/features/allowance/data/supabaseAllowanceRepository.ts",
+      "line": 78,
+      "kind": "table",
+      "method": "from",
+      "target": "allowance_plans",
+      "domain": "allowance",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/allowance/data/supabaseAllowanceRepository.ts",
+      "line": 81,
+      "kind": "table",
+      "method": "from",
+      "target": "allowance_cycles",
+      "domain": "allowance",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/allowance/data/supabaseAllowanceRepository.ts",
+      "line": 90,
+      "kind": "table",
+      "method": "from",
+      "target": "allowance_ledger",
+      "domain": "allowance",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/allowance/data/supabaseAllowanceRepository.ts",
+      "line": 97,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "save_allowance_plan",
+      "domain": "allowance",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/allowance/data/supabaseAllowanceRepository.ts",
+      "line": 122,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "delete_allowance_plan",
+      "domain": "allowance",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/allowance/data/supabaseAllowanceRepository.ts",
+      "line": 128,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "record_payout",
+      "domain": "allowance",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/allowance/data/supabaseAllowanceRepository.ts",
+      "line": 136,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "credit_monthly_allowance",
+      "domain": "allowance",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/allowance/data/supabaseAllowanceRepository.ts",
+      "line": 142,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "skip_monthly_allowance",
+      "domain": "allowance",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
       "file": "src/features/family-jump/storage/familyJumpRemote.ts",
       "line": 17,
       "kind": "table",
@@ -746,8 +784,30 @@
       "allowed": "Per-feature data layer introduced by the repository waves."
     },
     {
+      "file": "src/features/family/data/supabaseFamilyOnboardingRepository.ts",
+      "line": 23,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "create_family",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/supabaseFamilyOnboardingRepository.ts",
+      "line": 30,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "redeem_invite",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
       "file": "src/features/family/data/supabaseFamilyRepository.ts",
-      "line": 54,
+      "line": 53,
       "kind": "table",
       "method": "from",
       "target": "members",
@@ -758,7 +818,7 @@
     },
     {
       "file": "src/features/family/data/supabaseFamilyRepository.ts",
-      "line": 61,
+      "line": 60,
       "kind": "table",
       "method": "from",
       "target": "members",
@@ -769,7 +829,7 @@
     },
     {
       "file": "src/features/family/data/supabaseFamilyRepository.ts",
-      "line": 69,
+      "line": 68,
       "kind": "table",
       "method": "from",
       "target": "members",
@@ -780,7 +840,7 @@
     },
     {
       "file": "src/features/family/data/supabaseFamilyRepository.ts",
-      "line": 77,
+      "line": 76,
       "kind": "table",
       "method": "from",
       "target": "members",
@@ -791,7 +851,7 @@
     },
     {
       "file": "src/features/family/data/supabaseFamilyRepository.ts",
-      "line": 83,
+      "line": 82,
       "kind": "rpc",
       "method": "rpc",
       "target": "update_member_profile",
@@ -802,7 +862,7 @@
     },
     {
       "file": "src/features/family/data/supabaseFamilyRepository.ts",
-      "line": 101,
+      "line": 100,
       "kind": "rpc",
       "method": "rpc",
       "target": "remove_household_member",
@@ -813,7 +873,7 @@
     },
     {
       "file": "src/features/family/data/supabaseFamilyRepository.ts",
-      "line": 114,
+      "line": 113,
       "kind": "rpc",
       "method": "rpc",
       "target": "restore_household_member",
@@ -824,7 +884,7 @@
     },
     {
       "file": "src/features/family/data/supabaseFamilyRepository.ts",
-      "line": 120,
+      "line": 119,
       "kind": "rpc",
       "method": "rpc",
       "target": "permanently_delete_removed_member",
@@ -835,7 +895,7 @@
     },
     {
       "file": "src/features/family/data/supabaseFamilyRepository.ts",
-      "line": 131,
+      "line": 130,
       "kind": "rpc",
       "method": "rpc",
       "target": "create_invite",
@@ -846,7 +906,7 @@
     },
     {
       "file": "src/features/family/data/supabaseFamilyRepository.ts",
-      "line": 135,
+      "line": 134,
       "kind": "table",
       "method": "from",
       "target": "invites",
@@ -857,7 +917,7 @@
     },
     {
       "file": "src/features/family/data/supabaseFamilyRepository.ts",
-      "line": 141,
+      "line": 140,
       "kind": "rpc",
       "method": "rpc",
       "target": "family_member_emails",
@@ -868,7 +928,7 @@
     },
     {
       "file": "src/features/family/data/supabaseFamilyRepository.ts",
-      "line": 180,
+      "line": 179,
       "kind": "table",
       "method": "from",
       "target": "families",
@@ -879,32 +939,10 @@
     },
     {
       "file": "src/features/family/data/supabaseFamilyRepository.ts",
-      "line": 193,
+      "line": 192,
       "kind": "table",
       "method": "from",
       "target": "families",
-      "domain": "family",
-      "layer": "data",
-      "isTest": false,
-      "allowed": "Per-feature data layer introduced by the repository waves."
-    },
-    {
-      "file": "src/features/family/data/supabaseFamilyRepository.ts",
-      "line": 216,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "create_family",
-      "domain": "family",
-      "layer": "data",
-      "isTest": false,
-      "allowed": "Per-feature data layer introduced by the repository waves."
-    },
-    {
-      "file": "src/features/family/data/supabaseFamilyRepository.ts",
-      "line": 225,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "redeem_invite",
       "domain": "family",
       "layer": "data",
       "isTest": false,
@@ -1195,36 +1233,6 @@
       "layer": "data",
       "isTest": false,
       "allowed": "Per-feature data layer introduced by the repository waves."
-    },
-    {
-      "file": "src/hooks/useAllowanceLedger.ts",
-      "line": 33,
-      "kind": "table",
-      "method": "from",
-      "target": "allowance_ledger",
-      "domain": "allowance",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/hooks/useAllowancePlans.ts",
-      "line": 75,
-      "kind": "table",
-      "method": "from",
-      "target": "allowance_plans",
-      "domain": "allowance",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/hooks/useAllowancePlans.ts",
-      "line": 78,
-      "kind": "table",
-      "method": "from",
-      "target": "allowance_cycles",
-      "domain": "allowance",
-      "layer": "state",
-      "isTest": false
     },
     {
       "file": "src/hooks/useFamily.ts",
