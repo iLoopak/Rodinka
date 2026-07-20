@@ -21,6 +21,7 @@ import { useCalendarOffline } from './context/calendar/CalendarOfflineContext'
 import { resolveAuthRoutingState } from './auth/authRoutingState'
 import { useNetworkStatus } from './network/useNetworkStatus'
 import { ErrorState } from './components/ui/ErrorState'
+import { routeIsAvailableOffline } from './routes/routeRegistry'
 
 function AppLoading({ label }: { label: string }) {
   return <div className="loading app-loading"><FamilyMark variant="static" size={32} />{label}</div>
@@ -99,7 +100,7 @@ export default function App() {
 function OfflineStartupGate({ children, networkStatus, connectionError, refresh }: { children: ReactNode; networkStatus: ReturnType<typeof useNetworkStatus>; connectionError: string | null; refresh: () => Promise<void> }) {
   const { path, navigate } = useRouter()
   const { calendarHasUsableData } = useCalendarOffline()
-  const showFallback = networkStatus === 'offline' && Boolean(connectionError) && path !== '/shopping' && path !== '/calendar' && path !== '/family-jump'
+  const showFallback = networkStatus === 'offline' && Boolean(connectionError) && !routeIsAvailableOffline(path)
   if (showFallback) {
     return <OfflineFallbackScreen
       canOpenShopping

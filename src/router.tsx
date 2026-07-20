@@ -17,7 +17,7 @@ import { updateUrlQuery, type QueryHistoryMode } from './utils/deepLinks'
 export const ROUTES = ['/', '/calendar', '/plan', '/chores', '/activities', '/health', '/meals', '/shopping', '/family', '/messages', '/more', '/reminders', '/family-jump'] as const
 export type Route = (typeof ROUTES)[number]
 
-function normalize(pathname: string): Route {
+export function normalizeRoute(pathname: string): Route {
   return (ROUTES as readonly string[]).includes(pathname) ? (pathname as Route) : '/'
 }
 
@@ -33,11 +33,11 @@ interface RouterContextValue {
 const RouterContext = createContext<RouterContextValue | null>(null)
 
 export function RouterProvider({ children }: { children: ReactNode }) {
-  const [path, setPath] = useState<Route>(() => normalize(window.location.pathname))
+  const [path, setPath] = useState<Route>(() => normalizeRoute(window.location.pathname))
   const [search, setSearch] = useState(() => window.location.search)
 
   const syncLocation = useCallback(() => {
-    setPath(normalize(window.location.pathname))
+    setPath(normalizeRoute(window.location.pathname))
     setSearch(window.location.search)
   }, [])
 
@@ -57,7 +57,7 @@ export function RouterProvider({ children }: { children: ReactNode }) {
 
   const navigateHref = useCallback((href: string) => {
     const target = new URL(href, window.location.origin)
-    const safePath = normalize(target.pathname)
+    const safePath = normalizeRoute(target.pathname)
     const next = `${safePath}${target.search}${target.hash}`
     window.history.pushState(null, '', next)
     syncLocation()

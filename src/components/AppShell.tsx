@@ -1,19 +1,7 @@
 import { useRouter } from '../router'
 import { BottomNavigation } from './BottomNavigation'
-import { TodayDashboard } from './TodayDashboard'
-import { ChoresScreen } from './ChoresScreen'
-import { FamilyScreen } from './FamilyScreen'
-import { MoreScreen } from './MoreScreen'
-import { CalendarScreen } from './CalendarScreen'
-import { PlannerScreen } from './PlannerScreen'
-import { ActivitiesScreen } from './ActivitiesScreen'
-import { HealthScreen } from './HealthScreen'
-import { MealPlanScreen } from './meals/MealPlanScreen'
 import { InstallAppBanner } from './InstallAppBanner'
-import { ShoppingScreen } from './ShoppingScreen'
-import { MessagesScreen } from './messages/MessagesScreen'
 import { ReminderBell } from './reminders/ReminderBell'
-import { ReminderCenter } from './reminders/ReminderCenter'
 import { MessagesBell } from './messages/MessagesBell'
 import { useFamilySettings } from '../context/family/FamilySettingsContext'
 import { FamilyBrand } from './FamilyBrand'
@@ -29,10 +17,24 @@ import { useConversationPushBridge } from '../hooks/useConversationPushBridge'
 import { CreateRecordWizard } from './create-record/CreateRecordWizard'
 import { useCalendarOffline } from '../context/calendar/CalendarOfflineContext'
 import { useFamilyLogoAnimation } from '../hooks/useFamilyLogoAnimation'
-import { FamilyJumpScreen } from '../features/family-jump/components/FamilyJumpScreen'
 import { useLanguage } from '../i18n/languageContext'
+import { getRouteDefinition, type RouteDefinition } from '../routes/routeRegistry'
+import { RouteRenderer } from '../routes/RouteRenderer'
 
 export function AppShell() {
+  const { path } = useRouter()
+  const definition = getRouteDefinition(path)
+
+  return <AppRouteOutlet definition={definition} />
+}
+
+export function AppRouteOutlet({ definition }: { definition: RouteDefinition }) {
+  if (definition.shell === 'fullscreen') return <RouteRenderer definition={definition} />
+
+  return <StandardAppShell definition={definition} />
+}
+
+function StandardAppShell({ definition }: { definition: RouteDefinition }) {
   const { path, navigate } = useRouter()
   const { language } = useLanguage()
   const { currentMember } = useFamilyCore()
@@ -55,10 +57,8 @@ export function AppShell() {
     connectionInterrupted: browserOffline || offlineMode || realtimeInterrupted,
     connectionReady: !browserOffline && !offlineMode && realtimeStatus === 'connected',
   })
-  const offlineBlocked = offlineMode && path !== '/' && path !== '/shopping' && path !== '/calendar'
+  const offlineBlocked = offlineMode && definition.offline === 'blocked'
   const routeAllowed = capabilities.accessRoute(path)
-
-  if (path === '/family-jump') return <FamilyJumpScreen />
 
   return (
     <div className={`app-shell${path === '/' ? ' is-today' : ''}`}>
@@ -83,18 +83,7 @@ export function AppShell() {
       <main className="app-main">
         {offlineBlocked && <OfflineModuleState />}
         {!offlineBlocked && !routeAllowed && <RestrictedChildRoute onContinue={() => navigate(childRouteFallback(path))} />}
-        {!offlineBlocked && routeAllowed && path === '/' && <TodayDashboard />}
-        {!offlineBlocked && routeAllowed && path === '/calendar' && <CalendarScreen />}
-        {!offlineBlocked && routeAllowed && path === '/plan' && <PlannerScreen />}
-        {!offlineBlocked && routeAllowed && path === '/chores' && <ChoresScreen />}
-        {!offlineBlocked && routeAllowed && path === '/activities' && <ActivitiesScreen />}
-        {!offlineBlocked && routeAllowed && path === '/health' && <HealthScreen />}
-        {!offlineBlocked && routeAllowed && path === '/meals' && <MealPlanScreen />}
-        {routeAllowed && path === '/shopping' && <ShoppingScreen />}
-        {!offlineBlocked && routeAllowed && path === '/family' && <FamilyScreen />}
-        {!offlineBlocked && routeAllowed && path === '/messages' && <MessagesScreen />}
-        {!offlineBlocked && routeAllowed && path === '/more' && <MoreScreen />}
-        {!offlineBlocked && routeAllowed && path === '/reminders' && <ReminderCenter />}
+        {!offlineBlocked && routeAllowed && <RouteRenderer definition={definition} />}
       </main>
       <BottomNavigation />
       <CreateRecordWizard />
