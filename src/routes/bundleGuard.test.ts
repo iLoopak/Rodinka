@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { auditRouteChunks, REQUIRED_ROUTE_MODULES } from '../../scripts/check-route-chunks.mjs'
+import { auditRouteChunks, ENTRY_BUDGET, REQUIRED_DEFERRED_MODULES, REQUIRED_ROUTE_MODULES } from '../../scripts/check-route-chunks.mjs'
 import type { ManifestChunk } from '../../scripts/check-route-chunks.mjs'
 
 function healthyManifest() {
@@ -7,10 +7,10 @@ function healthyManifest() {
     'src/main.tsx': {
       file: 'assets/main.js',
       isEntry: true,
-      dynamicImports: [...REQUIRED_ROUTE_MODULES],
+      dynamicImports: [...REQUIRED_DEFERRED_MODULES],
     },
   }
-  REQUIRED_ROUTE_MODULES.forEach((moduleId, index) => {
+  REQUIRED_DEFERRED_MODULES.forEach((moduleId, index) => {
     manifest[moduleId] = {
       file: `assets/route-${index}.js`,
       src: moduleId,
@@ -23,10 +23,10 @@ function healthyManifest() {
 describe('route chunk build guard', () => {
   it('accepts separate dynamic chunks under the entry budget', () => {
     expect(auditRouteChunks(healthyManifest(), {
-      rawBytes: 800_000,
-      gzipBytes: 250_000,
-      eagerRawBytes: 900_000,
-      eagerGzipBytes: 270_000,
+      rawBytes: ENTRY_BUDGET.rawBytes - 1,
+      gzipBytes: ENTRY_BUDGET.gzipBytes - 1,
+      eagerRawBytes: ENTRY_BUDGET.eagerRawBytes - 1,
+      eagerGzipBytes: ENTRY_BUDGET.eagerGzipBytes - 1,
     })).toEqual([])
   })
 
@@ -36,19 +36,33 @@ describe('route chunk build guard', () => {
     manifest[REQUIRED_ROUTE_MODULES[1]].isDynamicEntry = false
 
     expect(auditRouteChunks(manifest, {
-      rawBytes: 800_000,
-      gzipBytes: 250_000,
-      eagerRawBytes: 900_000,
-      eagerGzipBytes: 270_000,
+      rawBytes: ENTRY_BUDGET.rawBytes - 1,
+      gzipBytes: ENTRY_BUDGET.gzipBytes - 1,
+      eagerRawBytes: ENTRY_BUDGET.eagerRawBytes - 1,
+      eagerGzipBytes: ENTRY_BUDGET.eagerGzipBytes - 1,
     }).join('\n')).toContain('merged into the main entry chunk')
   })
 
   it('catches a main entry that exceeds the tolerant budget', () => {
     expect(auditRouteChunks(healthyManifest(), {
-      rawBytes: 1_050_001,
-      gzipBytes: 310_001,
-      eagerRawBytes: 950_001,
-      eagerGzipBytes: 280_001,
+      rawBytes: ENTRY_BUDGET.rawBytes + 1,
+      gzipBytes: ENTRY_BUDGET.gzipBytes + 1,
+      eagerRawBytes: ENTRY_BUDGET.eagerRawBytes + 1,
+      eagerGzipBytes: ENTRY_BUDGET.eagerGzipBytes + 1,
     }).join('\n')).toContain('budget')
+  })
+
+  it('catches the Create Record wizard merged back into startup', () => {
+    const manifest = healthyManifest()
+    const wizard = 'src/components/create-record/CreateRecordWizard.tsx'
+    manifest[wizard].file = 'assets/main.js'
+    manifest[wizard].isDynamicEntry = false
+
+    expect(auditRouteChunks(manifest, {
+      rawBytes: ENTRY_BUDGET.rawBytes - 1,
+      gzipBytes: ENTRY_BUDGET.gzipBytes - 1,
+      eagerRawBytes: ENTRY_BUDGET.eagerRawBytes - 1,
+      eagerGzipBytes: ENTRY_BUDGET.eagerGzipBytes - 1,
+    }).join('\n')).toContain('CreateRecordWizard.tsx was merged into the main entry chunk')
   })
 })

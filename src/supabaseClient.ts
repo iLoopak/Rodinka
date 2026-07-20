@@ -9,4 +9,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const diagnosticFetch: typeof fetch = (input, init) => {
+  if (import.meta.env.DEV) {
+    void import('./startup/startupDiagnostics').then(({ recordSupabaseStartupRequest }) => {
+      recordSupabaseStartupRequest(input, init)
+    })
+  }
+  return fetch(input, init)
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: import.meta.env.DEV ? { fetch: diagnosticFetch } : undefined,
+})

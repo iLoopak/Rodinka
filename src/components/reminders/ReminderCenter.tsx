@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useReminders } from '../../context/ReminderContext'
 import { useRouter } from '../../router'
 import { buildDigest, reminderSection, type ReminderSection } from '../../notifications/reminderPresentation'
@@ -173,10 +173,14 @@ function MessageNotificationSettings({ preferences, saving, onChange }: {
 
 function PushSettings({ preferences, saving, onChange }: { preferences: NotificationPreferences; saving: boolean; onChange: (next: NotificationPreferences) => Promise<void> }) {
   const push = usePush()
+  const { loadDevices } = push
   const [showIntro, setShowIntro] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const activeDevices = push.devices.filter((device) => !device.revokedAt && !device.disabledAt)
   const otherDevices = activeDevices.filter((device) => !device.current).length
+  useEffect(() => {
+    void loadDevices()
+  }, [loadDevices])
   const stateCopy: Record<string, string> = {
     insecure: t.reminders.capabilityInsecure,
     'service-worker-unavailable': t.reminders.capabilityServiceWorker,
@@ -221,7 +225,8 @@ function PushSettings({ preferences, saving, onChange }: { preferences: Notifica
           : <div className="push-actions"><button type="button" className="btn-secondary" disabled={push.busy || saving || !preferences.pushEnabled} onClick={test}>{t.reminders.testPush}</button><button type="button" className="link" disabled={push.busy} onClick={disableCurrent}>{t.reminders.disableDevice}</button></div>}
     {preferences.pushEnabled && <button type="button" className="link danger-link" disabled={push.busy || saving} onClick={disableAccount}>{t.reminders.disableAccount}</button>}
     {showIntro && <section className="push-consent" aria-labelledby="push-consent-title"><strong id="push-consent-title">{t.reminders.consentTitle}</strong><p>{t.reminders.consentBody}</p><div className="modal-actions"><button type="button" onClick={enable} disabled={push.busy}>{t.reminders.allow}</button><button type="button" className="btn-secondary" onClick={() => setShowIntro(false)} disabled={push.busy}>{t.reminders.notNow}</button></div></section>}
-    {activeDevices.length > 0 && <div className="push-devices"><h3>{t.reminders.devicesTitle}</h3>{activeDevices.map((device) => <div className="push-device" key={device.id}><span><strong>{device.deviceName || t.reminders.browserDevice}{device.current ? t.reminders.currentDeviceSuffix : ''}</strong><small>{t.reminders.lastActive(new Date(device.lastSeenAt).toLocaleDateString(localeFor(getCurrentLanguage())))}</small></span><button type="button" className="link" disabled={push.busy} onClick={() => push.revokeDevice(device.id).catch(() => undefined)}>{t.reminders.remove}</button></div>)}</div>}
+    {push.devicesLoading && <p className="row-meta" role="status">{t.loading.generic}</p>}
+    {push.devicesLoaded && activeDevices.length > 0 && <div className="push-devices"><h3>{t.reminders.devicesTitle}</h3>{activeDevices.map((device) => <div className="push-device" key={device.id}><span><strong>{device.deviceName || t.reminders.browserDevice}{device.current ? t.reminders.currentDeviceSuffix : ''}</strong><small>{t.reminders.lastActive(new Date(device.lastSeenAt).toLocaleDateString(localeFor(getCurrentLanguage())))}</small></span><button type="button" className="link" disabled={push.busy} onClick={() => push.revokeDevice(device.id).catch(() => undefined)}>{t.reminders.remove}</button></div>)}</div>}
     {(message || push.error) && <p className="shopping-feedback" role={push.error ? 'alert' : 'status'}>{message || t.errors.generic}</p>}
   </div>
 }

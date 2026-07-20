@@ -15,6 +15,7 @@ export interface EntrySizes {
 }
 
 export declare const REQUIRED_ROUTE_MODULES: readonly string[]
+export declare const REQUIRED_DEFERRED_MODULES: readonly string[]
 export declare const ENTRY_BUDGET: EntrySizes
 export declare function auditRouteChunks(
   manifest: Record<string, ManifestChunk>,
