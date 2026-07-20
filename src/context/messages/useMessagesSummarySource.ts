@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { supabase } from '../../supabaseClient'
+import { SupabaseConversationsRepository } from '../../features/messages/data/conversationsRepository'
 import { friendly } from '../../utils/friendlyError'
 import { createRealtimeSubscription } from '../../realtime/createRealtimeSubscription'
 import { applyRealtimeInsert } from '../../realtime/applyRealtimeInsert'
@@ -55,6 +55,7 @@ export interface ShareEntityPayload {
 // because unread counts have to stay live everywhere; message rows are
 // re-broadcast to the content layer through `messageStream`.
 export function useMessagesSummarySource({ familyId, currentMemberId }: UseMessagesSummarySourceArgs) {
+  const repository = useMemo(() => new SupabaseConversationsRepository(), [])
   const [conversations, setConversations] = useState<ConversationRow[]>([])
   const [members, setMembers] = useState<ConversationMemberRow[]>([])
   const [unreadMarks, setUnreadMarks] = useState<UnreadMarks>({})
@@ -87,24 +88,9 @@ export function useMessagesSummarySource({ familyId, currentMemberId }: UseMessa
     setLoading(true)
     setError(null)
     try {
-      const groupResult = await supabase.rpc('ensure_family_group_conversation', { p_family_id: familyId })
-      if (groupResult.error) throw groupResult.error
-
-      const [{ data: convData, error: convError }, { data: memberData, error: memberError }] = await Promise.all([
-        supabase
-          .from('conversations')
-          .select('id, family_id, kind, title, direct_key, created_by_member_id, last_message_at, last_message_preview, created_at, updated_at')
-          .eq('family_id', familyId)
-          .order('last_message_at', { ascending: false, nullsFirst: false }),
-        supabase
-          .from('conversation_members')
-          .select('conversation_id, member_id, role, joined_at, last_read_at, muted_at, muted_until, mute_scope, archived_at'),
-      ])
-      if (convError) throw convError
-      if (memberError) throw memberError
-
-      setConversations((convData ?? []) as ConversationRow[])
-      setMembers((memberData ?? []) as ConversationMemberRow[])
+      const snapshot = await repository.loadSnapshot({ familyId })
+      setConversations(snapshot.conversations)
+      setMembers(snapshot.members)
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e)
       console.error('Failed to load messaging data:', message)
@@ -112,7 +98,7 @@ export function useMessagesSummarySource({ familyId, currentMemberId }: UseMessa
     } finally {
       setLoading(false)
     }
-  }, [familyId])
+  }, [familyId, repository])
 
   useEffect(() => {
     void refresh()
@@ -228,16 +214,20 @@ export function useMessagesSummarySource({ familyId, currentMemberId }: UseMessa
 
   const ensureGroupConversation = useCallback(async () => {
     if (!familyId) throw new Error('No family')
-    const { data, error: rpcError } = await supabase.rpc('ensure_family_group_conversation', { p_family_id: familyId })
-    if (rpcError) throw friendly(rpcError)
-    return data as string
-  }, [familyId])
+    try {
+      return await repository.ensureGroupConversation({ familyId })
+    } catch (error) {
+      throw friendly(error)
+    }
+  }, [familyId, repository])
 
   const ensureDirectConversation = useCallback(async ({ memberId }: DirectConversationTarget) => {
-    const { data, error: rpcError } = await supabase.rpc('ensure_direct_conversation', { p_other_member_id: memberId })
-    if (rpcError) throw friendly(rpcError)
-    return data as string
-  }, [])
+    try {
+      return await repository.ensureDirectConversation(memberId)
+    } catch (error) {
+      throw friendly(error)
+    }
+  }, [repository])
 
   // Share a live planner entity into a conversation from anywhere in the app
   // (Shopping, a chore modal, an activity modal). The optimistic bubble is
@@ -245,17 +235,12 @@ export function useMessagesSummarySource({ familyId, currentMemberId }: UseMessa
   // this stays a plain write and returns the inserted row for that layer to
   // reconcile against.
   const shareEntity = useCallback(async (conversationId: string, payload: ShareEntityPayload) => {
-    const { data, error: rpcError } = await supabase.rpc('share_entity_to_conversation', {
-      p_conversation_id: conversationId,
-      p_entity_type: payload.entityType,
-      p_entity_id: payload.entityId,
-      p_body: payload.body?.trim() ?? null,
-      p_client_id: payload.clientId ?? crypto.randomUUID(),
-      p_fallback_label: payload.fallbackLabel ?? null,
-    })
-    if (rpcError) throw friendly(rpcError)
-    return (Array.isArray(data) ? data[0] : data) as MessageRow | null
-  }, [])
+    try {
+      return await repository.shareEntity(conversationId, payload)
+    } catch (shareError) {
+      throw friendly(shareError)
+    }
+  }, [repository])
 
   // `until = null` means indefinite; a timestamp means the mute lapses on
   // its own. The server caps it, so a bad clock cannot silence a
@@ -279,11 +264,12 @@ export function useMessagesSummarySource({ familyId, currentMemberId }: UseMessa
           : m,
       ),
     )
-    const { error: rpcError } = await supabase.rpc('set_conversation_mute', {
-      p_conversation_id: conversationId,
-      p_scope: scope,
-      p_until: mutedUntil,
-    })
+    let rpcError: unknown = null
+    try {
+      await repository.setMute(conversationId, scope, mutedUntil)
+    } catch (error) {
+      rpcError = error
+    }
     if (rpcError) throw friendly(rpcError)
   }, [currentMemberId])
 
@@ -328,17 +314,17 @@ export function useMessagesSummarySource({ familyId, currentMemberId }: UseMessa
         return current.map((m) => (m === target ? { ...m, last_read_at: now } : m))
       })
       if (!didAdvance) return
-      const { error: rpcError } = await supabase.rpc('mark_conversation_read', {
-        p_conversation_id: conversationId,
-        p_up_to: now,
-      })
-      if (rpcError) {
-        console.error('Failed to mark conversation read:', rpcError.message)
+      try {
+        await repository.markRead(conversationId, now)
+      } catch (error) {
+        // Best effort: the local unread mark already moved, and a failed
+        // write only means the badge re-appears on the next load.
+        console.error('Failed to mark conversation read:', error instanceof Error ? error.message : 'unknown error')
       }
     } finally {
       markReadInFlightRef.current.delete(conversationId)
     }
-  }, [currentMemberId])
+  }, [currentMemberId, repository])
 
   // ------------------------------------------------------------
   // Derived views.

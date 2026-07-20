@@ -66,12 +66,14 @@ describe('mark_conversation_read runaway loop guard', () => {
     // Must guard BEFORE the RPC, not after — otherwise the RPC still
     // fires on every render.
     const body = dataSource.match(
-      /const markConversationRead = useCallback\(async[\s\S]+?\}, \[currentMemberId\]\)/,
+      // Tolerates extra deps: the guards are the contract, not the dep list.
+      /const markConversationRead = useCallback\(async[\s\S]+?\}, \[currentMemberId[^\]]*\]\)/,
     )?.[0] ?? ''
     expect(body).toMatch(/if \(markReadInFlightRef\.current\.has\(conversationId\)\) return/)
     expect(body).toMatch(/nowMs - lastAt < 500/)
-    // The RPC call must appear AFTER both guards.
-    const rpcIndex = body.indexOf("supabase.rpc('mark_conversation_read'")
+    // The write must appear AFTER both guards. It goes through the
+    // conversations repository since Wave 5; what matters is the ordering.
+    const rpcIndex = body.indexOf('repository.markRead(')
     const inflightIndex = body.indexOf('markReadInFlightRef.current.has')
     const debounceIndex = body.indexOf('nowMs - lastAt < 500')
     expect(rpcIndex).toBeGreaterThan(inflightIndex)
@@ -83,7 +85,7 @@ describe('mark_conversation_read runaway loop guard', () => {
     // already at-or-past `now`. Without this guard, out-of-order
     // realtime UPDATEs could drag the cursor backwards.
     const body = dataSource.match(
-      /const markConversationRead = useCallback\(async[\s\S]+?\}, \[currentMemberId\]\)/,
+      /const markConversationRead = useCallback\(async[\s\S]+?\}, \[currentMemberId[^\]]*\]\)/,
     )?.[0] ?? ''
     expect(body).toMatch(/target\.last_read_at >= now/)
   })

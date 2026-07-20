@@ -1,14 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { supabase } from '../../supabaseClient'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { friendly } from '../../utils/friendlyError'
 import { createRealtimeSubscription } from '../../realtime/createRealtimeSubscription'
-import {
-  buildMessageAttachmentPath,
-  compressMessageAttachment,
-  messageAttachmentExtension,
-  validateMessageAttachmentFile,
-  type MessageAttachmentValidationError,
-} from '../../utils/messageAttachment'
+import { SupabaseMessagesRepository } from '../../features/messages/data/supabaseMessagesRepository'
+import type { MessagesRepository } from '../../features/messages/data/messagesRepository'
+import { isPendingMessageId, pendingMessageId } from '../../features/messages/domain/messageMappers'
 import { compareMessages, mergeIncomingMessage, mergeInitialLoad } from './messageMerge'
 import type { MessagesSummaryActions, ShareEntityPayload } from './useMessagesSummarySource'
 import type {
@@ -24,15 +19,12 @@ import type {
 // small because the hot path is "recent conversation, live updates".
 const INITIAL_MESSAGES_LIMIT = 60
 const OLDER_PAGE_SIZE = 40
-const ATTACHMENT_SIGNED_URL_SECONDS = 60 * 60
-
-const MESSAGE_SELECT_COLUMNS =
-  'id, conversation_id, family_id, sender_member_id, content_type, body, client_id, reply_to_message_id, system_kind, edited_at, deleted_at, has_attachments, created_at'
 
 interface UseMessagesContentSourceArgs {
   familyId: string | undefined
   currentMemberId: string | undefined
   actions: MessagesSummaryActions
+  repository?: MessagesRepository
 }
 
 export interface UploadAttachmentResult {
@@ -47,7 +39,8 @@ export interface UploadAttachmentResult {
 // one channel for the three content-only tables; message rows themselves
 // arrive through the summary layer's stream so the `messages` table keeps a
 // single subscription owner.
-export function useMessagesContentSource({ familyId, currentMemberId, actions }: UseMessagesContentSourceArgs) {
+export function useMessagesContentSource({ familyId, currentMemberId, actions, repository: repositoryOverride }: UseMessagesContentSourceArgs) {
+  const repository = useMemo(() => repositoryOverride ?? new SupabaseMessagesRepository(), [repositoryOverride])
   const [messagesByConversation, setMessagesByConversation] = useState<Record<string, MessageRow[]>>({})
   const [reactionsByMessage, setReactionsByMessage] = useState<Record<string, MessageReactionRow[]>>({})
   const [attachmentsByMessage, setAttachmentsByMessage] = useState<Record<string, MessageAttachmentRow[]>>({})
@@ -77,66 +70,41 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
   // reflects the entity's current state after an action or a refetch.
   const resolveEntitiesFor = useCallback(async (messageIds: string[]) => {
     if (messageIds.length === 0) return
-    const { data, error: rpcError } = await supabase.rpc('resolve_message_entities', {
-      p_message_ids: messageIds,
-    })
-    if (rpcError) {
-      console.error('Failed to resolve shared entities:', rpcError.message)
+    let resolved: Record<string, MessageEntityResolution>
+    try {
+      resolved = await repository.resolveEntities(messageIds)
+    } catch (error) {
+      console.error('Failed to resolve shared entities:', error instanceof Error ? error.message : 'unknown error')
       return
     }
-    const rows = (data ?? []) as Array<{
-      ref_id: string
-      message_id: string
-      entity_type: SharedEntityType
-      entity_id: string
-      entity_exists: boolean
-      state: Record<string, unknown> | null
-    }>
-    if (rows.length === 0) return
-    setEntityByMessage((current) => {
-      const next = { ...current }
-      for (const row of rows) {
-        next[row.message_id] = {
-          refId: row.ref_id,
-          messageId: row.message_id,
-          entityType: row.entity_type,
-          entityId: row.entity_id,
-          exists: row.entity_exists,
-          state: row.state ?? {},
-        }
-      }
-      return next
-    })
-  }, [])
+    if (Object.keys(resolved).length === 0) return
+    setEntityByMessage((current) => ({ ...current, ...resolved }))
+  }, [repository])
 
   const ensureAttachmentSignedUrl = useCallback(async (attachment: MessageAttachmentRow) => {
-    const { data, error: signedUrlError } = await supabase.storage
-      .from(attachment.storage_bucket)
-      .createSignedUrl(attachment.storage_path, ATTACHMENT_SIGNED_URL_SECONDS)
-    if (signedUrlError) {
-      console.error('Failed to create attachment signed URL:', signedUrlError.message)
-      return
-    }
-    setAttachmentSignedUrls((current) => ({ ...current, [attachment.id]: data.signedUrl }))
-  }, [])
+    const signedUrl = await repository.signAttachment(attachment.storage_path)
+    if (!signedUrl) return
+    setAttachmentSignedUrls((current) => ({ ...current, [attachment.id]: signedUrl }))
+  }, [repository])
 
   const hydrateMessageExtras = useCallback(async (messageIds: string[]) => {
     if (messageIds.length === 0) return
-    const [{ data: reactions }, { data: attachments }] = await Promise.all([
-      supabase
-        .from('message_reactions')
-        .select('message_id, member_id, emoji, family_id, created_at')
-        .in('message_id', messageIds),
-      supabase
-        .from('message_attachments')
-        .select('id, message_id, family_id, conversation_id, storage_bucket, storage_path, mime_type, byte_size, width, height, created_at')
-        .in('message_id', messageIds),
-    ])
+    let reactions: MessageReactionRow[] | null = null
+    let attachments: MessageAttachmentRow[] | null = null
+    try {
+      ;[reactions, attachments] = await Promise.all([
+        repository.listReactions(messageIds),
+        repository.listAttachments(messageIds),
+      ])
+    } catch (error) {
+      console.error('Failed to hydrate message extras:', error instanceof Error ? error.message : 'unknown error')
+      return
+    }
     if (reactions) {
       setReactionsByMessage((current) => {
         const next = { ...current }
         for (const id of messageIds) next[id] = []
-        for (const row of reactions as MessageReactionRow[]) {
+        for (const row of reactions ?? []) {
           const list = next[row.message_id] ?? []
           list.push(row)
           next[row.message_id] = list
@@ -145,7 +113,7 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
       })
     }
     if (attachments) {
-      const rows = attachments as MessageAttachmentRow[]
+      const rows = attachments
       setAttachmentsByMessage((current) => {
         const next = { ...current }
         for (const id of messageIds) next[id] = []
@@ -159,7 +127,7 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
       await Promise.all(rows.map(ensureAttachmentSignedUrl))
     }
     await resolveEntitiesFor(messageIds)
-  }, [ensureAttachmentSignedUrl, resolveEntitiesFor])
+  }, [ensureAttachmentSignedUrl, repository, resolveEntitiesFor])
 
   // ------------------------------------------------------------
   // Realtime — content-only tables. `messages` is owned by the summary
@@ -310,18 +278,13 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
       if (initialLoadInFlightRef.current.has(conversationId)) return
       initialLoadInFlightRef.current.add(conversationId)
       try {
-        const { data, error: loadError } = await supabase
-          .from('messages')
-          .select(MESSAGE_SELECT_COLUMNS)
-          .eq('conversation_id', conversationId)
-          .order('created_at', { ascending: false })
-          .order('id', { ascending: false })
-          .limit(INITIAL_MESSAGES_LIMIT)
-        if (loadError) {
-          console.error('Failed to load messages:', loadError.message)
+        let rows: MessageRow[]
+        try {
+          rows = await repository.listPage({ conversationId, limit: INITIAL_MESSAGES_LIMIT })
+        } catch (loadError) {
+          console.error('Failed to load messages:', loadError instanceof Error ? loadError.message : 'unknown error')
           return
         }
-        const rows = (data ?? []) as MessageRow[]
         const ascending = [...rows].sort((a, b) => compareMessages(a, b))
         setMessagesByConversation((current) => ({
           ...current,
@@ -357,20 +320,20 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
       const existing = messagesByConversation[conversationId] ?? []
       if (existing.length === 0) return
       if (olderExhausted.has(conversationId)) return
-      const oldest = existing.find((m) => !m.id.startsWith('pending:')) ?? existing[0]
-      const { data, error: loadError } = await supabase
-        .from('messages')
-        .select(MESSAGE_SELECT_COLUMNS)
-        .eq('conversation_id', conversationId)
-        .or(`created_at.lt.${oldest.created_at},and(created_at.eq.${oldest.created_at},id.lt.${oldest.id})`)
-        .order('created_at', { ascending: false })
-        .order('id', { ascending: false })
-        .limit(OLDER_PAGE_SIZE)
-      if (loadError) {
-        console.error('Failed to load older messages:', loadError.message)
+      // Anchor on the oldest *server* row: a pending one has no place in the
+      // keyset ordering and would page from a timestamp the server never saw.
+      const oldest = existing.find((m) => !isPendingMessageId(m.id)) ?? existing[0]
+      let rows: MessageRow[]
+      try {
+        rows = await repository.listPage({
+          conversationId,
+          limit: OLDER_PAGE_SIZE,
+          before: { createdAt: oldest.created_at, id: oldest.id },
+        })
+      } catch (loadError) {
+        console.error('Failed to load older messages:', loadError instanceof Error ? loadError.message : 'unknown error')
         return
       }
-      const rows = (data ?? []) as MessageRow[]
       if (rows.length === 0) {
         setOlderExhausted((current) => {
           const next = new Set(current)
@@ -413,48 +376,11 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
     signal?: AbortSignal,
   ): Promise<UploadAttachmentResult> => {
     if (!familyId) throw new Error('No family')
-    const validationError: MessageAttachmentValidationError | null = validateMessageAttachmentFile(file)
-    if (validationError) throw new Error(validationError)
-
-    const compressed = await compressMessageAttachment(file)
-    if (signal?.aborted) throw new DOMException('Upload cancelled', 'AbortError')
-
-    const extension = messageAttachmentExtension(compressed.file.type)
-    const storagePath = buildMessageAttachmentPath(familyId, conversationId, extension)
-    const { error: uploadError } = await supabase.storage
-      .from('message-attachments')
-      .upload(storagePath, compressed.file, {
-        cacheControl: '3600',
-        contentType: compressed.file.type,
-        upsert: false,
-      })
-    if (uploadError) throw friendly(uploadError)
-
-    if (signal?.aborted) {
-      // Best-effort cleanup — we already uploaded but the user cancelled
-      // before we could bind the attachment to a message.
-      await supabase.storage.from('message-attachments').remove([storagePath])
-      throw new DOMException('Upload cancelled', 'AbortError')
-    }
-
-    const { data, error: rpcError } = await supabase.rpc('register_message_attachment', {
-      p_conversation_id: conversationId,
-      p_storage_path: storagePath,
-      p_mime_type: compressed.file.type,
-      p_byte_size: compressed.file.size,
-      p_width: compressed.width || null,
-      p_height: compressed.height || null,
+    // Validation, compression, upload, registration and every cleanup path
+    // for the window in between now live in the repository.
+    const { attachment, signedUrl } = await repository.uploadAttachment({
+      conversationId, familyId, file, signal,
     })
-    if (rpcError) {
-      await supabase.storage.from('message-attachments').remove([storagePath])
-      throw friendly(rpcError)
-    }
-    const attachment = (Array.isArray(data) ? data[0] : data) as MessageAttachmentRow
-    const { data: signed, error: signedError } = await supabase.storage
-      .from('message-attachments')
-      .createSignedUrl(storagePath, ATTACHMENT_SIGNED_URL_SECONDS)
-    if (signedError) console.error('Failed to sign attachment URL:', signedError.message)
-    const signedUrl = signed?.signedUrl ?? ''
     setAttachmentSignedUrls((current) => ({ ...current, [attachment.id]: signedUrl }))
     setAttachmentsByMessage((current) => {
       const list = current[attachment.message_id] ?? []
@@ -462,17 +388,14 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
       return { ...current, [attachment.message_id]: [...list, attachment] }
     })
     return { attachment, signedUrl }
-  }, [familyId])
+  }, [familyId, repository])
 
   const discardPendingAttachment = useCallback(async (attachmentId: string, storagePath: string) => {
     try {
-      const { error: rpcError } = await supabase.rpc('discard_pending_attachment', {
-        p_attachment_id: attachmentId,
-      })
-      if (rpcError) console.error('Failed to discard attachment metadata:', rpcError.message)
+      // Metadata then object; the repository keeps going even if the first
+      // half fails, because the object still has to be cleaned up.
+      await repository.discardPendingAttachment(attachmentId, storagePath)
     } finally {
-      const { error: removeError } = await supabase.storage.from('message-attachments').remove([storagePath])
-      if (removeError) console.error('Failed to remove pending attachment:', removeError.message)
       setAttachmentSignedUrls((current) => {
         const next = { ...current }
         delete next[attachmentId]
@@ -487,7 +410,7 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
         return next
       })
     }
-  }, [])
+  }, [repository])
 
   // ------------------------------------------------------------
   // Message actions.
@@ -514,7 +437,7 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
     const clientId = normalized.clientId ?? crypto.randomUUID()
     const now = new Date().toISOString()
     const optimistic: MessageRow = {
-      id: `pending:${clientId}`,
+      id: pendingMessageId(clientId),
       conversation_id: conversationId,
       family_id: familyId ?? '',
       sender_member_id: currentMemberId,
@@ -542,18 +465,18 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
       }))
     }
     try {
-      const { data, error: rpcError } = await supabase.rpc('send_message', {
-        p_conversation_id: conversationId,
-        p_body: trimmed,
-        p_client_id: clientId,
-        p_reply_to_message_id: normalized.replyToMessageId ?? null,
-        p_attachment_ids: attachmentIds.length > 0 ? attachmentIds : null,
+      const inserted = await repository.send({
+        conversationId,
+        body: trimmed,
+        // Reused verbatim on retry: the server deduplicates on it, so a fresh
+        // key here would post the same message a second time.
+        clientId,
+        replyToMessageId: normalized.replyToMessageId ?? null,
+        attachmentIds,
         // A hint, not an authority: the RPC re-resolves mentions from the
         // body and drops any id that is not an active participant.
-        p_mention_member_ids: normalized.mentionMemberIds?.length ? normalized.mentionMemberIds : null,
+        mentionMemberIds: normalized.mentionMemberIds,
       })
-      if (rpcError) throw friendly(rpcError)
-      const inserted = (Array.isArray(data) ? data[0] : data) as MessageRow | null
       if (inserted) {
         setMessagesByConversation((current) => {
           const existing = current[conversationId] ?? []
@@ -585,7 +508,7 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
       })
       throw e
     }
-  }, [currentMemberId, familyId])
+  }, [currentMemberId, familyId, repository])
 
   const retryFailedMessage = useCallback(async (conversationId: string, clientId: string) => {
     const ghost = (messagesByConversationRef.current[conversationId] ?? []).find((m) => m.client_id === clientId)
@@ -615,7 +538,7 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
     const clientId = payload.clientId ?? crypto.randomUUID()
     const now = new Date().toISOString()
     const optimistic: MessageRow = {
-      id: `pending:${clientId}`,
+      id: pendingMessageId(clientId),
       conversation_id: conversationId,
       family_id: familyId ?? '',
       sender_member_id: currentMemberId,
@@ -701,15 +624,8 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
     entityId: string,
     summary: string,
   ) => {
-    const { error: rpcError } = await supabase.rpc('post_entity_system_message', {
-      p_conversation_id: conversationId,
-      p_kind: kind,
-      p_entity_type: entityType,
-      p_entity_id: entityId,
-      p_summary: summary,
-    })
-    if (rpcError) console.error('Failed to post system message:', rpcError.message)
-  }, [])
+    await repository.postEntitySystemMessage({ conversationId, kind, entityType, entityId, summary })
+  }, [repository])
 
   const editMessage = useCallback(async (messageId: string, body: string) => {
     const trimmed = body.trim()
@@ -728,12 +644,12 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
       }
       return touched ? next : current
     })
-    const { data, error: rpcError } = await supabase.rpc('edit_message', {
-      p_message_id: messageId,
-      p_body: trimmed,
-    })
-    if (rpcError) throw friendly(rpcError)
-    const updated = (Array.isArray(data) ? data[0] : data) as MessageRow | null
+    let updated: MessageRow | null
+    try {
+      updated = await repository.edit(messageId, trimmed)
+    } catch (editError) {
+      throw friendly(editError)
+    }
     if (updated) {
       setMessagesByConversation((current) => {
         const list = current[updated.conversation_id]
@@ -747,11 +663,12 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
   }, [])
 
   const deleteMessage = useCallback(async (messageId: string) => {
-    const { data, error: rpcError } = await supabase.rpc('delete_message', {
-      p_message_id: messageId,
-    })
-    if (rpcError) throw friendly(rpcError)
-    const updated = (Array.isArray(data) ? data[0] : data) as MessageRow | null
+    let updated: MessageRow | null
+    try {
+      updated = await repository.remove(messageId)
+    } catch (deleteError) {
+      throw friendly(deleteError)
+    }
     if (updated) {
       setMessagesByConversation((current) => {
         const list = current[updated.conversation_id]
@@ -767,7 +684,7 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
       setReactionsByMessage((current) => ({ ...current, [updated.id]: [] }))
       setAttachmentsByMessage((current) => ({ ...current, [updated.id]: [] }))
     }
-  }, [registerLoadedMessages])
+  }, [registerLoadedMessages, repository])
 
   const toggleReaction = useCallback(async (messageId: string, emoji: string) => {
     if (!currentMemberId) return
@@ -780,11 +697,11 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
         const list = current[messageId] ?? []
         return { ...current, [messageId]: list.filter((r) => !(r.member_id === currentMemberId && r.emoji === trimmed)) }
       })
-      const { error: rpcError } = await supabase.rpc('remove_message_reaction', {
-        p_message_id: messageId,
-        p_emoji: trimmed,
-      })
-      if (rpcError) console.error('Failed to remove reaction:', rpcError.message)
+      try {
+        await repository.removeReaction(messageId, trimmed)
+      } catch (reactionError) {
+        console.error('Failed to remove reaction:', reactionError instanceof Error ? reactionError.message : 'unknown error')
+      }
     } else {
       const optimistic: MessageReactionRow = {
         message_id: messageId,
@@ -798,10 +715,12 @@ export function useMessagesContentSource({ familyId, currentMemberId, actions }:
         if (list.some((r) => r.member_id === currentMemberId && r.emoji === trimmed)) return current
         return { ...current, [messageId]: [...list, optimistic] }
       })
-      const { error: rpcError } = await supabase.rpc('add_message_reaction', {
-        p_message_id: messageId,
-        p_emoji: trimmed,
-      })
+      let rpcError: unknown = null
+      try {
+        await repository.addReaction(messageId, trimmed)
+      } catch (error) {
+        rpcError = error
+      }
       if (rpcError) {
         setReactionsByMessage((current) => {
           const list = current[messageId] ?? []
