@@ -71,6 +71,8 @@ export function ActivitiesProvider({ familyId, children }: ProviderProps) {
     if (!familyId) return
     const unsubscribe = createRealtimeSubscription({
       channelName: `family:${familyId}:activities`,
+      owner: 'ActivitiesProvider',
+      openReason: 'provider-mount',
       onStatusChange: setActivitiesRealtimeStatus,
       tables: [
         {

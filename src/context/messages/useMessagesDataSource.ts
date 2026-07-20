@@ -134,6 +134,8 @@ export function useMessagesDataSource({ familyId, currentMemberId }: UseMessages
     if (!familyId) return
     const unsubscribe = createRealtimeSubscription({
       channelName: `family:${familyId}:messages`,
+      owner: 'MessagesProvider',
+      openReason: 'provider-mount',
       onStatusChange: setMessagesRealtimeStatus,
       tables: [
         {

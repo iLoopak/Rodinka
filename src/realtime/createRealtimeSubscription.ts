@@ -1,5 +1,6 @@
 import { supabase } from '../supabaseClient'
 import { connectionStateFromSubscribeStatus, type RealtimeConnectionState } from './connectionState'
+import { openRealtimeLifecycle } from './realtimeRegistry'
 
 export interface RealtimeTableConfig {
   table: string
@@ -19,6 +20,10 @@ export interface RealtimeTableConfig {
 export interface CreateRealtimeSubscriptionOptions {
   /** `family:<familyId>:<domain>` — see README's Realtime section for the convention. */
   channelName: string
+  /** Stable feature/provider name. Never include user or record data. */
+  owner: string
+  /** Why this owner opened the channel, e.g. `provider-mount`. */
+  openReason: string
   tables: RealtimeTableConfig[]
   onStatusChange?: (state: RealtimeConnectionState) => void
 }
@@ -37,7 +42,7 @@ function log(...args: unknown[]) {
 // status callback to our RealtimeConnectionState vocabulary and never
 // touches caller state on disconnect, so local data is never lost while
 // reconnecting.
-export function createRealtimeSubscription({ channelName, tables, onStatusChange }: CreateRealtimeSubscriptionOptions): () => void {
+export function createRealtimeSubscription({ channelName, owner, openReason, tables, onStatusChange }: CreateRealtimeSubscriptionOptions): () => void {
   let channel = supabase.channel(channelName)
 
   for (const config of tables) {
@@ -77,13 +82,31 @@ export function createRealtimeSubscription({ channelName, tables, onStatusChange
   }
 
   log(channelName, 'subscribing', tables.map((t) => t.table))
-  channel.subscribe((status, error) => {
-    log(channelName, 'status', status, error?.message)
-    onStatusChange?.(connectionStateFromSubscribeStatus(status))
-  })
+  const lifecycle = openRealtimeLifecycle({ channelName, owner, openReason, tables: tables.map(({ table }) => table) })
+  try {
+    channel.subscribe((status, error) => {
+      log(channelName, 'status', status, error?.message)
+      const state = connectionStateFromSubscribeStatus(status)
+      lifecycle.status(state)
+      onStatusChange?.(state)
+    })
+  } catch (error) {
+    lifecycle.close('subscribe-failed')
+    throw error
+  }
 
+  let cleanedUp = false
   return () => {
+    if (cleanedUp) return
+    cleanedUp = true
     log(channelName, 'unsubscribing')
-    void supabase.removeChannel(channel)
+    lifecycle.close('effect-cleanup')
+    try {
+      void Promise.resolve(supabase.removeChannel(channel)).catch(() => {
+        if (isDev) console.warn('[Rodinka realtime] channel removal failed', channelName, owner)
+      })
+    } catch {
+      if (isDev) console.warn('[Rodinka realtime] channel removal failed', channelName, owner)
+    }
   }
 }

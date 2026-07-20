@@ -8,14 +8,14 @@ import { FamilyBrand } from './FamilyBrand'
 import { useActiveFamilyMark } from '../hooks/useActiveFamilyMark'
 import { useRealtimeStatus } from '../hooks/useRealtimeStatus'
 import { RealtimeStatusBadge } from './ui/RealtimeStatusBadge'
-import { useShopping } from '../context/shopping/ShoppingContext'
+import { useShoppingSyncStatus } from '../context/shopping/ShoppingContext'
 import { t } from '../strings'
 import { useFamilyCore } from '../context/family/FamilyCoreContext'
 import { capabilitiesFor, childRouteFallback } from '../utils/uiCapabilities'
-import { useMessagesData } from '../context/messages/MessagesContext'
+import { useActiveConversationId } from '../context/messages/MessagesContext'
 import { useConversationPushBridge } from '../hooks/useConversationPushBridge'
 import { CreateRecordWizardController } from './create-record/CreateRecordWizardController'
-import { useCalendarOffline } from '../context/calendar/CalendarOfflineContext'
+import { useCalendarSyncStatus } from '../context/calendar/CalendarOfflineContext'
 import { useFamilyLogoAnimation } from '../hooks/useFamilyLogoAnimation'
 import { useLanguage } from '../i18n/languageContext'
 import { getRouteDefinition, type RouteDefinition } from '../routes/routeRegistry'
@@ -38,7 +38,7 @@ function StandardAppShell({ definition }: { definition: RouteDefinition }) {
   const { path, navigate } = useRouter()
   const { language } = useLanguage()
   const { currentMember } = useFamilyCore()
-  const { activeConversationId } = useMessagesData()
+  const activeConversationId = useActiveConversationId()
   // Mounted here rather than inside MessagesScreen so the service worker's
   // "is this conversation open?" probe gets an immediate answer from any
   // screen, and so a push click can route in from anywhere in the app.
@@ -47,8 +47,8 @@ function StandardAppShell({ definition }: { definition: RouteDefinition }) {
   const { familyName, familyNameLoading } = useFamilySettings()
   const familyMark = useActiveFamilyMark()
   const realtimeStatus = useRealtimeStatus()
-  const { shoppingSyncStatus } = useShopping()
-  const { calendarSyncStatus } = useCalendarOffline()
+  const shoppingSyncStatus = useShoppingSyncStatus()
+  const calendarSyncStatus = useCalendarSyncStatus()
   const offlineMode = shoppingSyncStatus === 'offline' || calendarSyncStatus === 'offline'
   const browserOffline = typeof navigator !== 'undefined' && !navigator.onLine
   const realtimeInterrupted = realtimeStatus === 'reconnecting' || realtimeStatus === 'disconnected'

@@ -38,6 +38,8 @@ export function createMedicalRepository(options: { familyId: string; userId: str
     subscribeToChanges({ onRecordsChange, onStatusChange }) {
       return createRealtimeSubscription({
         channelName: `family:${familyId}:medical`,
+        owner: 'MedicalProvider',
+        openReason: 'provider-mount',
         onStatusChange,
         tables: [{
           table: 'medical_records',

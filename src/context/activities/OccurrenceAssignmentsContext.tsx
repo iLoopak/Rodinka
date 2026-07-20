@@ -49,6 +49,8 @@ export function OccurrenceAssignmentsProvider({ familyId, children }: ProviderPr
     if (!familyId) return
     const unsubscribe = createRealtimeSubscription({
       channelName: `family:${familyId}:occurrence-assignments`,
+      owner: 'OccurrenceAssignmentsProvider',
+      openReason: 'provider-mount',
       onStatusChange: setOccurrenceAssignmentsRealtimeStatus,
       tables: [
         {

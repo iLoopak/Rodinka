@@ -91,6 +91,9 @@ async function main() {
   if (productionSources.some((source) => source.includes('[Rodinka startup]'))) {
     errors.push('Development-only startup diagnostics leaked into the production bundle.')
   }
+  if (productionSources.some((source) => source.includes('[Rodinka realtime]'))) {
+    errors.push('Development-only realtime diagnostics leaked into the production bundle.')
+  }
 
   if (errors.length) {
     console.error('Route chunk guard failed:')

@@ -93,6 +93,7 @@ export function useCalendarOfflineDataSource(familyId: string, userId: string, c
 
 type CalendarOfflineContextValue = ReturnType<typeof useCalendarOfflineDataSource>
 const CalendarOfflineContext = createContext<CalendarOfflineContextValue | null>(null)
+const CalendarSyncStatusContext = createContext<CalendarOfflineContextValue['calendarSyncStatus'] | null>(null)
 
 interface ProviderProps {
   familyId: string
@@ -103,11 +104,21 @@ interface ProviderProps {
 
 export function CalendarOfflineProvider({ familyId, userId, currentMemberId, children }: ProviderProps) {
   const value = useCalendarOfflineDataSource(familyId, userId, currentMemberId)
-  return <CalendarOfflineContext.Provider value={value}>{children}</CalendarOfflineContext.Provider>
+  return (
+    <CalendarSyncStatusContext.Provider value={value.calendarSyncStatus}>
+      <CalendarOfflineContext.Provider value={value}>{children}</CalendarOfflineContext.Provider>
+    </CalendarSyncStatusContext.Provider>
+  )
 }
 
 export function useCalendarOffline() {
   const context = useContext(CalendarOfflineContext)
   if (!context) throw new Error('useCalendarOffline must be used within a CalendarOfflineProvider')
   return context
+}
+
+export function useCalendarSyncStatus() {
+  const status = useContext(CalendarSyncStatusContext)
+  if (status === null) throw new Error('useCalendarSyncStatus must be used within a CalendarOfflineProvider')
+  return status
 }

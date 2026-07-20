@@ -59,7 +59,7 @@ export function createChoresRepository(options: { familyId: string; userId: stri
     },
     subscribeToChanges({ onChoresChange, onCompletionsChange, onStatusChange }) {
       return createRealtimeSubscription({
-        channelName: `family:${familyId}:chores`, onStatusChange,
+        channelName: `family:${familyId}:chores`, owner: 'ChoresProvider', openReason: 'provider-mount', onStatusChange,
         tables: [
           { table: 'chores', filter: `family_id=eq.${familyId}`, onInsert: (row) => onChoresChange((current) => applyRealtimeInsert(current, normalizeChore(row as unknown as Parameters<typeof normalizeChore>[0]))), onUpdate: (row) => onChoresChange((current) => applyRealtimeUpdate(current, normalizeChore(row as unknown as Parameters<typeof normalizeChore>[0]))), onDelete: (row) => onChoresChange((current) => applyRealtimeDelete(current, row.id as string)) },
           { table: 'chore_completions', onInsert: (row) => onCompletionsChange((current) => applyRealtimeInsert(current, completionFromRow(row))), onUpdate: (row) => onCompletionsChange((current) => applyRealtimeUpdate(current, completionFromRow(row))), onDelete: (row) => onCompletionsChange((current) => applyRealtimeDelete(current, row.id as string)) },
