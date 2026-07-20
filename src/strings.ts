@@ -293,6 +293,12 @@ export const strings = {
       family: 'Načítám vaši rodinu...',
       generic: 'Načítám...',
     },
+    bootstrap: {
+      sessionUnavailable: 'Nepodařilo se ověřit přihlášení. Zkontrolujte připojení a zkuste to znovu.',
+      continueToSignIn: 'Přejít na přihlášení',
+      validating: 'Aktualizuji',
+      validatingAria: 'Ověřuji rodinná data na serveru',
+    },
     errors: {
       generic: 'Něco se nepovedlo. Zkuste to prosím znovu.',
       loadFailed: 'Data se nepodařilo načíst.',
@@ -1872,6 +1878,12 @@ export const strings = {
       session: 'Loading...',
       family: 'Loading your family...',
       generic: 'Loading...',
+    },
+    bootstrap: {
+      sessionUnavailable: 'Could not verify your sign-in. Check your connection and try again.',
+      continueToSignIn: 'Go to sign-in',
+      validating: 'Updating',
+      validatingAria: 'Checking family data with the server',
     },
     errors: {
       generic: 'Something went wrong. Please try again.',

@@ -69,6 +69,60 @@ describe('useSession', () => {
     expect(result.current.session).toBeNull()
   })
 
+  it('reports an auth timeout as retryable instead of a sign-out', async () => {
+    vi.useFakeTimers()
+    auth.getSession.mockReturnValue(new Promise(() => undefined))
+    const { result } = renderHook(() => useSession())
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000) })
+
+    // The user never signed out — claiming they did would send them to a
+    // login form for a session they may still hold.
+    expect(result.current.status).toBe('unavailable')
+    expect(result.current.session).toBeUndefined()
+    expect(result.current.authError).toBe('auth-init-timeout')
+    vi.useRealTimers()
+  })
+
+  it('retries the whole auth bootstrap on demand', async () => {
+    vi.useFakeTimers()
+    auth.getSession.mockReturnValue(new Promise(() => undefined))
+    const { result } = renderHook(() => useSession())
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000) })
+    expect(result.current.status).toBe('unavailable')
+
+    auth.getSession.mockResolvedValue({ data: { session }, error: null })
+    await act(async () => { result.current.retry() })
+    vi.useRealTimers()
+
+    await waitFor(() => expect(result.current.status).toBe('authenticated'))
+    expect(result.current.session).toBe(session)
+    expect(result.current.authError).toBeNull()
+  })
+
+  it('treats an unreachable auth endpoint as unresolved, not anonymous', async () => {
+    auth.getSession.mockResolvedValue({ data: { session: null }, error: { message: 'TypeError: Failed to fetch' } })
+    const { result } = renderHook(() => useSession())
+    await waitFor(() => expect(result.current.status).toBe('unavailable'))
+    expect(result.current.session).toBeUndefined()
+  })
+
+  it('treats a rejected getSession as unresolved', async () => {
+    auth.getSession.mockRejectedValue(new Error('boom'))
+    const { result } = renderHook(() => useSession())
+    await waitFor(() => expect(result.current.status).toBe('unavailable'))
+    expect(result.current.authError).toBe('getSession-rejected')
+  })
+
+  it('still treats an expired refresh token as a confirmed anonymous session', async () => {
+    // This IS an answer from the server: there is no usable session. It must
+    // keep routing to the login screen rather than into a retry loop.
+    auth.getSession.mockResolvedValue({ data: { session: null }, error: { message: 'Invalid refresh token' } })
+    const { result } = renderHook(() => useSession())
+    await waitFor(() => expect(result.current.status).toBe('anonymous'))
+    expect(result.current.session).toBeNull()
+  })
+
   it('follows sign-in and sign-out events after initialization', async () => {
     auth.getSession.mockResolvedValue({ data: { session: null }, error: null })
     const { result } = renderHook(() => useSession())

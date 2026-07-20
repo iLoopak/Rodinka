@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSession } from './hooks/useSession'
 import type { ReactNode } from 'react'
 import { useFamily } from './hooks/useFamily'
@@ -22,6 +22,7 @@ import { resolveAuthRoutingState } from './auth/authRoutingState'
 import { useNetworkStatus } from './network/useNetworkStatus'
 import { ErrorState } from './components/ui/ErrorState'
 import { routeIsAvailableOffline } from './routes/routeRegistry'
+import { FamilyBootstrapProvider } from './context/family/FamilyBootstrapContext'
 
 function AppLoading({ label }: { label: string }) {
   return <div className="loading app-loading"><FamilyMark variant="static" size={32} />{label}</div>
@@ -30,10 +31,13 @@ function AppLoading({ label }: { label: string }) {
 export default function App() {
   useLanguage()
   const networkStatus = useNetworkStatus()
-  const { session } = useSession()
+  const { session, status: authStatus, authError, retry: retryAuth } = useSession()
   const family = useFamily(session?.user.id)
-  const routing = resolveAuthRoutingState({ session, family })
+  const routing = resolveAuthRoutingState({ session, authStatus, authError, family })
   const lastRoutingStatus = useRef<string | null>(null)
+  // Escape hatch: if the auth check keeps failing, the user must still be able
+  // to reach the login form rather than being stuck behind a retry button.
+  const [skipAuthError, setSkipAuthError] = useState(false)
 
   useEffect(() => {
     console.info('BOOT 6 offline check done', { networkStatus })
@@ -52,7 +56,20 @@ export default function App() {
     return <AppLoading label={t.loading.session} />
   }
 
-  if (routing.status === 'unauthenticated') {
+  if (routing.status === 'authError' && !skipAuthError) {
+    console.error('BOOT ERROR auth unavailable:', routing.authError)
+    return (
+      <div className="loading app-loading">
+        <FamilyMark variant="static" size={32} />
+        <ErrorState message={t.bootstrap.sessionUnavailable} onRetry={retryAuth} />
+        <button type="button" className="link" onClick={() => setSkipAuthError(true)}>
+          {t.bootstrap.continueToSignIn}
+        </button>
+      </div>
+    )
+  }
+
+  if (routing.status === 'unauthenticated' || routing.status === 'authError') {
     return <AuthScreen />
   }
 
@@ -80,19 +97,29 @@ export default function App() {
     return <OnboardingScreen onDone={family.refresh} />
   }
 
+  const validating = routing.status === 'cachedFamilyValidating'
+  const connectionError = routing.status === 'authenticatedWithFamily' ? routing.connectionError : null
+  // Remount the whole data graph when the identity scope changes. Without this
+  // key, switching account or family would reuse provider state that was
+  // populated for the previous scope — the one thing a cached-identity boot
+  // must never be able to show.
+  const scopeKey = `${routing.session.user.id}:${routing.member.family_id}`
+
   return (
     <RouterProvider>
-      <AppDataProviders member={routing.member} userId={routing.session.user.id} userEmail={routing.session.user.email ?? ''}>
-        <ReminderProvider>
-          <PushProvider>
-            <CreateRecordProvider>
-              <OfflineStartupGate networkStatus={networkStatus} connectionError={routing.connectionError} refresh={family.refresh}>
-                <AppShell />
-              </OfflineStartupGate>
-            </CreateRecordProvider>
-          </PushProvider>
-        </ReminderProvider>
-      </AppDataProviders>
+      <FamilyBootstrapProvider validating={validating}>
+        <AppDataProviders key={scopeKey} member={routing.member} userId={routing.session.user.id} userEmail={routing.session.user.email ?? ''}>
+          <ReminderProvider>
+            <PushProvider>
+              <CreateRecordProvider>
+                <OfflineStartupGate networkStatus={networkStatus} connectionError={connectionError} refresh={family.refresh}>
+                  <AppShell />
+                </OfflineStartupGate>
+              </CreateRecordProvider>
+            </PushProvider>
+          </ReminderProvider>
+        </AppDataProviders>
+      </FamilyBootstrapProvider>
     </RouterProvider>
   )
 }

@@ -6,7 +6,13 @@ import { isNetworkUnavailableError } from '../network/networkStatus'
 
 export type Member = FamilyMember
 
-export type FamilyMembershipStatus = 'idle' | 'loading' | 'resolved' | 'error'
+export type FamilyMembershipStatus =
+  | 'idle'
+  | 'loading'
+  /** Cached identity is on screen while the server answer is still in flight. */
+  | 'cached-validating'
+  | 'resolved'
+  | 'error'
 
 interface FamilyMembershipState {
   userId: string | null
@@ -17,6 +23,10 @@ interface FamilyMembershipState {
 }
 
 const BOOT_TIMEOUT_MS = 10_000
+// The identity cache no longer gates the membership request, so it does not
+// need the network-sized budget. An IndexedDB read that takes seconds is
+// broken; give up quickly and let the server answer stand alone.
+const CACHE_TIMEOUT_MS = 3_000
 
 async function withBootTimeout<T>(step: string, promise: PromiseLike<T>, timeoutMs = BOOT_TIMEOUT_MS): Promise<T> {
   let timeout: ReturnType<typeof globalThis.setTimeout> | null = null
@@ -57,14 +67,20 @@ export function useFamily(userId: string | undefined) {
 
     setState({ userId, status: 'loading', member: null, connectionError: null, dataError: null })
 
-    let cached: Member | null = null
-    try {
-      console.info('BOOT 3 profile loaded', { source: 'local-cache-start' })
-      cached = await withBootTimeout('profile cache load', getShoppingLocalStore().loadFamilyIdentity(userId))
-      console.info('BOOT 3 profile loaded', { cached: Boolean(cached) })
-    } catch (error) {
+    // --- both reads start now -------------------------------------------
+    // These used to be sequential: the cache was awaited before the query
+    // was even built, so a slow IndexedDB read added its latency (and its
+    // own 10s timeout) in front of every membership request. They answer
+    // independent questions, so they race instead.
+    console.info('BOOT 3 profile loaded', { source: 'local-cache-start' })
+    const cachePromise = withBootTimeout(
+      'profile cache load',
+      getShoppingLocalStore().loadFamilyIdentity(userId),
+      CACHE_TIMEOUT_MS,
+    ).catch((error: unknown) => {
       console.error('BOOT ERROR profile cache load failed:', error instanceof Error ? error.message : 'unknown error')
-    }
+      return null
+    })
 
     console.info('BOOT 4 membership loaded', { status: 'started' })
     // RLS ensures this only ever returns rows the current user is allowed to see
@@ -74,18 +90,37 @@ export function useFamily(userId: string | undefined) {
         .eq('user_id', userId)
         .eq('status', 'active')
         .maybeSingle()
-    let response: { data: unknown; error: { message: string } | null }
-    try {
-      response = await withBootTimeout('membership load', query)
-    } catch (error) {
-      response = { data: null, error: error instanceof Error ? error : new Error('membership load failed') }
-    }
+    const membershipPromise = withBootTimeout('membership load', query).then(
+      (response) => response as { data: unknown; error: { message: string } | null },
+      (error: unknown) => ({ data: null, error: error instanceof Error ? error : new Error('membership load failed') }),
+    )
+
+    // --- cached identity may open the shell early ------------------------
+    // Only ever the cache written for THIS user id (the store is keyed by it),
+    // and only while nothing more authoritative has landed. The server result
+    // below overwrites this wholesale, so a mismatch cannot survive.
+    void cachePromise.then((cached) => {
+      if (request !== requestVersion.current) return
+      console.info('BOOT 3 profile loaded', { cached: Boolean(cached) })
+      if (!cached) return
+      setState((current) => {
+        if (current.userId !== userId || current.status !== 'loading') return current
+        return { userId, status: 'cached-validating', member: cached, connectionError: null, dataError: null }
+      })
+    })
+
+    // --- the server has authority ----------------------------------------
+    const response = await membershipPromise
     if (request !== requestVersion.current) return
 
     const { data, error } = response
     if (error) {
       console.error('BOOT ERROR membership load failed:', error.message)
       const isNetworkError = isNetworkUnavailableError(error)
+      const cached = await cachePromise
+      if (request !== requestVersion.current) return
+      // A permission/auth error must never leave cached family data on
+      // screen — only a genuine network outage may fall back to the cache.
       setState({
         userId,
         status: cached && isNetworkError ? 'resolved' : 'error',
@@ -93,16 +128,19 @@ export function useFamily(userId: string | undefined) {
         connectionError: isNetworkError ? error.message : null,
         dataError: isNetworkError ? null : error.message,
       })
-    } else {
-      const next = data ? ({ ...data, avatar_url: null } as Member) : null
-      console.info('BOOT 4 membership loaded', { found: Boolean(next) })
-      console.info('BOOT 5 family loaded', { familyId: next?.family_id ?? null })
-      setState({ userId, status: 'resolved', member: next, connectionError: null, dataError: null })
-      try {
-        await withBootTimeout('profile cache save', getShoppingLocalStore().saveFamilyIdentity(userId, next))
-      } catch (cacheError) {
-        console.error('BOOT ERROR profile cache save failed:', cacheError instanceof Error ? cacheError.message : 'unknown error')
-      }
+      return
+    }
+
+    const next = data ? ({ ...data, avatar_url: null } as Member) : null
+    console.info('BOOT 4 membership loaded', { found: Boolean(next) })
+    console.info('BOOT 5 family loaded', { familyId: next?.family_id ?? null })
+    // Wholesale replace: a confirmed empty membership clears a cached member
+    // and routes to onboarding, and a different family replaces the cached one.
+    setState({ userId, status: 'resolved', member: next, connectionError: null, dataError: null })
+    try {
+      await withBootTimeout('profile cache save', getShoppingLocalStore().saveFamilyIdentity(userId, next), CACHE_TIMEOUT_MS)
+    } catch (cacheError) {
+      console.error('BOOT ERROR profile cache save failed:', cacheError instanceof Error ? cacheError.message : 'unknown error')
     }
   }, [userId])
 
@@ -127,6 +165,7 @@ export function useFamily(userId: string | undefined) {
     status: scopedState.status,
     member: scopedState.member,
     loading: scopedState.status === 'loading',
+    validating: scopedState.status === 'cached-validating',
     resolved: scopedState.status === 'resolved',
     refresh,
     connectionError: scopedState.connectionError,

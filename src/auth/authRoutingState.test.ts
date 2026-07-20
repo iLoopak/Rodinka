@@ -61,4 +61,52 @@ describe('auth routing state', () => {
     })
     expect(state.status).toBe('authenticatedWithFamily')
   })
+
+  it('separates an unresolved auth check from a confirmed sign-out', () => {
+    const state = resolveAuthRoutingState({
+      session: undefined,
+      authStatus: 'unavailable',
+      authError: 'auth-init-timeout',
+      family: family({ status: 'idle' }),
+    })
+    expect(state.status).toBe('authError')
+    expect(state).toMatchObject({ authError: 'auth-init-timeout' })
+  })
+
+  it('never unlocks cached family data while auth is unresolved', () => {
+    const state = resolveAuthRoutingState({
+      session: undefined,
+      authStatus: 'unavailable',
+      family: family({ status: 'cached-validating', member }),
+    })
+    expect(state.status).toBe('authError')
+  })
+
+  it('opens the app on cached identity while the server is still validating', () => {
+    const state = resolveAuthRoutingState({
+      session,
+      authStatus: 'authenticated',
+      family: family({ status: 'cached-validating', member }),
+    })
+    expect(state.status).toBe('cachedFamilyValidating')
+    expect(state).toMatchObject({ member })
+  })
+
+  it('never reuses a cached-validating identity belonging to another user', () => {
+    const state = resolveAuthRoutingState({
+      session,
+      authStatus: 'authenticated',
+      family: family({ userId: 'another-user', status: 'cached-validating', member }),
+    })
+    expect(state.status).toBe('userDataLoading')
+  })
+
+  it('drops a cached-validating identity the moment the session goes anonymous', () => {
+    const state = resolveAuthRoutingState({
+      session: null,
+      authStatus: 'anonymous',
+      family: family({ status: 'cached-validating', member }),
+    })
+    expect(state.status).toBe('unauthenticated')
+  })
 })

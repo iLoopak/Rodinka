@@ -8,6 +8,7 @@ import { FamilyBrand } from './FamilyBrand'
 import { useActiveFamilyMark } from '../hooks/useActiveFamilyMark'
 import { useRealtimeStatus } from '../hooks/useRealtimeStatus'
 import { RealtimeStatusBadge } from './ui/RealtimeStatusBadge'
+import { FamilyValidatingBadge } from './ui/FamilyValidatingBadge'
 import { useShoppingSyncStatus } from '../context/shopping/ShoppingContext'
 import { t } from '../strings'
 import { useFamilyCore } from '../context/family/FamilyCoreContext'
@@ -74,6 +75,7 @@ function StandardAppShell({ definition }: { definition: RouteDefinition }) {
           openGameLabel={language === 'cs' ? 'Otevřít Rodinnou hernu' : 'Open the family arcade'}
         />
         <div className="app-header-actions">
+          <FamilyValidatingBadge />
           <RealtimeStatusBadge status={realtimeStatus} />
           <MessagesBell />
           <ReminderBell />
