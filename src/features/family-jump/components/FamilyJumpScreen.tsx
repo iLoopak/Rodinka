@@ -8,19 +8,41 @@ import { useRouter } from '../../../router'
 import { getMemberColorTheme, memberColorStyle } from '../../../utils/memberColor'
 import { familyJumpCopy, type FamilyJumpCopy } from '../copy'
 import { FamilyJumpEngine } from '../game/FamilyJumpEngine'
+import { FAMILY_JUMP_COSMETICS, cosmeticByKey } from '../cosmetics/cosmeticDefinitions'
+import type { EquippedCosmetics, FamilyJumpCosmeticSlot } from '../cosmetics/cosmeticTypes'
+import { formatJumpDistance, rewardProgress } from '../achievements/achievementService'
 import { useFamilyJumpRecords, type FamilyJumpSyncStatus } from '../hooks/useFamilyJumpRecords'
 import { sortFamilyJumpLeaderboard, type FamilyJumpRecordMap } from '../storage/records'
-import { recordFamilyJumpRun, type FamilyJumpMemberRunStats } from '../storage/runStats'
+import { loadFamilyJumpRunStats, recordFamilyJumpRun, type FamilyJumpMemberRunStats } from '../storage/runStats'
+import {
+  completeFamilyJumpRun,
+  equipFamilyJumpCosmetic,
+  getMemberJumpProgress,
+  loadFamilyJumpProgress,
+  resetFamilyJumpProgressForDebug,
+  setFamilyJumpTotalForDebug,
+  unequipFamilyJumpCosmetic,
+  unlockAllFamilyJumpCosmeticsForDebug,
+  type FamilyJumpProgress,
+} from '../storage/familyJumpProgressRepository'
 import type { JumpDebugSnapshot, JumpScoreMarker } from '../types/game'
 import '../familyJump.css'
 
-type ScreenPhase = 'intro' | 'playing' | 'game-over'
+type ScreenPhase = 'intro' | 'wardrobe' | 'playing' | 'game-over'
 
 interface CompletedRun {
   score: number
   newPersonalBest: boolean
   overtakenNames: string[]
   stats: FamilyJumpMemberRunStats
+  progress: FamilyJumpProgress
+  newlyUnlockedKeys: string[]
+}
+
+function createRunId() {
+  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `run-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
 export function FamilyJumpScreen() {
@@ -33,9 +55,12 @@ export function FamilyJumpScreen() {
   const [phase, setPhase] = useState<ScreenPhase>('intro')
   const [completedRun, setCompletedRun] = useState<CompletedRun | null>(null)
   const [runKey, setRunKey] = useState(0)
+  const [activeRunId, setActiveRunId] = useState('')
+  const [progressByMember, setProgressByMember] = useState(() => loadFamilyJumpProgress(familyId))
   const memberIds = useMemo(() => members.map((member) => member.id), [members])
   const { records, saveBestScore, syncStatus } = useFamilyJumpRecords(familyId, memberIds, phase !== 'playing')
   const selectedMember = members.find((member) => member.id === selectedMemberId) ?? members[0] ?? currentMember
+  const selectedProgress = progressByMember[selectedMember.id] ?? getMemberJumpProgress(familyId, selectedMember.id)
 
   useEffect(() => {
     if (members.length > 0 && !members.some((member) => member.id === selectedMemberId)) {
@@ -48,6 +73,7 @@ export function FamilyJumpScreen() {
   const startRun = useCallback(() => {
     setCompletedRun(null)
     setRunKey((value) => value + 1)
+    setActiveRunId(createRunId())
     setPhase('playing')
   }, [])
 
@@ -57,15 +83,21 @@ export function FamilyJumpScreen() {
       .filter((member) => member.id !== selectedMember.id && (records[member.id] ?? 0) > 0 && score > records[member.id])
       .map((member) => member.display_name)
     saveBestScore(selectedMember.id, score)
-    const nextRunStats = recordFamilyJumpRun(familyId, selectedMember.id, score)
+    const completion = completeFamilyJumpRun(familyId, selectedMember.id, activeRunId, score)
+    const nextRunStats = completion.counted
+      ? recordFamilyJumpRun(familyId, selectedMember.id, score)
+      : loadFamilyJumpRunStats(familyId)
+    setProgressByMember((current) => ({ ...current, [selectedMember.id]: completion.progress }))
     setCompletedRun({
       score,
       newPersonalBest: score > previousBest,
       overtakenNames,
       stats: nextRunStats[selectedMember.id],
+      progress: completion.progress,
+      newlyUnlockedKeys: completion.newlyUnlockedKeys,
     })
     setPhase('game-over')
-  }, [familyId, members, records, saveBestScore, selectedMember])
+  }, [activeRunId, familyId, members, records, saveBestScore, selectedMember])
 
   if (phase === 'playing') {
     return <FamilyJumpGame
@@ -76,6 +108,7 @@ export function FamilyJumpScreen() {
       copy={copy}
       onExit={exitGame}
       onGameOver={finishRun}
+      equippedCosmetics={selectedProgress.equippedCosmetics}
     />
   }
 
@@ -96,7 +129,7 @@ export function FamilyJumpScreen() {
           <h1 id="family-jump-title">{copy.title}</h1>
           <p>{copy.intro}</p>
           <div className="family-jump-hero-figures" aria-hidden="true">
-            {members.slice(0, 5).map((member, index) => <JumpMemberFigure key={member.id} member={member} style={{ '--jump-index': index } as CSSProperties} />)}
+            {members.slice(0, 5).map((member, index) => <JumpMemberFigure key={member.id} member={member} equipped={progressByMember[member.id]?.equippedCosmetics} style={{ '--jump-index': index } as CSSProperties} />)}
           </div>
         </div>
 
@@ -113,7 +146,7 @@ export function FamilyJumpScreen() {
                 aria-pressed={selected}
                 onClick={() => setSelectedMemberId(member.id)}
               >
-                <JumpMemberFigure member={member} />
+                <JumpMemberFigure member={member} equipped={progressByMember[member.id]?.equippedCosmetics} />
                 <span>
                   <strong>{member.display_name}</strong>
                   <small>{copy.personalBest}: {records[member.id] ? copy.score(records[member.id]) : copy.noRecord}</small>
@@ -124,6 +157,9 @@ export function FamilyJumpScreen() {
           <button type="button" className="family-jump-primary-action" disabled={membersLoading || members.length === 0} onClick={startRun}>
             {copy.play}
           </button>
+          <button type="button" className="btn-secondary family-jump-customize" disabled={membersLoading || members.length === 0} onClick={() => setPhase('wardrobe')}>
+            {copy.customize}
+          </button>
         </section>
 
         <section className="family-jump-card family-jump-how-to" aria-labelledby="family-jump-controls-heading">
@@ -132,7 +168,15 @@ export function FamilyJumpScreen() {
           <div><span aria-hidden="true">⌨</span><p>{copy.keyboardHelp}</p></div>
           <div><span aria-hidden="true">●</span><p>{copy.clutterHelp}</p></div>
         </section>
-      </> : completedRun && <GameOverPanel
+      </> : phase === 'wardrobe' ? <Wardrobe
+        copy={copy}
+        language={language}
+        familyId={familyId}
+        member={selectedMember}
+        progress={selectedProgress}
+        onProgress={(progress) => setProgressByMember((current) => ({ ...current, [selectedMember.id]: progress }))}
+        onBack={() => setPhase('intro')}
+      /> : completedRun && <GameOverPanel
         copy={copy}
         member={selectedMember}
         result={completedRun}
@@ -140,6 +184,12 @@ export function FamilyJumpScreen() {
         onRestart={startRun}
         onChangePlayer={() => setPhase('intro')}
         onExit={exitGame}
+        language={language}
+        onEquip={(key) => {
+          const progress = equipFamilyJumpCosmetic(familyId, selectedMember.id, key)
+          setProgressByMember((current) => ({ ...current, [selectedMember.id]: progress }))
+          setCompletedRun((current) => current ? { ...current, progress } : current)
+        }}
       />}
 
       <Leaderboard copy={copy} entries={leaderboard} />
@@ -168,9 +218,10 @@ interface FamilyJumpGameProps {
   copy: FamilyJumpCopy
   onExit: () => void
   onGameOver: (score: number) => void
+  equippedCosmetics: EquippedCosmetics
 }
 
-function FamilyJumpGame({ member, members, records, copy, onExit, onGameOver }: FamilyJumpGameProps) {
+function FamilyJumpGame({ member, members, records, copy, onExit, onGameOver, equippedCosmetics }: FamilyJumpGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const engineRef = useRef<FamilyJumpEngine | null>(null)
   const leftPointers = useRef(new Set<number>())
@@ -179,6 +230,7 @@ function FamilyJumpGame({ member, members, records, copy, onExit, onGameOver }: 
   const [paused, setPaused] = useState(false)
   const [announcement, setAnnouncement] = useState('')
   const [debug, setDebug] = useState(false)
+  const [debugAnchors, setDebugAnchors] = useState(false)
   const [debugSnapshot, setDebugSnapshot] = useState<JumpDebugSnapshot>({
     fps: 0,
     velocityY: 0,
@@ -211,6 +263,7 @@ function FamilyJumpGame({ member, members, records, copy, onExit, onGameOver }: 
       copy,
       reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
       familyRecord: Math.max(0, ...Object.values(records)),
+      equippedCosmetics,
       onScore: setScore,
       onPauseChange: setPaused,
       onAnnouncement: setAnnouncement,
@@ -223,7 +276,7 @@ function FamilyJumpGame({ member, members, records, copy, onExit, onGameOver }: 
       engine.destroy()
       engineRef.current = null
     }
-  }, [colorTheme.primary, copy, markers, onGameOver, records])
+  }, [colorTheme.primary, copy, equippedCosmetics, markers, onGameOver, records])
 
   const clearPointers = useCallback(() => {
     leftPointers.current.clear()
@@ -320,6 +373,11 @@ function FamilyJumpGame({ member, members, records, copy, onExit, onGameOver }: 
       {debug && <>
         <output>{debugSnapshot.fps} FPS · vy {debugSnapshot.velocityY} · {debugSnapshot.score} m · {debugSnapshot.platformCount} pl. · {debugSnapshot.clutterCount} obj. · {debugSnapshot.environment}</output>
         <button type="button" onClick={() => engineRef.current?.finishNow()}>{copy.endRun}</button>
+        <button type="button" aria-pressed={debugAnchors} onClick={() => {
+          const next = !debugAnchors
+          setDebugAnchors(next)
+          engineRef.current?.setDebugAnchors(next)
+        }}>{copy.debugAnchors}</button>
       </>}
     </div>}
     <p className="visually-hidden" aria-live="polite">{paused ? copy.paused : `${copy.scoreLabel}: ${copy.score(score)}`}</p>
@@ -327,10 +385,71 @@ function FamilyJumpGame({ member, members, records, copy, onExit, onGameOver }: 
   </section>
 }
 
-function JumpMemberFigure({ member, style }: { member: FamilyMember; style?: CSSProperties }) {
+function JumpMemberFigure({ member, equipped, style }: { member: FamilyMember; equipped?: EquippedCosmetics; style?: CSSProperties }) {
   return <span className="family-jump-member-figure" style={{ ...memberColorStyle(member), ...style }} aria-hidden="true">
     <i className="family-jump-eye is-left" /><i className="family-jump-eye is-right" /><i className="family-jump-smile" />
+    {Object.entries(equipped ?? {}).map(([slot, key]) => key && <i key={slot} className={`family-jump-figure-cosmetic is-${key}`} />)}
   </span>
+}
+
+function CosmeticIcon({ cosmeticKey, locked = false }: { cosmeticKey: string; locked?: boolean }) {
+  return <span className={`family-jump-cosmetic-icon is-${cosmeticKey}${locked ? ' is-locked' : ''}`} aria-hidden="true"><i /></span>
+}
+
+function Wardrobe({ copy, language, familyId, member, progress, onProgress, onBack }: {
+  copy: FamilyJumpCopy
+  language: 'cs' | 'en'
+  familyId: string
+  member: FamilyMember
+  progress: FamilyJumpProgress
+  onProgress: (progress: FamilyJumpProgress) => void
+  onBack: () => void
+}) {
+  const [debugMeters, setDebugMeters] = useState(String(progress.totalHeightMeters))
+  const updateEquipment = (key: string, slot: FamilyJumpCosmeticSlot) => {
+    const updated = progress.equippedCosmetics[slot] === key
+      ? unequipFamilyJumpCosmetic(familyId, member.id, slot)
+      : equipFamilyJumpCosmetic(familyId, member.id, key)
+    onProgress(updated)
+  }
+  return <section className="family-jump-wardrobe" aria-labelledby="family-jump-title">
+    <button type="button" className="btn-link family-jump-wardrobe-back" onClick={onBack}>← {copy.backToStart}</button>
+    <div className="family-jump-card family-jump-wardrobe-hero" style={memberColorStyle(member)}>
+      <div><p className="eyebrow">{member.display_name}</p><h1 id="family-jump-title">{copy.wardrobe}</h1><p>{copy.totalHeight}: <strong>{formatJumpDistance(progress.totalHeightMeters, language)}</strong></p></div>
+      <JumpMemberFigure member={member} equipped={progress.equippedCosmetics} />
+    </div>
+    <RewardProgress copy={copy} language={language} total={progress.totalHeightMeters} />
+    <div className="family-jump-cosmetic-grid">
+      {FAMILY_JUMP_COSMETICS.map((item) => {
+        const unlocked = progress.unlockedCosmeticKeys.includes(item.key)
+        const equipped = progress.equippedCosmetics[item.slot] === item.key
+        return <article key={item.key} className={`family-jump-cosmetic-card${unlocked ? '' : ' is-locked'}`}>
+          <CosmeticIcon cosmeticKey={item.key} locked={!unlocked} />
+          <div><h2>{item.name[language]}</h2><p>{item.description[language]}</p>
+            <strong className="family-jump-cosmetic-status">{equipped ? copy.equipped : unlocked ? copy.unlocked : copy.locked}</strong>
+            {!unlocked && <small>{copy.unlockAt(formatJumpDistance(item.unlockAtTotalMeters, language))}<br />{copy.remaining(formatJumpDistance(Math.max(0, item.unlockAtTotalMeters - progress.totalHeightMeters), language))}</small>}
+          </div>
+          {unlocked && <button type="button" className={equipped ? 'btn-secondary' : ''} onClick={() => updateEquipment(item.key, item.slot)}>{equipped ? copy.unequip : copy.equip}</button>}
+        </article>
+      })}
+    </div>
+    {import.meta.env.DEV && <section className="family-jump-card family-jump-wardrobe-debug" aria-label="Debug cosmetics">
+      <label>{copy.debugHeight}<input type="number" min="0" step="1000" value={debugMeters} onChange={(event) => setDebugMeters(event.target.value)} /></label>
+      <button type="button" onClick={() => onProgress(setFamilyJumpTotalForDebug(familyId, member.id, Number(debugMeters)))}>{copy.debugHeight}</button>
+      <button type="button" onClick={() => onProgress(unlockAllFamilyJumpCosmeticsForDebug(familyId, member.id))}>{copy.debugUnlockAll}</button>
+      <button type="button" onClick={() => { setDebugMeters('0'); onProgress(resetFamilyJumpProgressForDebug(familyId, member.id)) }}>{copy.debugReset}</button>
+    </section>}
+  </section>
+}
+
+function RewardProgress({ copy, language, total }: { copy: FamilyJumpCopy; language: 'cs' | 'en'; total: number }) {
+  const progress = rewardProgress(total)
+  return <section className="family-jump-card family-jump-reward-progress" aria-label={copy.totalHeight}>
+    {progress.nextReward ? <>
+      <div><strong>{copy.nextReward(formatJumpDistance(total, language), formatJumpDistance(progress.nextReward.unlockAtTotalMeters, language))}</strong><span>{copy.remaining(formatJumpDistance(progress.remainingMeters, language))}</span></div>
+      <div className="family-jump-progress-track" role="progressbar" aria-valuemin={progress.previousMilestone} aria-valuemax={progress.nextReward.unlockAtTotalMeters} aria-valuenow={total}><span style={{ width: `${progress.segmentProgress * 100}%` }} /></div>
+    </> : <strong>{copy.allRewards}</strong>}
+  </section>
 }
 
 function Leaderboard({ copy, entries }: { copy: FamilyJumpCopy; entries: ReturnType<typeof sortFamilyJumpLeaderboard> }) {
@@ -347,7 +466,7 @@ function Leaderboard({ copy, entries }: { copy: FamilyJumpCopy; entries: ReturnT
   </section>
 }
 
-function GameOverPanel({ copy, member, result, leaderboard, onRestart, onChangePlayer, onExit }: {
+function GameOverPanel({ copy, member, result, leaderboard, onRestart, onChangePlayer, onExit, language, onEquip }: {
   copy: FamilyJumpCopy
   member: FamilyMember
   result: CompletedRun
@@ -355,10 +474,13 @@ function GameOverPanel({ copy, member, result, leaderboard, onRestart, onChangeP
   onRestart: () => void
   onChangePlayer: () => void
   onExit: () => void
+  language: 'cs' | 'en'
+  onEquip: (key: string) => void
 }) {
+  const [rewardsAcknowledged, setRewardsAcknowledged] = useState(false)
   const position = leaderboard.find((entry) => entry.member.id === member.id)?.rank ?? 1
   return <div className="family-jump-game-over">
-    <div className="family-jump-result-figure"><JumpMemberFigure member={member} /></div>
+    <div className="family-jump-result-figure"><JumpMemberFigure member={member} equipped={result.progress.equippedCosmetics} /></div>
     <p className="eyebrow">{copy.gameOver}</p>
     <h1 id="family-jump-title">{copy.score(result.score)}</h1>
     <p>{copy.reached} · #{position}</p>
@@ -368,6 +490,19 @@ function GameOverPanel({ copy, member, result, leaderboard, onRestart, onChangeP
       <span><small>{copy.todayBest}</small><strong>{copy.score(result.stats.todayBest)}</strong></span>
       <span><small>{copy.attempts}</small><strong>{result.stats.attempts}</strong></span>
     </div>
+    <p><strong>{copy.totalHeight}:</strong> {formatJumpDistance(result.progress.totalHeightMeters, language)}</p>
+    {!rewardsAcknowledged && result.newlyUnlockedKeys.length > 0 && <section className="family-jump-card family-jump-unlock" role="status">
+      <p className="eyebrow">{copy.newReward}</p>
+      <p>{copy.unlockedBecause(formatJumpDistance(result.progress.totalHeightMeters, language))}</p>
+      <div className="family-jump-unlock-list">{result.newlyUnlockedKeys.map((key) => {
+        const item = cosmeticByKey(key)
+        if (!item) return null
+        const equipped = result.progress.equippedCosmetics[item.slot] === key
+        return <div key={key}><CosmeticIcon cosmeticKey={key} /><strong>{item.name[language]}</strong><button type="button" disabled={equipped} onClick={() => onEquip(key)}>{equipped ? copy.equipped : copy.equip}</button></div>
+      })}</div>
+      <button type="button" className="btn-link" onClick={() => setRewardsAcknowledged(true)}>{copy.notNow}</button>
+    </section>}
+    <RewardProgress copy={copy} language={language} total={result.progress.totalHeightMeters} />
     <section className="family-jump-card family-jump-overtaken">
       <h2>{copy.overtaken}</h2>
       {result.overtakenNames.length > 0
