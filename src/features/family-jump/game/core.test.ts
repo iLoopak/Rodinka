@@ -4,16 +4,28 @@ import type { JumpPlatform, JumpPlayer } from '../types/game'
 import {
   applyGravity,
   bouncedVelocity,
+  createFallingClutter,
   createInitialGameState,
+  findFallingClutterCollision,
   findLandingPlatform,
   generateNextPlatform,
   isReachablePlatformStep,
   scoreFromClimbedPixels,
   stepGame,
+  updateFallingClutter,
   wrapHorizontal,
 } from './core'
 
-const platform: JumpPlatform = { id: 1, kind: 'stable', x: 80, y: 200, width: 86, height: 14, impactAnimation: 0 }
+const platform: JumpPlatform = {
+  id: 1,
+  kind: 'stable',
+  widthVariant: 'medium',
+  x: 80,
+  y: 200,
+  width: GAME_CONFIG.platform.widths.medium,
+  height: 14,
+  impactAnimation: 0,
+}
 
 function player(input: Partial<JumpPlayer> = {}): JumpPlayer {
   return {
@@ -73,6 +85,7 @@ describe('Family Jump core physics', () => {
 describe('Family Jump platform generation', () => {
   it('keeps every required next platform within configured reach', () => {
     let previous = platform
+    const widths = new Set<number>()
     let seed = 17
     const random = () => {
       seed = (seed * 48_271) % 2_147_483_647
@@ -83,8 +96,10 @@ describe('Family Jump platform generation', () => {
       expect(isReachablePlatformStep(previous, next)).toBe(true)
       expect(next.x).toBeGreaterThanOrEqual(0)
       expect(next.x + next.width).toBeLessThanOrEqual(360)
+      widths.add(next.width)
       previous = next
     }
+    expect(widths).toEqual(new Set(Object.values(GAME_CONFIG.platform.widths)))
   })
 
   it('starts with gentler gaps and prevents long one-sided platform runs', () => {
@@ -131,5 +146,67 @@ describe('Family Jump platform generation', () => {
     stepGame(state, { left: false, right: false }, 1 / 120, viewport, () => 0.5)
     expect(landing.impactAnimation).toBe(1)
     expect(landing.y).toBe(originalY)
+  })
+})
+
+describe('Family Jump falling clutter', () => {
+  it('does not spawn before the configured beginner-safe height', () => {
+    const viewport = { width: 320, height: 560 }
+    const state = createInitialGameState(viewport, () => 0.5)
+    state.clutterSpawnCooldown = 0
+    state.score = GAME_CONFIG.clutter.minimumScore - 1
+
+    updateFallingClutter(state, 1, viewport, () => 0.5)
+
+    expect(state.clutter).toHaveLength(0)
+  })
+
+  it('spawns warned theme-aware clutter and only moves it after the warning', () => {
+    const viewport = { width: 320, height: 560 }
+    const state = createInitialGameState(viewport, () => 0.5)
+    state.score = GAME_CONFIG.clutter.minimumScore
+    state.clutterSpawnCooldown = 0
+
+    updateFallingClutter(state, 1 / 120, viewport, () => 0.5)
+
+    expect(state.clutter).toHaveLength(1)
+    const item = state.clutter[0]
+    const warnedY = item.y
+    expect(item.warningSeconds).toBeGreaterThan(0)
+    expect(['ball', 'block']).toContain(item.kind)
+
+    item.warningSeconds = 0
+    updateFallingClutter(state, 0.1, viewport, () => 0.5)
+    expect(item.y).toBeGreaterThan(warnedY)
+  })
+
+  it('ignores warning indicators but detects contact with falling clutter', () => {
+    const testPlayer = player({ x: 100, y: 120, velocityY: 0 })
+    const item = createFallingClutter(1, GAME_CONFIG.clutter.minimumScore, 320, () => 0.5)
+    item.x = testPlayer.x + 4
+    item.y = testPlayer.y + 4
+
+    expect(findFallingClutterCollision(testPlayer, [item])).toBeNull()
+    item.warningSeconds = 0
+    expect(findFallingClutterCollision(testPlayer, [item])).toBe(item)
+  })
+
+  it('ends the run when the player touches an active falling object', () => {
+    const viewport = { width: 320, height: 560 }
+    const state = createInitialGameState(viewport, () => 0.5)
+    state.player.x = 100
+    state.player.y = 120
+    state.player.velocityY = 0
+    const item = createFallingClutter(1, GAME_CONFIG.clutter.minimumScore, viewport.width, () => 0.5)
+    item.x = state.player.x + 5
+    item.y = state.player.y + 5
+    item.velocityX = 0
+    item.velocityY = 0
+    item.warningSeconds = 0
+    state.clutter = [item]
+
+    stepGame(state, { left: false, right: false }, 1 / 120, viewport, () => 0.5)
+
+    expect(state.gameOver).toBe(true)
   })
 })
