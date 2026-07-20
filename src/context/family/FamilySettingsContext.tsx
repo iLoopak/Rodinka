@@ -1,15 +1,15 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import { supabase } from '../../supabaseClient'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { t } from '../../strings'
 import { friendly } from '../../utils/friendlyError'
 import { getShoppingLocalStore } from '../../shopping/shoppingIndexedDb'
 import { buildFamilyHeroPath, validateFamilyHeroFile } from '../../utils/familyHeroImage'
 import { defaultShoppingCategorySettings, normalizeShoppingCategorySettings, type ShoppingCategorySettings } from '../../utils/shoppingCategorySettings'
-import { createRealtimeSubscription } from '../../realtime/createRealtimeSubscription'
+import { FAMILY_HERO_SIGNED_URL_SECONDS, SupabaseFamilyMediaStorage } from '../../features/family/data/familyMediaStorage'
+import { SupabaseFamilySettingsRepository } from '../../features/family/data/supabaseFamilyRepository'
+import type { FamilySettingsRepository } from '../../features/family/data/familyRepository'
 import { cachedQuery, cacheTimes, familyQueryKey, invalidateQueryCache, signedUrlMaxAgeMs } from '../../queryCache'
 import type { RealtimeConnectionState } from '../../realtime/connectionState'
 
-const FAMILY_HERO_SIGNED_URL_SECONDS = 12 * 60 * 60
 
 interface FamilySettingsContextValue {
   familyName: string | null
@@ -31,9 +31,13 @@ interface ProviderProps {
   familyId: string
   userId: string
   children: ReactNode
+  repository?: FamilySettingsRepository
 }
 
-export function FamilySettingsProvider({ familyId, userId, children }: ProviderProps) {
+export function FamilySettingsProvider({ familyId, userId, children, repository: repositoryOverride }: ProviderProps) {
+  const storage = useMemo(() => new SupabaseFamilyMediaStorage(), [])
+  const repository = useMemo(() => repositoryOverride ?? new SupabaseFamilySettingsRepository(storage), [repositoryOverride, storage])
+  const scope = useMemo(() => ({ familyId }), [familyId])
   const activeFamilyIdRef = useRef(familyId)
   activeFamilyIdRef.current = familyId
 
@@ -67,15 +71,13 @@ export function FamilySettingsProvider({ familyId, userId, children }: ProviderP
         table: 'families,family-hero-images',
         reason: 'mount',
         fetcher: async () => {
-          const { data, error: loadError } = await supabase.from('families').select('name, hero_image_path, shopping_category_settings').eq('id', familyId).single()
-          if (loadError) throw loadError
-          let heroImageUrl: string | null = null
-          if (data.hero_image_path) {
-            const { data: signedUrl, error: signedUrlError } = await supabase.storage.from('family-hero-images').createSignedUrl(data.hero_image_path, FAMILY_HERO_SIGNED_URL_SECONDS)
-            if (signedUrlError) console.error('Failed to create family hero signed URL:', signedUrlError.message)
-            else heroImageUrl = signedUrl.signedUrl
+          const settings = await repository.loadSettings(scope)
+          return {
+            name: settings.name,
+            heroImagePath: settings.heroImagePath,
+            heroImageUrl: settings.heroImageUrl,
+            shoppingCategorySettings: normalizeShoppingCategorySettings(settings.shoppingCategorySettingsRaw),
           }
-          return { name: data.name, heroImagePath: data.hero_image_path, heroImageUrl, shoppingCategorySettings: normalizeShoppingCategorySettings(data.shopping_category_settings) }
         },
       })
       if (activeFamilyIdRef.current !== familyId) return
@@ -88,28 +90,34 @@ export function FamilySettingsProvider({ familyId, userId, children }: ProviderP
       setError(t.errors.loadFailed)
       setFamilyNameState({ familyId, name: null, heroImagePath: null, heroImageUrl: null, shoppingCategorySettings: cachedCategorySettings ?? defaultShoppingCategorySettings(), loading: false })
     }
-  }, [familyId, userId])
+  }, [familyId, repository, scope, userId])
 
   const updateFamilyName = useCallback(async (name: string) => {
     const normalized = name.trim().replace(/\s+/g, ' ')
     if (!normalized) throw new Error(t.errors.generic)
-    const { error: updateError } = await supabase.from('families').update({ name: normalized }).eq('id', familyId)
-    if (updateError) throw friendly(updateError)
+    try {
+      await repository.updateSettings(scope, { name: normalized })
+    } catch (updateError) {
+      throw friendly(updateError)
+    }
     if (activeFamilyIdRef.current !== familyId) return
     setFamilyNameState((current) => ({ ...current, familyId, name: normalized, loading: false }))
     void invalidateQueryCache(familyQueryKey('settings', familyId), { userId, familyId })
     setError(null)
-  }, [familyId, userId])
+  }, [familyId, repository, scope, userId])
 
   const updateShoppingCategorySettings = useCallback(async (settings: ShoppingCategorySettings) => {
     const normalized = normalizeShoppingCategorySettings(settings)
-    const { error: updateError } = await supabase.from('families').update({ shopping_category_settings: normalized }).eq('id', familyId)
-    if (updateError) throw friendly(updateError)
+    try {
+      await repository.updateSettings(scope, { shoppingCategorySettings: normalized })
+    } catch (updateError) {
+      throw friendly(updateError)
+    }
     await getShoppingLocalStore().saveCategorySettings(familyId, normalized)
     if (activeFamilyIdRef.current !== familyId) return
     setFamilyNameState((current) => ({ ...current, familyId, shoppingCategorySettings: normalized, loading: false }))
     void invalidateQueryCache(familyQueryKey('settings', familyId), { userId, familyId })
-  }, [familyId, userId])
+  }, [familyId, repository, scope, userId])
 
   const updateFamilyHeroImage = useCallback(async (file: File | null) => {
     const previousPath = familyNameState.familyId === familyId ? familyNameState.heroImagePath : null
@@ -120,34 +128,32 @@ export function FamilySettingsProvider({ familyId, userId, children }: ProviderP
       if (validateFamilyHeroFile(file)) throw new Error(t.errors.generic)
       const extension = file.type === 'image/webp' ? 'webp' : 'jpg'
       uploadedPath = buildFamilyHeroPath(familyId, extension)
-      const { error: uploadError } = await supabase.storage.from('family-hero-images').upload(uploadedPath, file, {
-        cacheControl: '3600',
-        contentType: file.type,
-        upsert: false,
-      })
-      if (uploadError) throw friendly(uploadError)
-      const { data: signedUrl, error: signedUrlError } = await supabase.storage.from('family-hero-images').createSignedUrl(uploadedPath, FAMILY_HERO_SIGNED_URL_SECONDS)
-      if (signedUrlError) {
-        await supabase.storage.from('family-hero-images').remove([uploadedPath])
-        throw friendly(signedUrlError)
+      try {
+        await storage.uploadHeroImage(uploadedPath, file)
+      } catch (uploadError) {
+        throw friendly(uploadError)
       }
-      nextUrl = signedUrl.signedUrl
+      nextUrl = await storage.signHeroImage(uploadedPath)
+      if (!nextUrl) {
+        // Uploaded but unusable: remove it rather than pointing the family
+        // header at an object nobody can read.
+        await storage.removeHeroImage(uploadedPath)
+        throw new Error(t.errors.generic)
+      }
     }
 
     const nextPath = uploadedPath
-    const { error: saveError } = await supabase.from('families').update({ hero_image_path: nextPath }).eq('id', familyId)
-    if (saveError) {
-      if (uploadedPath) await supabase.storage.from('family-hero-images').remove([uploadedPath])
+    try {
+      await repository.updateSettings(scope, { heroImagePath: nextPath })
+    } catch (saveError) {
+      if (uploadedPath) await storage.removeHeroImage(uploadedPath)
       throw friendly(saveError)
     }
     if (activeFamilyIdRef.current !== familyId) return
     setFamilyNameState((current) => ({ ...current, familyId, heroImagePath: nextPath, heroImageUrl: nextUrl, loading: false }))
     void invalidateQueryCache(familyQueryKey('settings', familyId), { userId, familyId })
-    if (previousPath && previousPath !== nextPath) {
-      const { error: removeError } = await supabase.storage.from('family-hero-images').remove([previousPath])
-      if (removeError) console.error('Failed to remove previous family hero image:', removeError.message)
-    }
-  }, [familyId, familyNameState, userId])
+    if (previousPath && previousPath !== nextPath) await storage.removeHeroImage(previousPath)
+  }, [familyId, familyNameState, repository, scope, storage, userId])
 
   useEffect(() => {
     refreshFamilySettings()
@@ -159,13 +165,8 @@ export function FamilySettingsProvider({ familyId, userId, children }: ProviderP
   // use, only UPDATE. A realtime echo of our own update just re-applies the
   // same values (harmless, single-row table, nothing to duplicate).
   const applyFamilySettingsRow = useCallback(async (row: Record<string, unknown>) => {
-    let heroImageUrl: string | null = null
     const heroImagePath = (row.hero_image_path as string | null) ?? null
-    if (heroImagePath) {
-      const { data: signedUrl, error: signedUrlError } = await supabase.storage.from('family-hero-images').createSignedUrl(heroImagePath, FAMILY_HERO_SIGNED_URL_SECONDS)
-      if (signedUrlError) console.error('Failed to create family hero signed URL:', signedUrlError.message)
-      else heroImageUrl = signedUrl.signedUrl
-    }
+    const heroImageUrl = heroImagePath ? await storage.signHeroImage(heroImagePath) : null
     const nextCategorySettings = normalizeShoppingCategorySettings(row.shopping_category_settings)
     await getShoppingLocalStore().saveCategorySettings(familyId, nextCategorySettings)
     if (activeFamilyIdRef.current !== familyId) return
@@ -178,23 +179,15 @@ export function FamilySettingsProvider({ familyId, userId, children }: ProviderP
       loading: false,
     })
     setError(null)
-  }, [familyId])
+  }, [familyId, storage])
 
   useEffect(() => {
     if (!familyId) return
-    const unsubscribe = createRealtimeSubscription({
-      channelName: `family:${familyId}:family-settings`,
-      owner: 'FamilySettingsProvider',
-      openReason: 'provider-mount',
-      onStatusChange: setSettingsRealtimeStatus,
-      tables: [{
-        table: 'families',
-        filter: `id=eq.${familyId}`,
-        onUpdate: (row) => void applyFamilySettingsRow(row),
-      }],
+    return repository.subscribe(scope, {
+      onStatusChange: (status) => setSettingsRealtimeStatus(status as RealtimeConnectionState),
+      onSettingsChange: (row) => void applyFamilySettingsRow(row),
     })
-    return unsubscribe
-  }, [familyId, applyFamilySettingsRow])
+  }, [applyFamilySettingsRow, familyId, repository, scope])
 
   const value: FamilySettingsContextValue = {
     familyName,

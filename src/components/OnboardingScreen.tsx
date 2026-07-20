@@ -1,11 +1,18 @@
 import { useState } from 'react'
-import { supabase } from '../supabaseClient'
+import { SupabaseFamilyOnboardingRepository } from '../features/family/data/supabaseFamilyOnboardingRepository'
+import { FamilyError } from '../features/family/domain/familyErrors'
 import { t } from '../strings'
 import { FamilyMark } from './FamilyMark'
 
-function onboardingError(error: { message?: string } | null, mode: 'create' | 'join') {
-  console.error('Onboarding request failed:', error?.message)
-  if (mode === 'join' && error?.message?.toLowerCase().includes('invite code')) return t.onboarding.errors.invalidInvite
+function onboardingError(error: unknown, mode: 'create' | 'join') {
+  console.error('Onboarding request failed:', error instanceof Error ? error.message : error)
+  // Keyed off the domain code rather than the message text: the repository
+  // maps a spent, expired or unknown invite to `conflict`, and matching on
+  // English message text would have quietly stopped working once the raw
+  // Postgres string stopped reaching this far.
+  if (mode === 'join' && error instanceof FamilyError && error.code === 'conflict') {
+    return t.onboarding.errors.invalidInvite
+  }
   return mode === 'create' ? t.onboarding.errors.createFailed : t.onboarding.errors.joinFailed
 }
 
@@ -26,16 +33,13 @@ export function OnboardingScreen({ onDone }: Props) {
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.rpc('create_family', {
-      family_name: familyName,
-      admin_display_name: displayName,
-    })
-
-    setLoading(false)
-    if (error) {
-      setError(onboardingError(error, 'create'))
-    } else {
+    try {
+      await new SupabaseFamilyOnboardingRepository().createFamily({ familyName, displayName })
+      setLoading(false)
       onDone()
+    } catch (createError) {
+      setLoading(false)
+      setError(onboardingError(createError, 'create'))
     }
   }
 
@@ -44,16 +48,13 @@ export function OnboardingScreen({ onDone }: Props) {
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.rpc('redeem_invite', {
-      invite_code: inviteCode.trim().toUpperCase(),
-      display_name: displayName,
-    })
-
-    setLoading(false)
-    if (error) {
-      setError(onboardingError(error, 'join'))
-    } else {
+    try {
+      await new SupabaseFamilyOnboardingRepository().redeemInvite({ code: inviteCode, displayName })
+      setLoading(false)
       onDone()
+    } catch (joinError) {
+      setLoading(false)
+      setError(onboardingError(joinError, 'join'))
     }
   }
 

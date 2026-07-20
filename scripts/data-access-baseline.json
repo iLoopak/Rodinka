@@ -1,21 +1,6 @@
 {
   "note": "Known direct Supabase calls outside the data layer. Each repository wave should shrink this. Regenerate with: node scripts/audit-data-access.mjs --update-baseline",
   "entries": {
-    "src/components/OnboardingScreen.tsx::rpc::create_family": 1,
-    "src/components/OnboardingScreen.tsx::rpc::redeem_invite": 1,
-    "src/context/family/FamilyMembersContext.tsx::rpc::create_invite": 1,
-    "src/context/family/FamilyMembersContext.tsx::rpc::permanently_delete_removed_member": 1,
-    "src/context/family/FamilyMembersContext.tsx::rpc::remove_household_member": 2,
-    "src/context/family/FamilyMembersContext.tsx::rpc::restore_household_member": 1,
-    "src/context/family/FamilyMembersContext.tsx::storage::<dynamic:member.avatar_path>": 1,
-    "src/context/family/FamilyMembersContext.tsx::storage::member-avatars": 2,
-    "src/context/family/FamilyMembersContext.tsx::table::invites": 1,
-    "src/context/family/FamilyMembersContext.tsx::table::members": 2,
-    "src/context/family/FamilySettingsContext.tsx::storage::<dynamic:data.hero_image_path>": 1,
-    "src/context/family/FamilySettingsContext.tsx::storage::<dynamic:heroImagePath>": 1,
-    "src/context/family/FamilySettingsContext.tsx::storage::<dynamic:uploadedPath>": 2,
-    "src/context/family/FamilySettingsContext.tsx::storage::family-hero-images": 7,
-    "src/context/family/FamilySettingsContext.tsx::table::families": 4,
     "src/context/chores/AllowanceContext.tsx::rpc::credit_monthly_allowance": 1,
     "src/context/chores/AllowanceContext.tsx::rpc::delete_allowance_plan": 1,
     "src/context/chores/AllowanceContext.tsx::rpc::record_payout": 1,
@@ -50,17 +35,10 @@
     "src/hooks/useAllowancePlans.ts::table::allowance_cycles": 1,
     "src/hooks/useAllowancePlans.ts::table::allowance_plans": 1,
     "src/hooks/useFamily.ts::table::members": 1,
-    "src/hooks/useFamilyMemberEmails.ts::rpc::family_member_emails": 1,
-    "src/hooks/useFamilyMembers.ts::storage::<dynamic:avatarPaths>": 1,
-    "src/hooks/useFamilyMembers.ts::storage::member-avatars": 1,
-    "src/hooks/useFamilyMembers.ts::table::members": 1,
     "src/hooks/useChildAccounts.ts::table::child_accounts": 1,
     "src/hooks/useChoreCompletions.ts::table::chore_completions": 1,
     "src/hooks/useChores.ts::rpc::reorder_household_tasks": 1,
     "src/hooks/useChores.ts::table::chores": 1,
-    "src/hooks/useMedicalRecords.ts::table::medical_records": 1,
-    "src/hooks/useMemberProfiles.ts::rpc::update_member_profile": 1,
-    "src/hooks/useMemberProfiles.ts::storage::<dynamic:uploadedPath>": 1,
-    "src/hooks/useMemberProfiles.ts::storage::member-avatars": 2
+    "src/hooks/useMedicalRecords.ts::table::medical_records": 1
   }
 }

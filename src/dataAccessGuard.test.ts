@@ -54,10 +54,19 @@ describe('data access guard', () => {
   })
 
   it('classifies a storage bucket as storage, not as a table', () => {
+    // `supabase.storage.from(BUCKET)` is a bucket, and reporting it as a table
+    // would put buckets in the ownership matrix next to Postgres tables. The
+    // bucket name is a constant rather than a literal, so this checks the
+    // receiver chain was resolved, not that a particular string appeared.
     const report = read('docs/audits/data-access-report.json')
-    const buckets = report.findings.filter((finding: { target: string | null }) =>
-      finding.target === 'member-avatars' || finding.target === 'family-hero-images')
-    expect(buckets.length).toBeGreaterThan(0)
-    for (const bucket of buckets) expect(bucket.kind).toBe('storage')
+    const storageCalls = report.findings.filter((finding: { file: string; method: string }) =>
+      finding.file.endsWith('familyMediaStorage.ts') && finding.method === 'from')
+    expect(storageCalls.length).toBeGreaterThan(0)
+    for (const call of storageCalls) expect(call.kind).toBe('storage')
+
+    // And nothing in that file is mistaken for a table read.
+    const tableCalls = report.findings.filter((finding: { file: string; kind: string }) =>
+      finding.file.endsWith('familyMediaStorage.ts') && finding.kind === 'table')
+    expect(tableCalls).toEqual([])
   })
 })

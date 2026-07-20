@@ -123,286 +123,6 @@
       "allowed": "Offline calendar repository and its sync adapter, already on the target pattern."
     },
     {
-      "file": "src/components/OnboardingScreen.tsx",
-      "line": 29,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "create_family",
-      "domain": "family",
-      "layer": "ui",
-      "isTest": false
-    },
-    {
-      "file": "src/components/OnboardingScreen.tsx",
-      "line": 47,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "redeem_invite",
-      "domain": "family",
-      "layer": "ui",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilyMembersContext.tsx",
-      "line": 71,
-      "kind": "storage",
-      "method": "createSignedUrl",
-      "target": "<dynamic:member.avatar_path>",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilyMembersContext.tsx",
-      "line": 71,
-      "kind": "storage",
-      "method": "from",
-      "target": "member-avatars",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilyMembersContext.tsx",
-      "line": 111,
-      "kind": "table",
-      "method": "from",
-      "target": "members",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilyMembersContext.tsx",
-      "line": 129,
-      "kind": "table",
-      "method": "from",
-      "target": "members",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilyMembersContext.tsx",
-      "line": 153,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "remove_household_member",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilyMembersContext.tsx",
-      "line": 166,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "remove_household_member",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilyMembersContext.tsx",
-      "line": 179,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "restore_household_member",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilyMembersContext.tsx",
-      "line": 185,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "permanently_delete_removed_member",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilyMembersContext.tsx",
-      "line": 189,
-      "kind": "storage",
-      "method": "from",
-      "target": "member-avatars",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilyMembersContext.tsx",
-      "line": 196,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "create_invite",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilyMembersContext.tsx",
-      "line": 199,
-      "kind": "table",
-      "method": "from",
-      "target": "invites",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilySettingsContext.tsx",
-      "line": 70,
-      "kind": "table",
-      "method": "from",
-      "target": "families",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilySettingsContext.tsx",
-      "line": 74,
-      "kind": "storage",
-      "method": "createSignedUrl",
-      "target": "<dynamic:data.hero_image_path>",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilySettingsContext.tsx",
-      "line": 74,
-      "kind": "storage",
-      "method": "from",
-      "target": "family-hero-images",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilySettingsContext.tsx",
-      "line": 96,
-      "kind": "table",
-      "method": "from",
-      "target": "families",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilySettingsContext.tsx",
-      "line": 106,
-      "kind": "table",
-      "method": "from",
-      "target": "families",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilySettingsContext.tsx",
-      "line": 123,
-      "kind": "storage",
-      "method": "upload",
-      "target": "<dynamic:uploadedPath>",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilySettingsContext.tsx",
-      "line": 123,
-      "kind": "storage",
-      "method": "from",
-      "target": "family-hero-images",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilySettingsContext.tsx",
-      "line": 129,
-      "kind": "storage",
-      "method": "createSignedUrl",
-      "target": "<dynamic:uploadedPath>",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilySettingsContext.tsx",
-      "line": 129,
-      "kind": "storage",
-      "method": "from",
-      "target": "family-hero-images",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilySettingsContext.tsx",
-      "line": 131,
-      "kind": "storage",
-      "method": "from",
-      "target": "family-hero-images",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilySettingsContext.tsx",
-      "line": 138,
-      "kind": "table",
-      "method": "from",
-      "target": "families",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilySettingsContext.tsx",
-      "line": 140,
-      "kind": "storage",
-      "method": "from",
-      "target": "family-hero-images",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilySettingsContext.tsx",
-      "line": 147,
-      "kind": "storage",
-      "method": "from",
-      "target": "family-hero-images",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilySettingsContext.tsx",
-      "line": 165,
-      "kind": "storage",
-      "method": "createSignedUrl",
-      "target": "<dynamic:heroImagePath>",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/family/FamilySettingsContext.tsx",
-      "line": 165,
-      "kind": "storage",
-      "method": "from",
-      "target": "family-hero-images",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
       "file": "src/context/chores/AllowanceContext.tsx",
       "line": 97,
       "kind": "rpc",
@@ -894,6 +614,303 @@
       "allowed": "Per-feature remote adapters, e.g. the Family Jump score remote."
     },
     {
+      "file": "src/features/family/data/familyMediaStorage.ts",
+      "line": 36,
+      "kind": "storage",
+      "method": "createSignedUrl",
+      "target": "<dynamic:path>",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/familyMediaStorage.ts",
+      "line": 36,
+      "kind": "storage",
+      "method": "from",
+      "target": "<dynamic:MEMBER_AVATARS>",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/familyMediaStorage.ts",
+      "line": 46,
+      "kind": "storage",
+      "method": "createSignedUrls",
+      "target": "<dynamic:paths>",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/familyMediaStorage.ts",
+      "line": 46,
+      "kind": "storage",
+      "method": "from",
+      "target": "<dynamic:MEMBER_AVATARS>",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/familyMediaStorage.ts",
+      "line": 59,
+      "kind": "storage",
+      "method": "upload",
+      "target": "<dynamic:path>",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/familyMediaStorage.ts",
+      "line": 59,
+      "kind": "storage",
+      "method": "from",
+      "target": "<dynamic:MEMBER_AVATARS>",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/familyMediaStorage.ts",
+      "line": 67,
+      "kind": "storage",
+      "method": "from",
+      "target": "<dynamic:MEMBER_AVATARS>",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/familyMediaStorage.ts",
+      "line": 72,
+      "kind": "storage",
+      "method": "createSignedUrl",
+      "target": "<dynamic:path>",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/familyMediaStorage.ts",
+      "line": 72,
+      "kind": "storage",
+      "method": "from",
+      "target": "<dynamic:FAMILY_HERO_IMAGES>",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/familyMediaStorage.ts",
+      "line": 81,
+      "kind": "storage",
+      "method": "upload",
+      "target": "<dynamic:path>",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/familyMediaStorage.ts",
+      "line": 81,
+      "kind": "storage",
+      "method": "from",
+      "target": "<dynamic:FAMILY_HERO_IMAGES>",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/familyMediaStorage.ts",
+      "line": 88,
+      "kind": "storage",
+      "method": "from",
+      "target": "<dynamic:FAMILY_HERO_IMAGES>",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/supabaseFamilyRepository.ts",
+      "line": 54,
+      "kind": "table",
+      "method": "from",
+      "target": "members",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/supabaseFamilyRepository.ts",
+      "line": 61,
+      "kind": "table",
+      "method": "from",
+      "target": "members",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/supabaseFamilyRepository.ts",
+      "line": 69,
+      "kind": "table",
+      "method": "from",
+      "target": "members",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/supabaseFamilyRepository.ts",
+      "line": 77,
+      "kind": "table",
+      "method": "from",
+      "target": "members",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/supabaseFamilyRepository.ts",
+      "line": 83,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "update_member_profile",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/supabaseFamilyRepository.ts",
+      "line": 101,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "remove_household_member",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/supabaseFamilyRepository.ts",
+      "line": 114,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "restore_household_member",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/supabaseFamilyRepository.ts",
+      "line": 120,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "permanently_delete_removed_member",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/supabaseFamilyRepository.ts",
+      "line": 131,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "create_invite",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/supabaseFamilyRepository.ts",
+      "line": 135,
+      "kind": "table",
+      "method": "from",
+      "target": "invites",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/supabaseFamilyRepository.ts",
+      "line": 141,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "family_member_emails",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/supabaseFamilyRepository.ts",
+      "line": 180,
+      "kind": "table",
+      "method": "from",
+      "target": "families",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/supabaseFamilyRepository.ts",
+      "line": 193,
+      "kind": "table",
+      "method": "from",
+      "target": "families",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/supabaseFamilyRepository.ts",
+      "line": 216,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "create_family",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/family/data/supabaseFamilyRepository.ts",
+      "line": 225,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "redeem_invite",
+      "domain": "family",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
       "file": "src/features/meals/data/supabaseMealsRepository.ts",
       "line": 42,
       "kind": "table",
@@ -1220,46 +1237,6 @@
       "isTest": false
     },
     {
-      "file": "src/hooks/useFamilyMemberEmails.ts",
-      "line": 27,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "family_member_emails",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/hooks/useFamilyMembers.ts",
-      "line": 69,
-      "kind": "table",
-      "method": "from",
-      "target": "members",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/hooks/useFamilyMembers.ts",
-      "line": 78,
-      "kind": "storage",
-      "method": "createSignedUrls",
-      "target": "<dynamic:avatarPaths>",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/hooks/useFamilyMembers.ts",
-      "line": 78,
-      "kind": "storage",
-      "method": "from",
-      "target": "member-avatars",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
       "file": "src/hooks/useChildAccounts.ts",
       "line": 39,
       "kind": "table",
@@ -1306,46 +1283,6 @@
       "method": "from",
       "target": "medical_records",
       "domain": "medical",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/hooks/useMemberProfiles.ts",
-      "line": 36,
-      "kind": "storage",
-      "method": "from",
-      "target": "member-avatars",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/hooks/useMemberProfiles.ts",
-      "line": 65,
-      "kind": "storage",
-      "method": "upload",
-      "target": "<dynamic:uploadedPath>",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/hooks/useMemberProfiles.ts",
-      "line": 65,
-      "kind": "storage",
-      "method": "from",
-      "target": "member-avatars",
-      "domain": "family",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/hooks/useMemberProfiles.ts",
-      "line": 80,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "update_member_profile",
-      "domain": "family",
       "layer": "state",
       "isTest": false
     },

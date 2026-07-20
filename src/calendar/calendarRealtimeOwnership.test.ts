@@ -26,7 +26,7 @@ describe('Calendar realtime ownership', () => {
     // that every snapshot table has exactly one owner somewhere in this list,
     // so the calendar never opens a second subscription of its own.
     const ownershipSources = [
-      'src/context/family/FamilyMembersContext.tsx',
+      'src/features/family/data/supabaseFamilyRepository.ts',
       'src/repositories/chores/choresRepository.ts',
       'src/features/activities/data/supabaseActivitiesRepository.ts',
       'src/repositories/medical/medicalRepository.ts',

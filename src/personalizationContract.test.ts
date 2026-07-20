@@ -38,7 +38,10 @@ describe('personalization persistence and UI contracts', () => {
 
   it('updates the shared source immediately after an admin family rename', () => {
     expect(familyScreen).toContain('await updateFamilyName(familyNameDraft)')
-    expect(familyContext).toContain("supabase.from('families').update({ name: normalized })")
+    // The write moved into the settings repository in Wave 4; what this test
+    // is really about is that the rename lands in shared state immediately
+    // rather than waiting for a refetch.
+    expect(familyContext).toContain('repository.updateSettings(scope, { name: normalized })')
     expect(familyContext).toContain('setFamilyNameState((current) => ({ ...current, familyId, name: normalized, loading: false }))')
     expect(familyContext).toContain('familyNameState.familyId === familyId')
   })

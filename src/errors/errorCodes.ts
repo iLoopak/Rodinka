@@ -61,7 +61,30 @@ export function classifyStorageError(error: unknown): AppErrorCode {
   return 'unknown'
 }
 
+const ALL_CODES: ReadonlySet<string> = new Set<AppErrorCode>([
+  'network-offline', 'backend-unavailable', 'request-timeout', 'auth-expired',
+  'permission-denied', 'not-found', 'conflict', 'storage-quota', 'cache-corrupt',
+  'mutation-failed', 'realtime-disconnected', 'unknown',
+])
+
+/**
+ * A domain error (MealsError, FamilyError, ...) has already been classified.
+ * Re-deriving a code from its message would fail: those messages read
+ * `family:family.listMembers:permission-denied`, which matches none of the raw
+ * Postgres patterns below, so an RLS rejection would come back as `unknown`
+ * and be treated as retryable — which is exactly what lets a stale cache serve
+ * family data to someone who just lost access.
+ */
+function alreadyClassified(error: unknown): AppErrorCode | null {
+  if (!error || typeof error !== 'object') return null
+  const candidate = (error as { code?: unknown }).code
+  return typeof candidate === 'string' && ALL_CODES.has(candidate) ? candidate as AppErrorCode : null
+}
+
 export function classifyAppError(error: unknown, options: { browserOnline?: boolean } = {}): AppErrorCode {
+  const classified = alreadyClassified(error)
+  if (classified) return classified
+
   const message = errorMessage(error)
   const code = errorCode(error)
 
