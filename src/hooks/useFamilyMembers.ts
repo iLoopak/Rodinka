@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../supabaseClient'
-import { cachedQuery, cacheTimes, familyQueryKey } from '../queryCache'
+import { cachedQuery, cacheTimes, familyQueryKey, signedUrlMaxAgeMs } from '../queryCache'
 import { t } from '../strings'
 
 export type MemberColorKey =
@@ -60,7 +60,7 @@ export function useFamilyMembers(familyId: string | undefined, userId: string | 
         key: familyQueryKey('members', familyId),
         scope: { userId, familyId },
         staleTimeMs: cacheTimes.stable,
-        maxAgeMs: 11 * 60 * 60 * 1000,
+        maxAgeMs: signedUrlMaxAgeMs(AVATAR_SIGNED_URL_SECONDS),
         persist: true,
         queryName: 'members.list',
         table: 'members,member-avatars',

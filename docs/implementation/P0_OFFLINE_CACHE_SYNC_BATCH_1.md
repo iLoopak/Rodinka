@@ -89,11 +89,9 @@ UI: `ShoppingScreen` zobrazuje zaparkované mutace s akcemi retry/discard (`shop
 
 Testy: `src/shopping/shoppingMutationLifecycle.test.ts` (11 scénářů).
 
-## Neprovedeno (samostatný batch)
+## Neprovedeno v tomto batchi
 
-- **P2-3** — retryable chyba blokuje calendar frontu za sebou.
-- **P2-6** — update-ready UI pro service worker. Zadání nechalo na posouzení; je to samostatná UX změna bez jasné hodnoty v tomto batchi.
-- **P2-5** — prázdné shimy `src/repositories/shopping/*`.
+P2-1 … P2-6 byly dokončeny v [batchi 2](P2_OFFLINE_CACHE_SYNC_BATCH_2.md).
 
 ## Validace
 

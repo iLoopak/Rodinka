@@ -6,7 +6,7 @@ import { getShoppingLocalStore } from '../../shopping/shoppingIndexedDb'
 import { buildFamilyHeroPath, validateFamilyHeroFile } from '../../utils/familyHeroImage'
 import { defaultShoppingCategorySettings, normalizeShoppingCategorySettings, type ShoppingCategorySettings } from '../../utils/shoppingCategorySettings'
 import { createRealtimeSubscription } from '../../realtime/createRealtimeSubscription'
-import { cachedQuery, cacheTimes, familyQueryKey, invalidateQueryCache } from '../../queryCache'
+import { cachedQuery, cacheTimes, familyQueryKey, invalidateQueryCache, signedUrlMaxAgeMs } from '../../queryCache'
 import type { RealtimeConnectionState } from '../../realtime/connectionState'
 
 const FAMILY_HERO_SIGNED_URL_SECONDS = 12 * 60 * 60
@@ -61,7 +61,7 @@ export function FamilySettingsProvider({ familyId, userId, children }: ProviderP
         key: familyQueryKey('settings', familyId),
         scope: { userId, familyId },
         staleTimeMs: cacheTimes.stable,
-        maxAgeMs: 11 * 60 * 60 * 1000,
+        maxAgeMs: signedUrlMaxAgeMs(FAMILY_HERO_SIGNED_URL_SECONDS),
         persist: true,
         queryName: 'family.settings',
         table: 'families,family-hero-images',

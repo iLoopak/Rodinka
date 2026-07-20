@@ -61,6 +61,22 @@ export const cacheTimes = {
   gc: 24 * 60 * 60 * 1000,
 }
 
+/** How long before a signed URL expires we stop serving it from cache. */
+export const SIGNED_URL_CACHE_MARGIN_MS = 60 * 60 * 1000
+
+/**
+ * The max age for a cached payload that embeds a signed URL, derived from the
+ * URL's own lifetime rather than written out as a second magic number.
+ *
+ * A cached entry that outlives its signed URLs hands the UI links that 403 —
+ * broken avatars and a missing family header. The two values were previously
+ * independent constants (12h TTL, 11h max age) that happened to be ordered
+ * correctly; editing either one alone would have broken images silently.
+ */
+export function signedUrlMaxAgeMs(signedUrlSeconds: number) {
+  return Math.max(0, signedUrlSeconds * 1000 - SIGNED_URL_CACHE_MARGIN_MS)
+}
+
 function stableStringify(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`
   if (value && typeof value === 'object') {
