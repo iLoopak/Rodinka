@@ -11,6 +11,11 @@ export const strings = {
   cs: {
     appName: 'Rodinka',
     claim: 'Ať doma všechno klape.',
+    appUpdate: {
+      available: 'K dispozici je nová verze Rodinky.',
+      action: 'Načíst znovu',
+      applying: 'Načítám…',
+    },
     common: { close: 'Zavřít', primaryNavigation: 'Hlavní navigace', delete: 'Smazat', remove: 'Odebrat', archive: 'Archivovat', restore: 'Obnovit', cancel: 'Zrušit', participant: 'Účastník', responsibleAdult: 'Zodpovědný dospělý', patient: 'Pacient' },
     destructive: { cancel: 'Zrušit', delete: 'Smazat', remove: 'Odebrat', archive: 'Archivovat', restore: 'Obnovit', undo: 'Zpět', working: 'Pracuji…', archived: 'Archivováno', removeOccurrence: 'Odebrat jen tento výskyt', removeFollowing: 'Odebrat tento a následující výskyty', removeSeries: 'Odebrat celou sérii' },
     offline: {
@@ -1604,6 +1609,11 @@ export const strings = {
   en: {
     appName: 'Rodinka',
     claim: 'Keep the household running smoothly.',
+    appUpdate: {
+      available: 'A new version of Rodinka is available.',
+      action: 'Reload',
+      applying: 'Reloading…',
+    },
     common: { close: 'Close', primaryNavigation: 'Primary navigation', delete: 'Delete', remove: 'Remove', archive: 'Archive', restore: 'Restore', cancel: 'Cancel', participant: 'Participant', responsibleAdult: 'Responsible adult', patient: 'Patient' },
     destructive: { cancel: 'Cancel', delete: 'Delete', remove: 'Remove', archive: 'Archive', restore: 'Restore', undo: 'Undo', working: 'Working…', archived: 'Archived', removeOccurrence: 'Remove only this occurrence', removeFollowing: 'Remove this and following occurrences', removeSeries: 'Remove the entire series' },
     offline: {

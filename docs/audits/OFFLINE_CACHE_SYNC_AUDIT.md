@@ -435,16 +435,28 @@ Navržený uzavřený výčet (implementován v `src/errors/errorCodes.ts`):
 | P1-6 | Schema bump query cache tiše vypne persistenci | `queryCache.ts:60-66` | Persistence trvale mrtvá bez signálu | Guard `objectStoreNames.contains` |
 | P1-7 | `AppShell.offlineBlocked` bere feature stav jako globální | `AppShell.tsx:54,62` | Selhání shopping repository zablokuje nesouvisející route | Použít centralizovaný connectivity snapshot |
 
+### Nález nalezený až při implementaci
+
+| ID | Nález | Soubory | Stav |
+| --- | --- | --- | --- |
+| **P0-6** | Stale fallback query cache vracel cached data i při permission chybě | `queryCache.ts` | ✅ opraveno (batch 2) |
+
+Audit tuto cestu **minul**. Sekce 6 ověřila `useFamily.ts`, kde je rozlišení síťové a permission chyby správné, a z toho usoudila, že acceptance criterion „permission/auth chyba nikdy neodemkne cached family data" platí. Neprověřila ale `cachedQuery`, kde se stale fallback spouštěl na **jakoukoli** chybu.
+
+Dopad: rodič odebraný z rodiny viděl po vypršení `staleTime` a neúspěšném refreshi dál její roster — jména, data narození, signed URL avatarů — až po dobu `maxAgeMs` (11 h). `deniesCachedData()` z batche 1 existovalo, ale nebylo nikde zapojené.
+
+Oprava: `cachedQuery` klasifikuje chybu a při `permission-denied` / `auth-expired` / `not-found` stale fallback nepoužije. U `permission-denied` a `not-found` navíc zahodí i persistentní kopii — ztráta přístupu není totéž co vypršelý token.
+
 ### P2
 
-| ID | Nález | Soubory |
-| --- | --- | --- |
-| P2-1 | Signed URL TTL vs. `maxAgeMs` není vynuceno kódem | `useFamilyMembers.ts:43,63`, `FamilySettingsContext.tsx:12,63` |
-| P2-2 | Poškozený IDB záznam propadne na fetch jen náhodou | `queryCache.ts:110-116` |
-| P2-3 | Calendar retryable chyba blokuje frontu za sebou | `calendarRepository.ts:177` |
-| P2-4 | `members` žijí ve třech vrstvách bez jasného vlastníka | viz sekce 2 |
-| P2-5 | Prázdné re-export shimy `src/repositories/shopping/*` | `src/repositories/shopping/` |
-| P2-6 | Žádné update-ready UI pro nový SW | `sw.js` |
+| ID | Nález | Soubory | Stav |
+| --- | --- | --- | --- |
+| P2-1 | Signed URL TTL vs. `maxAgeMs` není vynuceno kódem | `useFamilyMembers.ts`, `FamilySettingsContext.tsx` | ✅ opraveno |
+| P2-2 | Poškozený IDB záznam propadne na fetch jen náhodou | `queryCache.ts` | ✅ opraveno už v batchi 1 |
+| P2-3 | Calendar retryable chyba blokuje frontu za sebou | `calendarRepository.ts` | ✅ opraveno |
+| P2-4 | `members` žijí ve třech vrstvách bez jasného vlastníka | viz sekce 2 | ✅ zdokumentováno |
+| P2-5 | Prázdné re-export shimy `src/repositories/shopping/*` | `src/repositories/shopping/` | ✅ odstraněno |
+| P2-6 | Žádné update-ready UI pro nový SW | `sw.js` | ✅ opraveno |
 
 ---
 
@@ -452,10 +464,10 @@ Navržený uzavřený výčet (implementován v `src/errors/errorCodes.ts`):
 
 Detailně: [`docs/implementation/P0_OFFLINE_CACHE_SYNC_BATCH_1.md`](../implementation/P0_OFFLINE_CACHE_SYNC_BATCH_1.md).
 
-Opraveno: **všech 5 P0 a všech 7 P1** (P0-1 … P0-5, P1-1 … P1-7).
+Opraveno: **všech 18 nálezů** — P0-1 … P0-5, P1-1 … P1-7, P2-1 … P2-6.
 
-Odloženo do samostatného batche: **P2-1** … **P2-6** — žádný z nich nevede k zobrazení cizích nebo zastaralých dat.
+Batch 1 (PR #111) pokryl P0 a P1. Batch 2 dokončil P2, detailně v [`docs/implementation/P2_OFFLINE_CACHE_SYNC_BATCH_2.md`](../implementation/P2_OFFLINE_CACHE_SYNC_BATCH_2.md).
 
-Poznámka k **P2-1**: vztah `AVATAR_SIGNED_URL_SECONDS` (12 h) > `maxAgeMs` (11 h) zůstává konvencí, nikoli vynuceným invariantem. Kandidát na contract test.
+**P2-1** už není konvence: `maxAgeMs` se odvozuje z TTL přes `signedUrlMaxAgeMs()`, takže obě hodnoty nemohou rozejít.
 
 Poznámka k `shoppingCategorySettings`: tento store zůstává klíčovaný pouze `familyId`. Je to konfigurace rodiny (názvy a pořadí kategorií), ne uživatelská data, a logout ho nemaže. Pokud by se do něj někdy dostalo cokoli osobního, musí přejít pod `userId:familyId` jako zbytek shopping vrstvy.

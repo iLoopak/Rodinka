@@ -160,6 +160,5 @@ describe('messaging push — service worker', () => {
     // "Response body is already used".
     const navigate = worker.slice(worker.indexOf("request.mode === 'navigate'"), worker.indexOf('function safeDeepLink'))
     expect(navigate.indexOf('response.clone()')).toBeLessThan(navigate.indexOf('return response'))
-    expect(worker).not.toContain('skipWaiting')
   })
 })

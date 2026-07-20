@@ -315,6 +315,31 @@ main {
 }
 
 /* ------------------------------------------------------------------ */
+/* Mounted outside the router so a tab parked on any screen -- including a
+   fullscreen route or the auth form -- still learns a newer build exists.
+   Fixed rather than inline for the same reason: it has no shell to sit in. */
+.app-update-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: calc(10px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 10px calc(16px + env(safe-area-inset-left));
+  background: var(--paper-raised, var(--paper));
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-low);
+  color: var(--ink);
+  font-size: var(--font-size-meta);
+  line-height: var(--line-height-meta);
+  animation: rise 220ms ease both;
+}
+
+.app-update-banner .link { flex: 0 0 auto; }
+
 .install-banner {
   display: flex;
   flex: 0 0 auto;

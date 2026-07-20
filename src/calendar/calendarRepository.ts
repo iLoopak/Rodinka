@@ -4,6 +4,13 @@ import type { OfflineLocalStore } from '../shopping/shoppingIndexedDb'
 import { CALENDAR_LOCAL_SCHEMA_VERSION, CALENDAR_PROVIDER_DOMAINS, calendarScopeKey, emptyCalendarData, type CalendarMutation, type CalendarProviderSnapshot, type CalendarRepositorySnapshot, type CalendarSnapshotData, type CalendarSnapshotDomain } from './calendarTypes'
 import { applyPendingCalendarMutations, pendingCalendarRecords } from './calendarMutationQueue'
 import { classifyCalendarSyncError, snapshotRange, SupabaseCalendarRemote, type CalendarRemote } from './calendarSync'
+import { classifyAppError } from '../errors/errorCodes'
+
+/**
+ * How many server-reached failures a mutation gets before it stops being
+ * treated as retryable. Transport failures do not count toward this.
+ */
+const MAX_MUTATION_ATTEMPTS = 5
 
 interface CalendarRepositoryOptions {
   familyId: string
@@ -166,15 +173,33 @@ export class CalendarRepository {
           successful.add(current.operationId)
         } catch (error) {
           const failure = classifyCalendarSyncError(error)
+          const code = classifyAppError(error, { browserOnline: this.isOnline() })
+          // Only a transport failure says anything about the *next* mutation.
+          // Everything else is specific to this one, so the queue behind it
+          // still gets its turn instead of being held up indefinitely.
+          const transport = code === 'network-offline' || code === 'backend-unavailable' || code === 'request-timeout'
+
+          if (failure.retryable && transport) {
+            // Attempts deliberately do not grow here: a week offline must not
+            // burn through the budget and park work the server never saw.
+            this.replaceMutation({ ...current, status: 'pending', retryable: true, error: failure.message })
+            await this.persistLocal()
+            throw error
+          }
+
+          const attempts = current.attempts + 1
+          // A retryable-looking error that keeps coming back is, in practice,
+          // not retryable. Parking it hands the user retry/discard rather than
+          // spinning forever on something that will never land.
+          const exhausted = attempts >= MAX_MUTATION_ATTEMPTS
           this.replaceMutation({
             ...current,
-            status: failure.retryable ? 'pending' : 'failed',
-            retryable: failure.retryable,
-            attempts: current.attempts + 1,
+            status: failure.retryable && !exhausted ? 'pending' : 'failed',
+            retryable: failure.retryable && !exhausted,
+            attempts,
             error: failure.message,
           })
           await this.persistLocal()
-          if (failure.retryable) throw error
         }
       }
 

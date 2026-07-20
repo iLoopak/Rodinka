@@ -29,7 +29,7 @@ Application services own explicit user workflows that span repositories. They co
 ## Repository map
 
 - `src/repositories/shared`: structured repository errors, Supabase helper types, and shared Realtime adapter exports.
-- `src/repositories/shopping`: formal repository entry points for the existing offline-first shopping repository, IndexedDB adapter, durable mutation queue, sync, and Realtime integration.
+- `src/shopping`: the offline-first shopping repository, IndexedDB adapter, durable mutation queue, sync, and Realtime integration. It lives here rather than under `src/repositories` because it predates that layout; a set of re-export shims under `src/repositories/shopping` used to point at it, but nothing ever imported them and they were removed.
 - `src/repositories/medical`: `createMedicalRepository`, which owns medical record loading, creation, update payload mapping, and medical Realtime mapping.
 - `src/repositories/chores`: `createChoresRepository`, which owns chore mutations, completion RPCs, approval/rejection RPCs, and incremental chore/completion Realtime mapping.
 - `src/application/approveChoreCompletion.ts`: example application-service boundary for chore approval plus caller-provided reconciliation.
@@ -43,6 +43,18 @@ Repositories that expose Realtime subscribe through `createRealtimeSubscription`
 ## Offline repositories
 
 Shopping is offline-first. Its repository owns IndexedDB snapshots, queued mutations, optimistic local writes, pending item markers, sync status, retry behavior, Supabase reconciliation, and Realtime-triggered sync. Online-only repositories should stay simpler until a feature has an offline requirement.
+
+### Who owns `members`
+
+`members` is the one entity that legitimately lives in three local layers, so it is worth stating which one is authoritative and why the copies exist:
+
+| Layer | Holds | Authoritative? |
+| --- | --- | --- |
+| Query cache (`familyQueryKey('members', familyId)`) | the family roster plus avatar signed URLs | **Yes** for anything rendering the roster. `FamilyMembersContext` reads it, and Realtime patches it. |
+| Calendar snapshot (`data.members`) | a copy written by `updateFromProviders` | No. It exists so an offline calendar can resolve assignee names without a second store. Never written back to the server. |
+| `shoppingFamilyIdentity` | only the signed-in user's own member row | No. It exists purely so the shell can open offline before the membership request returns. `useFamily` replaces it wholesale with the server answer. |
+
+The rule: writes go through the query cache, and the other two are derived read-only copies. If a fourth consumer needs members, it should read the query cache rather than adding a copy. Note the copies have different lifetimes by design — the calendar snapshot has no TTL, while the query cache expires with its avatar signed URLs (see `signedUrlMaxAgeMs`), so a calendar snapshot can legitimately hold member rows the query cache has already dropped.
 
 ## Adding a repository
 

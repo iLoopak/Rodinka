@@ -3,10 +3,18 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const root = process.cwd()
-const shell = readFileSync(join(root, 'src/components/AppShell.tsx'), 'utf8')
-const statusHook = readFileSync(join(root, 'src/hooks/useRealtimeStatus.ts'), 'utf8')
-const registry = readFileSync(join(root, 'src/realtime/realtimeRegistry.ts'), 'utf8')
-const connectivity = readFileSync(join(root, 'src/network/connectivity.ts'), 'utf8')
+
+// Matching a multi-line snippet against source is line-ending sensitive: the
+// checks below passed while the files carried LF and broke the moment git
+// checked them back out with CRLF on Windows.
+function readSource(relativePath: string) {
+  return readFileSync(join(root, relativePath), 'utf8').split('\r\n').join('\n')
+}
+
+const shell = readSource('src/components/AppShell.tsx')
+const statusHook = readSource('src/hooks/useRealtimeStatus.ts')
+const registry = readSource('src/realtime/realtimeRegistry.ts')
+const connectivity = readSource('src/network/connectivity.ts')
 
 describe('AppShell realtime status boundaries', () => {
   it('uses data-free status and active-conversation snapshots instead of broad feature hooks', () => {
