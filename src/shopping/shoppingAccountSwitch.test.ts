@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { MemoryShoppingStore } from './shoppingIndexedDb'
 import type { ShoppingItem } from '../utils/shopping'
-import type { ShoppingMutation } from './shoppingMutationQueue'
+import { newShoppingMutationState, type ShoppingMutation } from './shoppingMutationQueue'
 
 const FAMILY = 'family-1'
 const USER_A = { userId: 'user-a', familyId: FAMILY }
@@ -18,7 +18,7 @@ function item(id: string): ShoppingItem {
 }
 
 function mutation(id: string): ShoppingMutation {
-  return { mutationId: id, familyId: FAMILY, type: 'create', itemId: id, payload: { item: item(id) }, createdAt: '2026-07-20T09:00:00.000Z' }
+  return { mutationId: id, familyId: FAMILY, type: 'create', itemId: id, payload: { item: item(id) }, createdAt: '2026-07-20T09:00:00.000Z', ...newShoppingMutationState() }
 }
 
 describe('shopping store account isolation', () => {

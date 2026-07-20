@@ -18,6 +18,7 @@ const emptySnapshot: ShoppingRepositorySnapshot = {
   items: [],
   pendingItemIds: new Set(),
   pendingCount: 0,
+  failedMutations: [],
   status: 'synced',
   lastSuccessfulSyncAt: null,
   error: null,
@@ -130,6 +131,14 @@ export function useShoppingDataSource(familyId: string | undefined, userId: stri
     await repositoryRef.current?.sync()
   }, [])
 
+  const retryShoppingMutation = useCallback(async (itemId?: string) => {
+    await repositoryRef.current?.retryFailed(itemId)
+  }, [])
+
+  const discardShoppingMutation = useCallback(async (itemId: string) => {
+    await repositoryRef.current?.discardFailed(itemId)
+  }, [])
+
   const addShoppingItem = useCallback((input: ShoppingItemInput, forceSeparate = false) => {
     if (!repositoryRef.current) throw new Error('Shopping repository is not ready')
     return repositoryRef.current.addItem(input, forceSeparate)
@@ -217,6 +226,9 @@ export function useShoppingDataSource(familyId: string | undefined, userId: stri
     shoppingSyncStatus: snapshot.status,
     shoppingSyncError: snapshot.error,
     pendingShoppingChanges: snapshot.pendingCount,
+    failedShoppingMutations: snapshot.failedMutations,
+    retryShoppingMutation,
+    discardShoppingMutation,
     pendingShoppingItemIds: snapshot.pendingItemIds,
     shoppingLastSyncedAt: snapshot.lastSuccessfulSyncAt,
     refreshShopping,

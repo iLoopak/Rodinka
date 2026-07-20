@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { IndexedDbShoppingStore } from './shoppingIndexedDb'
+import { newShoppingMutationState } from './shoppingMutationQueue'
 import type { ShoppingItem } from '../utils/shopping'
 
 const DB_NAME = 'rodinka-offline'
@@ -196,7 +197,7 @@ describe('shopping IndexedDB v3 → v4 upgrade', () => {
     await store.replaceItems(USER_A, [legacyItem('item-a')])
     await store.replaceMutations(USER_A, [{
       mutationId: 'mutation-a', familyId: FAMILY, type: 'create', itemId: 'item-a',
-      payload: { item: legacyItem('item-a') }, createdAt: '2026-07-20T09:00:00.000Z',
+      payload: { item: legacyItem('item-a') }, createdAt: '2026-07-20T09:00:00.000Z', ...newShoppingMutationState(),
     }])
     await store.replaceItems(USER_B, [legacyItem('item-b')])
 

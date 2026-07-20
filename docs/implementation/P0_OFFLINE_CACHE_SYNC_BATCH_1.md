@@ -71,9 +71,26 @@ Nový `src/diagnostics/offlineDiagnostics.ts` + rozšířené `[Rodinka query-ca
 - **P1-3**: vrácená dávka shopping mutací po selhaném syncu prochází `enqueueShoppingMutation`, takže v queue nemohou zůstat dvě `update` mutace pro tutéž položku.
 - **P1-5**: `cache.put()` v service workeru je v `try/catch` — zaplněná quota už neshodí načtení assetu.
 
+## G. Shopping mutation queue — konvergence ke calendar modelu (P1-4)
+
+`ShoppingMutation` má nyní `attempts`, `status`, `retryable`, `error: AppErrorCode | null`.
+
+- `performSync` odesílá **po jedné mutaci** místo jedné all-or-nothing dávky. Trvale odmítnutá mutace (`P0001`, `42501`, `23505`) se zaparkuje jako `failed` + `retryable: false` a **neblokuje zbytek fronty**. Transportní chyba naopak run zastaví a nechá frontu retryable.
+- Exponenciální backoff `min(60s, 1000 * 2^min(attempts, 6))`, stejně jako v kalendáři. `stop()` timer ruší.
+- `retryFailed(itemId?)` a `discardFailed(itemId)` doplňují chybějící discard/retry/correct flow. Ruční retry resetuje `attempts` — uživatel u obrazovky nemá čekat na backoff nasbíraný automatickými pokusy.
+- **Correct flow zdarma**: úprava odmítnuté položky se skládá do zařazené mutace a `newShoppingMutationState()` přitom vyčistí selhání, takže uživatel nemusí zvlášť mačkat „zkusit znovu".
+- `resumeInterruptedShoppingMutations()` převede `syncing` → `pending` při startu, takže mutace přerušená zavřením tabu se nezasekne navždy (serverový ledger dělá resend bezpečným).
+- `pendingCount` nově **nezahrnuje** zaparkované mutace — čeká se na uživatele, ne na síť. Ty jsou v `failedMutations`.
+- `synchronizeShopping()` odstraněn; orchestrace patří do repository, kde je kontext pro per-mutation error handling.
+
+**Nález při implementaci:** `discardFailed` původně mazal položku ze seznamu vždy. To je správně jen pro odmítnutý `create` — u odmítnutého `update`/`delete` položka patří serveru a smazání by skrylo řádek, který reálně existuje. Opraveno; ostatní případy se dorovnají příštím syncem.
+
+UI: `ShoppingScreen` zobrazuje zaparkované mutace s akcemi retry/discard (`shopping-sync-blocked`), CS i EN.
+
+Testy: `src/shopping/shoppingMutationLifecycle.test.ts` (11 scénářů).
+
 ## Neprovedeno (samostatný batch)
 
-- **P1-4** — shopping queue nemá `attempts`/`status`/`retryable`/`discard`; konvergence ke calendar schématu je větší změna než tento batch unese.
 - **P2-3** — retryable chyba blokuje calendar frontu za sebou.
 - **P2-6** — update-ready UI pro service worker. Zadání nechalo na posouzení; je to samostatná UX změna bez jasné hodnoty v tomto batchi.
 - **P2-5** — prázdné shimy `src/repositories/shopping/*`.
@@ -83,7 +100,7 @@ Nový `src/diagnostics/offlineDiagnostics.ts` + rozšířené `[Rodinka query-ca
 | Příkaz | Výsledek |
 | --- | --- |
 | `npm run lint` | ✅ 0 chyb (warningy jsou preexistující) |
-| `npm test` | ✅ 204 souborů, 1233 testů |
+| `npm test` | ✅ 206 souborů, 1250 testů |
 | `npm run build` | ✅ včetně `check:bundle` |
 | `npm run check:edge-functions` | ✅ |
 | `git diff --check` | ✅ |

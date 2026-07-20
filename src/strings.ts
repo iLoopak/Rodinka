@@ -1339,6 +1339,11 @@ export const strings = {
       syncComplete: 'Vše je synchronizované.',
       syncFailed: 'Synchronizace se nezdařila.',
       syncRetry: 'Zkusit znovu',
+      syncBlocked: (count: number) => count === 1
+        ? '1 změnu se nepodařilo uložit na server.'
+        : `${count} změny se nepodařilo uložit na server.`,
+      syncBlockedRetry: 'Zkusit znovu',
+      syncBlockedDiscard: 'Zahodit změnu',
       loading: 'Načítám nákupní seznam…',
       dataUnavailable: 'Nákupní seznam se teď nepodařilo načíst. Zkuste to prosím znovu.',
       noOfflineData: 'Jste offline a v zařízení zatím není uložený nákupní seznam.',
@@ -2917,6 +2922,11 @@ export const strings = {
       syncComplete: 'Everything is synchronized.',
       syncFailed: 'Synchronization failed.',
       syncRetry: 'Retry',
+      syncBlocked: (count: number) => count === 1
+        ? '1 change could not be saved to the server.'
+        : `${count} changes could not be saved to the server.`,
+      syncBlockedRetry: 'Try again',
+      syncBlockedDiscard: 'Discard change',
       loading: 'Loading the shopping list…',
       dataUnavailable: 'The shopping list could not be loaded right now. Please try again.',
       noOfflineData: 'You are offline and no shopping list is stored on this device yet.',

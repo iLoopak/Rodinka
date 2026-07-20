@@ -9,11 +9,6 @@ export interface ShoppingRemote {
   applyMutation(mutation: ShoppingMutation): Promise<void>
 }
 
-export interface ShoppingSyncResult {
-  items: ShoppingItem[]
-  lastSuccessfulSyncAt: string
-}
-
 export class SupabaseShoppingRemote implements ShoppingRemote {
   async fetchItems(familyId: string) {
     const { data, error } = await supabase
@@ -36,16 +31,4 @@ export class SupabaseShoppingRemote implements ShoppingRemote {
     })
     if (error) throw error
   }
-}
-
-export async function synchronizeShopping(
-  familyId: string,
-  mutations: ShoppingMutation[],
-  remote: ShoppingRemote,
-): Promise<ShoppingSyncResult> {
-  for (const mutation of mutations) await remote.applyMutation(mutation)
-
-  const items = await remote.fetchItems(familyId)
-  const lastSuccessfulSyncAt = new Date().toISOString()
-  return { items, lastSuccessfulSyncAt }
 }

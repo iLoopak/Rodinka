@@ -14,13 +14,18 @@ import {
   applyShoppingMutation,
   applyPendingShoppingMutations,
   enqueueShoppingMutation,
+  failedShoppingMutations,
+  newShoppingMutationState,
   pendingShoppingItemIds,
+  pendingShoppingMutationCount,
+  resumeInterruptedShoppingMutations,
+  syncableShoppingMutations,
   type ShoppingMutation,
   type ShoppingMutationType,
 } from './shoppingMutationQueue'
 import { subscribeToShoppingRealtime, type ShoppingRealtimeSubscription } from './shoppingRealtime'
-import { SupabaseShoppingRemote, synchronizeShopping, type ShoppingRemote } from './shoppingSync'
-import { classifyAppError, type AppErrorCode } from '../errors/errorCodes'
+import { SupabaseShoppingRemote, type ShoppingRemote } from './shoppingSync'
+import { classifyAppError, isRetryableErrorCode, type AppErrorCode } from '../errors/errorCodes'
 
 export type ShoppingSyncStatus = 'offline' | 'syncing' | 'synced' | 'error'
 
@@ -29,7 +34,10 @@ export interface ShoppingRepositorySnapshot {
   hasUsableData: boolean
   items: ShoppingItem[]
   pendingItemIds: Set<string>
+  /** Mutations still worth sending; excludes ones parked on a hard failure. */
   pendingCount: number
+  /** Mutations the server rejected permanently, awaiting retry or discard. */
+  failedMutations: ShoppingMutation[]
   status: ShoppingSyncStatus
   lastSuccessfulSyncAt: string | null
   /** A semantic code, never a raw Supabase message (audit section 9). */
@@ -70,6 +78,8 @@ export class ShoppingRepository {
   private startPromise: Promise<void> | null = null
   private stopPromise: Promise<void> = Promise.resolve()
   private realtimeHealthy = false
+  private retryTimer: ReturnType<typeof globalThis.setTimeout> | null = null
+  private consecutiveSyncFailures = 0
   private onlineListener = () => { void this.sync() }
   private visibilityListener = () => { if (typeof document !== 'undefined' && document.visibilityState === 'visible') void this.sync() }
 
@@ -89,6 +99,7 @@ export class ShoppingRepository {
       items: [],
       pendingItemIds: new Set(),
       pendingCount: 0,
+      failedMutations: [],
       status: this.isOnline() ? 'synced' : 'offline',
       lastSuccessfulSyncAt: null,
       error: null,
@@ -121,16 +132,18 @@ export class ShoppingRepository {
       this.store.loadMetadata(this.scope),
     ])
     if (!this.isActive(lifecycle)) return
-    this.mutations = mutations
+    this.mutations = resumeInterruptedShoppingMutations(mutations)
+    const failed = failedShoppingMutations(this.mutations)
     this.replaceSnapshot({
       ready: true,
       hasUsableData: Boolean(metadata?.hasSnapshot || items.length > 0 || mutations.length > 0),
       items,
-      pendingItemIds: pendingShoppingItemIds(mutations),
-      pendingCount: mutations.length,
-      status: this.isOnline() ? 'syncing' : 'offline',
+      pendingItemIds: pendingShoppingItemIds(this.mutations),
+      pendingCount: pendingShoppingMutationCount(this.mutations),
+      failedMutations: failed,
+      status: failed.length > 0 ? 'error' : this.isOnline() ? 'syncing' : 'offline',
       lastSuccessfulSyncAt: metadata?.lastSuccessfulSyncAt ?? null,
-      error: null,
+      error: failed[0]?.error ?? null,
     })
     await this.ensureRealtime(lifecycle)
     if (!this.isActive(lifecycle)) return
@@ -143,6 +156,8 @@ export class ShoppingRepository {
     if (!this.running && !this.stopRealtime) return this.stopPromise
     this.running = false
     this.lifecycle += 1
+    if (this.retryTimer) globalThis.clearTimeout(this.retryTimer)
+    this.retryTimer = null
     const stopRealtime = this.stopRealtime
     this.stopRealtime = null
     this.realtimeHealthy = false
@@ -173,47 +188,169 @@ export class ShoppingRepository {
     if (!this.isActive(lifecycle)) return false
     await this.waitForLocalWrites()
     if (!this.isActive(lifecycle)) return false
-    const uploading = this.mutations
-    this.mutations = []
-    this.inFlightMutations = uploading
-    try {
-      const result = await synchronizeShopping(this.familyId, uploading, this.remote)
+
+    // Per-mutation rather than one all-or-nothing batch. The old shape put
+    // every mutation back in the queue when any one of them failed, so a
+    // permanently invalid mutation kept the whole list in `error` forever and
+    // there was no way to see which one, retry it, or throw it away.
+    const uploading = syncableShoppingMutations(this.mutations)
+    const succeeded = new Set<string>()
+    let transportFailure: unknown = null
+
+    for (const queued of uploading) {
       if (!this.isActive(lifecycle)) return false
+      const current = this.mutations.find((mutation) => mutation.mutationId === queued.mutationId)
+      if (!current) continue
+      this.replaceMutation({ ...current, status: 'syncing', error: null })
+      this.inFlightMutations = [current]
+      await this.persistLocal(this.snapshot.items)
+      try {
+        await this.remote.applyMutation(current)
+        succeeded.add(current.mutationId)
+      } catch (error) {
+        const code = classifyAppError(error, { browserOnline: this.isOnline() })
+        const retryable = isRetryableErrorCode(code)
+        this.replaceMutation({
+          ...current,
+          status: retryable ? 'pending' : 'failed',
+          retryable,
+          attempts: current.attempts + 1,
+          error: code,
+        })
+        // A transport problem means the rest of the queue will fail the same
+        // way; stop and let backoff retry. A rejected mutation is specific to
+        // that mutation, so the queue behind it still gets its turn.
+        if (retryable) { transportFailure = error; break }
+      }
       this.inFlightMutations = []
-      const items = applyPendingShoppingMutations(result.items, this.mutations)
-      await this.persistLocal(items, result.lastSuccessfulSyncAt)
+    }
+    this.inFlightMutations = []
+    if (!this.isActive(lifecycle)) return false
+
+    this.mutations = this.mutations.filter((mutation) => !succeeded.has(mutation.mutationId))
+
+    if (transportFailure) {
+      try { await this.persistLocal(this.snapshot.items) }
+      catch (persistenceError) { console.error('Failed to preserve the shopping mutation queue:', persistenceError) }
+      this.publishQueueState({
+        items: this.snapshot.items,
+        status: this.isOnline() ? 'error' : 'offline',
+        error: classifyAppError(transportFailure, { browserOnline: this.isOnline() }),
+      })
+      if (this.isOnline()) this.scheduleRetry()
+      return false
+    }
+
+    try {
+      const items = applyPendingShoppingMutations(await this.remote.fetchItems(this.familyId), this.mutations)
+      if (!this.isActive(lifecycle)) return false
+      const lastSuccessfulSyncAt = this.now().toISOString()
+      this.consecutiveSyncFailures = 0
+      await this.persistLocal(items, lastSuccessfulSyncAt)
+      const failed = failedShoppingMutations(this.mutations)
+      const pending = pendingShoppingMutationCount(this.mutations)
       this.replaceSnapshot({
         ready: true,
         hasUsableData: true,
         items,
         pendingItemIds: pendingShoppingItemIds(this.mutations),
-        pendingCount: this.mutations.length,
-        status: !this.realtimeHealthy ? 'error' : this.mutations.length > 0 ? 'syncing' : 'synced',
-        lastSuccessfulSyncAt: result.lastSuccessfulSyncAt,
-        error: this.realtimeHealthy ? null : 'realtime-disconnected',
+        pendingCount: pending,
+        failedMutations: failed,
+        status: failed.length > 0 || !this.realtimeHealthy ? 'error' : pending > 0 ? 'syncing' : 'synced',
+        lastSuccessfulSyncAt,
+        error: failed[0]?.error ?? (this.realtimeHealthy ? null : 'realtime-disconnected'),
       })
-      return this.mutations.length > 0
+      return pending > 0
     } catch (error) {
       if (!this.isActive(lifecycle)) return false
-      // Fold the returned batch back through the same coalescing rule new
-      // mutations go through. A plain concat let two `update` mutations for
-      // one item coexist in the queue after a failed sync (audit P1-3).
-      this.mutations = [...this.mutations].reduce(
-        (queue, mutation) => enqueueShoppingMutation(queue, mutation),
-        [...uploading],
-      )
-      this.inFlightMutations = []
       try { await this.persistLocal(this.snapshot.items) }
       catch (persistenceError) { console.error('Failed to preserve the shopping mutation queue:', persistenceError) }
-      this.replaceSnapshot({
-        ...this.snapshot,
-        pendingItemIds: pendingShoppingItemIds(this.mutations),
-        pendingCount: this.mutations.length,
+      this.publishQueueState({
+        items: this.snapshot.items,
         status: this.isOnline() ? 'error' : 'offline',
         error: classifyAppError(error, { browserOnline: this.isOnline() }),
       })
+      if (this.isOnline()) this.scheduleRetry()
       return false
     }
+  }
+
+  /**
+   * Puts a mutation back in line after the user corrected or acknowledged it.
+   * Without an itemId this retries everything that is parked.
+   */
+  async retryFailed(itemId?: string) {
+    await this.startPromise
+    this.mutations = this.mutations.map((mutation) => !itemId || mutation.itemId === itemId
+      ? { ...mutation, ...newShoppingMutationState() }
+      : mutation)
+    this.publishQueueState({ items: this.snapshot.items, status: this.isOnline() ? 'syncing' : 'offline', error: null })
+    await this.persistLocal(this.snapshot.items)
+    await this.sync()
+  }
+
+  /**
+   * Drops a mutation the user has given up on, and rolls its optimistic effect
+   * off the local list so the screen stops showing a change that will never land.
+   */
+  async discardFailed(itemId: string) {
+    await this.startPromise
+    const discarded = this.mutations.filter((mutation) => mutation.itemId === itemId)
+    this.mutations = this.mutations.filter((mutation) => mutation.itemId !== itemId)
+
+    // Only a rejected `create` means the row exists nowhere but here, so only
+    // then is dropping it correct. Discarding a rejected update or delete
+    // leaves a row the server still owns: removing it would hide an item that
+    // is really there. Those reconcile from the server on the next sync.
+    const wasLocalOnlyCreate = discarded.some((mutation) => mutation.type === 'create')
+    const base = wasLocalOnlyCreate
+      ? this.snapshot.items.filter((item) => item.id !== itemId)
+      : this.snapshot.items
+    const items = applyPendingShoppingMutations(base, this.mutations)
+
+    const remaining = pendingShoppingMutationCount(this.mutations)
+    const needsReconcile = !wasLocalOnlyCreate && this.isOnline()
+    this.publishQueueState({
+      items,
+      status: !this.isOnline() ? 'offline' : remaining > 0 || needsReconcile ? 'syncing' : 'synced',
+      error: null,
+    })
+    await this.persistLocal(items)
+    if (this.isOnline() && (remaining > 0 || needsReconcile)) this.scheduleSync()
+  }
+
+  private replaceMutation(next: ShoppingMutation) {
+    this.mutations = this.mutations.map((mutation) => mutation.mutationId === next.mutationId ? next : mutation)
+  }
+
+  /** Recomputes the queue-derived half of the snapshot from `this.mutations`. */
+  private publishQueueState(input: { items: ShoppingItem[]; status: ShoppingSyncStatus; error: AppErrorCode | null }) {
+    const failed = failedShoppingMutations(this.mutations)
+    this.replaceSnapshot({
+      ...this.snapshot,
+      ready: true,
+      items: input.items,
+      pendingItemIds: pendingShoppingItemIds([...this.inFlightMutations, ...this.mutations]),
+      pendingCount: pendingShoppingMutationCount(this.mutations),
+      failedMutations: failed,
+      status: failed.length > 0 && input.status === 'synced' ? 'error' : input.status,
+      error: input.error ?? failed[0]?.error ?? null,
+    })
+  }
+
+  private scheduleRetry() {
+    if (this.retryTimer || !this.running) return
+    const attempts = Math.max(
+      1,
+      this.consecutiveSyncFailures,
+      ...this.mutations.filter((mutation) => mutation.retryable).map((mutation) => mutation.attempts),
+    )
+    const delay = Math.min(60_000, 1_000 * 2 ** Math.min(attempts, 6))
+    this.consecutiveSyncFailures += 1
+    this.retryTimer = globalThis.setTimeout(() => {
+      this.retryTimer = null
+      void this.sync()
+    }, delay)
   }
 
   async addItem(input: ShoppingItemInput, forceSeparate = false, source?: { mealId?: string | null; planEntryId?: string | null }): Promise<ShoppingAddResult> {
@@ -301,7 +438,7 @@ export class ShoppingRepository {
   }
 
   private mutation(type: ShoppingMutationType, itemId: string, payload: Record<string, unknown>, createdAt = this.now().toISOString()): ShoppingMutation {
-    return { mutationId: this.createId(), familyId: this.familyId, type, itemId, payload, createdAt }
+    return { mutationId: this.createId(), familyId: this.familyId, type, itemId, payload, createdAt, ...newShoppingMutationState() }
   }
 
   private async commit(mutation: ShoppingMutation, sync = true) {
@@ -312,7 +449,8 @@ export class ShoppingRepository {
       ready: true,
       items,
       pendingItemIds: pendingShoppingItemIds([...this.inFlightMutations, ...this.mutations]),
-      pendingCount: this.inFlightMutations.length + this.mutations.length,
+      pendingCount: pendingShoppingMutationCount(this.mutations),
+      failedMutations: failedShoppingMutations(this.mutations),
       status: this.isOnline() ? this.snapshot.status : 'offline',
       error: null,
     })

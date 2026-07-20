@@ -452,9 +452,9 @@ Navržený uzavřený výčet (implementován v `src/errors/errorCodes.ts`):
 
 Detailně: [`docs/implementation/P0_OFFLINE_CACHE_SYNC_BATCH_1.md`](../implementation/P0_OFFLINE_CACHE_SYNC_BATCH_1.md).
 
-Opraveno: **P0-1, P0-2, P0-3, P0-4, P0-5, P1-1, P1-2, P1-3, P1-5, P1-6, P1-7**.
+Opraveno: **všech 5 P0 a všech 7 P1** (P0-1 … P0-5, P1-1 … P1-7).
 
-Odloženo do samostatného batche: **P1-4** (přepis shopping queue schématu do podoby calendar queue — `attempts`/`status`/`retryable`/`discard`), **P2-3** (retryable chyba blokuje calendar frontu), **P2-5** (prázdné shimy), **P2-6** (update-ready UI).
+Odloženo do samostatného batche: **P2-1** … **P2-6** — žádný z nich nevede k zobrazení cizích nebo zastaralých dat.
 
 Poznámka k **P2-1**: vztah `AVATAR_SIGNED_URL_SECONDS` (12 h) > `maxAgeMs` (11 h) zůstává konvencí, nikoli vynuceným invariantem. Kandidát na contract test.
 
