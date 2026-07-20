@@ -34,7 +34,8 @@ describe('Family Jump V1 polish contract', () => {
   })
 
   it('keeps decorative movement subtle and all game-feel transforms visual-only', () => {
-    expect(engine).toContain('state.climbedPixels * 0.025')
+    expect(engine).toContain('state.climbedPixels * GAME_CONFIG.environment.decorativeDrift')
+    expect(GAME_CONFIG.environment.decorativeDrift).toBeLessThanOrEqual(0.04)
     expect(engine).toContain('platform.impactAnimation')
     expect(engine).toContain('const motionScale = this.options.reducedMotion ? 0 : 1')
     expect(engine).toContain('const drawY = platform.y + impact * 2.5')

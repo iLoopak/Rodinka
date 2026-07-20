@@ -1,5 +1,15 @@
 import { GAME_CONFIG } from '../config/gameConfig'
-import type { JumpGameState, JumpInput, JumpPlatform, JumpPlayer, JumpViewport } from '../types/game'
+import type {
+  FallingClutter,
+  FallingClutterKind,
+  JumpGameState,
+  JumpInput,
+  JumpPlatform,
+  JumpPlayer,
+  JumpViewport,
+  PlatformWidthVariant,
+} from '../types/game'
+import { environmentBlendAtHeight } from './environment'
 
 export type RandomSource = () => number
 export type PlatformDirection = -1 | 0 | 1
@@ -90,6 +100,8 @@ export function generateNextPlatform(
     maximumVertical,
     random,
   )
+  const widthVariant = platformWidthVariant(random())
+  const platformWidth = GAME_CONFIG.platform.widths[widthVariant]
   const previousDirection = options.previousDirection ?? 0
   const forceTurn = previousDirection !== 0 && (options.sameDirectionCount ?? 0) >= 2
   let direction: PlatformDirection = random() < 0.5 ? -1 : 1
@@ -99,18 +111,20 @@ export function generateNextPlatform(
     maximumHorizontal,
     random,
   )
-  const maximumX = Math.max(0, viewportWidth - GAME_CONFIG.platform.width)
-  let nextX = previous.x + direction * horizontalDistance
+  const maximumX = Math.max(0, viewportWidth - platformWidth)
+  const previousCenter = previous.x + previous.width / 2
+  let nextX = previousCenter + direction * horizontalDistance - platformWidth / 2
   if (nextX < 0 || nextX > maximumX) {
     direction = direction === 1 ? -1 : 1
-    nextX = previous.x + direction * horizontalDistance
+    nextX = previousCenter + direction * horizontalDistance - platformWidth / 2
   }
   return {
     id,
     kind: 'stable',
+    widthVariant,
     x: clamp(nextX, 0, maximumX),
     y: previous.y - verticalGap,
-    width: GAME_CONFIG.platform.width,
+    width: platformWidth,
     height: GAME_CONFIG.platform.height,
     impactAnimation: 0,
   }
@@ -118,7 +132,9 @@ export function generateNextPlatform(
 
 export function isReachablePlatformStep(lower: JumpPlatform, upper: JumpPlatform): boolean {
   const verticalGap = lower.y - upper.y
-  const horizontalGap = Math.abs(lower.x - upper.x)
+  const lowerCenter = lower.x + lower.width / 2
+  const upperCenter = upper.x + upper.width / 2
+  const horizontalGap = Math.abs(lowerCenter - upperCenter)
   return verticalGap >= GAME_CONFIG.platformSpacing.minimumVertical
     && verticalGap <= GAME_CONFIG.platformSpacing.maximumVertical
     && horizontalGap <= GAME_CONFIG.platformSpacing.maximumHorizontal
@@ -131,6 +147,7 @@ export function createInitialGameState(
   const startPlatform: JumpPlatform = {
     id: 1,
     kind: 'stable',
+    widthVariant: 'medium',
     x: Math.max(0, viewport.width / 2 - GAME_CONFIG.platform.width / 2),
     y: viewport.height - 68,
     width: GAME_CONFIG.platform.width,
@@ -148,7 +165,10 @@ export function createInitialGameState(
       landingAnimation: 0,
     },
     platforms: [startPlatform],
+    clutter: [],
     nextPlatformId: 2,
+    nextClutterId: 1,
+    clutterSpawnCooldown: GAME_CONFIG.clutter.initialCooldownSeconds,
     climbedPixels: 0,
     score: 0,
     gameOver: false,
@@ -198,9 +218,97 @@ export function stepGame(
     state.score = Math.max(state.score, scoreFromClimbedPixels(state.climbedPixels))
   }
 
+  updateFallingClutter(state, deltaSeconds, viewport, random)
+  if (findFallingClutterCollision(player, state.clutter)) {
+    state.gameOver = true
+    return
+  }
+
   state.platforms = state.platforms.filter((platform) => platform.y < viewport.height + GAME_CONFIG.removalMargin)
   replenishPlatforms(state, viewport, random)
   if (player.y > viewport.height + GAME_CONFIG.gameOverMargin) state.gameOver = true
+}
+
+export function updateFallingClutter(
+  state: JumpGameState,
+  deltaSeconds: number,
+  viewport: JumpViewport,
+  random: RandomSource = Math.random,
+) {
+  if (state.score >= GAME_CONFIG.clutter.minimumScore) {
+    state.clutterSpawnCooldown -= deltaSeconds
+    if (state.clutterSpawnCooldown <= 0 && state.clutter.length < GAME_CONFIG.clutter.maximumOnScreen) {
+      state.clutter.push(createFallingClutter(state.nextClutterId++, state.score, viewport.width, random))
+      state.clutterSpawnCooldown = nextClutterCooldown(state.score, random)
+    }
+  }
+
+  for (const item of state.clutter) {
+    if (item.warningSeconds > 0) {
+      item.warningSeconds = Math.max(0, item.warningSeconds - deltaSeconds)
+      continue
+    }
+    item.x += item.velocityX * deltaSeconds
+    item.y += item.velocityY * deltaSeconds
+    item.rotation += item.rotationSpeed * deltaSeconds
+    if (item.x < 0) {
+      item.x = 0
+      item.velocityX = Math.abs(item.velocityX)
+    } else if (item.x + item.width > viewport.width) {
+      item.x = Math.max(0, viewport.width - item.width)
+      item.velocityX = -Math.abs(item.velocityX)
+    }
+  }
+
+  state.clutter = state.clutter.filter((item) => item.y < viewport.height + GAME_CONFIG.clutter.removalMargin)
+}
+
+export function createFallingClutter(
+  id: number,
+  score: number,
+  viewportWidth: number,
+  random: RandomSource = Math.random,
+): FallingClutter {
+  const theme = environmentBlendAtHeight(score).current
+  const kindIndex = Math.min(theme.clutterKinds.length - 1, Math.floor(clamp(random(), 0, 0.999_999) * theme.clutterKinds.length))
+  const maximumX = Math.max(
+    GAME_CONFIG.clutter.horizontalPadding,
+    viewportWidth - GAME_CONFIG.clutter.width - GAME_CONFIG.clutter.horizontalPadding,
+  )
+  const direction = random() < 0.5 ? -1 : 1
+  return {
+    id,
+    kind: theme.clutterKinds[kindIndex] as FallingClutterKind,
+    x: randomBetween(GAME_CONFIG.clutter.horizontalPadding, maximumX, random),
+    y: GAME_CONFIG.hudSafeHeight - GAME_CONFIG.clutter.height,
+    width: GAME_CONFIG.clutter.width,
+    height: GAME_CONFIG.clutter.height,
+    velocityX: direction * randomBetween(8, GAME_CONFIG.clutter.maximumHorizontalDrift, random),
+    velocityY: randomBetween(GAME_CONFIG.clutter.minimumFallSpeed, GAME_CONFIG.clutter.maximumFallSpeed, random),
+    rotation: randomBetween(-Math.PI, Math.PI, random),
+    rotationSpeed: randomBetween(-GAME_CONFIG.clutter.maximumRotationSpeed, GAME_CONFIG.clutter.maximumRotationSpeed, random),
+    warningSeconds: GAME_CONFIG.clutter.warningSeconds,
+  }
+}
+
+export function findFallingClutterCollision(
+  player: JumpPlayer,
+  clutter: readonly FallingClutter[],
+): FallingClutter | null {
+  const inset = GAME_CONFIG.clutter.collisionInset
+  const playerLeft = player.x + inset
+  const playerRight = player.x + player.width - inset
+  const playerTop = player.y + inset
+  const playerBottom = player.y + player.height - inset
+  for (const item of clutter) {
+    if (item.warningSeconds > 0) continue
+    const overlaps = playerRight > item.x + inset
+      && playerLeft < item.x + item.width - inset
+      && playerBottom > item.y + inset
+      && playerTop < item.y + item.height - inset
+    if (overlaps) return item
+  }
+  return null
 }
 
 export function replenishPlatforms(
@@ -212,13 +320,13 @@ export function replenishPlatforms(
   let top = state.platforms[0]
   for (const platform of state.platforms) if (platform.y < top.y) top = platform
   while (top.y > -GAME_CONFIG.generationMargin) {
-    const previousX = top.x
+    const previousCenter = top.x + top.width / 2
     top = generateNextPlatform(top, viewport.width, state.nextPlatformId++, random, {
       progress: state.score / GAME_CONFIG.platformDifficultyFullScore,
       previousDirection: state.lastPlatformDirection,
       sameDirectionCount: state.sameDirectionPlatformCount,
     })
-    const direction = Math.sign(top.x - previousX) as PlatformDirection
+    const direction = Math.sign(top.x + top.width / 2 - previousCenter) as PlatformDirection
     if (direction === 0) {
       state.lastPlatformDirection = 0
       state.sameDirectionPlatformCount = 0
@@ -230,6 +338,28 @@ export function replenishPlatforms(
     }
     state.platforms.push(top)
   }
+}
+
+function platformWidthVariant(randomValue: number): PlatformWidthVariant {
+  const value = clamp(randomValue, 0, 1)
+  if (value < GAME_CONFIG.platform.widthThresholds.short) return 'short'
+  if (value < GAME_CONFIG.platform.widthThresholds.medium) return 'medium'
+  return 'long'
+}
+
+function nextClutterCooldown(score: number, random: RandomSource) {
+  const progress = clamp(
+    (score - GAME_CONFIG.clutter.minimumScore)
+      / (GAME_CONFIG.clutter.fullDifficultyScore - GAME_CONFIG.clutter.minimumScore),
+    0,
+    1,
+  )
+  const maximum = interpolate(
+    GAME_CONFIG.clutter.cooldownSeconds.maximum,
+    GAME_CONFIG.clutter.cooldownSeconds.minimum,
+    progress,
+  )
+  return randomBetween(GAME_CONFIG.clutter.cooldownSeconds.minimum, maximum, random)
 }
 
 function randomBetween(minimum: number, maximum: number, random: RandomSource) {

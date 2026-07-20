@@ -13,9 +13,12 @@ export interface JumpPlayer {
   landingAnimation: number
 }
 
+export type PlatformWidthVariant = 'short' | 'medium' | 'long'
+
 export interface StablePlatform {
   id: number
   kind: 'stable'
+  widthVariant: PlatformWidthVariant
   x: number
   y: number
   width: number
@@ -25,10 +28,29 @@ export interface StablePlatform {
 
 export type JumpPlatform = StablePlatform
 
+export type FallingClutterKind = 'ball' | 'block' | 'leaf' | 'paper' | 'sock' | 'spoon'
+
+export interface FallingClutter {
+  id: number
+  kind: FallingClutterKind
+  x: number
+  y: number
+  width: number
+  height: number
+  velocityX: number
+  velocityY: number
+  rotation: number
+  rotationSpeed: number
+  warningSeconds: number
+}
+
 export interface JumpGameState {
   player: JumpPlayer
   platforms: JumpPlatform[]
+  clutter: FallingClutter[]
   nextPlatformId: number
+  nextClutterId: number
+  clutterSpawnCooldown: number
   climbedPixels: number
   score: number
   gameOver: boolean
@@ -54,4 +76,6 @@ export interface JumpDebugSnapshot {
   velocityY: number
   score: number
   platformCount: number
+  clutterCount: number
+  environment: string
 }

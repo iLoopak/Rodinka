@@ -42,8 +42,17 @@ React řídí vstup, výběr člena, pauzu, game over a leaderboard. Aktivní he
 - Figurky v menu i canvasu používají jako jedinou barevnou plochu přesnou primární accent barvu člena. Obličej, nožičky a dynamický stín jsou neutrální.
 - Canvasový hráč má hitbox `46 × 53 px`, shodný se základním viditelným tělem. Squash, stretch, náklon a reakce platformy jsou pouze render transformace a při `prefers-reduced-motion` se vypnou.
 - Platformy mají zvýrazněnou aktivní horní hranu. Dekorace jsou menší, méně kontrastní a pohybují se pomaleji než herní objekty.
+- Platformy používají tři centrálně konfigurované šířky (`72`, `96`, `128 px`). Generátor počítá dosažitelnost a změny směru podle středu různě širokých plošin, takže vizuální variabilita nemění základní fyziku skoku.
 - Horní HUD má samostatnou safe-area masku; herní objekty mohou fyzicky pokračovat pod ní, ale nejsou přes ovládací prvky vidět a HUD nemění fyziku.
 - Z běžné aplikace otevírá hru pouze 44px přístupné tlačítko obalující dynamické logo. Wordmark, název rodiny ani okolní header nejsou součástí hit targetu.
+
+## Variabilní prostředí a překážky
+
+- Výška runu je rozdělena do úseků po `420 m`. Posledních `90 m` každého úseku plynule prolíná současný a následující motiv; render tak nikdy skokově nepřepne celou paletu.
+- Pět abstraktních Canvas motivů reprezentuje dětský pokoj, kuchyň, prádelnu, pracovní kout a zahradu. Používají jen jemné gradienty, obrysy hraček, dlaždic, bublin, papíru a listů. Po pěti úsecích se všechny motivy zopakují v odlišném pořadí.
+- Výběr motivu je čistou funkcí dosažené výšky. Nemění fyziku, kameru ani vygenerované pozice plošin.
+- Padající domácí předměty začínají až od `220 m`, jsou nejvýše dva současně a před pádem mají `720 ms` varovný bod pod bezpečnou HUD zónou. Pauza zastaví i jejich varování a pohyb.
+- Míč, kostka, list, papír, ponožka a lžíce jsou kreslené Canvas primitives. Kolize používá mírně zmenšený obdélník a nikdy není aktivní během varování; zásah ukončí run stejnou bezpečnou cestou jako pád.
 
 ## Rekordy a synchronizace
 

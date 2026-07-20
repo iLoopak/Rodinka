@@ -1,6 +1,7 @@
 import { GAME_CONFIG } from '../config/gameConfig'
-import type { JumpDebugSnapshot, JumpGameState, JumpInput, JumpPlatform, JumpScoreMarker, JumpViewport } from '../types/game'
+import type { FallingClutter, JumpDebugSnapshot, JumpGameState, JumpInput, JumpPlatform, JumpScoreMarker, JumpViewport } from '../types/game'
 import { createInitialGameState, stepGame } from './core'
+import { environmentBlendAtHeight, type EnvironmentTheme } from './environment'
 
 interface EngineCopy {
   marker: (name: string, score: number) => string
@@ -188,6 +189,8 @@ export class FamilyJumpEngine {
         velocityY: Math.round(this.state.player.velocityY),
         score: this.state.score,
         platformCount: this.state.platforms.length,
+        clutterCount: this.state.clutter.length,
+        environment: visibleEnvironment(this.state.score).id,
       })
     }
   }
@@ -229,10 +232,17 @@ export class FamilyJumpEngine {
     this.options.canvas.width = Math.round(width * dpr)
     this.options.canvas.height = Math.round(height * dpr)
     this.context.setTransform(dpr, 0, 0, dpr, 0, 0)
-    if (this.state && previousHeight !== height) {
+    if (this.state) {
       const shift = height - previousHeight
-      this.state.player.y += shift
-      for (const platform of this.state.platforms) platform.y += shift
+      if (shift !== 0) this.state.player.y += shift
+      for (const platform of this.state.platforms) {
+        platform.x = Math.min(platform.x, Math.max(0, width - platform.width))
+        if (shift !== 0) platform.y += shift
+      }
+      for (const item of this.state.clutter) {
+        item.x = Math.min(item.x, Math.max(0, width - item.width))
+        if (shift !== 0) item.y += shift
+      }
     }
     this.render()
   }
@@ -243,32 +253,39 @@ export class FamilyJumpEngine {
     const context = this.context
     const { width, height } = this.viewport
     context.clearRect(0, 0, width, height)
-    const background = context.createLinearGradient(0, 0, 0, height)
-    background.addColorStop(0, '#EAF3EE')
-    background.addColorStop(0.55, '#F7F2E8')
-    background.addColorStop(1, '#FFF8EF')
-    context.fillStyle = background
-    context.fillRect(0, 0, width, height)
     this.drawBackground(context, state)
     this.drawMarkers(context, state)
     this.drawPlatforms(context, state)
+    this.drawClutter(context, state)
     this.drawPlayer(context, state)
     if (this.toastSeconds > 0) this.drawToast(context, this.toast)
     if (this.debug) this.drawDebug(context, state)
   }
 
   private drawBackground(context: CanvasRenderingContext2D, state: JumpGameState) {
+    const blend = environmentBlendAtHeight(state.score)
+    this.drawEnvironmentLayer(context, state, blend.current, 1)
+    if (blend.progress > 0) this.drawEnvironmentLayer(context, state, blend.next, blend.progress)
+  }
+
+  private drawEnvironmentLayer(
+    context: CanvasRenderingContext2D,
+    state: JumpGameState,
+    theme: EnvironmentTheme,
+    alpha: number,
+  ) {
+    if (alpha <= 0) return
     const { width, height } = this.viewport
     context.save()
-    context.fillStyle = 'rgba(255,255,255,.2)'
-    const drift = this.options.reducedMotion ? 0 : state.climbedPixels * 0.025
-    for (let index = 0; index < 8; index += 1) {
-      const x = (index * 113 + 31) % width
-      const y = ((index * 163 + drift) % (height + 100)) - 50
-      context.beginPath()
-      context.arc(x, y, 8 + index % 3 * 4, 0, Math.PI * 2)
-      context.fill()
-    }
+    context.globalAlpha = alpha
+    const background = context.createLinearGradient(0, 0, 0, height)
+    background.addColorStop(0, theme.background[0])
+    background.addColorStop(0.55, theme.background[1])
+    background.addColorStop(1, theme.background[2])
+    context.fillStyle = background
+    context.fillRect(0, 0, width, height)
+    const drift = this.options.reducedMotion ? 0 : state.climbedPixels * GAME_CONFIG.environment.decorativeDrift
+    drawEnvironmentDecorations(context, theme, width, height, drift)
     context.restore()
   }
 
@@ -344,6 +361,18 @@ export class FamilyJumpEngine {
       context.moveTo(drawX + 9, drawY + 3)
       context.lineTo(drawX + drawWidth - 9, drawY + 3)
       context.stroke()
+      if (platform.widthVariant === 'long') {
+        context.fillStyle = 'rgba(79, 128, 104, .28)'
+        context.beginPath()
+        context.arc(drawX + 16, drawY + drawHeight / 2 + 1, 1.8, 0, Math.PI * 2)
+        context.arc(drawX + drawWidth - 16, drawY + drawHeight / 2 + 1, 1.8, 0, Math.PI * 2)
+        context.fill()
+      } else if (platform.widthVariant === 'short') {
+        context.fillStyle = 'rgba(79, 128, 104, .22)'
+        context.beginPath()
+        context.arc(drawX + drawWidth / 2, drawY + drawHeight / 2 + 1, 2, 0, Math.PI * 2)
+        context.fill()
+      }
       if (this.debug) {
         context.strokeStyle = '#9C3E3E'
         context.lineWidth = 1
@@ -351,6 +380,42 @@ export class FamilyJumpEngine {
       }
     }
     context.restore()
+  }
+
+  private drawClutter(context: CanvasRenderingContext2D, state: JumpGameState) {
+    for (const item of state.clutter) {
+      if (item.warningSeconds > 0) {
+        const motionPulse = this.options.reducedMotion ? 0 : Math.sin(item.warningSeconds * 22) * 0.12
+        context.save()
+        context.globalAlpha = 0.72 + motionPulse
+        context.fillStyle = '#A94738'
+        context.beginPath()
+        context.arc(item.x + item.width / 2, GAME_CONFIG.hudSafeHeight + 9, 5.5, 0, Math.PI * 2)
+        context.fill()
+        context.strokeStyle = 'rgba(169, 71, 56, .34)'
+        context.lineWidth = 2
+        context.beginPath()
+        context.arc(item.x + item.width / 2, GAME_CONFIG.hudSafeHeight + 9, 10, 0, Math.PI * 2)
+        context.stroke()
+        context.restore()
+        continue
+      }
+
+      context.save()
+      context.translate(item.x + item.width / 2, item.y + item.height / 2)
+      context.rotate(item.rotation)
+      context.fillStyle = 'rgba(36, 49, 40, .14)'
+      context.beginPath()
+      context.ellipse(2, item.height / 2 + 4, item.width * 0.38, 4, 0, 0, Math.PI * 2)
+      context.fill()
+      drawClutterShape(context, item)
+      if (this.debug) {
+        context.strokeStyle = '#9C3E3E'
+        context.lineWidth = 1
+        context.strokeRect(-item.width / 2, -item.height / 2, item.width, item.height)
+      }
+      context.restore()
+    }
   }
 
   private drawPlayer(context: CanvasRenderingContext2D, state: JumpGameState) {
@@ -441,18 +506,217 @@ export class FamilyJumpEngine {
   }
 
   private drawDebug(context: CanvasRenderingContext2D, state: JumpGameState) {
+    const environment = visibleEnvironment(state.score)
     context.save()
     context.font = '600 11px ui-monospace, monospace'
     context.fillStyle = 'rgba(36,49,40,.82)'
-    roundedRect(context, 10, this.viewport.height - 84, 142, 72, 10)
+    roundedRect(context, 10, this.viewport.height - 116, 166, 104, 10)
     context.fill()
     context.fillStyle = '#FFFFFF'
-    context.fillText(`FPS ${this.fps}`, 20, this.viewport.height - 64)
-    context.fillText(`vy ${Math.round(state.player.velocityY)}`, 20, this.viewport.height - 48)
-    context.fillText(`height ${state.score}m`, 20, this.viewport.height - 32)
-    context.fillText(`platforms ${state.platforms.length}`, 20, this.viewport.height - 16)
+    context.fillText(`FPS ${this.fps}`, 20, this.viewport.height - 96)
+    context.fillText(`vy ${Math.round(state.player.velocityY)}`, 20, this.viewport.height - 80)
+    context.fillText(`height ${state.score}m`, 20, this.viewport.height - 64)
+    context.fillText(`platforms ${state.platforms.length}`, 20, this.viewport.height - 48)
+    context.fillText(`clutter ${state.clutter.length}`, 20, this.viewport.height - 32)
+    context.fillText(`theme ${environment.id}`, 20, this.viewport.height - 16)
     context.restore()
   }
+}
+
+function visibleEnvironment(score: number) {
+  const blend = environmentBlendAtHeight(score)
+  return blend.progress < 0.5 ? blend.current : blend.next
+}
+
+function drawEnvironmentDecorations(
+  context: CanvasRenderingContext2D,
+  theme: EnvironmentTheme,
+  width: number,
+  height: number,
+  drift: number,
+) {
+  const y = (base: number) => ((base + drift) % (height + 160)) - 80
+  context.lineWidth = 2
+  context.lineCap = 'round'
+  context.lineJoin = 'round'
+
+  if (theme.decoration === 'toys') {
+    for (let index = 0; index < 7; index += 1) {
+      const x = (index * 97 + 28) % width
+      const top = y(index * 121 + 34)
+      context.strokeStyle = index % 2 ? theme.decorationColor : theme.secondaryDecorationColor
+      if (index % 2) {
+        roundedRect(context, x - 10, top - 10, 20, 20, 5)
+        context.stroke()
+      } else {
+        context.beginPath()
+        context.arc(x, top, 8 + index % 3 * 2, 0, Math.PI * 2)
+        context.stroke()
+      }
+    }
+    return
+  }
+
+  if (theme.decoration === 'kitchen') {
+    context.strokeStyle = theme.decorationColor
+    context.lineWidth = 1
+    for (let x = 28; x < width; x += 72) {
+      context.beginPath()
+      context.moveTo(x, 0)
+      context.lineTo(x, height)
+      context.stroke()
+    }
+    for (let row = 0; row < 6; row += 1) {
+      const top = y(row * 118 + 20)
+      context.beginPath()
+      context.moveTo(0, top)
+      context.lineTo(width, top)
+      context.stroke()
+      context.strokeStyle = theme.secondaryDecorationColor
+      context.beginPath()
+      context.arc((row * 109 + 52) % width, top - 20, 12, 0, Math.PI * 2)
+      context.stroke()
+      context.strokeStyle = theme.decorationColor
+    }
+    return
+  }
+
+  if (theme.decoration === 'bubbles') {
+    for (let index = 0; index < 10; index += 1) {
+      context.strokeStyle = index % 3 ? theme.decorationColor : theme.secondaryDecorationColor
+      context.beginPath()
+      context.arc(
+        (index * 83 + 31) % width,
+        y(index * 79 + 18),
+        6 + index % 4 * 4,
+        0,
+        Math.PI * 2,
+      )
+      context.stroke()
+    }
+    return
+  }
+
+  if (theme.decoration === 'study') {
+    context.strokeStyle = theme.decorationColor
+    context.lineWidth = 1
+    for (let row = 0; row < 8; row += 1) {
+      const top = y(row * 86 + 26)
+      context.beginPath()
+      context.moveTo(20, top)
+      context.lineTo(width - 20, top)
+      context.stroke()
+    }
+    context.lineWidth = 2
+    for (let index = 0; index < 5; index += 1) {
+      context.strokeStyle = index % 2 ? theme.decorationColor : theme.secondaryDecorationColor
+      roundedRect(context, (index * 107 + 22) % width, y(index * 147 + 60), 24, 31, 4)
+      context.stroke()
+    }
+    return
+  }
+
+  for (let index = 0; index < 9; index += 1) {
+    const x = (index * 91 + 24) % width
+    const top = y(index * 103 + 18)
+    context.strokeStyle = index % 3 ? theme.decorationColor : theme.secondaryDecorationColor
+    context.beginPath()
+    context.ellipse(x, top, 5 + index % 2 * 3, 11, index % 2 ? 0.6 : -0.6, 0, Math.PI * 2)
+    context.stroke()
+    context.beginPath()
+    context.moveTo(x, top + 9)
+    context.lineTo(x + (index % 2 ? -5 : 5), top + 16)
+    context.stroke()
+  }
+}
+
+function drawClutterShape(context: CanvasRenderingContext2D, item: FallingClutter) {
+  const halfWidth = item.width / 2
+  const halfHeight = item.height / 2
+  context.lineWidth = 2
+  context.lineCap = 'round'
+  context.lineJoin = 'round'
+  context.strokeStyle = '#52635A'
+
+  if (item.kind === 'ball') {
+    context.fillStyle = '#D9A88F'
+    context.beginPath()
+    context.arc(0, 0, halfWidth - 3, 0, Math.PI * 2)
+    context.fill()
+    context.stroke()
+    context.beginPath()
+    context.arc(-3, 0, halfWidth - 7, -1.1, 1.1)
+    context.stroke()
+    return
+  }
+
+  if (item.kind === 'block') {
+    context.fillStyle = '#E3C67A'
+    roundedRect(context, -halfWidth + 3, -halfHeight + 3, item.width - 6, item.height - 6, 5)
+    context.fill()
+    context.stroke()
+    context.beginPath()
+    context.moveTo(-5, 5)
+    context.lineTo(0, -5)
+    context.lineTo(5, 5)
+    context.closePath()
+    context.stroke()
+    return
+  }
+
+  if (item.kind === 'leaf') {
+    context.fillStyle = '#A8C8A8'
+    context.beginPath()
+    context.ellipse(0, 0, halfWidth - 4, halfHeight - 7, 0.65, 0, Math.PI * 2)
+    context.fill()
+    context.stroke()
+    context.beginPath()
+    context.moveTo(-7, 8)
+    context.lineTo(7, -8)
+    context.stroke()
+    return
+  }
+
+  if (item.kind === 'paper') {
+    context.fillStyle = '#FFFDF8'
+    roundedRect(context, -halfWidth + 4, -halfHeight + 2, item.width - 8, item.height - 4, 3)
+    context.fill()
+    context.stroke()
+    context.strokeStyle = 'rgba(82, 99, 90, .48)'
+    context.beginPath()
+    context.moveTo(-7, -4)
+    context.lineTo(7, -4)
+    context.moveTo(-7, 2)
+    context.lineTo(4, 2)
+    context.stroke()
+    return
+  }
+
+  if (item.kind === 'sock') {
+    context.fillStyle = '#B8C9DC'
+    context.beginPath()
+    context.moveTo(-7, -halfHeight + 3)
+    context.lineTo(7, -halfHeight + 3)
+    context.lineTo(6, 4)
+    context.quadraticCurveTo(11, 7, 10, 11)
+    context.quadraticCurveTo(7, halfHeight - 2, 0, halfHeight - 3)
+    context.lineTo(-8, halfHeight - 5)
+    context.quadraticCurveTo(-11, halfHeight - 9, -6, 5)
+    context.closePath()
+    context.fill()
+    context.stroke()
+    return
+  }
+
+  context.fillStyle = '#D7D2C7'
+  context.beginPath()
+  context.ellipse(0, -7, 7, 9, 0, 0, Math.PI * 2)
+  context.fill()
+  context.stroke()
+  context.beginPath()
+  context.moveTo(0, 1)
+  context.lineTo(0, halfHeight - 2)
+  context.stroke()
 }
 
 function roundedRect(

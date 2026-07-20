@@ -130,6 +130,7 @@ export function FamilyJumpScreen() {
           <h2 id="family-jump-controls-heading">{copy.controls}</h2>
           <div><span aria-hidden="true">↙</span><p>{copy.touchHelp}</p></div>
           <div><span aria-hidden="true">⌨</span><p>{copy.keyboardHelp}</p></div>
+          <div><span aria-hidden="true">●</span><p>{copy.clutterHelp}</p></div>
         </section>
       </> : completedRun && <GameOverPanel
         copy={copy}
@@ -178,7 +179,14 @@ function FamilyJumpGame({ member, members, records, copy, onExit, onGameOver }: 
   const [paused, setPaused] = useState(false)
   const [announcement, setAnnouncement] = useState('')
   const [debug, setDebug] = useState(false)
-  const [debugSnapshot, setDebugSnapshot] = useState<JumpDebugSnapshot>({ fps: 0, velocityY: 0, score: 0, platformCount: 0 })
+  const [debugSnapshot, setDebugSnapshot] = useState<JumpDebugSnapshot>({
+    fps: 0,
+    velocityY: 0,
+    score: 0,
+    platformCount: 0,
+    clutterCount: 0,
+    environment: 'playroom',
+  })
   const colorTheme = useMemo(() => getMemberColorTheme(member), [member])
   const markers = useMemo<JumpScoreMarker[]>(() => members
     .filter((candidate) => candidate.id !== member.id && (records[candidate.id] ?? 0) > 0)
@@ -310,7 +318,7 @@ function FamilyJumpGame({ member, members, records, copy, onExit, onGameOver }: 
         engineRef.current?.setDebug(next)
       }}>{copy.debug}</button>
       {debug && <>
-        <output>{debugSnapshot.fps} FPS · vy {debugSnapshot.velocityY} · {debugSnapshot.score} m · {debugSnapshot.platformCount} pl.</output>
+        <output>{debugSnapshot.fps} FPS · vy {debugSnapshot.velocityY} · {debugSnapshot.score} m · {debugSnapshot.platformCount} pl. · {debugSnapshot.clutterCount} obj. · {debugSnapshot.environment}</output>
         <button type="button" onClick={() => engineRef.current?.finishNow()}>{copy.endRun}</button>
       </>}
     </div>}
