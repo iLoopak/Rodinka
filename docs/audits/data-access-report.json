@@ -483,136 +483,6 @@
       "isTest": false
     },
     {
-      "file": "src/context/meals/useMealsDataSource.ts",
-      "line": 212,
-      "kind": "table",
-      "method": "from",
-      "target": "meals",
-      "domain": "meals",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/meals/useMealsDataSource.ts",
-      "line": 221,
-      "kind": "table",
-      "method": "from",
-      "target": "meals",
-      "domain": "meals",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/meals/useMealsDataSource.ts",
-      "line": 236,
-      "kind": "table",
-      "method": "from",
-      "target": "meal_vote_rounds",
-      "domain": "meals",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/meals/useMealsDataSource.ts",
-      "line": 256,
-      "kind": "table",
-      "method": "from",
-      "target": "meal_vote_candidates",
-      "domain": "meals",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/meals/useMealsDataSource.ts",
-      "line": 261,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "open_vote_round",
-      "domain": "meals",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/meals/useMealsDataSource.ts",
-      "line": 279,
-      "kind": "table",
-      "method": "from",
-      "target": "meal_vote_candidates",
-      "domain": "meals",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/meals/useMealsDataSource.ts",
-      "line": 288,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "open_vote_round",
-      "domain": "meals",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/meals/useMealsDataSource.ts",
-      "line": 297,
-      "kind": "rpc",
-      "method": "rpc",
-      "target": "close_vote_round",
-      "domain": "meals",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/meals/useMealsDataSource.ts",
-      "line": 306,
-      "kind": "table",
-      "method": "from",
-      "target": "meal_votes",
-      "domain": "meals",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/meals/useMealsDataSource.ts",
-      "line": 320,
-      "kind": "table",
-      "method": "from",
-      "target": "meal_plan_entries",
-      "domain": "meals",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/meals/useMealsDataSource.ts",
-      "line": 331,
-      "kind": "table",
-      "method": "from",
-      "target": "meal_plan_entries",
-      "domain": "meals",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/meals/useMealsDataSource.ts",
-      "line": 343,
-      "kind": "table",
-      "method": "from",
-      "target": "meal_plan_entries",
-      "domain": "meals",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/context/meals/useMealsDataSource.ts",
-      "line": 369,
-      "kind": "table",
-      "method": "from",
-      "target": "meal_plan_entries",
-      "domain": "meals",
-      "layer": "state",
-      "isTest": false
-    },
-    {
       "file": "src/context/messages/useMessagesContentSource.ts",
       "line": 80,
       "kind": "rpc",
@@ -1035,6 +905,193 @@
       "allowed": "Per-feature remote adapters, e.g. the Family Jump score remote."
     },
     {
+      "file": "src/features/meals/data/supabaseMealsRepository.ts",
+      "line": 42,
+      "kind": "table",
+      "method": "from",
+      "target": "meals",
+      "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/meals/data/supabaseMealsRepository.ts",
+      "line": 50,
+      "kind": "table",
+      "method": "from",
+      "target": "meals",
+      "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/meals/data/supabaseMealsRepository.ts",
+      "line": 58,
+      "kind": "table",
+      "method": "from",
+      "target": "meals",
+      "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/meals/data/supabaseMealsRepository.ts",
+      "line": 66,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_plan_entries",
+      "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/meals/data/supabaseMealsRepository.ts",
+      "line": 72,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_plan_entries",
+      "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/meals/data/supabaseMealsRepository.ts",
+      "line": 80,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_plan_entries",
+      "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/meals/data/supabaseMealsRepository.ts",
+      "line": 88,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_plan_entries",
+      "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/meals/data/supabaseMealsRepository.ts",
+      "line": 107,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_plan_entries",
+      "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/meals/data/supabaseMealsRepository.ts",
+      "line": 113,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_vote_rounds",
+      "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/meals/data/supabaseMealsRepository.ts",
+      "line": 121,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_vote_rounds",
+      "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/meals/data/supabaseMealsRepository.ts",
+      "line": 127,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_vote_rounds",
+      "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/meals/data/supabaseMealsRepository.ts",
+      "line": 138,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_vote_candidates",
+      "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/meals/data/supabaseMealsRepository.ts",
+      "line": 148,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "open_vote_round",
+      "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/meals/data/supabaseMealsRepository.ts",
+      "line": 158,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_vote_candidates",
+      "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/meals/data/supabaseMealsRepository.ts",
+      "line": 169,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "open_vote_round",
+      "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/meals/data/supabaseMealsRepository.ts",
+      "line": 176,
+      "kind": "rpc",
+      "method": "rpc",
+      "target": "close_vote_round",
+      "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
+      "file": "src/features/meals/data/supabaseMealsRepository.ts",
+      "line": 182,
+      "kind": "table",
+      "method": "from",
+      "target": "meal_votes",
+      "domain": "meals",
+      "layer": "data",
+      "isTest": false,
+      "allowed": "Per-feature data layer introduced by the repository waves."
+    },
+    {
       "file": "src/hooks/useActivities.ts",
       "line": 76,
       "kind": "table",
@@ -1161,36 +1218,6 @@
       "method": "rpc",
       "target": "reorder_household_tasks",
       "domain": "chores",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/hooks/useMealPlanEntries.ts",
-      "line": 39,
-      "kind": "table",
-      "method": "from",
-      "target": "meal_plan_entries",
-      "domain": "meals",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/hooks/useMeals.ts",
-      "line": 37,
-      "kind": "table",
-      "method": "from",
-      "target": "meals",
-      "domain": "meals",
-      "layer": "state",
-      "isTest": false
-    },
-    {
-      "file": "src/hooks/useMealVoteRounds.ts",
-      "line": 53,
-      "kind": "table",
-      "method": "from",
-      "target": "meal_vote_rounds",
-      "domain": "meals",
       "layer": "state",
       "isTest": false
     },

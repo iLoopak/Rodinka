@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ChoreCompletion } from '../hooks/useChoreCompletions'
-import type { MealVoteRound } from '../hooks/useMealVoteRounds'
+import type { MealVoteRound } from '../features/meals/domain/mealTypes'
 import type { ShoppingItem } from '../utils/shopping'
 import { makeActivity, makeChore, makeFamilyMember, makeMealPlanEntry, makeMealVote, makeMealVoteCandidate, makeMedicalRecord } from '../utils/testFixtures'
 import {

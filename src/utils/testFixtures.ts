@@ -1,9 +1,9 @@
 import type { Chore } from '../hooks/useChores'
 import type { Activity } from '../hooks/useActivities'
 import type { MedicalRecord } from '../hooks/useMedicalRecords'
-import type { MealVote, MealVoteCandidate, VoteValue } from '../hooks/useMealVoteRounds'
-import type { Meal } from '../hooks/useMeals'
-import type { MealPlanEntry } from '../hooks/useMealPlanEntries'
+import type { MealVote, MealVoteCandidate, VoteValue } from '../features/meals/domain/mealTypes'
+import type { Meal } from '../features/meals/domain/mealTypes'
+import type { MealPlanEntry } from '../features/meals/domain/mealTypes'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
 
 // Small factories for the pure-logic tests — only the fields a given test

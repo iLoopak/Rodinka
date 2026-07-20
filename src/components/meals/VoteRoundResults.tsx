@@ -8,7 +8,7 @@ import {
   rankCandidates,
 } from '../../utils/mealVoting'
 import { MemberAvatar } from '../ui/MemberAvatar'
-import type { MealVoteRound, VoteValue } from '../../hooks/useMealVoteRounds'
+import type { MealVoteRound, VoteValue } from '../../features/meals/domain/mealTypes'
 import type { FamilyMember } from '../../hooks/useFamilyMembers'
 
 interface WinnerRef {

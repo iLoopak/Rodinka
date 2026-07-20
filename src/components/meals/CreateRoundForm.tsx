@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { t } from '../../strings'
-import type { Meal } from '../../hooks/useMeals'
+import type { Meal } from '../../features/meals/domain/mealTypes'
 import type { VoteRoundInput } from '../../context/meals/MealsContext'
 import { GuidedDisclosure, GuidedLead } from '../create-record/GuidedCreateFields'
 

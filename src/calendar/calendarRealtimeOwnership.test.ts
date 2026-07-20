@@ -21,12 +21,16 @@ describe('Calendar realtime ownership', () => {
   })
 
   it('reuses the existing feature owners for every Calendar snapshot table', () => {
+    // The owner of a table moves from its context to its repository as each
+    // repository wave lands — meals did in Wave 1. What has to stay true is
+    // that every snapshot table has exactly one owner somewhere in this list,
+    // so the calendar never opens a second subscription of its own.
     const ownershipSources = [
       'src/context/family/FamilyMembersContext.tsx',
       'src/repositories/chores/choresRepository.ts',
       'src/context/activities/ActivitiesContext.tsx',
       'src/repositories/medical/medicalRepository.ts',
-      'src/context/meals/useMealsDataSource.ts',
+      'src/features/meals/data/supabaseMealsRepository.ts',
       'src/context/activities/OccurrenceAssignmentsContext.tsx',
       'src/context/chores/AllowanceContext.tsx',
     ].map((file) => readFileSync(join(root, file), 'utf8')).join('\n')

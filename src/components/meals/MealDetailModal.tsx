@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { t } from '../../strings'
 import { mealCategoryLabel, suggestedTagLabel } from '../../utils/mealLabels'
-import type { Meal } from '../../hooks/useMeals'
+import type { Meal } from '../../features/meals/domain/mealTypes'
 import type { MealInput } from '../../context/meals/MealsContext'
 import { Modal } from '../ui/Modal'
 import { AddMealForm } from './AddMealForm'
