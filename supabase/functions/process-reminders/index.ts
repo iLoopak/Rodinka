@@ -186,7 +186,6 @@ Deno.serve(async (request) => {
         assignmentHistory: snapshot.assignmentHistory as never,
         medicalRecords: snapshot.medicalRecords as never,
         voteRounds: snapshot.voteRounds as never,
-        planEntries: snapshot.planEntries as never,
         pendingCompletions: snapshot.pendingCompletions as never,
         shoppingItems: snapshot.shoppingItems as never,
         documents: snapshot.documents as never,

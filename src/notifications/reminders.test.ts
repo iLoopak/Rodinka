@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ChoreCompletion } from '../hooks/useChoreCompletions'
 import type { MealVoteRound } from '../features/meals/domain/mealTypes'
 import type { ShoppingItem } from '../utils/shopping'
-import { makeActivity, makeChore, makeFamilyMember, makeMealPlanEntry, makeMealVote, makeMealVoteCandidate, makeMedicalRecord } from '../utils/testFixtures'
+import { makeActivity, makeChore, makeFamilyMember, makeMealVote, makeMealVoteCandidate, makeMedicalRecord } from '../utils/testFixtures'
 import {
   applyReminderPreferences,
   defaultNotificationPreferences,
@@ -27,8 +27,6 @@ const copy: ReminderCopy = {
   medicalTomorrow: 'Medical appointment tomorrow',
   vaccinationDue: 'Vaccination due',
   votingCloses: (title) => `${title} closes`,
-  mealEmpty: 'Tomorrow is empty',
-  mealIncomplete: (count) => `${count} meals missing`,
   allowancePending: (count) => `${count} approvals`,
   documentExpiry: (count) => `${count} documents expire`,
   shoppingAssigned: (count) => `${count} shopping items`,
@@ -47,11 +45,6 @@ function baseInput(overrides: Partial<GenerateReminderInput> = {}): GenerateRemi
     activities: [],
     medicalRecords: [],
     voteRounds: [],
-    planEntries: [
-      makeMealPlanEntry({ id: 'breakfast', entry_date: '2026-07-15', meal_slot: 'breakfast', status: 'confirmed' }),
-      makeMealPlanEntry({ id: 'lunch', entry_date: '2026-07-15', meal_slot: 'lunch', status: 'confirmed' }),
-      makeMealPlanEntry({ id: 'dinner', entry_date: '2026-07-15', meal_slot: 'dinner', status: 'confirmed' }),
-    ],
     pendingCompletions: [],
     shoppingItems: [],
     preferences: defaultNotificationPreferences(parent.id, 'family-1', 'UTC'),
@@ -153,23 +146,6 @@ describe('reminder rule engine', () => {
     expect(generateReminderDrafts(baseInput({ voteRounds: [round] })).some((item) => item.source === 'voting')).toBe(false)
   })
 
-  it('creates one grouped empty or incomplete meal reminder and respects skipped slots', () => {
-    const empty = generateReminderDrafts(baseInput({ planEntries: [] })).filter((item) => item.source === 'meal-plan')
-    expect(empty).toHaveLength(1)
-    expect(empty[0].type).toBe('meal-plan-empty')
-    const partial = generateReminderDrafts(baseInput({ planEntries: [makeMealPlanEntry({ entry_date: '2026-07-15', meal_slot: 'dinner', status: 'confirmed' })] })).find((item) => item.source === 'meal-plan')
-    expect(partial?.metadata.count).toBe(2)
-    const skipped = ['breakfast', 'lunch', 'dinner'].map((meal_slot, index) => makeMealPlanEntry({ id: `skip-${index}`, entry_date: '2026-07-15', meal_slot: meal_slot as 'breakfast' | 'lunch' | 'dinner', status: 'skipped' }))
-    expect(generateReminderDrafts(baseInput({ planEntries: skipped })).some((item) => item.source === 'meal-plan')).toBe(false)
-  })
-
-  it('updates the same grouped meal reminder as slots are planned', () => {
-    const empty = generateReminderDrafts(baseInput({ planEntries: [] })).find((item) => item.source === 'meal-plan')
-    const partial = generateReminderDrafts(baseInput({ planEntries: [makeMealPlanEntry({ entry_date: '2026-07-15', meal_slot: 'breakfast' })] })).find((item) => item.source === 'meal-plan')
-    expect(partial?.dedupeKey).toBe(empty?.dedupeKey)
-    expect(partial?.metadata.count).toBe(2)
-  })
-
   it('keeps grouped chore and allowance identities while some children resolve', () => {
     const chores = [makeChore({ id: 'a', assigned_to: child.id, due_date: '2026-07-14' }), makeChore({ id: 'b', assigned_to: child.id, due_date: '2026-07-14' })]
     const twoChores = generateReminderDrafts(baseInput({ chores })).find((item) => item.source === 'chore')
@@ -227,12 +203,11 @@ describe('reminder rule engine', () => {
 })
 
 describe('preferences, lifecycle and time', () => {
-  it('suppresses disabled categories while quiet reminders stay in-app', () => {
+  it('suppresses disabled categories and respects the in-app toggle', () => {
     const preferences = defaultNotificationPreferences(parent.id, 'family-1', 'UTC')
     preferences.categories.chores = false
-    const generated = generateReminderDrafts(baseInput({ preferences, chores: [makeChore({ due_date: '2026-07-14' })], planEntries: [] }))
+    const generated = generateReminderDrafts(baseInput({ preferences, chores: [makeChore({ due_date: '2026-07-14' })] }))
     expect(generated.some((item) => item.source === 'chore')).toBe(false)
-    expect(generated.find((item) => item.source === 'meal-plan')?.importance).toBe('quiet')
     expect(applyReminderPreferences(generated, { ...preferences, inAppEnabled: false })).toEqual([])
   })
 

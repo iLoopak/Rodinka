@@ -9,14 +9,14 @@ import { localeFor } from '../../i18n/language'
 import { getCurrentLanguage } from '../../i18n'
 import { ScrollableTabs } from '../ui/ScrollableTabs'
 import { ScreenHeader } from '../ui/ScreenHeader'
-import { CheckCircle, Coins, Dumbbell, FileText, ShoppingCart, Stethoscope, Syringe, Utensils, Vote } from 'lucide-react'
+import { CheckCircle, Coins, Dumbbell, FileText, ShoppingCart, Stethoscope, Syringe, Vote } from 'lucide-react'
 import { useFamilyCore } from '../../context/family/FamilyCoreContext'
 import { capabilitiesFor } from '../../utils/uiCapabilities'
 
 type Tab = 'active' | 'history' | 'settings'
 const sourceIcons = {
   chore: CheckCircle, activity: Dumbbell, 'activity-payment': Coins, 'medical-appointment': Stethoscope,
-  vaccination: Syringe, voting: Vote, 'meal-plan': Utensils, allowance: Coins, document: FileText, shopping: ShoppingCart,
+  vaccination: Syringe, voting: Vote, allowance: Coins, document: FileText, shopping: ShoppingCart,
 } satisfies Record<ReminderRecord['source'], typeof CheckCircle>
 const CHILD_HIDDEN_SOURCES: ReminderRecord['source'][] = ['activity-payment', 'medical-appointment', 'vaccination', 'allowance', 'document']
 const CHILD_REMINDER_CATEGORIES = REMINDER_CATEGORIES.filter((category) => !['medical', 'allowance', 'documents'].includes(category))
@@ -26,7 +26,7 @@ function sectionLabel(section: ReminderSection) {
 }
 
 function categoryLabel(category: (typeof REMINDER_CATEGORIES)[number]) {
-  return { chores: t.reminders.categoryChores, activities: t.reminders.categoryActivities, medical: t.reminders.categoryMedical, voting: t.reminders.categoryVoting, meals: t.reminders.categoryMeals, allowance: t.reminders.categoryAllowance, documents: t.reminders.categoryDocuments, shopping: t.reminders.categoryShopping }[category]
+  return { chores: t.reminders.categoryChores, activities: t.reminders.categoryActivities, medical: t.reminders.categoryMedical, voting: t.reminders.categoryVoting, allowance: t.reminders.categoryAllowance, documents: t.reminders.categoryDocuments, shopping: t.reminders.categoryShopping }[category]
 }
 
 function reminderSourceLabel(source: ReminderRecord['source']) {
@@ -34,14 +34,13 @@ function reminderSourceLabel(source: ReminderRecord['source']) {
   if (source === 'activity' || source === 'activity-payment') return t.reminders.categoryActivities
   if (source === 'medical-appointment' || source === 'vaccination') return t.reminders.categoryMedical
   if (source === 'voting') return t.reminders.categoryVoting
-  if (source === 'meal-plan') return t.reminders.categoryMeals
   if (source === 'allowance') return t.reminders.categoryAllowance
   if (source === 'document') return t.reminders.categoryDocuments
   return t.reminders.categoryShopping
 }
 
 function canDismiss(item: ReminderRecord) {
-  return ['activity-payment', 'meal-plan', 'document', 'shopping'].includes(item.source)
+  return ['activity-payment', 'document', 'shopping'].includes(item.source)
 }
 
 export function ReminderCenter() {
