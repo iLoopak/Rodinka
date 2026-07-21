@@ -3,6 +3,8 @@
 @import './styles/tokens.css';
 @import './styles/base.css';
 @import './styles/primitives/button.css';
+@import './styles/primitives/form.css';
+@import './styles/primitives/modal.css';
 
 /* ------------------------------------------------------------------ */
 button {

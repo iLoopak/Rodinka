@@ -144,6 +144,8 @@ describe('global selector safety', () => {
       'src/index.css',
       'src/styles/base.css',
       'src/styles/primitives/button.css',
+      'src/styles/primitives/form.css',
+      'src/styles/primitives/modal.css',
       'src/styles/tokens.css',
     ])
   })

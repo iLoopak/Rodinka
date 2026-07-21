@@ -892,7 +892,7 @@
     },
     {
       "file": "src/features/messages/data/conversationsRepository.ts",
-      "line": 110,
+      "line": 109,
       "kind": "rpc",
       "method": "rpc",
       "target": "set_conversation_mute",
@@ -903,7 +903,7 @@
     },
     {
       "file": "src/features/messages/data/conversationsRepository.ts",
-      "line": 118,
+      "line": 117,
       "kind": "rpc",
       "method": "rpc",
       "target": "mark_conversation_read",

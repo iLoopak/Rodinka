@@ -87,8 +87,8 @@ Total call sites: **126** · outside the approved layers: **8**
 | `src/features/messages/data/conversationsRepository.ts` | 82 | rpc | ensure_family_group_conversation | messages | data | allowed |
 | `src/features/messages/data/conversationsRepository.ts` | 88 | rpc | ensure_direct_conversation | messages | data | allowed |
 | `src/features/messages/data/conversationsRepository.ts` | 94 | rpc | share_entity_to_conversation | messages | data | allowed |
-| `src/features/messages/data/conversationsRepository.ts` | 110 | rpc | set_conversation_mute | messages | data | allowed |
-| `src/features/messages/data/conversationsRepository.ts` | 118 | rpc | mark_conversation_read | messages | data | allowed |
+| `src/features/messages/data/conversationsRepository.ts` | 109 | rpc | set_conversation_mute | messages | data | allowed |
+| `src/features/messages/data/conversationsRepository.ts` | 117 | rpc | mark_conversation_read | messages | data | allowed |
 | `src/features/messages/data/messageAttachmentStorage.ts` | 32 | storage | <dynamic:path> | messages | data | allowed |
 | `src/features/messages/data/messageAttachmentStorage.ts` | 32 | storage | <dynamic:BUCKET> | messages | data | allowed |
 | `src/features/messages/data/messageAttachmentStorage.ts` | 39 | storage | <dynamic:BUCKET> | messages | data | allowed |
