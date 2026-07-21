@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useState } from 'react'
-import { FamilyMark } from '../../../components/FamilyMark'
 import { useFamilyCore } from '../../../context/family/FamilyCoreContext'
 import { useFamilyMembersData } from '../../../context/family/FamilyMembersContext'
 import { useLanguage } from '../../../i18n/languageContext'
 import { useRouterActions } from '../../../router'
 import { memberColorStyle } from '../../../utils/memberColor'
+import { GameHeader, GameHero, GameOfflineBadge, GamePlayerFigure, GamePlayerPicker, GamePrimaryButton } from '../../family-games'
+import '../../family-games/familyGames.css'
 import { familyFleetCopy } from '../copy'
 import { achievementCopy } from '../achievementsCopy'
 import type { AchievementDefinition } from '../achievements'
@@ -70,14 +71,16 @@ export function FamilyFleetScreen() {
   const leaderboard = sortFamilyFleetLeaderboard(members, records)
 
   return <main className="fleet-screen">
-    <header className="fleet-menu-header">
-      <button type="button" className="btn btn-secondary" onClick={() => navigate('/arcade')}>← {copy.backArcade}</button>
-      <button type="button" className="btn btn-secondary" onClick={() => navigate('/arcade/family-fleet/hangar')}>{copy.hangar}</button>
-      <FamilyMark variant="dynamic" members={members} loading={membersLoading} size={38} />
-      <span className={`status-pill fleet-sync is-${syncStatus}`}>
-        {copy[syncStatus === 'syncing' ? 'syncing' : syncStatus === 'synced' ? 'synced' : syncStatus === 'offline' ? 'offline' : syncStatus === 'error' ? 'error' : 'synced']}
-      </span>
-    </header>
+    <GameHeader
+      backLabel={copy.backArcade}
+      onBack={() => navigate('/arcade')}
+      members={members}
+      membersLoading={membersLoading}
+      rightSlot={<>
+        <button type="button" className="btn btn-secondary" onClick={() => navigate('/arcade/family-fleet/hangar')}>{copy.hangar}</button>
+        <GameOfflineBadge status={syncStatus} labels={{ syncing: copy.syncing, synced: copy.synced, offline: copy.offline, error: copy.error }} />
+      </>}
+    />
 
     {phase === 'paused' ? (
       <div className="card fleet-panel">
@@ -122,30 +125,29 @@ export function FamilyFleetScreen() {
       </div>
     ) : (
       <div className="fleet-intro-layout">
-        <section className="card fleet-panel fleet-intro">
-          <p className="eyebrow">{copy.choose}</p>
-          <h1>{copy.title}</h1>
-          <p>{copy.intro}</p>
-          <p className="fleet-muted">{copy.controls}</p>
-          <div className="fleet-preview" aria-hidden="true">
+        <GameHero
+          eyebrow={copy.eyebrow}
+          title={copy.title}
+          description={copy.intro}
+          helper={copy.controls}
+          preview={<div className="fleet-preview" aria-hidden="true">
             <span className="fleet-preview__trail" />
             <span className="fleet-preview__ship" style={memberColorStyle(member)} />
             <span className="fleet-preview__asteroid" />
-          </div>
-        </section>
+          </div>}
+        />
         <aside className="card fleet-panel fleet-side">
-          <h2>{copy.choose}</h2>
-          <div className="fleet-members">
-            {members.map((m) => {
-              const active = m.id === member.id
-              return <button key={m.id} type="button" style={memberColorStyle(m)} className={`fleet-member-card${active ? ' is-selected' : ''}`} aria-pressed={active} onClick={() => setSelected(m.id)}>
-                <span className="fleet-member-avatar" aria-hidden="true">{m.display_name.slice(0, 1)}</span>
-                <span><strong>{m.display_name}</strong><small>{records[m.id] ? `${copy.best}: ${records[m.id]}` : copy.noRecord}</small></span>
-                {active && <span className="fleet-member-check" aria-hidden="true">✓</span>}
-              </button>
-            })}
-          </div>
-          <button className="btn btn-primary fleet-play-cta" disabled={membersLoading || !members.length} onClick={start}>{copy.play}</button>
+          <GamePlayerPicker
+            heading={copy.choose}
+            members={members}
+            selectedId={member.id}
+            onSelect={setSelected}
+            renderFigure={(m) => <GamePlayerFigure member={m} />}
+            recordFor={(m) => records[m.id] ? String(records[m.id]) : null}
+            recordLabel={copy.best}
+            noRecordLabel={copy.noRecord}
+          />
+          <GamePrimaryButton disabled={membersLoading || !members.length} onClick={start}>{copy.play}</GamePrimaryButton>
           <Leaderboard copy={copy} rows={leaderboard} />
         </aside>
       </div>
