@@ -7,7 +7,6 @@ import { getCurrentLanguage } from '../i18n'
 import type { CalendarEntry } from '../utils/calendarEntries'
 import { formatFullDate, todayISODate } from '../utils/dueDate'
 import { buildTodayAttentionItems, buildTodayEntries, isChildTodayAttentionVisible, isChildTodayEntryVisible } from '../utils/todayAgenda'
-import { mealPlanningHint } from '../utils/mealPlanningStatus'
 import { CalendarEntryDetailModal } from './calendar/CalendarEntryDetailModal'
 import { PendingApprovals } from './PendingApprovals'
 import { TodayAgendaList } from './today/TodayAgendaList'
@@ -24,13 +23,6 @@ import { closeTodayChoreEditor, openTodayChoreEditor } from './today/todayChoreE
 import { capabilitiesFor } from '../utils/uiCapabilities'
 import { useCreateRecord } from '../context/create-record/CreateRecordContext'
 import { AppPrimaryAddButton } from './ui/AddAction'
-
-function mealPlanningCardBody(hint: ReturnType<typeof mealPlanningHint>): string | null {
-  if (!hint) return null
-  if (hint.kind === 'tomorrow-empty') return t.today.mealPlanningTomorrowEmpty
-  if (hint.kind === 'tomorrow-partial') return t.today.mealPlanningTomorrowPartial
-  return t.today.mealPlanningWeekendEmpty
-}
 
 export function TodayDashboard() {
   const { openCreateRecord } = useCreateRecord()
@@ -112,7 +104,6 @@ export function TodayDashboard() {
     latestCompletionFor,
     today,
   }).filter((item) => !capabilities.isChild || isChildTodayAttentionVisible(item, currentMember.id))
-  const mealPlanningCardText = isParentOrAdmin ? mealPlanningCardBody(mealPlanningHint(planEntries, today)) : null
   const visiblePendingCompletions = capabilities.approveTaskCompletions ? pendingCompletions : []
   const needsAttention = visiblePendingCompletions.length > 0 || attentionItems.length > 0
   const quickTodos = chores.filter((chore) => isQuickTodo(chore) && getChoreState(chore, latestCompletionFor(chore.id)) === 'actionable')
@@ -219,18 +210,6 @@ export function TodayDashboard() {
         onOpen={() => navigate('/shopping')}
         onAddItem={(name) => addShoppingItem(createQuickShoppingItemInput(name))}
       />
-
-      {mealPlanningCardText && (
-        <section className="page-section today-meal-planning-card">
-          <div className="panel is-quiet">
-            <h2 className="today-setup-title">{t.today.mealPlanningCardTitle}</h2>
-            <p>{mealPlanningCardText}</p>
-            <button type="button" className="btn-secondary" onClick={() => navigate('/meals')}>
-              {t.today.mealPlanningCardAction}
-            </button>
-          </div>
-        </section>
-      )}
 
       {!capabilities.isChild && kids.length === 0 && (
         <section className="page-section today-setup-card">
