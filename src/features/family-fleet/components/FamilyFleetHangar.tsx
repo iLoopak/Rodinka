@@ -74,47 +74,49 @@ export function FamilyFleetHangar() {
   return <main className="fleet-screen hangar-screen">
     <GameHeader backLabel={copy.backToFleet} onBack={() => navigate('/arcade/family-fleet')} members={members} membersLoading={membersLoading} />
 
-    <div className="hangar-layout">
-      <section className="card fleet-panel hangar-preview-panel">
-        <p className="eyebrow">{copy.choosePilot}</p>
-        <h1>{copy.title}</h1>
-        <p className="fleet-muted">{copy.subtitle}</p>
-        <div className="game-player-grid hangar-member-picker">
-          {members.map((m) => <GamePlayerCard
-            key={m.id}
-            member={m}
-            selected={m.id === member.id}
-            onSelect={() => setSelected(m.id)}
-            figure={<GamePlayerFigure member={m} />}
-          />)}
-        </div>
-        <ShipPreviewCanvas loadout={loadout} accent={accent} label={copy.shipPreview} />
-        <p className="hangar-progress" role="status">{copy.achievementsProgress(unlockedAchievements.size, FAMILY_FLEET_ACHIEVEMENTS.length)}</p>
-      </section>
-
-      <section className="hangar-categories">
-        {COSMETIC_CATEGORIES.map(({ category, ids }) => <div key={category} className="card fleet-panel hangar-category">
-          <h2>{cosmeticCategoryLabel(language, category)}</h2>
-          <div className="hangar-item-grid">
-            {ids.map((id) => {
-              const isDefault = isDefaultCosmetic(category, id)
-              const isUnlocked = isDefault || unlocked.has(cosmeticKey(category, id))
-              const isEquipped = loadout[category] === id
-              const achievement = isDefault ? null : rewardAchievementFor(category, id)
-              return <div key={id} className={`hangar-item${isEquipped ? ' is-equipped' : ''}${isUnlocked ? '' : ' is-locked'}`}>
-                <span className="hangar-item-name">{cosmeticItemName(language, id)}</span>
-                {isUnlocked ? (
-                  isEquipped ? <span className="badge badge-done">{copy.equipped}</span>
-                    : <button type="button" className="btn btn-secondary" onClick={() => use(category, id)}>{copy.use}</button>
-                ) : <>
-                  <span className="badge badge-neutral">{copy.locked}</span>
-                  {achievement && <small className="hangar-lock-hint">{copy.unlockHint(achievementCopy(language, achievement.id).title)}</small>}
-                </>}
-              </div>
-            })}
+    <div className="fleet-scroll">
+      <div className="hangar-layout">
+        <section className="card fleet-panel hangar-preview-panel">
+          <p className="eyebrow">{copy.choosePilot}</p>
+          <h1>{copy.title}</h1>
+          <p className="fleet-muted">{copy.subtitle}</p>
+          <div className="game-player-grid hangar-member-picker">
+            {members.map((m) => <GamePlayerCard
+              key={m.id}
+              member={m}
+              selected={m.id === member.id}
+              onSelect={() => setSelected(m.id)}
+              figure={<GamePlayerFigure member={m} />}
+            />)}
           </div>
-        </div>)}
-      </section>
+          <ShipPreviewCanvas loadout={loadout} accent={accent} label={copy.shipPreview} />
+          <p className="hangar-progress" role="status">{copy.achievementsProgress(unlockedAchievements.size, FAMILY_FLEET_ACHIEVEMENTS.length)}</p>
+        </section>
+
+        <section className="hangar-categories">
+          {COSMETIC_CATEGORIES.map(({ category, ids }) => <div key={category} className="card fleet-panel hangar-category">
+            <h2>{cosmeticCategoryLabel(language, category)}</h2>
+            <div className="hangar-item-grid">
+              {ids.map((id) => {
+                const isDefault = isDefaultCosmetic(category, id)
+                const isUnlocked = isDefault || unlocked.has(cosmeticKey(category, id))
+                const isEquipped = loadout[category] === id
+                const achievement = isDefault ? null : rewardAchievementFor(category, id)
+                return <div key={id} className={`hangar-item${isEquipped ? ' is-equipped' : ''}${isUnlocked ? '' : ' is-locked'}`}>
+                  <span className="hangar-item-name">{cosmeticItemName(language, id)}</span>
+                  {isUnlocked ? (
+                    isEquipped ? <span className="badge badge-done">{copy.equipped}</span>
+                      : <button type="button" className="btn btn-secondary" onClick={() => use(category, id)}>{copy.use}</button>
+                  ) : <>
+                    <span className="badge badge-neutral">{copy.locked}</span>
+                    {achievement && <small className="hangar-lock-hint">{copy.unlockHint(achievementCopy(language, achievement.id).title)}</small>}
+                  </>}
+                </div>
+              })}
+            </div>
+          </div>)}
+        </section>
+      </div>
     </div>
   </main>
 }

@@ -1,4 +1,9 @@
-.fleet-screen { min-height: 100dvh; padding: calc(14px + env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); background: var(--canvas); color: var(--ink); overflow-x: hidden; }
+/* Fixed viewport shell + a single inner scroll container, same pattern as
+   .family-jump-screen / .family-jump-menu-scroll. #root/body/html are all
+   overflow:hidden (see base.css), so without a bounded-height ancestor here
+   iOS Safari has nothing to scroll and the pilot list dead-ends. */
+.fleet-screen { display: flex; flex-direction: column; height: 100vh; height: 100dvh; min-height: 100vh; min-height: 100dvh; background: var(--canvas); color: var(--ink); overflow: hidden; }
+.fleet-scroll { flex: 1 1 auto; min-width: 0; min-height: 0; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding: 14px max(14px, env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
 .fleet-intro-layout { max-width: 1040px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(300px, .9fr); gap: 16px; align-items: start; }
 .fleet-panel { padding: 18px; box-shadow: var(--shadow-card); }
 .fleet-panel h1 { margin: 0 0 10px; font-size: var(--font-size-page-title); line-height: var(--line-height-tight); }
@@ -47,4 +52,4 @@
 .hangar-item-name { font-weight: var(--font-weight-emphasis); }
 .hangar-lock-hint { color: var(--ink-muted); font-size: var(--font-size-caption); }
 @media (max-width: 760px) { .fleet-intro-layout { grid-template-columns: 1fr; } .fleet-preview { min-height: 150px; } .hangar-layout { grid-template-columns: 1fr; } }
-@media (max-width: 430px) { .fleet-screen { padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); } .fleet-panel { padding: 14px; } .fleet-hud { width: min(calc(100vw - 10px), 420px); } .fleet-hud__stats { gap: 4px 7px; } .fleet-hud .btn { min-width: 40px; padding: 5px 8px; } }
+@media (max-width: 430px) { .fleet-scroll { padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); } .fleet-panel { padding: 14px; } .fleet-hud { width: min(calc(100vw - 10px), 420px); } .fleet-hud__stats { gap: 4px 7px; } .fleet-hud .btn { min-width: 40px; padding: 5px 8px; } }
