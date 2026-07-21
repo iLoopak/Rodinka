@@ -73,7 +73,7 @@ function StandardAppShell({ definition }: { definition: RouteDefinition }) {
           animationMode={logoAnimationMode}
           loading={familyNameLoading}
           markLoading={familyMark.loading}
-          onOpenGame={() => navigate('/family-jump')}
+          onOpenGame={() => navigate('/arcade')}
           openGameLabel={language === 'cs' ? 'Otevřít Rodinnou hernu' : 'Open the family arcade'}
         />
         <div className="app-header-actions">

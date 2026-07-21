@@ -140,6 +140,8 @@ describe('global selector safety', () => {
     walk('src')
     expect(found.sort()).toEqual([
       'src/components/messages/messages.css',
+      'src/features/arcade/arcade.css',
+      'src/features/family-fleet/familyFleet.css',
       'src/features/family-jump/familyJump.css',
       'src/index.css',
       'src/styles/base.css',

@@ -332,7 +332,7 @@ export function MoreScreen() {
         <div className="panel is-primary more-links-section">
           <ul className="section-list plain-list more-settings-list">
             <li>
-              <Link to="/family-jump" className="row-link more-navigation-row">
+              <Link to="/arcade" className="row-link more-navigation-row">
                 <span className="row-title">{language === 'cs' ? 'Rodinná herna' : 'Family arcade'}</span>
                 <span className="more-navigation-chevron" aria-hidden="true">›</span>
               </Link>

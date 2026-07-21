@@ -14,16 +14,18 @@ describe('top-level route registry', () => {
     expect([...registeredPaths].sort()).toEqual([...ROUTES].sort())
   })
 
-  it('keeps Family Jump fullscreen and available offline', () => {
-    const jump = getRouteDefinition('/family-jump')
-    expect(jump.shell).toBe('fullscreen')
-    expect(jump.offline).toBe('available')
-    expect(jump.access).toBe('all-members')
+  it('keeps arcade games fullscreen and available offline', () => {
+    for (const path of ['/arcade', '/arcade/family-jump', '/arcade/family-fleet', '/family-jump'] as const) {
+      const route = getRouteDefinition(path)
+      expect(route.shell).toBe('fullscreen')
+      expect(route.offline).toBe('available')
+      expect(route.access).toBe('all-members')
+    }
   })
 
   it('keeps only the intended startup routes available offline', () => {
     const available = ROUTE_REGISTRY.filter(({ path }) => routeIsAvailableOffline(path)).map(({ path }) => path)
-    expect(available).toEqual(['/', '/calendar', '/shopping', '/family-jump'])
+    expect(available).toEqual(['/', '/calendar', '/shopping', '/arcade', '/arcade/family-jump', '/arcade/family-fleet', '/family-jump'])
   })
 
   it('preserves adult-only access and child fallbacks', () => {
