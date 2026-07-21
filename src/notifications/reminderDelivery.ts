@@ -139,7 +139,6 @@ function category(source: ReminderDraft['source']) {
   if (source === 'activity' || source === 'activity-payment') return 'activities'
   if (source === 'medical-appointment' || source === 'vaccination') return 'medical'
   if (source === 'voting') return 'voting'
-  if (source === 'meal-plan') return 'meals'
   if (source === 'allowance') return 'allowance'
   if (source === 'document') return 'documents'
   return 'shopping'
@@ -149,8 +148,8 @@ export function digestSummary(reminders: ReminderDraft[], locale: 'cs' | 'en' = 
   const counts = new Map<string, number>()
   for (const reminder of reminders) counts.set(category(reminder.source), (counts.get(category(reminder.source)) ?? 0) + Number(reminder.metadata.count ?? 1))
   const labels = locale === 'en'
-    ? { chores: 'chores', activities: 'activities', medical: 'health dates', voting: 'votes', meals: 'meal plans', allowance: 'approvals', documents: 'documents', shopping: 'shopping items' }
-    : { chores: 'úkoly', activities: 'aktivity', medical: 'zdravotní termíny', voting: 'hlasování', meals: 'jídelní plány', allowance: 'schválení', documents: 'dokumenty', shopping: 'položky k nákupu' }
+    ? { chores: 'chores', activities: 'activities', medical: 'health dates', voting: 'votes', allowance: 'approvals', documents: 'documents', shopping: 'shopping items' }
+    : { chores: 'úkoly', activities: 'aktivity', medical: 'zdravotní termíny', voting: 'hlasování', allowance: 'schválení', documents: 'dokumenty', shopping: 'položky k nákupu' }
   return [...counts.entries()].map(([key, count]) => `${count} ${labels[key as keyof typeof labels]}`).join(', ')
 }
 

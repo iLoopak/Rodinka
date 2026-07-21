@@ -77,7 +77,6 @@ function categoryForSource(source: string): ReminderCategory {
   if (source === 'activity' || source === 'activity-payment') return 'activities'
   if (source === 'medical-appointment' || source === 'vaccination') return 'medical'
   if (source === 'voting') return 'voting'
-  if (source === 'meal-plan') return 'meals'
   if (source === 'allowance') return 'allowance'
   if (source === 'document') return 'documents'
   return 'shopping'

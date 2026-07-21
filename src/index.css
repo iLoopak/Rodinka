@@ -4240,6 +4240,15 @@ button.btn-danger:hover:not(:disabled) {
   line-height: 1;
 }
 
+.meal-plan-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -4px 0 14px;
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+}
+
 .month-grid {
   background: var(--paper);
   border: 1px solid var(--border);
