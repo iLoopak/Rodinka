@@ -279,7 +279,6 @@ export function CalendarScreen() {
       <FilterDisclosure id="calendar-filter-panel" open={filtersOpen} onOpenChange={setFiltersOpen}
         activeCount={activeFilterCount} onClear={clearFilters}>
       <ScreenHeader title={t.calendar.title} actions={<>
-        <FilterDisclosureToggle />
         {capabilities.createPlannerItems && <IconButton
           variant="primary"
           onClick={() => openCreateRecord({ source: 'calendar' })}
@@ -292,6 +291,7 @@ export function CalendarScreen() {
         <Button variant="secondary" onClick={goToday}>
           {t.calendar.today}
         </Button>
+        <FilterDisclosureToggle />
       </>} />
 
       <ScrollableTabs tabs={viewTabs} activeTab={viewMode} onChange={changeView} />
