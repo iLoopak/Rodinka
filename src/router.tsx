@@ -14,7 +14,7 @@ import { updateUrlQuery, type QueryHistoryMode } from './utils/deepLinks'
 // No dependency needed: pushState/popstate covers back/forward, no-reload
 // navigation, and reading window.location on mount covers direct refresh.
 
-export const ROUTES = ['/', '/calendar', '/plan', '/chores', '/activities', '/health', '/meals', '/shopping', '/family', '/messages', '/more', '/reminders', '/family-jump'] as const
+export const ROUTES = ['/', '/calendar', '/plan', '/chores', '/activities', '/health', '/meals', '/shopping', '/family', '/messages', '/more', '/reminders', '/arcade', '/arcade/family-jump', '/arcade/family-fleet', '/family-jump'] as const
 export type Route = (typeof ROUTES)[number]
 
 export function normalizeRoute(pathname: string): Route {

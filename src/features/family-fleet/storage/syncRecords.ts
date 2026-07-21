@@ -1,0 +1,3 @@
+import { mergeFamilyFleetRecords, type FamilyFleetRecordMap } from './records'
+import type { SupabaseFamilyFleetRemote } from './familyFleetRemote'
+export async function synchronizeFamilyFleetRecords({familyId,activeMemberIds,localRecords,remote,signal}:{familyId:string;activeMemberIds:string[];localRecords:FamilyFleetRecordMap;remote:SupabaseFamilyFleetRemote;signal?:AbortSignal}){const remoteRecords=await remote.fetchRecords(familyId,signal); let merged=mergeFamilyFleetRecords(localRecords,remoteRecords); for(const id of activeMemberIds){const score=merged[id]??0; if(score>0){const saved=await remote.recordBestScore(familyId,id,score,signal); merged=mergeFamilyFleetRecords(merged,{[id]:saved})}} return merged}
