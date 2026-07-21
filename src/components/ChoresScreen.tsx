@@ -8,7 +8,7 @@ import { useChoreApprovalActions } from '../context/chores/useChoreApprovalActio
 import { ChoreList } from './ChoreList'
 import { PendingApprovals } from './PendingApprovals'
 import { AllowanceBalances } from './AllowanceBalances'
-import { ErrorState } from './ui/ErrorState'
+import { StateView } from './ui/StateView'
 import { ChoreDetailModal } from './ChoreDetailModal'
 import { useRouteSearchParams, useRouterActions } from '../router'
 import { resolveDeepLinkedItem } from '../utils/deepLinks'
@@ -106,11 +106,18 @@ export function ChoresScreen() {
   }, [choreParam, loading, visibleChores])
 
   if (loading) {
-    return <p className="loading">{t.loading.generic}</p>
+    return <StateView variant="loading" title={t.loading.generic} />
   }
 
   if (error) {
-    return <ErrorState message={error} onRetry={refreshAll} />
+    return (
+      <StateView
+        variant="error"
+        description={error}
+        technicalDetail={error}
+        action={{ label: t.errors.retry, onClick: refreshAll }}
+      />
+    )
   }
 
   async function handleApprove(completionId: string) {

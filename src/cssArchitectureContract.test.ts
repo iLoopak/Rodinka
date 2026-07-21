@@ -144,8 +144,12 @@ describe('global selector safety', () => {
       'src/index.css',
       'src/styles/base.css',
       'src/styles/primitives/button.css',
+      'src/styles/primitives/card.css',
       'src/styles/primitives/form.css',
+      'src/styles/primitives/list-row.css',
       'src/styles/primitives/modal.css',
+      'src/styles/primitives/state-view.css',
+      'src/styles/primitives/status-pill.css',
       'src/styles/tokens.css',
     ])
   })

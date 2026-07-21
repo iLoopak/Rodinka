@@ -1,0 +1,129 @@
+/* StateView primitive (design Wave 3).
+ *
+ * The shared look for every non-content state — loading, empty, no-results,
+ * error, offline, degraded, permission-denied, end-of-list. The tone modifier
+ * colours the icon so offline (info) can never read the same as a permission
+ * error (danger) or a degraded backend (warning); the icon glyph itself is the
+ * second, non-colour channel. */
+
+.state-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.state-view__icon {
+  color: var(--ink-muted);
+}
+
+.state-view--tone-danger .state-view__icon {
+  color: var(--state-danger);
+}
+
+.state-view--tone-warning .state-view__icon {
+  color: var(--state-warning);
+}
+
+.state-view--tone-info .state-view__icon {
+  color: var(--state-info);
+}
+
+.state-view__icon--spin {
+  animation: state-view-spin 900ms linear infinite;
+}
+
+@keyframes state-view-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .state-view__icon--spin {
+    animation-duration: 2400ms;
+  }
+}
+
+.state-view__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: var(--font-weight-strong);
+  line-height: var(--line-height-tight);
+}
+
+.state-view__description {
+  margin: 0;
+  max-width: 42ch;
+  color: var(--ink-muted);
+  font-size: var(--font-size-body);
+  line-height: 1.5;
+}
+
+.state-view .btn {
+  margin-top: 6px;
+}
+
+/* Dev-only: never shipped to users (gated in StateView.tsx), so it can be plain
+ * and dense. */
+.state-view__technical {
+  max-width: 100%;
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  overflow-x: auto;
+  border-radius: var(--radius-row);
+  background: var(--canvas);
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  text-align: left;
+  white-space: pre-wrap;
+}
+
+/* End-of-list is a quiet full-stop, not a card. */
+.state-view--endOfList {
+  padding: 14px 16px;
+  gap: 4px;
+}
+
+.state-view--endOfList .state-view__title {
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-strong);
+  color: var(--ink-muted);
+}
+
+/* ---- Skeleton -------------------------------------------------------- */
+.state-view--skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 2px;
+  align-items: stretch;
+}
+
+.state-skeleton-line {
+  height: 14px;
+  border-radius: 7px;
+  background: linear-gradient(
+    90deg,
+    var(--surface-subtle) 25%,
+    color-mix(in srgb, var(--surface-subtle) 55%, var(--paper)) 37%,
+    var(--surface-subtle) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1400ms ease infinite;
+}
+
+.state-skeleton-line.is-short {
+  width: 60%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .state-skeleton-line {
+    animation: none;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}

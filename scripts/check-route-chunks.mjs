@@ -35,7 +35,12 @@ export const ENTRY_BUDGET = {
   // increase is the cost of that layer and not of new product code. Onboarding
   // was split into its own module to keep the realtime helper and the mappers
   // out of the startup graph.
-  eagerGzipBytes: 234_000,
+  //
+  // Nudged to 235_000 in design Wave 3: the shared state vocabulary (StateView)
+  // ships its default titles/bodies in the always-eager `strings.ts` catalog.
+  // Measured at 234_250 B after the copy was kept deliberately terse; the small
+  // headroom is for the same catalog, not a licence for new eager code.
+  eagerGzipBytes: 235_000,
   cssRawBytes: 178_000,
   cssGzipBytes: 43_000,
 }

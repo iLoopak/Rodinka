@@ -8,6 +8,9 @@ import { MemberAvatar } from './ui/MemberAvatar'
 import { getChoreState } from '../utils/choreState'
 import { choreRecurrenceSummary } from '../utils/choreRecurrence'
 import { CompletionCheckbox } from './ui/CompletionCheckbox'
+import { ListRow } from './ui/ListRow'
+import { StatusPill } from './ui/StatusPill'
+import { StateView } from './ui/StateView'
 
 interface Props {
   chores: Chore[]
@@ -34,13 +37,13 @@ export function ChoreList({ chores, memberById, latestCompletionFor, onMarkDone,
   }
 
   if (chores.length === 0) {
-    return <p className="empty-state">{t.chores.noChores}</p>
+    return <StateView variant="empty" title={t.chores.noChores} />
   }
 
   return (
     <div>
       {error && <p className="error">{error}</p>}
-      <ul className="section-list plain-list">
+      <ul className="list-rows">
         {chores.map((chore) => {
           const assignee = chore.assigned_to ? memberById(chore.assigned_to) : undefined
           const latest = latestCompletionFor(chore.id)
@@ -50,24 +53,41 @@ export function ChoreList({ chores, memberById, latestCompletionFor, onMarkDone,
 
           return (
             <li key={chore.id}>
-              {state === 'actionable' && <CompletionCheckbox
-                checked={false}
-                label={`${t.chores.markDone}: ${chore.title}`}
-                disabled={markingId === chore.id}
-                onClick={() => handleMarkDone(chore)}
-              />}
-              <MemberAvatar member={assignee} />
-              <span className="row-title">{chore.title}</span>
-              <span className="row-meta">{assignee?.display_name ?? t.chores.unassigned}</span>
-              {chore.description && <p className="row-description">{chore.description}</p>}
-              <p className="row-description recurrence-summary">{choreRecurrenceSummary(chore)}</p>
-              <span className="row-spacer" />
-              <DueBadge dueDate={chore.due_date} completed={isDone} />
-              {chore.reward_enabled && <span className="row-amount">{t.chores.formatAmount(chore.reward_amount)}</span>}
-              {isPending && <span className="badge badge-pending">{t.chores.pendingBadge}</span>}
-              <button type="button" className="btn-secondary" onClick={() => onSelect(chore)}>
-                {t.deepLinks.openDetail}
-              </button>
+              <ListRow
+                leading={
+                  <>
+                    {state === 'actionable' && (
+                      <CompletionCheckbox
+                        checked={false}
+                        label={`${t.chores.markDone}: ${chore.title}`}
+                        disabled={markingId === chore.id}
+                        onClick={() => handleMarkDone(chore)}
+                      />
+                    )}
+                    <MemberAvatar member={assignee} />
+                  </>
+                }
+                title={chore.title}
+                meta={assignee?.display_name ?? t.chores.unassigned}
+                description={
+                  <>
+                    {chore.description && <span>{chore.description}</span>}
+                    <span className="recurrence-summary">{choreRecurrenceSummary(chore)}</span>
+                  </>
+                }
+                trailing={
+                  <>
+                    <DueBadge dueDate={chore.due_date} completed={isDone} />
+                    {chore.reward_enabled && (
+                      <span className="list-row__amount">{t.chores.formatAmount(chore.reward_amount)}</span>
+                    )}
+                    {isPending && <StatusPill tone="pending">{t.chores.pendingBadge}</StatusPill>}
+                    <button type="button" className="btn-secondary" onClick={() => onSelect(chore)}>
+                      {t.deepLinks.openDetail}
+                    </button>
+                  </>
+                }
+              />
             </li>
           )
         })}
