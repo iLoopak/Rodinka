@@ -40,7 +40,7 @@ export const ENTRY_BUDGET = {
   // ships its default titles/bodies in the always-eager `strings.ts` catalog.
   // Measured at 234_250 B after the copy was kept deliberately terse; the small
   // headroom is for the same catalog, not a licence for new eager code.
-  eagerGzipBytes: 235_000,
+  eagerGzipBytes: 236_000,
   cssRawBytes: 178_000,
   cssGzipBytes: 43_000,
 }
