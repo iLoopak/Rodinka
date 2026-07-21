@@ -82,76 +82,78 @@ export function FamilyFleetScreen() {
       </>}
     />
 
-    {phase === 'paused' ? (
-      <div className="card fleet-panel">
-        <h1>{copy.paused}</h1>
-        <div className="fleet-actions">
-          <button className="btn btn-primary" onClick={() => setPhase('playing')}>{copy.resume}</button>
-          <button className="btn btn-secondary" onClick={start}>{copy.restart}</button>
-          <button className="btn btn-link" onClick={() => navigate('/arcade')}>{copy.backArcade}</button>
+    <div className="fleet-scroll">
+      {phase === 'paused' ? (
+        <div className="card fleet-panel">
+          <h1>{copy.paused}</h1>
+          <div className="fleet-actions">
+            <button className="btn btn-primary" onClick={() => setPhase('playing')}>{copy.resume}</button>
+            <button className="btn btn-secondary" onClick={start}>{copy.restart}</button>
+            <button className="btn btn-link" onClick={() => navigate('/arcade')}>{copy.backArcade}</button>
+          </div>
         </div>
-      </div>
-    ) : phase === 'game-over' && result ? (
-      <div className="card fleet-panel">
-        <h1>{copy.gameOver}</h1>
-        <p className="fleet-score">{result.score.toLocaleString(language)}</p>
-        {result.newBest && <p>{copy.newBest}</p>}
-        {result.overtaken.length > 0 && <p>{copy.overtaken}: {result.overtaken.join(', ')}</p>}
-        <div className="fleet-stats">
-          <span>{copy.time}: {Math.round(result.survivedMs / 1000)} s</span>
-          <span>{copy.stars}: {result.stars}</span>
-          <span>{copy.targets}: {result.targetsDestroyed}</span>
-          <span>{copy.level}: {result.highestLevel}</span>
-        </div>
-        {newAchievements.length > 0 && <section className="fleet-achievements-unlocked" role="status">
-          <h2>{copy.newAchievements}</h2>
-          <ul>
-            {newAchievements.map((achievement) => {
-              const text = achievementCopy(language, achievement.id)
-              return <li key={achievement.id}>
-                <strong>{text.title}</strong>
-                <span>{text.description}</span>
-                {achievement.reward && <em>{copy.rewardUnlocked}</em>}
-              </li>
-            })}
-          </ul>
-        </section>}
-        <div className="fleet-actions">
-          <button className="btn btn-primary" onClick={start}>{copy.play}</button>
-          <button className="btn btn-secondary" onClick={() => setPhase('intro')}>{copy.changePlayer}</button>
-          <button className="btn btn-link" onClick={() => navigate('/arcade')}>{copy.backArcade}</button>
-        </div>
-        <Leaderboard copy={copy} rows={leaderboard} />
-      </div>
-    ) : (
-      <div className="fleet-intro-layout">
-        <GameHero
-          eyebrow={copy.eyebrow}
-          title={copy.title}
-          description={copy.intro}
-          helper={copy.controls}
-          preview={<div className="fleet-preview" aria-hidden="true">
-            <span className="fleet-preview__trail" />
-            <span className="fleet-preview__ship" style={memberColorStyle(member)} />
-            <span className="fleet-preview__asteroid" />
-          </div>}
-        />
-        <aside className="card fleet-panel fleet-side">
-          <GamePlayerPicker
-            heading={copy.choose}
-            members={members}
-            selectedId={member.id}
-            onSelect={setSelected}
-            renderFigure={(m) => <GamePlayerFigure member={m} />}
-            recordFor={(m) => records[m.id] ? String(records[m.id]) : null}
-            recordLabel={copy.best}
-            noRecordLabel={copy.noRecord}
-          />
-          <GamePrimaryButton disabled={membersLoading || !members.length} onClick={start}>{copy.play}</GamePrimaryButton>
+      ) : phase === 'game-over' && result ? (
+        <div className="card fleet-panel">
+          <h1>{copy.gameOver}</h1>
+          <p className="fleet-score">{result.score.toLocaleString(language)}</p>
+          {result.newBest && <p>{copy.newBest}</p>}
+          {result.overtaken.length > 0 && <p>{copy.overtaken}: {result.overtaken.join(', ')}</p>}
+          <div className="fleet-stats">
+            <span>{copy.time}: {Math.round(result.survivedMs / 1000)} s</span>
+            <span>{copy.stars}: {result.stars}</span>
+            <span>{copy.targets}: {result.targetsDestroyed}</span>
+            <span>{copy.level}: {result.highestLevel}</span>
+          </div>
+          {newAchievements.length > 0 && <section className="fleet-achievements-unlocked" role="status">
+            <h2>{copy.newAchievements}</h2>
+            <ul>
+              {newAchievements.map((achievement) => {
+                const text = achievementCopy(language, achievement.id)
+                return <li key={achievement.id}>
+                  <strong>{text.title}</strong>
+                  <span>{text.description}</span>
+                  {achievement.reward && <em>{copy.rewardUnlocked}</em>}
+                </li>
+              })}
+            </ul>
+          </section>}
+          <div className="fleet-actions">
+            <button className="btn btn-primary" onClick={start}>{copy.play}</button>
+            <button className="btn btn-secondary" onClick={() => setPhase('intro')}>{copy.changePlayer}</button>
+            <button className="btn btn-link" onClick={() => navigate('/arcade')}>{copy.backArcade}</button>
+          </div>
           <Leaderboard copy={copy} rows={leaderboard} />
-        </aside>
-      </div>
-    )}
+        </div>
+      ) : (
+        <div className="fleet-intro-layout">
+          <GameHero
+            eyebrow={copy.eyebrow}
+            title={copy.title}
+            description={copy.intro}
+            helper={copy.controls}
+            preview={<div className="fleet-preview" aria-hidden="true">
+              <span className="fleet-preview__trail" />
+              <span className="fleet-preview__ship" style={memberColorStyle(member)} />
+              <span className="fleet-preview__asteroid" />
+            </div>}
+          />
+          <aside className="card fleet-panel fleet-side">
+            <GamePlayerPicker
+              heading={copy.choose}
+              members={members}
+              selectedId={member.id}
+              onSelect={setSelected}
+              renderFigure={(m) => <GamePlayerFigure member={m} />}
+              recordFor={(m) => records[m.id] ? String(records[m.id]) : null}
+              recordLabel={copy.best}
+              noRecordLabel={copy.noRecord}
+            />
+            <GamePrimaryButton disabled={membersLoading || !members.length} onClick={start}>{copy.play}</GamePrimaryButton>
+            <Leaderboard copy={copy} rows={leaderboard} />
+          </aside>
+        </div>
+      )}
+    </div>
   </main>
 }
 
