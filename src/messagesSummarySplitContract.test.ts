@@ -95,6 +95,12 @@ describe('messages realtime ownership', () => {
 
 describe('startup fetch boundary', () => {
   it('keeps message content queries out of the globally mounted layer', () => {
+    // Since Wave 5 the queries live in repositories, so the boundary is which
+    // repository each layer reaches for. This is stricter than the old check:
+    // the summary layer may not even import the content repository, so it
+    // cannot pull message pages, attachments or signed URLs into startup.
+    expect(summarySource).not.toContain('supabaseMessagesRepository')
+    expect(summarySource).not.toContain('messagesRepository')
     for (const table of ['messages', 'message_reactions', 'message_attachments']) {
       expect(summarySource).not.toContain(`.from('${table}')`)
     }
@@ -103,10 +109,16 @@ describe('startup fetch boundary', () => {
   })
 
   it('keeps them in the route-scoped layer', () => {
-    expect(contentSource).toContain(".from('messages')")
-    expect(contentSource).toContain(".from('message_reactions')")
-    expect(contentSource).toContain(".from('message_attachments')")
-    expect(contentSource).toContain('resolve_message_entities')
+    expect(contentSource).toContain('SupabaseMessagesRepository')
+    // And the content layer owns only content: conversations, mute and
+    // unread stay with the summary layer.
+    expect(contentSource).not.toContain('SupabaseConversationsRepository')
+
+    const repository = read('src/features/messages/data/supabaseMessagesRepository.ts')
+    expect(repository).toContain(".from('messages')")
+    expect(repository).toContain(".from('message_reactions')")
+    expect(repository).toContain(".from('message_attachments')")
+    expect(repository).toContain('resolve_message_entities')
   })
 })
 
