@@ -97,6 +97,7 @@ export function CreateRecordWizard() {
     title={selectedOption?.title ?? t.create.title}
     onClose={() => { create.closeCreateRecord() }}
     closeOnBackdrop={false}
+    size="fullscreen"
     className="create-record-wizard"
   >
     {create.selectedType ? <>

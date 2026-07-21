@@ -443,9 +443,12 @@
   position: fixed;
   inset: 0;
   /* 100dvh (not 100vh) so iOS dynamic browser toolbars and the PWA
-     status bar don't leave a gap or force a document scroll. */
+     status bar don't leave a gap or force a document scroll. dvh alone
+     doesn't shrink for the keyboard, so --keyboard-inset (set by
+     useVisualViewportInset) makes up the difference, keeping the composer
+     above the keyboard instead of behind it. */
   height: 100vh;
-  height: 100dvh;
+  height: calc(100dvh - var(--keyboard-inset, 0px));
   /* Sits above the app header (z 12) and bottom nav; below modals/sheets
      (which use their own higher layer) so entity sheets can still open
      over the chat. */

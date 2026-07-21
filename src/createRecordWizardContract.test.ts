@@ -7,6 +7,7 @@ const controller = read('./context/create-record/CreateRecordContext.tsx')
 const planner = read('./components/PlannerScreen.tsx')
 const plannerRow = read('./components/planner/PlannerAreaCard.tsx')
 const styles = read('./index.css')
+const modalPrimitiveStyles = read('./styles/primitives/modal.css')
 
 describe('unified record creation wizard contract', () => {
   it('offers every required planning record and reuses the existing feature forms', () => {
@@ -37,7 +38,11 @@ describe('unified record creation wizard contract', () => {
   })
 
   it('uses a safe-area-aware fullscreen mobile shell with mobile-safe controls', () => {
-    expect(styles).toMatch(/\.modal-sheet\.create-record-wizard\s*\{[^}]*height:\s*100dvh[^}]*max-height:\s*100dvh/s)
+    // The height/scroll contract lives on the shared `.modal-sheet-fullscreen`
+    // primitive; the wizard opts in via `size="fullscreen"` rather than
+    // reimplementing it.
+    expect(wizard).toMatch(/<Modal[\s\S]*?size="fullscreen"[\s\S]*?className="create-record-wizard"/)
+    expect(modalPrimitiveStyles).toMatch(/\.modal-sheet\.modal-sheet-fullscreen\s*\{[^}]*height:\s*calc\(100dvh - var\(--keyboard-inset, 0px\)\)[^}]*max-height:\s*calc\(100dvh - var\(--keyboard-inset, 0px\)\)/s)
     expect(styles).toMatch(/\.create-record-wizard > \.modal-header\s*\{[^}]*safe-area-inset-top/s)
     expect(styles).toMatch(/\.guided-create-footer\s*\{[^}]*safe-area-inset-bottom/s)
     expect(styles).toMatch(/\.guided-create-scroll\s*\{[^}]*overflow-y:\s*auto/s)

@@ -125,7 +125,7 @@ export function AllowanceBalances({ kids, balances, onPayout, chores, completion
               {error && <p className="error" role="alert">{error}</p>}
             </form>
           )}
-          {editingFor === kid.id && <AllowancePlanDialog child={kid} onClose={() => setEditingFor(null)} />}
+          {editingFor === kid.id && <AllowancePlanDialog key={kid.id} child={kid} onClose={() => setEditingFor(null)} />}
           {!canManage && entries && <div className="allowance-history">
             <strong>{t.allowance.historyTitle}</strong>
             {entries.length === 0 ? <span className="row-meta">{t.allowance.historyEmpty}</span> : <ul className="compact-list">

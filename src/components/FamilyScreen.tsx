@@ -301,6 +301,7 @@ export function FamilyScreen() {
 
       {editingMember && (
         <MemberProfileModal
+          key={editingMember.id}
           member={editingMember}
           currentMember={currentMember}
           refreshMembers={refreshMembers}

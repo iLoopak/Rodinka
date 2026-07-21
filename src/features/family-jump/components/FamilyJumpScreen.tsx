@@ -4,6 +4,7 @@ import { useFamilyCore } from '../../../context/family/FamilyCoreContext'
 import type { FamilyMember } from '../../../hooks/useFamilyMembers'
 import { useLanguage } from '../../../i18n/languageContext'
 import { useRouterActions } from '../../../router'
+import { useScreenLock } from '../../../hooks/useScreenLock'
 import { getMemberColorTheme, memberColorStyle } from '../../../utils/memberColor'
 import { GameHeader, GameHero, GameOfflineBadge, GamePlayerFigure, GamePlayerPicker, GamePrimaryButton } from '../../family-games'
 import '../../family-games/familyGames.css'
@@ -47,6 +48,10 @@ function createRunId() {
 }
 
 export function FamilyJumpScreen() {
+  // Belt-and-suspenders alongside the route's own `overflow: hidden` shell
+  // (familyJump.css): shares Modal's ref-counted lock so a modal opened over
+  // this fullscreen route (e.g. a confirmation dialog) doesn't clobber it.
+  useScreenLock()
   const { navigate } = useRouterActions()
   const { familyId, currentMember } = useFamilyCore()
   const { members, membersLoading } = useFamilyMembersData()

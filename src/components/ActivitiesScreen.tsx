@@ -242,6 +242,7 @@ export function ActivitiesScreen() {
 
       {selectedActivity && (
         <ActivityDetailModal
+          key={selectedActivity.id}
           activity={selectedActivity}
           members={members}
           kids={kids}

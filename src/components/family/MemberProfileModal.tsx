@@ -260,6 +260,7 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
       title={t.family.editor.title}
       onClose={requestClose}
       closeOnBackdrop={false}
+      size="fullscreen"
       className="member-editor-sheet"
       backdropClassName="member-editor-backdrop"
     >

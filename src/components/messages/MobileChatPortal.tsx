@@ -1,5 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { useScreenLock } from '../../hooks/useScreenLock'
+import { useVisualViewportInset } from '../../hooks/useVisualViewportInset'
 
 interface Props {
   children: ReactNode
@@ -30,21 +32,20 @@ export function MobileChatPortal({ children }: Props) {
     elementRef.current = el
   }
 
+  // Shares the same ref-counted lock Modal uses, rather than an independent
+  // `document.body.style.overflow` toggle: a modal (e.g. a shared entity
+  // link) opened over the fullscreen chat, and closed first, must not clear
+  // the lock the chat still needs.
+  useScreenLock()
+  useVisualViewportInset()
+
   useEffect(() => {
     const el = elementRef.current
     if (!el) return
     document.body.appendChild(el)
-
-    // Lock the underlying app-shell scroll ONLY while the fullscreen chat
-    // is open, and restore it exactly on close. We freeze `.app-main`'s
-    // scroll position by pinning the body; the chat thread has its own
-    // scroll container so the conversation still scrolls normally.
-    const previousBodyOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
     document.body.setAttribute('data-chat-fullscreen', 'true')
 
     return () => {
-      document.body.style.overflow = previousBodyOverflow
       document.body.removeAttribute('data-chat-fullscreen')
       if (el.parentNode) el.parentNode.removeChild(el)
     }

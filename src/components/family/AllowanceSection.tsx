@@ -39,7 +39,7 @@ export function AllowanceSection({ child }: Props) {
               </div>
             </>}
 
-      {editing && <AllowancePlanDialog child={child} onClose={() => setEditing(false)} />}
+      {editing && <AllowancePlanDialog key={child.id} child={child} onClose={() => setEditing(false)} />}
     </section>
   )
 }
