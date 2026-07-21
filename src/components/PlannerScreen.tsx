@@ -14,6 +14,8 @@ import { ErrorState } from './ui/ErrorState'
 import { PlannerAreaCard } from './planner/PlannerAreaCard'
 import { ShoppingCategoryIcon } from './shopping/ShoppingCategoryIcon'
 import { useCreateRecord } from '../context/create-record/CreateRecordContext'
+import { ScreenHeader } from './ui/ScreenHeader'
+import { Button } from './ui/Button'
 
 export function PlannerScreen() {
   const { openCreateRecord } = useCreateRecord()
@@ -74,15 +76,15 @@ export function PlannerScreen() {
 
   return (
     <>
-      <div className="screen-header">
-        <div>
-          <h1 className="home-title">{t.planner.title}</h1>
-          <p className="home-subtitle">{t.planner.subtitle}</p>
-        </div>
-        <button type="button" className="header-action-button planner-create-button" onClick={() => openCreateRecord({ source: 'planning' })}>
-          <span aria-hidden="true">+</span> {t.create.addAction}
-        </button>
-      </div>
+      <ScreenHeader
+        title={t.planner.title}
+        subtitle={t.planner.subtitle}
+        actions={
+          <Button variant="primary" leadingIcon="+" className="planner-create-button" onClick={() => openCreateRecord({ source: 'planning' })}>
+            {t.create.addAction}
+          </Button>
+        }
+      />
 
       <section className="page-section planner-section">
         <h2 className="section-heading">{t.planner.overviewTitle}</h2>

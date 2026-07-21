@@ -20,6 +20,7 @@ import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from 
 import { ScreenHeader } from './ui/ScreenHeader'
 import { PersonRoleGroup, type PersonRole } from './ui/PersonRoleGroup'
 import { useCreateRecord } from '../context/create-record/CreateRecordContext'
+import { Button } from '../components/ui/Button'
 
 type Tab = 'upcoming' | 'payments' | 'archived'
 
@@ -74,9 +75,7 @@ export function ActivitiesScreen() {
   const header = (
     <ScreenHeader title={t.activities.title} actions={<>
         <FilterDisclosureToggle />
-        {isParentOrAdmin && <button type="button" className="header-action-button" onClick={() => openCreateRecord({ type: 'activity', source: 'activities' })}>
-          <span aria-hidden="true">+</span> {t.activities.addAction}
-        </button>}
+        {isParentOrAdmin && <Button variant="primary" leadingIcon="+" onClick={() => openCreateRecord({ type: 'activity', source: 'activities' })}>{t.activities.addAction}</Button>}
       </>} />
   )
 

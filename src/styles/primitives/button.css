@@ -1,0 +1,82 @@
+/* Button primitive.
+ *
+ * `.btn` carries icon+label layout; the `.btn-*` variant classes carry
+ * appearance and nothing else. Size and placement come from the container the
+ * button sits in (a screen toolbar, a form footer), so a variant change can
+ * never move a layout — the separation the design audit's D2-2 asked for.
+ *
+ * The secondary / ghost / danger looks already live as `button.btn-secondary`
+ * etc. in index.css and still apply, since the primitive renders a <button>. */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Primary is the bare-button default (brick on white). Stated explicitly so it
+ * does not depend on the absence of a class. */
+.btn-primary {
+  background: var(--brick);
+  color: #fff;
+}
+
+.btn-leading-icon {
+  display: inline-flex;
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+.btn.is-loading {
+  position: relative;
+  color: transparent;
+}
+
+.btn-spinner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: btn-spin 0.7s linear infinite;
+}
+
+/* The one exception to "no colour in a spinner": the loading state hides the
+ * label with transparent text, so the spinner needs a visible colour of its
+ * own rather than currentColor. Primary buttons are dark, so white reads on
+ * them; the others get ink. */
+.btn.is-loading.btn-primary .btn-spinner,
+.btn.is-loading.btn-danger .btn-spinner {
+  border-color: color-mix(in srgb, #fff 40%, transparent);
+  border-top-color: #fff;
+}
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-spinner { animation-duration: 1.4s; }
+}
+
+/* Screen toolbar owns the size of the buttons inside it. These values mirror
+ * the old `.header-action-button` / `.header-icon-button` exactly, so migrating
+ * a header button to the primitive changes nothing visible. */
+.header-actions .btn {
+  flex: 0 0 auto;
+  height: 44px;
+  min-height: 44px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.header-actions .btn.btn-icon {
+  width: 44px;
+  min-width: 44px;
+  padding: 6px;
+  font-size: 1.35rem;
+  line-height: 1;
+}

@@ -2,6 +2,7 @@
    the cascade order, so these two must stay first. Feature styling follows. */
 @import './styles/tokens.css';
 @import './styles/base.css';
+@import './styles/primitives/button.css';
 
 /* ------------------------------------------------------------------ */
 button {
@@ -397,7 +398,7 @@ main {
   margin-bottom: 20px;
 }
 
-.screen-header .home-title {
+.screen-header .screen-title {
   margin-bottom: 0;
 }
 
@@ -459,7 +460,8 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
   line-height: 1;
 }
 
-.home-title {
+.home-title,
+.screen-title {
   font-size: 1.5rem;
 }
 
@@ -4991,7 +4993,8 @@ button.btn-danger:hover:not(:disabled) {
   color: var(--brick);
 }
 
-.home-title {
+.home-title,
+.screen-title {
   color: var(--ink);
   font-size: var(--font-size-page-title);
   font-weight: var(--font-weight-strong);

@@ -143,6 +143,7 @@ describe('global selector safety', () => {
       'src/features/family-jump/familyJump.css',
       'src/index.css',
       'src/styles/base.css',
+      'src/styles/primitives/button.css',
       'src/styles/tokens.css',
     ])
   })
