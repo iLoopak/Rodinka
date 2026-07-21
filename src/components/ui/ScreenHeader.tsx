@@ -15,7 +15,7 @@ export function ScreenHeader({ title, subtitle, leading, actions, className, tit
       <div className="feature-screen-heading">
         {leading}
         <div>
-          <h1 className="home-title" tabIndex={titleTabIndex}>{title}</h1>
+          <h1 className="screen-title" tabIndex={titleTabIndex}>{title}</h1>
           {subtitle && <p className="home-subtitle">{subtitle}</p>}
         </div>
       </div>

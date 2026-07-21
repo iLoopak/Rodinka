@@ -11,6 +11,7 @@ import { MealDetailModal } from './MealDetailModal'
 import type { Meal } from '../../features/meals/domain/mealTypes'
 import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from '../ui/FilterDisclosure'
 import { useCreateRecord } from '../../context/create-record/CreateRecordContext'
+import { Button } from '../ui/Button'
 
 interface Props {
   onAddToPlan?: (meal: Meal) => void
@@ -53,9 +54,7 @@ export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
         activeCount={Number(Boolean(filterCategory)) + Number(Boolean(filterTag)) + Number(showArchived)} onClear={clearFilters}>
       <div className="tab-toolbar">
         {isParentOrAdmin && (
-          <button type="button" className="header-action-button" onClick={() => openCreateRecord({ type: 'meal-library', source: 'meal-library' })}>
-            <span aria-hidden="true">+</span> {t.mealLibrary.addAction}
-          </button>
+          <Button variant="primary" leadingIcon="+" onClick={() => openCreateRecord({ type: 'meal-library', source: 'meal-library' })}>{t.mealLibrary.addAction}</Button>
         )}
         <div className="header-actions tab-toolbar-actions">
           <FilterDisclosureToggle />

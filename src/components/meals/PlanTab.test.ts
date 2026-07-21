@@ -18,7 +18,9 @@ describe('PlanTab', () => {
   it('keeps a primary plan action available when the week is empty', async () => {
     await changeLanguage('cs')
 const { container } = render(createElement(PlanTab))
-    const action = container.querySelector<HTMLButtonElement>('.tab-toolbar .header-action-button')
+    // Migrated to the Button primitive in design Wave 1: same primary action,
+    // now `.btn.btn-primary` in the toolbar rather than the ad-hoc class.
+    const action = container.querySelector<HTMLButtonElement>('.tab-toolbar .btn.btn-primary')
     expect(action?.textContent).toContain('Naplánovat jídlo')
     fireEvent.click(action!)
     expect(openCreateRecord).toHaveBeenCalledWith(expect.objectContaining({ type: 'meal', source: 'meal-plan' }))

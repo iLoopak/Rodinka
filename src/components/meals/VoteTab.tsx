@@ -7,6 +7,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { VoteRoundResults } from './VoteRoundResults'
 import { capabilitiesFor } from '../../utils/uiCapabilities'
 import { useCreateRecord } from '../../context/create-record/CreateRecordContext'
+import { Button } from '../ui/Button'
 
 interface WinnerRef {
   mealId: string | null
@@ -48,9 +49,7 @@ export function VoteTab({ onAddWinnerToPlan, prefillMealId, onPrefillConsumed }:
       {requestedRoundId && !requestedRound && <p className="error" role="alert">{t.deepLinks.notFound}</p>}
       {isParentOrAdmin && !activeRound && (
         <div className="tab-toolbar">
-          <button type="button" className="header-action-button" onClick={() => openCreateRecord({ type: 'meal-vote', source: 'meal-vote' })}>
-            <span aria-hidden="true">+</span> {t.mealVoting.startVoteAction}
-          </button>
+          <Button variant="primary" leadingIcon="+" onClick={() => openCreateRecord({ type: 'meal-vote', source: 'meal-vote' })}>{t.mealVoting.startVoteAction}</Button>
         </div>
       )}
 
