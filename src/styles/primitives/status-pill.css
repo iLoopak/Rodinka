@@ -1,0 +1,52 @@
+/* StatusPill primitive (design Wave 3).
+ *
+ * Builds on the legacy `.status-pill` base shape already declared in index.css
+ * (used by the reminder push panel) and adds an icon+label layout plus the
+ * semantic `--tone` modifiers, so the scattered `.badge-*` spellings can
+ * converge on one implementation instead of a parallel one.
+ *
+ * Every tone pairs a colour with an icon (see StatusPill.tsx): the status is
+ * never carried by colour alone. */
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.status-pill__icon {
+  flex: 0 0 auto;
+}
+
+.status-pill--neutral {
+  background: var(--neutral-soft);
+  color: var(--ink-muted);
+}
+
+.status-pill--info {
+  background: var(--state-info-soft);
+  color: var(--state-info);
+}
+
+.status-pill--success {
+  background: var(--state-success-soft);
+  color: var(--state-success);
+}
+
+.status-pill--warning {
+  background: var(--state-warning-soft);
+  color: var(--state-warning);
+}
+
+.status-pill--danger {
+  background: var(--state-danger-soft);
+  color: var(--state-danger);
+}
+
+/* Pending / offline: a holding state, visually calmer than a warning but set
+ * apart from neutral by its clock glyph. */
+.status-pill--pending {
+  background: var(--state-warning-soft);
+  color: var(--state-warning);
+}
