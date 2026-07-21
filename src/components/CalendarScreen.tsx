@@ -22,7 +22,8 @@ import { ScreenHeader } from './ui/ScreenHeader'
 import { useFamilyCore } from '../context/family/FamilyCoreContext'
 import { capabilitiesFor } from '../utils/uiCapabilities'
 import { useCreateRecord } from '../context/create-record/CreateRecordContext'
-import { Button, IconButton } from '../components/ui/Button'
+import { Button } from '../components/ui/Button'
+import { AddActionIcon } from '../components/ui/AddAction'
 
 type ViewMode = 'month' | 'week' | 'agenda'
 
@@ -279,13 +280,10 @@ export function CalendarScreen() {
       <FilterDisclosure id="calendar-filter-panel" open={filtersOpen} onOpenChange={setFiltersOpen}
         activeCount={activeFilterCount} onClear={clearFilters}>
       <ScreenHeader title={t.calendar.title} actions={<>
-        {capabilities.createPlannerItems && <IconButton
-          variant="primary"
+        {capabilities.createPlannerItems && <AddActionIcon
           onClick={() => openCreateRecord({ source: 'calendar' })}
           aria-label={t.create.addAction}
-        >
-          +
-        </IconButton>}
+        />}
         {/* Jumping to today navigates; it must not look like the create
             action beside it. Create stays the one primary here. */}
         <Button variant="secondary" onClick={goToday}>

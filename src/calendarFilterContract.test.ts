@@ -24,7 +24,7 @@ describe('calendar filter disclosure', () => {
     expect(screen).toContain('<FilterDisclosurePanel>')
     // Action hierarchy: + (primary) first, Today (secondary) next, Filters (utility) last.
     const actionsBlock = screen.slice(screen.indexOf('<ScreenHeader title={t.calendar.title}'), screen.indexOf('<ScrollableTabs'))
-    const addIndex = actionsBlock.indexOf('<IconButton')
+    const addIndex = actionsBlock.indexOf('<AddActionIcon')
     const todayIndex = actionsBlock.indexOf('<Button variant="secondary" onClick={goToday}>')
     const filtersIndex = actionsBlock.indexOf('<FilterDisclosureToggle />')
     expect(addIndex).toBeGreaterThan(-1)

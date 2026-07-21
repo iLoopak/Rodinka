@@ -9,6 +9,7 @@ import { useRouteSearchParams, useRouterActions } from '../../router'
 import { ScreenHeader } from '../ui/ScreenHeader'
 import { MemberAvatar } from '../ui/MemberAvatar'
 import { EmptyState } from '../ui/EmptyState'
+import { AppToolbarAddButton } from '../ui/AddAction'
 import { ErrorState } from '../ui/ErrorState'
 import { ConfirmDestructiveActionDialog } from '../ui/DestructiveActions'
 import { memberColorStyle } from '../../utils/memberColor'
@@ -259,14 +260,12 @@ function MessagesScreenContent() {
           title={t.messages.title}
           subtitle={t.messages.subtitle}
           actions={
-            <button
-              type="button"
-              className="btn-secondary messages-new-button"
+            <AppToolbarAddButton
               onClick={() => setPickerOpen(true)}
               disabled={eligibleDirectPartners.length === 0}
             >
               {t.messages.newDirect}
-            </button>
+            </AppToolbarAddButton>
           }
         />
         <MessagesList
@@ -328,7 +327,7 @@ function MessagesList({ loading, error, conversations, currentMember, memberById
       <EmptyState
         title={t.messages.emptyTitle}
         body={t.messages.emptyBody}
-        action={{ label: t.messages.startFamilyChat, onClick: () => void onOpenGroup() }}
+        action={{ label: t.messages.startFamilyChat, onClick: () => void onOpenGroup(), variant: 'primary' }}
       />
     )
   }

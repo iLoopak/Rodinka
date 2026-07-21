@@ -5069,13 +5069,12 @@ button.btn-danger:hover:not(:disabled) {
 
 .today-hero .today-summary { color: var(--ink-muted); font-size: 0.84rem; margin-top: 2px; }
 
+/* Layout only — appearance comes from the shared Button primitive now
+   (Wave: app-wide add-action unification). This used to be its own pill/FAB
+   look (rounded-full, drop shadow); that shape was the "round FAB" spelling
+   the audit flagged, so it's gone in favour of the one shared "+" button. */
 .hero-action-button {
   flex: 0 0 auto;
-  min-height: 44px;
-  min-width: 104px;
-  padding: 10px 16px;
-  border-radius: 999px;
-  box-shadow: 0 7px 18px color-mix(in srgb, var(--interactive-primary) 22%, transparent);
 }
 
 /* The single restrained graphic detail of the no-photo fallback: one soft
@@ -5495,25 +5494,22 @@ button.today-quick-todo-more {
   line-height: var(--line-height-meta);
 }
 
+/* Layout only, sized down to fit this compact empty-state row — appearance
+   is the shared Button primitive's (Wave: app-wide add-action unification).
+   This used to be a text-only `.link` button; that was the "+ Add" spelling
+   without a fill the audit flagged, so it now renders filled like every
+   other create action. */
 button.today-program-empty-action {
-  display: inline-flex;
-  align-items: center;
   flex: 0 0 auto;
-  gap: 4px;
   min-height: 44px;
-  padding: 8px 4px 8px 10px;
+  padding: 8px 14px;
   font-size: var(--font-size-action);
-  font-weight: var(--font-weight-strong);
   white-space: nowrap;
 }
 
 @media (max-width: 420px) {
   .today-program-empty {
     align-items: flex-start;
-  }
-
-  button.today-program-empty-action {
-    padding-left: 4px;
   }
 }
 
@@ -5763,15 +5759,6 @@ button.today-shopping-open {
   color: var(--brick-dark);
   box-shadow: 0 3px 12px rgba(76, 56, 42, 0.09);
 }
-
-.planner-create-button {
-  border: 1px solid var(--border);
-  background: var(--paper-raised);
-  color: var(--brick);
-  box-shadow: 0 5px 15px rgba(76, 56, 42, 0.05);
-}
-
-.planner-create-button:hover:not(:disabled) { background: var(--coral-mist); }
 
 .planner-area-card {
   transition: background var(--motion-fast) var(--motion-ease);
