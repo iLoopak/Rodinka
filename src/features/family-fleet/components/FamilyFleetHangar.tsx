@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FamilyMark } from '../../../components/FamilyMark'
 import { useFamilyCore } from '../../../context/family/FamilyCoreContext'
 import { useFamilyMembersData } from '../../../context/family/FamilyMembersContext'
 import { useLanguage } from '../../../i18n/languageContext'
 import { useRouterActions } from '../../../router'
-import { getMemberColorTheme, memberColorStyle } from '../../../utils/memberColor'
+import { getMemberColorTheme } from '../../../utils/memberColor'
+import { GameHeader, GamePlayerCard, GamePlayerFigure } from '../../family-games'
+import '../../family-games/familyGames.css'
 import { familyFleetHangarCopyFor, cosmeticCategoryLabel, cosmeticItemName } from '../cosmeticsCopy'
 import { achievementCopy } from '../achievementsCopy'
 import { FAMILY_FLEET_ACHIEVEMENTS } from '../achievements'
@@ -71,25 +72,21 @@ export function FamilyFleetHangar() {
   }
 
   return <main className="fleet-screen hangar-screen">
-    <header className="fleet-menu-header">
-      <button type="button" className="btn btn-secondary" onClick={() => navigate('/arcade/family-fleet')}>← {copy.backToFleet}</button>
-      <FamilyMark variant="dynamic" members={members} loading={membersLoading} size={38} />
-    </header>
+    <GameHeader backLabel={copy.backToFleet} onBack={() => navigate('/arcade/family-fleet')} members={members} membersLoading={membersLoading} />
 
     <div className="hangar-layout">
       <section className="card fleet-panel hangar-preview-panel">
         <p className="eyebrow">{copy.choosePilot}</p>
         <h1>{copy.title}</h1>
         <p className="fleet-muted">{copy.subtitle}</p>
-        <div className="fleet-members hangar-member-picker">
-          {members.map((m) => {
-            const active = m.id === member.id
-            return <button key={m.id} type="button" style={memberColorStyle(m)} className={`fleet-member-card${active ? ' is-selected' : ''}`} aria-pressed={active} onClick={() => setSelected(m.id)}>
-              <span className="fleet-member-avatar" aria-hidden="true">{m.display_name.slice(0, 1)}</span>
-              <span><strong>{m.display_name}</strong></span>
-              {active && <span className="fleet-member-check" aria-hidden="true">✓</span>}
-            </button>
-          })}
+        <div className="game-player-grid hangar-member-picker">
+          {members.map((m) => <GamePlayerCard
+            key={m.id}
+            member={m}
+            selected={m.id === member.id}
+            onSelect={() => setSelected(m.id)}
+            figure={<GamePlayerFigure member={m} />}
+          />)}
         </div>
         <ShipPreviewCanvas loadout={loadout} accent={accent} label={copy.shipPreview} />
         <p className="hangar-progress" role="status">{copy.achievementsProgress(unlockedAchievements.size, FAMILY_FLEET_ACHIEVEMENTS.length)}</p>

@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
-import { FamilyMark } from '../../../components/FamilyMark'
 import { useFamilyMembersData } from '../../../context/family/FamilyMembersContext'
 import { useFamilyCore } from '../../../context/family/FamilyCoreContext'
 import type { FamilyMember } from '../../../hooks/useFamilyMembers'
 import { useLanguage } from '../../../i18n/languageContext'
 import { useRouterActions } from '../../../router'
 import { getMemberColorTheme, memberColorStyle } from '../../../utils/memberColor'
+import { GameHeader, GameHero, GameOfflineBadge, GamePlayerFigure, GamePlayerPicker, GamePrimaryButton } from '../../family-games'
+import '../../family-games/familyGames.css'
 import { familyJumpCopy, type FamilyJumpCopy } from '../copy'
 import { FamilyJumpEngine } from '../game/FamilyJumpEngine'
 import { FAMILY_JUMP_COSMETICS, cosmeticByKey } from '../cosmetics/cosmeticDefinitions'
 import type { EquippedCosmetics, FamilyJumpCosmeticSlot } from '../cosmetics/cosmeticTypes'
 import { formatJumpDistance, rewardProgress } from '../achievements/achievementService'
-import { useFamilyJumpRecords, type FamilyJumpSyncStatus } from '../hooks/useFamilyJumpRecords'
+import { useFamilyJumpRecords } from '../hooks/useFamilyJumpRecords'
 import { sortFamilyJumpLeaderboard, type FamilyJumpRecordMap } from '../storage/records'
 import { loadFamilyJumpRunStats, recordFamilyJumpRun, type FamilyJumpMemberRunStats } from '../storage/runStats'
 import {
@@ -114,49 +115,44 @@ export function FamilyJumpScreen() {
 
   const leaderboard = sortFamilyJumpLeaderboard(members, records)
   return <section className="family-jump-screen family-jump-menu-screen" aria-labelledby="family-jump-title">
-    <header className="family-jump-menu-header">
-      <button type="button" className="family-jump-back" onClick={exitGame} aria-label={copy.backToApp}>
-        <span aria-hidden="true">←</span> {copy.back}
-      </button>
-      <FamilyMark variant="dynamic" members={members} size={38} loading={membersLoading} />
-    </header>
+    <GameHeader
+      backLabel={copy.back}
+      backAccessibleLabel={copy.backToApp}
+      onBack={exitGame}
+      members={members}
+      membersLoading={membersLoading}
+      rightSlot={<GameOfflineBadge status={syncStatus} labels={{ syncing: copy.syncing, synced: copy.synced, offline: copy.syncOffline, error: copy.syncError }} />}
+    />
 
     <div className="family-jump-menu-scroll">
-      <SyncStatus copy={copy} status={syncStatus} />
       {phase === 'intro' ? <>
-        <div className="family-jump-hero">
-          <p className="eyebrow">{copy.eyebrow}</p>
-          <h1 id="family-jump-title">{copy.title}</h1>
-          <p>{copy.intro}</p>
-          <div className="family-jump-hero-figures" aria-hidden="true">
+        <GameHero
+          eyebrow={copy.eyebrow}
+          title={copy.title}
+          titleId="family-jump-title"
+          description={copy.intro}
+          preview={<div className="family-jump-hero-figures" aria-hidden="true">
             {members.slice(0, 5).map((member, index) => <JumpMemberFigure key={member.id} member={member} equipped={progressByMember[member.id]?.equippedCosmetics} style={{ '--jump-index': index } as CSSProperties} />)}
-          </div>
-        </div>
+          </div>}
+        />
 
         <section className="family-jump-card" aria-labelledby="family-jump-player-heading">
-          <h2 id="family-jump-player-heading">{copy.choosePlayer}</h2>
-          {membersLoading ? <p>{copy.loadingMembers}</p> : <div className="family-jump-member-grid">
-            {members.map((member) => {
-              const selected = member.id === selectedMember.id
-              return <button
-                key={member.id}
-                type="button"
-                className={`family-jump-member-choice${selected ? ' is-selected' : ''}`}
-                style={memberColorStyle(member)}
-                aria-pressed={selected}
-                onClick={() => setSelectedMemberId(member.id)}
-              >
-                <JumpMemberFigure member={member} equipped={progressByMember[member.id]?.equippedCosmetics} />
-                <span>
-                  <strong>{member.display_name}</strong>
-                  <small>{copy.personalBest}: {records[member.id] ? copy.score(records[member.id]) : copy.noRecord}</small>
-                </span>
-              </button>
-            })}
-          </div>}
-          <button type="button" className="family-jump-primary-action" disabled={membersLoading || members.length === 0} onClick={startRun}>
+          <GamePlayerPicker
+            heading={copy.choosePlayer}
+            headingId="family-jump-player-heading"
+            members={members}
+            selectedId={selectedMember.id}
+            onSelect={setSelectedMemberId}
+            loading={membersLoading}
+            loadingLabel={copy.loadingMembers}
+            renderFigure={(member) => <JumpMemberFigure member={member} equipped={progressByMember[member.id]?.equippedCosmetics} />}
+            recordFor={(member) => records[member.id] ? copy.score(records[member.id]) : null}
+            recordLabel={copy.personalBest}
+            noRecordLabel={copy.noRecord}
+          />
+          <GamePrimaryButton disabled={membersLoading || members.length === 0} onClick={startRun}>
             {copy.play}
-          </button>
+          </GamePrimaryButton>
           <button type="button" className="btn-secondary family-jump-customize" disabled={membersLoading || members.length === 0} onClick={() => setPhase('wardrobe')}>
             {copy.customize}
           </button>
@@ -195,20 +191,6 @@ export function FamilyJumpScreen() {
       <Leaderboard copy={copy} entries={leaderboard} />
     </div>
   </section>
-}
-
-function SyncStatus({ copy, status }: { copy: FamilyJumpCopy; status: FamilyJumpSyncStatus }) {
-  if (status === 'idle') return null
-  const label = status === 'syncing'
-    ? copy.syncing
-    : status === 'synced'
-      ? copy.synced
-      : status === 'offline'
-        ? copy.syncOffline
-        : copy.syncError
-  return <p className={`family-jump-sync-status is-${status}`} role="status">
-    <span aria-hidden="true" />{label}
-  </p>
 }
 
 interface FamilyJumpGameProps {
@@ -386,10 +368,9 @@ function FamilyJumpGame({ member, members, records, copy, onExit, onGameOver, eq
 }
 
 function JumpMemberFigure({ member, equipped, style }: { member: FamilyMember; equipped?: EquippedCosmetics; style?: CSSProperties }) {
-  return <span className="family-jump-member-figure" style={{ ...memberColorStyle(member), ...style }} aria-hidden="true">
-    <i className="family-jump-eye is-left" /><i className="family-jump-eye is-right" /><i className="family-jump-smile" />
+  return <GamePlayerFigure member={member} style={style}>
     {Object.entries(equipped ?? {}).map(([slot, key]) => key && <i key={slot} className={`family-jump-figure-cosmetic is-${key}`} />)}
-  </span>
+  </GamePlayerFigure>
 }
 
 function CosmeticIcon({ cosmeticKey, locked = false }: { cosmeticKey: string; locked?: boolean }) {
@@ -510,7 +491,7 @@ function GameOverPanel({ copy, member, result, leaderboard, onRestart, onChangeP
         : <p>{copy.noOvertaken}</p>}
     </section>
     <div className="family-jump-result-actions">
-      <button type="button" className="family-jump-primary-action" onClick={onRestart}>{copy.playAgain}</button>
+      <GamePrimaryButton onClick={onRestart}>{copy.playAgain}</GamePrimaryButton>
       <button type="button" className="btn-secondary" onClick={onChangePlayer}>{copy.changePlayer}</button>
       <button type="button" className="btn-link" onClick={onExit}>{copy.backToApp}</button>
     </div>
