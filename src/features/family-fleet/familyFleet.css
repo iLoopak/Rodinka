@@ -31,6 +31,11 @@
 .fleet-hud__actions { display: flex; gap: 4px; }
 .fleet-hud .btn { min-height: 40px; padding: 6px 10px; border-radius: var(--radius-small); }
 .fleet-energy { letter-spacing: 1px; color: var(--brand-coral); }
+.fleet-hud__powers { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; padding-top: 4px; }
+.fleet-power-chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 7px; border-radius: 999px; background: color-mix(in srgb, var(--power-color) 22%, transparent); border: 1px solid color-mix(in srgb, var(--power-color) 55%, transparent); }
+.fleet-power-chip__icon { color: var(--power-color); font-weight: var(--font-weight-emphasis); line-height: 1; }
+.fleet-power-chip__bar { width: 26px; height: 4px; border-radius: 999px; background: rgba(255,255,255,.18); overflow: hidden; }
+.fleet-power-chip__fill { display: block; height: 100%; background: var(--power-color); }
 .fleet-zones { position: fixed; inset: auto 0 calc(16px + env(safe-area-inset-bottom)); display: flex; justify-content: space-between; pointer-events: none; }
 .fleet-zones button { width: 42vw; height: 28vh; opacity: .02; pointer-events: auto; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
