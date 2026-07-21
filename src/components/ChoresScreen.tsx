@@ -25,7 +25,7 @@ import { capabilitiesFor } from '../utils/uiCapabilities'
 import { useOccurrenceAssignmentsData } from '../context/activities/OccurrenceAssignmentsContext'
 import { childVisibleChores } from '../utils/childChoreVisibility'
 import { useCreateRecord } from '../context/create-record/CreateRecordContext'
-import { Button } from '../components/ui/Button'
+import { AppToolbarAddButton } from '../components/ui/AddAction'
 
 type Tab = 'active' | 'pending' | 'allowance' | 'manage'
 
@@ -168,7 +168,7 @@ export function ChoresScreen() {
   return (
     <>
       <ScreenHeader title={capabilities.isChild ? t.nav.myTasks : t.nav.chores} actions={capabilities.manageTaskDefinitions ? (
-          <Button variant="primary" leadingIcon="+" onClick={() => openCreateRecord({ type: 'household-task', source: 'chores' })}>{t.chores.addChoreAction}</Button>
+          <AppToolbarAddButton onClick={() => openCreateRecord({ type: 'household-task', source: 'chores' })}>{t.chores.addChoreAction}</AppToolbarAddButton>
         ) : undefined} />
 
       <ScrollableTabs tabs={tabs} activeTab={visibleTab} onChange={setTab} />

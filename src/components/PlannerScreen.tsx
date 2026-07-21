@@ -15,7 +15,7 @@ import { PlannerAreaCard } from './planner/PlannerAreaCard'
 import { ShoppingCategoryIcon } from './shopping/ShoppingCategoryIcon'
 import { useCreateRecord } from '../context/create-record/CreateRecordContext'
 import { ScreenHeader } from './ui/ScreenHeader'
-import { Button } from './ui/Button'
+import { AppToolbarAddButton } from './ui/AddAction'
 
 export function PlannerScreen() {
   const { openCreateRecord } = useCreateRecord()
@@ -80,9 +80,9 @@ export function PlannerScreen() {
         title={t.planner.title}
         subtitle={t.planner.subtitle}
         actions={
-          <Button variant="primary" leadingIcon="+" className="planner-create-button" onClick={() => openCreateRecord({ source: 'planning' })}>
+          <AppToolbarAddButton onClick={() => openCreateRecord({ source: 'planning' })}>
             {t.create.addAction}
-          </Button>
+          </AppToolbarAddButton>
         }
       />
 

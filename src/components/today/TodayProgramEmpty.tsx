@@ -1,4 +1,5 @@
 import { t } from '../../strings'
+import { AppPrimaryAddButton } from '../ui/AddAction'
 
 export function TodayProgramEmpty({ onAdd }: { onAdd?: () => void }) {
   return (
@@ -7,9 +8,7 @@ export function TodayProgramEmpty({ onAdd }: { onAdd?: () => void }) {
         <strong>{t.today.programEmpty}</strong>
         <span>{t.today.programEmptyBody}</span>
       </span>
-      {onAdd && <button type="button" className="link today-program-empty-action" onClick={onAdd}>
-        <span aria-hidden="true">+</span> {t.create.addAction}
-      </button>}
+      {onAdd && <AppPrimaryAddButton className="today-program-empty-action" onClick={onAdd}>{t.create.addAction}</AppPrimaryAddButton>}
     </div>
   )
 }

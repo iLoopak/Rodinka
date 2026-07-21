@@ -16,7 +16,7 @@ import type { MealPlanEntry } from '../../features/meals/domain/mealTypes'
 import type { PlanEntryInput } from '../../context/meals/MealsContext'
 import { MealIngredientsSection } from './MealIngredientsSection'
 import { useCreateRecord } from '../../context/create-record/CreateRecordContext'
-import { Button } from '../ui/Button'
+import { AppToolbarAddButton } from '../ui/AddAction'
 
 function weekdayLabels() { return [
   t.calendar.weekdayShortMon,
@@ -123,7 +123,7 @@ export function PlanTab({ prefill, onPrefillConsumed }: Props) {
 
       <div className="tab-toolbar">
         {isParentOrAdmin && (
-          <Button variant="primary" leadingIcon="+" onClick={() => openCreateRecord({ type: 'meal', date: today, section: 'dinner', source: 'meal-plan' })}>{t.mealPlan.addEntryAction}</Button>
+          <AppToolbarAddButton onClick={() => openCreateRecord({ type: 'meal', date: today, section: 'dinner', source: 'meal-plan' })}>{t.mealPlan.addEntryAction}</AppToolbarAddButton>
         )}
         {!isCurrentWeek(weekStart) && (
           <button type="button" className="btn-secondary" onClick={() => setWeekStart(getCurrentWeekStart())}>

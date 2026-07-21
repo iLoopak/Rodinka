@@ -19,7 +19,7 @@ import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from 
 import { ScreenHeader } from './ui/ScreenHeader'
 import { PersonRoleGroup, type PersonRole } from './ui/PersonRoleGroup'
 import { useCreateRecord } from '../context/create-record/CreateRecordContext'
-import { Button } from '../components/ui/Button'
+import { AppToolbarAddButton } from '../components/ui/AddAction'
 
 type Tab = 'upcoming' | 'history' | 'vaccinations' | 'overdue'
 
@@ -120,7 +120,7 @@ export function HealthScreen() {
         activeCount={Number(Boolean(filterMember)) + Number(Boolean(filterType))} onClear={clearFilters}>
       <ScreenHeader title={t.medical.title} actions={<>
           <FilterDisclosureToggle />
-          {isParentOrAdmin && <Button variant="primary" leadingIcon="+" onClick={() => openCreateRecord({ type: 'medical', source: 'health' })}>{t.medical.addAction}</Button>}
+          {isParentOrAdmin && <AppToolbarAddButton onClick={() => openCreateRecord({ type: 'medical', source: 'health' })}>{t.medical.addAction}</AppToolbarAddButton>}
         </>} />
 
       {deepLinkError && <p className="error" role="alert">{t.deepLinks.notFound}</p>}

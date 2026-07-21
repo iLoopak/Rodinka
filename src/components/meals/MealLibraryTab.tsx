@@ -11,7 +11,7 @@ import { MealDetailModal } from './MealDetailModal'
 import type { Meal } from '../../features/meals/domain/mealTypes'
 import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from '../ui/FilterDisclosure'
 import { useCreateRecord } from '../../context/create-record/CreateRecordContext'
-import { Button } from '../ui/Button'
+import { AppToolbarAddButton } from '../ui/AddAction'
 
 interface Props {
   onAddToPlan?: (meal: Meal) => void
@@ -54,7 +54,7 @@ export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
         activeCount={Number(Boolean(filterCategory)) + Number(Boolean(filterTag)) + Number(showArchived)} onClear={clearFilters}>
       <div className="tab-toolbar">
         {isParentOrAdmin && (
-          <Button variant="primary" leadingIcon="+" onClick={() => openCreateRecord({ type: 'meal-library', source: 'meal-library' })}>{t.mealLibrary.addAction}</Button>
+          <AppToolbarAddButton onClick={() => openCreateRecord({ type: 'meal-library', source: 'meal-library' })}>{t.mealLibrary.addAction}</AppToolbarAddButton>
         )}
         <div className="header-actions tab-toolbar-actions">
           <FilterDisclosureToggle />
@@ -105,7 +105,7 @@ export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
         ) : (
           <EmptyState
             title={t.mealLibrary.noMeals}
-            action={isParentOrAdmin ? { label: t.mealLibrary.noMealsAction, onClick: () => openCreateRecord({ type: 'meal-library', source: 'meal-library-empty' }) } : undefined}
+            action={isParentOrAdmin ? { label: t.mealLibrary.noMealsAction, onClick: () => openCreateRecord({ type: 'meal-library', source: 'meal-library-empty' }), variant: 'primary' } : undefined}
           />
         )
       ) : (

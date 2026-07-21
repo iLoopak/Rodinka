@@ -22,7 +22,7 @@ import { useChildAccounts, type ChildAccount } from '../hooks/useChildAccounts'
 import { useFamilyMemberEmails } from '../hooks/useFamilyMemberEmails'
 import { childAccountState, childAccountStatusLabel } from '../utils/childAccountStatus'
 import { revokeChildAccount } from '../lib/childAccountAdmin'
-import { Button } from '../components/ui/Button'
+import { AppToolbarAddButton } from '../components/ui/AddAction'
 
 function roleLabel(role: FamilyMember['role']) {
   if (role === 'admin') return t.family.roleAdmin
@@ -188,7 +188,7 @@ export function FamilyScreen() {
       <ScreenHeader title={familyName ?? t.family.title}
         leading={<FamilyMark variant="dynamic" members={members} size={48} className="family-screen-mark" />}
         actions={<>
-          {isParentOrAdmin && <Button variant="primary" leadingIcon="+" onClick={() => setShowAddChild(true)}>{t.family.addChildAction}</Button>}
+          {isParentOrAdmin && <AppToolbarAddButton onClick={() => setShowAddChild(true)}>{t.family.addChildAction}</AppToolbarAddButton>}
           {currentMember.role === 'admin' && !editingFamilyName && <button type="button" className="btn-secondary family-name-edit" onClick={() => {
               setFamilyNameDraft(familyName ?? '')
               setFamilyNameSaveError(null)
