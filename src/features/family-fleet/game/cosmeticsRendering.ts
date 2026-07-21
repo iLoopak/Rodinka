@@ -46,16 +46,18 @@ export function drawCabin(ctx: CanvasRenderingContext2D, cabin: CabinId, x: numb
   }
 }
 
-export function drawEngineTrail(ctx: CanvasRenderingContext2D, trail: EngineTrailId, x: number, y: number, time: number, accent: string) {
+// `intensity` (>=1) is the sense-of-speed multiplier — it lengthens the
+// trail slightly as difficulty ramps up, without changing its shape.
+export function drawEngineTrail(ctx: CanvasRenderingContext2D, trail: EngineTrailId, x: number, y: number, time: number, accent: string, intensity = 1) {
   if (trail === 'standard') {
     ctx.fillStyle = 'rgba(255,170,80,.55)'
-    ctx.beginPath(); ctx.moveTo(x - 6, y + 16); ctx.lineTo(x + 6, y + 16); ctx.lineTo(x, y + 30 + Math.sin(time * 20) * 3); ctx.closePath(); ctx.fill()
+    ctx.beginPath(); ctx.moveTo(x - 6, y + 16); ctx.lineTo(x + 6, y + 16); ctx.lineTo(x, y + 30 * intensity + Math.sin(time * 20) * 3); ctx.closePath(); ctx.fill()
     return
   }
   if (trail === 'double') {
     for (const dx of [-8, 8]) {
       ctx.fillStyle = 'rgba(255,170,80,.5)'
-      ctx.beginPath(); ctx.moveTo(x + dx - 4, y + 16); ctx.lineTo(x + dx + 4, y + 16); ctx.lineTo(x + dx, y + 30 + Math.sin(time * 20 + dx) * 3); ctx.closePath(); ctx.fill()
+      ctx.beginPath(); ctx.moveTo(x + dx - 4, y + 16); ctx.lineTo(x + dx + 4, y + 16); ctx.lineTo(x + dx, y + 30 * intensity + Math.sin(time * 20 + dx) * 3); ctx.closePath(); ctx.fill()
     }
     return
   }
@@ -63,7 +65,7 @@ export function drawEngineTrail(ctx: CanvasRenderingContext2D, trail: EngineTrai
     for (let i = 0; i < 6; i++) {
       const a = (time * 1.4 + i / 6) % 1
       ctx.globalAlpha = 1 - a; ctx.fillStyle = '#fff'
-      ctx.beginPath(); ctx.arc(x + Math.sin(i + time * 3) * 8, y + 16 + a * 30, 1.6, 0, Math.PI * 2); ctx.fill()
+      ctx.beginPath(); ctx.arc(x + Math.sin(i + time * 3) * 8, y + 16 + a * 30 * intensity, 1.6, 0, Math.PI * 2); ctx.fill()
     }
     ctx.globalAlpha = 1
     return
@@ -72,7 +74,7 @@ export function drawEngineTrail(ctx: CanvasRenderingContext2D, trail: EngineTrai
     ctx.strokeStyle = accent; ctx.lineWidth = 3
     ctx.beginPath()
     for (let i = 0; i < 16; i++) {
-      const px = x + (i - 8) * 2.4; const py = y + 18 + Math.sin(i * 0.6 + time * 6) * 4 + i * 0.8
+      const px = x + (i - 8) * 2.4; const py = y + 18 + Math.sin(i * 0.6 + time * 6) * 4 + i * 0.8 * intensity
       if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py)
     }
     ctx.stroke()
