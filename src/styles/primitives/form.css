@@ -1,0 +1,77 @@
+/* Form field + sticky footer primitives (design Wave 2).
+ *
+ * The field label/hint/error look already lives in index.css as `.field-label`
+ * etc.; these rules add only the wrapper rhythm and the footer, so a migrated
+ * field looks the same while gaining proper label/hint/error wiring. */
+
+.form-field {
+  margin-bottom: 16px;
+}
+
+.form-field .field-label {
+  margin-bottom: 8px;
+}
+
+/* The control sits directly under the label (associated by id, not nesting),
+ * so it needs the block width the old label>input nesting gave it for free. */
+.form-field > input,
+.form-field > select,
+.form-field > textarea {
+  width: 100%;
+}
+
+.form-field.is-required > .field-label::after {
+  content: ' *';
+  color: var(--accent-berry);
+}
+
+/* An errored control reads as errored on its own, not only via the message. */
+.form-field.has-error > input,
+.form-field.has-error > select,
+.form-field.has-error > textarea {
+  border-color: var(--accent-berry);
+}
+
+/* ---- Sticky action footer -------------------------------------------- *
+ *
+ * The last child of a scrolling sheet. Pinned to the bottom so the confirm
+ * action is always reachable, with safe-area padding so it clears the iOS home
+ * indicator. Because it is the final element in the flow, a full scroll leaves
+ * the last field directly above it — the footer never covers content it is not
+ * scrolling over.
+ *
+ * The negative horizontal margins let it span the sheet's padding so the top
+ * border reads edge to edge. */
+.sticky-action-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px -20px calc(-24px - env(safe-area-inset-bottom));
+  padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
+  background: var(--paper);
+  border-top: 1px solid var(--border-soft);
+}
+
+/* A destructive tertiary action (Delete, Leave) sits apart from the confirm
+ * pair so it cannot be hit by muscle memory aimed at Save. */
+.sticky-action-destructive {
+  margin-right: auto;
+}
+
+.sticky-action-primary-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.sticky-action-footer .btn {
+  max-width: 100%;
+  white-space: normal;
+}

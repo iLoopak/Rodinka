@@ -11,10 +11,18 @@ const focusableSelector = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',')
 
+/**
+ * How the sheet presents. On desktop all three centre; the difference is on
+ * mobile, where `sheet` rises from the bottom and `fullscreen` takes the whole
+ * viewport for a long editor. `centered` is the default small dialog.
+ */
+export type ModalSize = 'centered' | 'sheet' | 'fullscreen'
+
 interface Props {
   title: string
   onClose: () => void
   children: ReactNode
+  size?: ModalSize
   className?: string
   backdropClassName?: string
   closeOnBackdrop?: boolean
@@ -24,7 +32,7 @@ interface Props {
 let openModalCount = 0
 let nextModalOrder = 0
 
-export function Modal({ title, onClose, children, className, backdropClassName, closeOnBackdrop = true, descriptionId }: Props) {
+export function Modal({ title, onClose, children, size = 'centered', className, backdropClassName, closeOnBackdrop = true, descriptionId }: Props) {
   const sheetRef = useRef<HTMLDivElement>(null)
   const backdropRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
@@ -97,7 +105,7 @@ export function Modal({ title, onClose, children, className, backdropClassName, 
     >
       <div
         ref={sheetRef}
-        className={`modal-sheet${className ? ` ${className}` : ''}`}
+        className={`modal-sheet modal-sheet-${size}${className ? ` ${className}` : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

@@ -1,0 +1,40 @@
+/* Modal size variants (design Wave 2).
+ *
+ * The base `.modal-sheet` is already a responsive dialog: a bottom sheet on
+ * mobile, centred on desktop. `centered` and `sheet` both inherit that — the
+ * prop names the intent, and giving `sheet` its own rules later is a
+ * non-breaking addition. `fullscreen` is the one that actually differs, for a
+ * long editor that needs the whole viewport; it generalises the pattern the
+ * create-record wizard already proved. */
+
+.modal-sheet-fullscreen {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  /* 100dvh, not 100vh: the dynamic unit shrinks with the iOS URL bar and the
+   * keyboard, so the sheet never extends under either. */
+  height: 100dvh;
+  max-width: 100%;
+  max-height: 100dvh;
+  overflow: hidden;
+  padding: 0;
+  border-radius: 0;
+}
+
+.modal-sheet-fullscreen > .modal-header {
+  flex: 0 0 auto;
+  padding: calc(12px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 10px calc(16px + env(safe-area-inset-left));
+  border-bottom: 1px solid var(--border-soft);
+}
+
+/* On desktop a fullscreen sheet would be a wall of white; cap it to a tall
+ * centred dialog there, matching how the wizard already behaves. */
+@media (min-width: 560px) {
+  .modal-sheet-fullscreen {
+    width: 100%;
+    max-width: 560px;
+    height: auto;
+    max-height: 88vh;
+    border-radius: var(--radius-card);
+  }
+}

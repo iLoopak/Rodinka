@@ -7,6 +7,8 @@ import {
   translateEmailChangeError,
   validateEmailChange,
 } from '../lib/emailChange'
+import { FormField } from './ui/FormField'
+import { StickyActionFooter } from './ui/StickyActionFooter'
 
 interface Props {
   currentEmail: string
@@ -94,43 +96,41 @@ export function ChangeEmailForm({ currentEmail, hasGoogleIdentity, onDone, onSub
         <strong className="more-setting-value">{currentEmail}</strong>
       </p>
 
-      <label>
-        {t.more.newEmailLabel}
-        <input
+      <FormField label={t.more.newEmailLabel} required>
+        {(field) => <input
+          {...field}
           type="email"
-          required
           autoComplete="email"
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
           value={newEmail}
           onChange={(event) => setNewEmail(event.target.value)}
-        />
-      </label>
-      <label>
-        {t.more.confirmEmailLabel}
-        <input
+        />}
+      </FormField>
+      {/* The error lands on the confirm field, where the mismatch is, and is
+          linked to it through aria-describedby instead of floating below the
+          footer as before. */}
+      <FormField label={t.more.confirmEmailLabel} required error={error}>
+        {(field) => <input
+          {...field}
           type="email"
-          required
           autoComplete="off"
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
           value={confirmEmail}
           onChange={(event) => setConfirmEmail(event.target.value)}
-        />
-      </label>
+        />}
+      </FormField>
 
-      <div className="modal-actions">
-        <button type="submit" disabled={submitting}>
-          {submitting ? t.more.changeEmailSubmitting : t.more.changeEmailSubmit}
-        </button>
-        <button type="button" className="btn-secondary" disabled={submitting} onClick={onDone}>
-          {t.common.cancel}
-        </button>
-      </div>
-
-      {error && <p className="error" role="alert">{error}</p>}
+      <StickyActionFooter
+        submitType="submit"
+        submitLabel={submitting ? t.more.changeEmailSubmitting : t.more.changeEmailSubmit}
+        loading={submitting}
+        cancelLabel={t.common.cancel}
+        onCancel={onDone}
+      />
     </form>
   )
 }
