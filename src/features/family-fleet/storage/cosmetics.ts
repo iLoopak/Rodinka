@@ -1,0 +1,12 @@
+import { DEFAULT_LOADOUT, cosmeticKey, isDefaultCosmetic, type CosmeticCategory, type FleetLoadout } from '../cosmetics'
+type UnlockedMap=Record<string,string[]>; type EquippedMap=Record<string,Partial<FleetLoadout>>
+interface Stored{version:1; familyId:string; unlocked:UnlockedMap; equipped:EquippedMap; updatedAt:string}
+const PREFIX='rodinka.family-fleet.cosmetics.v1.'
+function storage(){try{return window.localStorage}catch{return null}}
+function loadDoc(familyId:string,s:Storage|null):Stored{if(!s)return {version:1,familyId,unlocked:{},equipped:{},updatedAt:''}; try{const p=JSON.parse(s.getItem(PREFIX+familyId)||'{}') as Partial<Stored>; return {version:1,familyId,unlocked:p.unlocked&&typeof p.unlocked==='object'?p.unlocked:{},equipped:p.equipped&&typeof p.equipped==='object'?p.equipped:{},updatedAt:p.updatedAt||''}}catch{return {version:1,familyId,unlocked:{},equipped:{},updatedAt:''}}}
+function saveDoc(familyId:string,doc:Stored,s:Storage|null){if(s)s.setItem(PREFIX+familyId,JSON.stringify(doc))}
+export function loadUnlockedCosmetics(familyId:string,memberId:string,s:Storage|null=storage()):Set<string>{return new Set(loadDoc(familyId,s).unlocked[memberId]??[])}
+export function isCosmeticUnlocked(familyId:string,memberId:string,category:CosmeticCategory,id:string,s:Storage|null=storage()):boolean{if(isDefaultCosmetic(category,id))return true; return loadUnlockedCosmetics(familyId,memberId,s).has(cosmeticKey(category,id))}
+export function unlockCosmetics(familyId:string,memberId:string,keys:readonly string[],s:Storage|null=storage()):Set<string>{if(keys.length===0)return loadUnlockedCosmetics(familyId,memberId,s); const doc=loadDoc(familyId,s); const existing=new Set(doc.unlocked[memberId]??[]); for(const key of keys)existing.add(key); doc.unlocked[memberId]=[...existing]; doc.updatedAt=new Date().toISOString(); saveDoc(familyId,doc,s); return existing}
+export function loadEquippedLoadout(familyId:string,memberId:string,s:Storage|null=storage()):FleetLoadout{const doc=loadDoc(familyId,s); return {...DEFAULT_LOADOUT,...doc.equipped[memberId]}}
+export function equipCosmetic(familyId:string,memberId:string,category:CosmeticCategory,id:string,s:Storage|null=storage()):FleetLoadout{const doc=loadDoc(familyId,s); const current={...DEFAULT_LOADOUT,...doc.equipped[memberId]}; if(!isCosmeticUnlocked(familyId,memberId,category,id,s))return current; const next={...current,[category]:id}; doc.equipped[memberId]=next; doc.updatedAt=new Date().toISOString(); saveDoc(familyId,doc,s); return next}
