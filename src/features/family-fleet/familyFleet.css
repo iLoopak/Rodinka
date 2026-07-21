@@ -38,5 +38,22 @@
 .fleet-zones { position: fixed; inset: auto 0 calc(16px + env(safe-area-inset-bottom)); display: flex; justify-content: space-between; pointer-events: none; }
 .fleet-zones button { width: 42vw; height: 28vh; opacity: .02; pointer-events: auto; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
-@media (max-width: 760px) { .fleet-intro-layout { grid-template-columns: 1fr; } .fleet-preview { min-height: 150px; } .fleet-menu-header { flex-wrap: wrap; } }
+.fleet-achievements-unlocked { margin: 14px 0; padding: 12px; border-radius: var(--radius-medium); background: color-mix(in srgb, var(--brand-honey) 20%, var(--surface-subtle)); }
+.fleet-achievements-unlocked h2 { margin: 0 0 8px; font-size: var(--font-size-section-title); }
+.fleet-achievements-unlocked ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.fleet-achievements-unlocked li { display: flex; flex-direction: column; gap: 2px; }
+.fleet-achievements-unlocked em { font-style: normal; color: var(--ink-muted); font-size: var(--font-size-caption); }
+.hangar-layout { max-width: 1040px; margin: 0 auto; display: grid; grid-template-columns: minmax(260px, .8fr) minmax(0, 1.2fr); gap: 16px; align-items: start; }
+.hangar-member-picker { margin-bottom: 12px; }
+.hangar-preview-canvas { width: 100%; height: 220px; border-radius: var(--radius-large); background: radial-gradient(circle at 18% 24%, #fff 0 1px, transparent 2px), radial-gradient(circle at 78% 18%, #fff 0 2px, transparent 3px), linear-gradient(135deg, #10182e, #24395c); }
+.hangar-progress { margin: 10px 0 0; color: var(--ink-muted); font-size: var(--font-size-caption); }
+.hangar-categories { display: grid; gap: 12px; }
+.hangar-category h2 { margin: 0 0 10px; font-size: var(--font-size-section-title); }
+.hangar-item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.hangar-item { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius-medium); background: var(--paper); }
+.hangar-item.is-equipped { border-color: var(--member-border, var(--brand-honey)); box-shadow: inset 0 0 0 2px var(--member-border, var(--brand-honey)); }
+.hangar-item.is-locked { opacity: .72; }
+.hangar-item-name { font-weight: var(--font-weight-emphasis); }
+.hangar-lock-hint { color: var(--ink-muted); font-size: var(--font-size-caption); }
+@media (max-width: 760px) { .fleet-intro-layout { grid-template-columns: 1fr; } .fleet-preview { min-height: 150px; } .fleet-menu-header { flex-wrap: wrap; } .hangar-layout { grid-template-columns: 1fr; } }
 @media (max-width: 430px) { .fleet-screen { padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); } .fleet-panel { padding: 14px; } .fleet-member-card { grid-template-columns: 36px 1fr auto; } .fleet-hud { width: min(calc(100vw - 10px), 420px); } .fleet-hud__stats { gap: 4px 7px; } .fleet-hud .btn { min-width: 40px; padding: 5px 8px; } }

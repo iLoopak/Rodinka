@@ -20,7 +20,7 @@ describe('top-level route registry', () => {
     expect(hub.offline).toBe('available')
     expect(hub.access).toBe('all-members')
 
-    for (const path of ['/arcade/family-jump', '/arcade/family-fleet', '/family-jump'] as const) {
+    for (const path of ['/arcade/family-jump', '/arcade/family-fleet', '/arcade/family-fleet/hangar', '/family-jump'] as const) {
       const route = getRouteDefinition(path)
       expect(route.shell).toBe('fullscreen')
       expect(route.offline).toBe('available')
@@ -30,7 +30,7 @@ describe('top-level route registry', () => {
 
   it('keeps only the intended startup routes available offline', () => {
     const available = ROUTE_REGISTRY.filter(({ path }) => routeIsAvailableOffline(path)).map(({ path }) => path)
-    expect(available).toEqual(['/', '/calendar', '/shopping', '/arcade', '/arcade/family-jump', '/arcade/family-fleet', '/family-jump'])
+    expect(available).toEqual(['/', '/calendar', '/shopping', '/arcade', '/arcade/family-jump', '/arcade/family-fleet', '/arcade/family-fleet/hangar', '/family-jump'])
   })
 
   it('preserves adult-only access and child fallbacks', () => {
