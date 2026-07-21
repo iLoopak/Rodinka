@@ -29,6 +29,28 @@ function applyChange<T extends { id: string }>(list: T[], change: RealtimeChange
   return upsertById(list, change.record)
 }
 
+export function normalizeMealNameForMatch(name: string): string {
+  return name.trim().replace(/\s+/g, ' ').toLocaleLowerCase()
+}
+
+function mealCategoryFromSlot(slot: PlanEntryInput['mealSlot']): MealInput['category'] {
+  if (slot === 'breakfast' || slot === 'lunch' || slot === 'dinner' || slot === 'snack') return slot
+  return 'other'
+}
+
+function mealInputFromPlanEntry(input: PlanEntryInput): MealInput {
+  return {
+    name: input.title.trim(),
+    description: '',
+    category: mealCategoryFromSlot(input.mealSlot),
+    tags: [],
+    prepMinutes: null,
+    notes: input.notes,
+    sourceUrl: '',
+    status: 'active',
+  }
+}
+
 /**
  * Thin composition over the meals repository: view state, domain calls, and
  * merging results back in. No queries, no row mapping, no error parsing.
@@ -151,9 +173,17 @@ export function useMealsDataSource(familyId: string | undefined, userId: string,
 
   const addPlanEntry = useCallback(async (input: PlanEntryInput) => {
     if (!scope) return
-    const entry = await repository.planMeal(scope, input)
+    let planInput = input
+    if (input.saveToLibrary && !input.mealId && input.title.trim()) {
+      const normalizedTitle = normalizeMealNameForMatch(input.title)
+      const existing = meals.find((meal) => normalizeMealNameForMatch(meal.name) === normalizedTitle)
+      const libraryMeal = existing ?? await repository.createMeal(scope, mealInputFromPlanEntry(input))
+      if (!existing) setMeals((current) => upsertById(current, libraryMeal))
+      planInput = { ...input, mealId: libraryMeal.id, title: libraryMeal.name }
+    }
+    const entry = await repository.planMeal(scope, planInput)
     setPlanEntries((current) => upsertById(current, entry))
-  }, [repository, scope])
+  }, [meals, repository, scope])
 
   const updatePlanEntry = useCallback(async (id: string, input: PlanEntryInput) => {
     const entry = await repository.reschedulePlanEntry(id, input)

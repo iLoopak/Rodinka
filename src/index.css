@@ -7039,3 +7039,19 @@ button.member-color-option {
   background: var(--state-warning-soft);
   color: var(--state-warning);
 }
+
+.meal-library-save-toggle {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  max-width: 100%;
+}
+
+.meal-library-save-toggle input {
+  flex: 0 0 auto;
+}
+
+.meal-library-save-toggle span {
+  min-width: 0;
+}

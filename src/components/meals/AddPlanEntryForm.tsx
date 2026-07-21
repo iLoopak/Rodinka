@@ -48,6 +48,7 @@ export function AddPlanEntryForm({ meals, members, planEntries, initial, default
   const [responsibleMemberId, setResponsibleMemberId] = useState(initial?.responsible_member_id ?? contextualMemberId)
   const [notes, setNotes] = useState(initial?.notes ?? '')
   const [status, setStatus] = useState<MealPlanStatus>(initial?.status ?? 'proposed')
+  const [saveToLibrary, setSaveToLibrary] = useState(false)
 
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -94,6 +95,7 @@ export function AddPlanEntryForm({ meals, members, planEntries, initial, default
         status,
         origin: initial?.origin ?? (prefill ? 'vote' : 'manual'),
         sourceEntryId: initial?.source_entry_id ?? null,
+        saveToLibrary: !initial && !useLibrary && saveToLibrary,
       })
     } catch (err) {
       console.error('Failed to save meal plan entry:', err)
@@ -131,6 +133,10 @@ export function AddPlanEntryForm({ meals, members, planEntries, initial, default
           </label> : <label className="guided-hero-field compact">
             <span>{t.create.guided.customMeal}</span>
             <input autoFocus value={customTitle} onChange={(event) => setCustomTitle(event.target.value)} placeholder={t.mealPlan.customTitlePlaceholder} />
+          </label>}
+          {!useLibrary && <label className="checkbox-label meal-library-save-toggle">
+            <input type="checkbox" checked={saveToLibrary} onChange={(event) => setSaveToLibrary(event.target.checked)} />
+            <span>{t.mealPlan.saveToLibraryLabel}</span>
           </label>}
           <button type="button" className="guided-text-action" onClick={markLeftovers}>{t.mealPlan.markLeftoversAction}</button>
         </section>
@@ -241,6 +247,12 @@ export function AddPlanEntryForm({ meals, members, planEntries, initial, default
               onChange={(e) => setCustomTitle(e.target.value)}
               placeholder={t.mealPlan.customTitlePlaceholder}
             />
+          </label>
+        )}
+        {!initial && !useLibrary && (
+          <label className="checkbox-label meal-library-save-toggle">
+            <input type="checkbox" checked={saveToLibrary} onChange={(event) => setSaveToLibrary(event.target.checked)} />
+            <span>{t.mealPlan.saveToLibraryLabel}</span>
           </label>
         )}
         <button type="button" className="btn-secondary" onClick={markLeftovers}>

@@ -167,6 +167,64 @@ describe('meals wave 1 — targeted reconciliation', () => {
     expect(view.result.current.meals.filter((entry) => entry.id === 'm2')).toHaveLength(1)
   })
 
+
+  it('plans a custom meal only in the plan when library save is off', async () => {
+    const createdMeals: string[] = []
+    let planned: any = null
+    const { repository } = fakeRepository({
+      async createMeal(_scope, input) { createdMeals.push(input.name); return meal('created', input.name) },
+      async planMeal(_scope, input) { planned = input; return { ...planEntry('p2'), meal_id: input.mealId, title: input.title } },
+    })
+    const view = await mounted(repository)
+
+    await act(async () => { await view.result.current.addPlanEntry({
+      entryDate: '2026-07-22', mealSlot: 'dinner', mealId: null, title: '  Tacos  ',
+      responsibleMemberId: null, notes: 'with salsa', status: 'proposed', origin: 'manual', sourceEntryId: null,
+    }) })
+
+    expect(createdMeals).toEqual([])
+    expect(planned).toMatchObject({ mealId: null, title: '  Tacos  ' })
+  })
+
+  it('saves a custom planned meal to the library when requested', async () => {
+    let createdInput: any = null
+    let planned: any = null
+    const { repository } = fakeRepository({
+      async createMeal(_scope, input) { createdInput = input; return meal('created', input.name) },
+      async planMeal(_scope, input) { planned = input; return { ...planEntry('p2'), meal_id: input.mealId, title: input.title } },
+    })
+    const view = await mounted(repository)
+
+    await act(async () => { await view.result.current.addPlanEntry({
+      entryDate: '2026-07-22', mealSlot: 'lunch', mealId: null, title: 'Tacos',
+      responsibleMemberId: null, notes: 'with salsa', status: 'proposed', origin: 'manual', sourceEntryId: null, saveToLibrary: true,
+    }) })
+
+    expect(createdInput).toMatchObject({ name: 'Tacos', category: 'lunch', notes: 'with salsa', status: 'active' })
+    expect(planned).toMatchObject({ mealId: 'created', title: 'Tacos' })
+  })
+
+  it('uses a normalized existing library meal instead of overwriting or duplicating it', async () => {
+    let createCount = 0
+    let updateCount = 0
+    let planned: any = null
+    const { repository } = fakeRepository({
+      async createMeal(_scope, input) { createCount += 1; return meal('created', input.name) },
+      async updateMealDetails() { updateCount += 1; return meal('m1', 'changed') },
+      async planMeal(_scope, input) { planned = input; return { ...planEntry('p2'), meal_id: input.mealId, title: input.title } },
+    })
+    const view = await mounted(repository)
+
+    await act(async () => { await view.result.current.addPlanEntry({
+      entryDate: '2026-07-22', mealSlot: 'dinner', mealId: null, title: '  SVÍČKOVÁ  ',
+      responsibleMemberId: null, notes: 'new note must not overwrite existing', status: 'proposed', origin: 'manual', sourceEntryId: null, saveToLibrary: true,
+    }) })
+
+    expect(createCount).toBe(0)
+    expect(updateCount).toBe(0)
+    expect(planned).toMatchObject({ mealId: 'm1', title: 'Svíčková' })
+  })
+
   it('applies a realtime plan delete', async () => {
     const { repository, fire } = fakeRepository()
     const view = await mounted(repository)
