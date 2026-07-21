@@ -108,6 +108,7 @@ export interface PlanEntryInput {
   status: MealPlanStatus
   origin: MealPlanOrigin
   sourceEntryId: string | null
+  saveToLibrary?: boolean
 }
 
 export interface VoteRoundInput {
