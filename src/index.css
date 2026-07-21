@@ -1752,6 +1752,12 @@ button.list-drag-handle:hover:not(:disabled) {
 .modal-backdrop {
   position: fixed;
   inset: 0;
+  /* Shrunk by --keyboard-inset (see useVisualViewportInset) so the backdrop's
+   * bottom edge tracks the visible viewport, not the layout viewport iOS
+   * leaves unchanged under the keyboard. align-items: flex-end below then
+   * pushes the sheet up above the keyboard instead of behind it. */
+  height: 100vh;
+  height: calc(100dvh - var(--keyboard-inset, 0px));
   background: color-mix(in srgb, var(--ink) 46%, transparent);
   display: flex;
   align-items: flex-end;
@@ -1770,6 +1776,7 @@ body.has-modal-open .app-main {
   width: 100%;
   max-width: 640px;
   max-height: 88vh;
+  max-height: calc(88dvh - var(--keyboard-inset, 0px));
   overflow-y: auto;
   background: var(--surface-elevated);
   border-radius: var(--radius-large) var(--radius-large) 0 0;
@@ -1894,19 +1901,10 @@ body.has-modal-open .app-main {
 }
 
 /* One shell for every create flow. On phones it owns the viewport and safe
-   areas so the AppShell and keyboard cannot compete for vertical space. */
-.modal-sheet.create-record-wizard {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100dvh;
-  max-width: 100%;
-  max-height: 100dvh;
-  overflow: hidden;
-  padding: 0;
-  border-radius: 0;
-}
-
+   areas so the AppShell and keyboard cannot compete for vertical space — the
+   height/scroll contract itself lives on the shared `.modal-sheet-fullscreen`
+   primitive (see styles/primitives/modal.css); `<Modal size="fullscreen">`
+   applies it, and this block only adds what's specific to the wizard. */
 .create-record-wizard > .modal-header {
   flex: 0 0 auto;
   z-index: 2;
@@ -1967,7 +1965,7 @@ body.has-modal-open .app-main {
 @media (min-width: 560px) {
   .modal-sheet.create-record-wizard {
     width: min(680px, calc(100vw - 32px));
-    height: min(92dvh, 840px);
+    height: min(calc(92dvh - var(--keyboard-inset, 0px)), 840px);
     max-width: 680px;
     max-height: 840px;
     border-radius: var(--radius-card);
@@ -3250,16 +3248,9 @@ label.member-gender-option {
 }
 
 /* ------------------------------------------------------------------ */
-.modal-sheet.activity-form-modal {
-  height: 100dvh;
-  max-height: 100dvh;
-  padding: 0;
-  overflow: hidden;
-  border-radius: 0;
-  display: flex;
-  flex-direction: column;
-}
-
+/* Height/scroll contract lives on the shared `.modal-sheet-fullscreen`
+ * primitive (styles/primitives/modal.css); `<Modal size="fullscreen">`
+ * applies it, this block only adds what's specific to the activity form. */
 .activity-form-modal .modal-header {
   flex: 0 0 auto;
   z-index: 2;
@@ -3726,7 +3717,7 @@ label.family-photo-picker {
 @media (min-width: 560px) {
   .modal-sheet.activity-form-modal {
     width: min(640px, calc(100vw - 32px));
-    height: min(92dvh, 820px);
+    height: min(calc(92dvh - var(--keyboard-inset, 0px)), 820px);
     max-width: 640px;
     max-height: 820px;
     border-radius: var(--radius-card);
@@ -3882,17 +3873,11 @@ button.btn-danger:hover:not(:disabled) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Height/scroll contract lives on the shared `.modal-sheet-fullscreen`
+ * primitive (styles/primitives/modal.css); `<Modal size="fullscreen">`
+ * applies it, this block only adds what's specific to the member editor. */
 .modal-sheet.member-editor-sheet {
-  width: 100%;
-  height: 100vh;
-  height: 100dvh;
   min-height: 0;
-  max-height: 100dvh;
-  padding: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  border-radius: 0;
 }
 
 .modal-backdrop.member-editor-backdrop {
@@ -4117,8 +4102,8 @@ button.btn-danger:hover:not(:disabled) {
 
   .modal-sheet.member-editor-sheet {
     max-width: 780px;
-    height: min(88dvh, 820px);
-    max-height: min(88dvh, 820px);
+    height: min(calc(88dvh - var(--keyboard-inset, 0px)), 820px);
+    max-height: min(calc(88dvh - var(--keyboard-inset, 0px)), 820px);
     border-radius: var(--radius-card);
   }
 

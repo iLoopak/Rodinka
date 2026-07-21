@@ -299,6 +299,7 @@ export function MoreScreen() {
       )}
 
       {editingOwnProfile && <MemberProfileModal
+        key={currentMember.id}
         member={currentMember}
         currentMember={currentMember}
         refreshMembers={refreshMembers}
@@ -306,6 +307,7 @@ export function MoreScreen() {
       />}
 
       {allowanceChild && <AllowancePlanDialog
+        key={allowanceChild.id}
         child={allowanceChild}
         onClose={() => setAllowanceChild(null)}
       />}

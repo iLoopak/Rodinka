@@ -3,6 +3,7 @@ import { useFamilyCore } from '../../../context/family/FamilyCoreContext'
 import { useFamilyMembersData } from '../../../context/family/FamilyMembersContext'
 import { useLanguage } from '../../../i18n/languageContext'
 import { useRouterActions } from '../../../router'
+import { useScreenLock } from '../../../hooks/useScreenLock'
 import { memberColorStyle } from '../../../utils/memberColor'
 import { GameHeader, GameHero, GameOfflineBadge, GamePlayerFigure, GamePlayerPicker, GamePrimaryButton } from '../../family-games'
 import '../../family-games/familyGames.css'
@@ -21,6 +22,10 @@ import '../familyFleet.css'
 const runId = () => crypto?.randomUUID?.() ?? `fleet-${Date.now()}-${Math.random()}`
 
 export function FamilyFleetScreen() {
+  // Belt-and-suspenders alongside the route's own `overflow: hidden` shell
+  // (familyFleet.css): shares Modal's ref-counted lock so a modal opened over
+  // this fullscreen route doesn't clobber it.
+  useScreenLock()
   const { navigate } = useRouterActions()
   const { familyId, currentMember } = useFamilyCore()
   const { members, membersLoading } = useFamilyMembersData()

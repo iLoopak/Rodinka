@@ -136,6 +136,7 @@ export function MealLibraryTab({ onAddToPlan, onAddToVote }: Props) {
 
       {selectedMeal && (
         <MealDetailModal
+          key={selectedMeal.id}
           meal={selectedMeal}
           onUpdate={updateMeal}
           onAddToPlan={onAddToPlan}

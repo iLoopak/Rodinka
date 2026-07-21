@@ -26,7 +26,7 @@ export function CreateRecordWizardController() {
 
 function CreateRecordLoadingFallback({ onClose }: { onClose: () => void }) {
   return (
-    <Modal title={t.create.title} onClose={onClose} closeOnBackdrop={false} className="create-record-wizard">
+    <Modal title={t.create.title} onClose={onClose} closeOnBackdrop={false} size="fullscreen" className="create-record-wizard">
       <div className="create-record-loading" role="status" aria-live="polite" aria-busy="true">
         <FamilyMark variant="static" size={32} />
         <span>{t.loading.generic}</span>

@@ -3,6 +3,7 @@ import { useFamilyCore } from '../../../context/family/FamilyCoreContext'
 import { useFamilyMembersData } from '../../../context/family/FamilyMembersContext'
 import { useLanguage } from '../../../i18n/languageContext'
 import { useRouterActions } from '../../../router'
+import { useScreenLock } from '../../../hooks/useScreenLock'
 import { getMemberColorTheme } from '../../../utils/memberColor'
 import { GameHeader, GamePlayerCard, GamePlayerFigure } from '../../family-games'
 import '../../family-games/familyGames.css'
@@ -49,6 +50,10 @@ function ShipPreviewCanvas({ loadout, accent, label }: { loadout: FleetLoadout; 
 }
 
 export function FamilyFleetHangar() {
+  // Belt-and-suspenders alongside the route's own `overflow: hidden` shell
+  // (familyFleet.css): shares Modal's ref-counted lock so a modal opened over
+  // this fullscreen route doesn't clobber it.
+  useScreenLock()
   const { navigate } = useRouterActions()
   const { familyId, currentMember } = useFamilyCore()
   const { members, membersLoading } = useFamilyMembersData()
