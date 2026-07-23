@@ -1193,7 +1193,7 @@ details.manage .add-child-form + .add-chore-form {
 
 .reminder-actions .link { font-size: .78rem; }
 
-.reminder-empty { display: grid; justify-items: center; gap: 6px; margin-top: 28px; padding: 38px 22px; border: 1px dashed var(--border); border-radius: 24px; background: rgba(255,255,255,.52); text-align: center; }
+.reminder-empty { display: grid; justify-items: center; gap: 6px; margin-top: 28px; padding: 38px 22px; border: 1px dashed var(--border); border-radius: 24px; background: color-mix(in srgb, var(--paper) 72%, transparent); text-align: center; }
 
 .reminder-empty > span { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--state-success-soft); color: var(--state-success); font-size: 1.5rem; }
 
@@ -1601,7 +1601,7 @@ button.list-drag-handle:hover:not(:disabled) {
   text-align: left;
 }
 
-.shopping-item-main:hover:not(:disabled) { background: rgba(255,255,255,.4); }
+.shopping-item-main:hover:not(:disabled) { background: color-mix(in srgb, var(--paper-raised) 40%, transparent); }
 
 .shopping-item-top { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 
@@ -1620,7 +1620,7 @@ button.list-drag-handle:hover:not(:disabled) {
   padding: 12px 14px;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-card);
-  background: rgba(244,237,228,.64);
+  background: color-mix(in srgb, var(--surface-subtle) 64%, transparent);
 }
 
 .shopping-purchased summary { cursor: pointer; font-weight: 800; color: var(--ink-muted); }
@@ -1629,7 +1629,7 @@ button.list-drag-handle:hover:not(:disabled) {
 
 .shopping-purchased .shopping-list { overflow: hidden; border-radius: var(--radius-row); }
 
-.shopping-purchased .shopping-item { --shopping-accent: var(--ink-muted); background: rgba(255,255,255,.45); opacity: .7; }
+.shopping-purchased .shopping-item { --shopping-accent: var(--ink-muted); background: color-mix(in srgb, var(--paper-raised) 45%, transparent); opacity: .7; }
 
 .shopping-purchased .shopping-item-top strong { text-decoration: line-through; }
 
@@ -1747,12 +1747,12 @@ button.list-drag-handle:hover:not(:disabled) {
 
 .tab-button.active {
   background: var(--brick);
-  color: #fff;
+  color: var(--color-on-primary);
   border-color: var(--brick);
 }
 
 .tab-count {
-  background: rgba(255, 255, 255, 0.25);
+  background: color-mix(in srgb, var(--color-on-primary) 25%, transparent);
   border-radius: 999px;
   font-size: 0.7rem;
   padding: 1px 7px;
@@ -3196,7 +3196,7 @@ label.member-gender-option {
   padding: 12px;
   border: 1px solid var(--border-soft);
   border-radius: 18px;
-  background: rgba(244, 237, 228, 0.78);
+  background: color-mix(in srgb, var(--surface-subtle) 78%, transparent);
   box-shadow: var(--shadow-card);
 }
 
@@ -3907,11 +3907,11 @@ label.family-photo-picker {
   margin: 12px 0;
   padding: 10px 12px;
   border-radius: 12px;
-  background: #fff1d6;
+  background: var(--state-warning-soft);
 }
 
 .approval-feedback {
-  background: #e8f5ec;
+  background: var(--state-success-soft);
 }
 
 .danger-action {
@@ -4136,7 +4136,7 @@ button.btn-danger:hover:not(:disabled) {
 
 .member-editor-nav-item.is-active {
   background: var(--ink);
-  color: #fff;
+  color: var(--color-text-inverse);
   border-color: var(--ink);
   -webkit-text-fill-color: currentColor;
 }
@@ -4146,7 +4146,7 @@ button.btn-danger:hover:not(:disabled) {
    this it would repaint the active tab's background on hover. */
 .member-editor-nav-item.is-active:hover:not(:disabled) {
   background: var(--ink);
-  color: #fff;
+  color: var(--color-text-inverse);
   border-color: var(--ink);
   -webkit-text-fill-color: currentColor;
 }
@@ -4583,7 +4583,7 @@ button.btn-danger:hover:not(:disabled) {
   text-align: left;
 }
 
-.calendar-entry-row-shell .calendar-entry-row:hover:not(:disabled) { background: rgba(255, 255, 255, 0.58); color: var(--ink); }
+.calendar-entry-row-shell .calendar-entry-row:hover:not(:disabled) { background: color-mix(in srgb, var(--paper-raised) 58%, transparent); color: var(--ink); }
 
 .calendar-entry-content { display: grid; min-width: 0; gap: 3px; }
 
@@ -4916,7 +4916,7 @@ button.btn-danger:hover:not(:disabled) {
 
 .app-shell {
   max-width: 720px;
-  background: rgba(255, 253, 249, 0.44);
+  background: color-mix(in srgb, var(--surface-canvas) 44%, transparent);
   box-shadow: 0 0 70px rgba(88, 65, 47, 0.045);
 }
 
@@ -5605,7 +5605,7 @@ button.today-quick-todo-more {
   padding: 7px 10px 7px 13px;
   border-radius: 13px;
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.78);
+  background: color-mix(in srgb, var(--paper-raised) 78%, transparent);
   font-size: var(--font-size-meta);
   font-weight: var(--font-weight-medium);
 }
@@ -5636,7 +5636,7 @@ button.today-quick-todo-more {
 
 .today-attention-link {
   border-color: transparent;
-  background: rgba(255, 255, 255, 0.68);
+  background: color-mix(in srgb, var(--paper-raised) 68%, transparent);
   transition: background var(--motion-fast) var(--motion-ease);
 }
 
@@ -5986,7 +5986,7 @@ button.today-shopping-open {
 .filter-row {
   padding: 10px;
   border-radius: 18px;
-  background: rgba(244, 237, 228, 0.72);
+  background: color-mix(in srgb, var(--surface-subtle) 72%, transparent);
 }
 
 .filter-row select { border-color: transparent; background: var(--paper-raised); }
@@ -6008,7 +6008,7 @@ button.today-shopping-open {
   padding: 12px;
   border-color: var(--border-soft);
   border-radius: 24px;
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(250, 245, 239, 0.94));
+  background: var(--paper);
   box-shadow: var(--shadow-card);
 }
 
@@ -6045,7 +6045,7 @@ button.today-shopping-open {
   min-height: 40px;
   padding: 4px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.75);
+  background: color-mix(in srgb, var(--paper-raised) 75%, transparent);
   color: var(--ink-muted);
   font-size: 1.2rem;
 }
@@ -6074,8 +6074,8 @@ button.today-shopping-open {
   margin: 0 -4px 14px;
   padding: 6px 4px;
   border-radius: 16px;
-  background: rgba(255, 253, 249, 0.92);
-  box-shadow: 0 6px 16px rgba(76, 56, 42, 0.06);
+  background: color-mix(in srgb, var(--surface-paper) 92%, transparent);
+  box-shadow: 0 6px 16px var(--color-shadow);
   backdrop-filter: blur(14px);
 }
 
@@ -7366,14 +7366,27 @@ html[data-theme='dark'] .app-loading {
 }
 
 html[data-theme='dark'] .reminder-empty,
-html[data-theme='dark'] .shopping-item-main:hover:not(:disabled),
-html[data-theme='dark'] .shopping-purchased .shopping-item,
-html[data-theme='dark'] .calendar-entry-row-shell .calendar-entry-row:hover:not(:disabled),
 html[data-theme='dark'] .month-grid-day,
 html[data-theme='dark'] .week-strip-day,
 html[data-theme='dark'] .bottom-nav,
 html[data-theme='dark'] .mobile-bottom-bar {
   background: color-mix(in srgb, var(--paper) 82%, transparent);
+}
+
+html[data-theme='dark'] .weekday-toggle,
+html[data-theme='dark'] .tag-toggle {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+html[data-theme='dark'] .tab-button:not(.active) {
+  background: transparent;
+  color: var(--ink-muted);
+}
+
+html[data-theme='dark'] .bottom-nav-item.active {
+  background: var(--coral-soft);
+  color: var(--interactive-primary-hover);
 }
 
 html[data-theme='dark'] .skeleton,
