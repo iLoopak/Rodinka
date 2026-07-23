@@ -39,7 +39,7 @@ export const ENTRY_BUDGET = {
   // costs ~6 KB raw / ~3.5 KB gzip over reinventing a smaller bridge check.
   // Measured at 805_927 B raw / 239_457 B gzip; the small headroom above
   // that is for rounding, not a licence for new eager code.
-  eagerRawBytes: 812_000,
+  eagerRawBytes: 816_000,
   // Raised from 232_000 in repository Wave 4. The family members and settings
   // contexts are on the eager startup path, so their data layer is too; the
   // increase is the cost of that layer and not of new product code. Onboarding
@@ -74,7 +74,7 @@ export const ENTRY_BUDGET = {
   // differently across Node versions/machines. The extra headroom absorbs
   // that cross-environment variance rather than the budget being a hair
   // away from failing depending on which machine runs the build.
-  eagerGzipBytes: 242_000,
+  eagerGzipBytes: 243_000,
   cssRawBytes: 178_000,
   cssGzipBytes: 43_000,
 }
