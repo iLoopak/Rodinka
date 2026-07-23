@@ -1162,6 +1162,8 @@ details.manage .add-child-form + .add-chore-form {
 
 .reminder-open { display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 15px; background: transparent; color: inherit; text-align: left; }
 
+.reminder-open:hover:not(:disabled) { background: color-mix(in srgb, var(--surface-subtle) 55%, transparent); }
+
 .reminder-icon { display: grid; place-items: center; flex: 0 0 38px; height: 38px; border-radius: 13px; background: var(--neutral-soft); color: var(--brick-dark); font-weight: 800; }
 
 .reminder-copy { display: grid; flex: 1; min-width: 0; gap: 4px; overflow-wrap: anywhere; }
@@ -1227,7 +1229,7 @@ details.manage .add-child-form + .add-chore-form {
 
 .digest-preview > * { min-width: 0; overflow-wrap: anywhere; }
 
-.reminder-digest { align-items: center; margin: 18px 0 0; }
+.reminder-digest { align-items: center; margin: 18px 0 14px; }
 
 .reminder-digest > span { display: grid; gap: 3px; }
 
