@@ -1186,9 +1186,6 @@ export const strings = {
       occurrenceChangeNotice: 'Změna doprovodu platí pouze pro tento termín. Výchozí doprovod celé aktivity zůstane beze změny.',
       saveOccurrenceChange: 'Uložit změnu pro tento termín',
       fullActivityDetail: 'Detail celé aktivity',
-      occurrenceUnassigned: 'Bez doprovodu',
-      occurrenceDefaultBadge: 'Výchozí',
-      occurrenceChangeSaved: 'Doprovod pro tento termín byl uložen.',
     },
     medical: {
       title: 'Zdraví',
@@ -2823,9 +2820,6 @@ export const strings = {
       occurrenceChangeNotice: 'This change only applies to this occurrence. The activity’s default companion stays the same.',
       saveOccurrenceChange: 'Save change for this occurrence',
       fullActivityDetail: 'Full activity detail',
-      occurrenceUnassigned: 'No companion',
-      occurrenceDefaultBadge: 'Default',
-      occurrenceChangeSaved: 'The companion for this occurrence was saved.',
     },
     medical: {
       title: 'Health',

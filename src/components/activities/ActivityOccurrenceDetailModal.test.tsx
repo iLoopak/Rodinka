@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { t } from '../../strings'
 import { makeFamilyMember } from '../../utils/testFixtures'
@@ -103,16 +103,18 @@ describe('ActivityOccurrenceDetailModal', () => {
     expect(saveButton.disabled).toBe(false)
 
     fireEvent.click(saveButton)
-    await screen.findByText(t.activities.occurrenceChangeSaved)
-    expect(setOccurrenceMember).toHaveBeenCalledWith('activity', 'swim', '2026-07-23', mom.id, false)
+    await waitFor(() => expect(setOccurrenceMember).toHaveBeenCalledWith('activity', 'swim', '2026-07-23', mom.id, false))
+    // The save button re-disables once the pick matches what was just saved.
+    await waitFor(() => expect(saveButton.disabled).toBe(true))
     expect(refreshActivities).toHaveBeenCalledTimes(1)
   })
 
   it('keeps the series default label showing the original adult after an occurrence-only change', async () => {
     render(<ActivityOccurrenceDetailModal entry={entry()} onClose={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /Iveta/ }))
-    fireEvent.click(screen.getByRole('button', { name: t.activities.saveOccurrenceChange }))
-    await screen.findByText(t.activities.occurrenceChangeSaved)
+    const saveButton = screen.getByRole('button', { name: t.activities.saveOccurrenceChange }) as HTMLButtonElement
+    fireEvent.click(saveButton)
+    await waitFor(() => expect(saveButton.disabled).toBe(true))
 
     const defaultLabel = screen.getByText(t.activities.defaultResponsibleAdultLabel)
     expect(defaultLabel.parentElement?.textContent).toContain('Lukáš')
@@ -122,8 +124,7 @@ describe('ActivityOccurrenceDetailModal', () => {
     render(<ActivityOccurrenceDetailModal entry={entry({ responsibleMemberId: mom.id, assignmentOverridden: true })} onClose={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: t.calendar.restoreDefaultCompanion }))
     fireEvent.click(screen.getByRole('button', { name: t.activities.saveOccurrenceChange }))
-    await screen.findByText(t.activities.occurrenceChangeSaved)
-    expect(setOccurrenceMember).toHaveBeenCalledWith('activity', 'swim', '2026-07-23', dad.id, true)
+    await waitFor(() => expect(setOccurrenceMember).toHaveBeenCalledWith('activity', 'swim', '2026-07-23', dad.id, true))
   })
 
   it('handles a removed or unknown family member without crashing', () => {

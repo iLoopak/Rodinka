@@ -49,7 +49,6 @@ export function ActivityOccurrenceDetailModal({ entry, onClose }: Props) {
   const [selectedMemberId, setSelectedMemberId] = useState(entry.responsibleMemberId)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
 
   const participants = (entry.participantMemberIds ?? [])
     .map((id) => memberById(id))
@@ -71,7 +70,6 @@ export function ActivityOccurrenceDetailModal({ entry, onClose }: Props) {
 
   function selectCompanion(memberId: string | null) {
     setSelectedMemberId(memberId)
-    setSaved(false)
   }
 
   async function handleSave() {
@@ -80,13 +78,11 @@ export function ActivityOccurrenceDetailModal({ entry, onClose }: Props) {
     const previousOverride = isOverride
     setBusy(true)
     setError(null)
-    setSaved(false)
     try {
       await setOccurrenceMember('activity', entry.sourceId, entry.date, selectedMemberId, restoreDefault)
       await refreshActivities()
       setDisplayMemberId(restoreDefault ? defaultCompanionId : selectedMemberId)
       setIsOverride(!restoreDefault && entry.recurring)
-      setSaved(true)
     } catch {
       setSelectedMemberId(previousMemberId)
       setDisplayMemberId(previousMemberId)
@@ -136,7 +132,7 @@ export function ActivityOccurrenceDetailModal({ entry, onClose }: Props) {
               disabled={!canChangeCompanion || busy}
               onClick={() => selectCompanion(null)}
             >
-              <span>{t.activities.occurrenceUnassigned}</span>
+              <span>{t.activities.responsibleNone}</span>
             </button>
             {eligibleMembers.map((member) => (
               <button
@@ -149,7 +145,6 @@ export function ActivityOccurrenceDetailModal({ entry, onClose }: Props) {
               >
                 <MemberAvatar member={member} size={44} />
                 <span>{member.display_name}</span>
-                {member.id === defaultCompanionId && <small>{t.activities.occurrenceDefaultBadge}</small>}
               </button>
             ))}
           </div>
@@ -161,7 +156,6 @@ export function ActivityOccurrenceDetailModal({ entry, onClose }: Props) {
         </div>
 
         {error && <p className="error" role="alert">{error}</p>}
-        {saved && !error && !hasChange && <p className="success" role="status">{t.activities.occurrenceChangeSaved}</p>}
       </div>
       <div className="family-actions">
         {canChangeCompanion && <button onClick={handleSave} disabled={busy || !hasChange}>
