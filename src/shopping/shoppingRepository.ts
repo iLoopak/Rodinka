@@ -432,7 +432,10 @@ export class ShoppingRepository {
         if (added.action === 'added') result.added += 1
         else if (added.action === 'merged') result.merged += 1
         else result.skipped += 1
-      } catch { result.failed += 1 }
+      } catch (error) {
+        console.error('Failed to import a shopping item:', error instanceof Error ? error.message : 'unknown error')
+        result.failed += 1
+      }
     }
     return result
   }

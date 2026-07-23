@@ -200,8 +200,13 @@ export async function releasePushOnSignOut() {
     const { error } = await supabase.rpc('revoke_push_subscription_by_endpoint', {
       p_endpoint: subscription.endpoint,
     })
-    return !error
-  } catch {
+    if (error) {
+      console.error('Failed to revoke push subscription during sign-out:', error.message)
+      return false
+    }
+    return true
+  } catch (error) {
+    console.error('Failed to revoke push subscription during sign-out:', error instanceof Error ? error.message : 'unknown error')
     return false
   }
 }

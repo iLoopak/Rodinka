@@ -104,7 +104,10 @@ export function useMealsDataSource(familyId: string | undefined, userId: string,
     if (!scope) return
     // A round changed remotely. Re-reading only that round keeps the nested
     // candidate/vote shape correct without refetching every round.
-    const rounds = await repository.listVoteRounds(scope).catch(() => null)
+    const rounds = await repository.listVoteRounds(scope).catch((reloadError: unknown) => {
+      console.error('Failed to reload meal vote rounds:', reloadError instanceof Error ? reloadError.message : 'unknown error')
+      return null
+    })
     if (rounds) setVoteRounds(rounds)
     void roundId
   }, [repository, scope])
