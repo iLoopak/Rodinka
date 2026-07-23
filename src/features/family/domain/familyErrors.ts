@@ -1,4 +1,5 @@
-import { classifyAppError, isRetryableErrorCode, type AppErrorCode } from '../../../errors/errorCodes'
+import { type AppErrorCode } from '../../../errors/errorCodes'
+import { createDomainErrorConverter, DomainError, extractErrorMessage } from '../../../errors/domainError'
 
 export type FamilyOperation =
   | 'family.listMembers'
@@ -16,27 +17,14 @@ export type FamilyOperation =
   | 'family.createFamily'
   | 'family.redeemInvite'
 
-export class FamilyError extends Error {
-  readonly code: AppErrorCode
-  readonly operation: FamilyOperation
-  readonly retryable: boolean
-
+export class FamilyError extends DomainError<FamilyOperation> {
   constructor(operation: FamilyOperation, code: AppErrorCode, cause?: unknown) {
-    super(`family:${operation}:${code}`)
-    this.name = 'FamilyError'
-    this.operation = operation
-    this.code = code
-    this.retryable = isRetryableErrorCode(code)
-    this.cause = cause
+    super('FamilyError', 'family', operation, code, cause)
   }
 }
 
-function message(error: unknown): string {
-  return error && typeof error === 'object' && 'message' in error ? String((error as { message: unknown }).message) : ''
-}
-
 function refine(operation: FamilyOperation, code: AppErrorCode, error: unknown): AppErrorCode {
-  const text = message(error)
+  const text = extractErrorMessage(error)
 
   // Redeeming a code that is spent or expired is a conflict, not a missing
   // row: the user needs a new code rather than another attempt.
@@ -54,8 +42,4 @@ function refine(operation: FamilyOperation, code: AppErrorCode, error: unknown):
   return code
 }
 
-export function toFamilyError(operation: FamilyOperation, error: unknown): FamilyError {
-  if (error instanceof FamilyError) return error
-  const browserOnline = typeof navigator === 'undefined' ? undefined : navigator.onLine !== false
-  return new FamilyError(operation, refine(operation, classifyAppError(error, { browserOnline }), error), error)
-}
+export const toFamilyError = createDomainErrorConverter(FamilyError, refine)

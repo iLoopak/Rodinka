@@ -1,4 +1,5 @@
-import { classifyAppError, isRetryableErrorCode, type AppErrorCode } from '../../../errors/errorCodes'
+import { type AppErrorCode } from '../../../errors/errorCodes'
+import { createDomainErrorConverter, DomainError, extractErrorMessage } from '../../../errors/domainError'
 
 export type RemindersOperation =
   | 'reminders.summary'
@@ -8,23 +9,10 @@ export type RemindersOperation =
   | 'reminders.savePreferences'
   | 'reminders.sync'
 
-export class RemindersError extends Error {
-  readonly code: AppErrorCode
-  readonly operation: RemindersOperation
-  readonly retryable: boolean
-
+export class RemindersError extends DomainError<RemindersOperation> {
   constructor(operation: RemindersOperation, code: AppErrorCode, cause?: unknown) {
-    super(`reminders:${operation}:${code}`)
-    this.name = 'RemindersError'
-    this.operation = operation
-    this.code = code
-    this.retryable = isRetryableErrorCode(code)
-    this.cause = cause
+    super('RemindersError', 'reminders', operation, code, cause)
   }
-}
-
-function message(error: unknown): string {
-  return error && typeof error === 'object' && 'message' in error ? String((error as { message: unknown }).message) : ''
 }
 
 function refine(operation: RemindersOperation, code: AppErrorCode, error: unknown): AppErrorCode {
@@ -33,17 +21,13 @@ function refine(operation: RemindersOperation, code: AppErrorCode, error: unknow
   if (operation === 'reminders.list' && code === 'not-found') return 'conflict'
   // Timezone and quiet-hours values are validated by a CHECK constraint, so a
   // 23514 here is the user's input being wrong, not the app misbehaving.
-  if (operation === 'reminders.savePreferences' && /check constraint|invalid input|timezone/i.test(message(error))) {
+  if (operation === 'reminders.savePreferences' && /check constraint|invalid input|timezone/i.test(extractErrorMessage(error))) {
     return 'conflict'
   }
   return code
 }
 
-export function toRemindersError(operation: RemindersOperation, error: unknown): RemindersError {
-  if (error instanceof RemindersError) return error
-  const browserOnline = typeof navigator === 'undefined' ? undefined : navigator.onLine !== false
-  return new RemindersError(operation, refine(operation, classifyAppError(error, { browserOnline }), error), error)
-}
+export const toRemindersError = createDomainErrorConverter(RemindersError, refine)
 
 /**
  * Push failures must not be reported as reminder-repository failures: the

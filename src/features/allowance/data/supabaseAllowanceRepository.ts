@@ -1,5 +1,6 @@
 import { supabase } from '../../../supabaseClient'
-import { classifyAppError, isRetryableErrorCode, type AppErrorCode } from '../../../errors/errorCodes'
+import { type AppErrorCode } from '../../../errors/errorCodes'
+import { createDomainErrorConverter, DomainError, extractErrorMessage } from '../../../errors/domainError'
 import type { AllowancePlanInput } from '../../../hooks/useAllowancePlans'
 import {
   ALLOWANCE_CYCLE_COLUMNS,
@@ -20,27 +21,14 @@ export type AllowanceOperation =
   | 'allowance.creditCycle'
   | 'allowance.skipCycle'
 
-export class AllowanceError extends Error {
-  readonly code: AppErrorCode
-  readonly operation: AllowanceOperation
-  readonly retryable: boolean
-
+export class AllowanceError extends DomainError<AllowanceOperation> {
   constructor(operation: AllowanceOperation, code: AppErrorCode, cause?: unknown) {
-    super(`allowance:${operation}:${code}`)
-    this.name = 'AllowanceError'
-    this.operation = operation
-    this.code = code
-    this.retryable = isRetryableErrorCode(code)
-    this.cause = cause
+    super('AllowanceError', 'allowance', operation, code, cause)
   }
 }
 
-function message(error: unknown): string {
-  return error && typeof error === 'object' && 'message' in error ? String((error as { message: unknown }).message) : ''
-}
-
 function refine(operation: AllowanceOperation, code: AppErrorCode, error: unknown): AppErrorCode {
-  const text = message(error)
+  const text = extractErrorMessage(error)
   // Settling a cycle twice is the failure mode that matters here: the second
   // attempt must read as "already done", never as something to retry, or a
   // family gets paid twice.
@@ -50,11 +38,7 @@ function refine(operation: AllowanceOperation, code: AppErrorCode, error: unknow
   return code
 }
 
-function toAllowanceError(operation: AllowanceOperation, error: unknown): AllowanceError {
-  if (error instanceof AllowanceError) return error
-  const browserOnline = typeof navigator === 'undefined' ? undefined : navigator.onLine !== false
-  return new AllowanceError(operation, refine(operation, classifyAppError(error, { browserOnline }), error), error)
-}
+const toAllowanceError = createDomainErrorConverter(AllowanceError, refine)
 
 type Row = Record<string, unknown>
 

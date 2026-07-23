@@ -1,4 +1,5 @@
-import { classifyAppError, isRetryableErrorCode, type AppErrorCode } from '../../../errors/errorCodes'
+import { type AppErrorCode } from '../../../errors/errorCodes'
+import { createDomainErrorConverter, DomainError, extractErrorMessage } from '../../../errors/domainError'
 
 export type MessagesOperation =
   | 'messages.listPage'
@@ -20,27 +21,14 @@ export type MessagesOperation =
   | 'conversations.setMute'
   | 'conversations.markRead'
 
-export class MessagesError extends Error {
-  readonly code: AppErrorCode
-  readonly operation: MessagesOperation
-  readonly retryable: boolean
-
+export class MessagesError extends DomainError<MessagesOperation> {
   constructor(operation: MessagesOperation, code: AppErrorCode, cause?: unknown) {
-    super(`messages:${operation}:${code}`)
-    this.name = 'MessagesError'
-    this.operation = operation
-    this.code = code
-    this.retryable = isRetryableErrorCode(code)
-    this.cause = cause
+    super('MessagesError', 'messages', operation, code, cause)
   }
 }
 
-function message(error: unknown): string {
-  return error && typeof error === 'object' && 'message' in error ? String((error as { message: unknown }).message) : ''
-}
-
 function refine(operation: MessagesOperation, code: AppErrorCode, error: unknown): AppErrorCode {
-  const text = message(error)
+  const text = extractErrorMessage(error)
 
   // Acting on a message somebody deleted while the thread was open. Retrying
   // will fail identically; the user needs the thread reloaded, so this is a
@@ -64,8 +52,4 @@ function refine(operation: MessagesOperation, code: AppErrorCode, error: unknown
   return code
 }
 
-export function toMessagesError(operation: MessagesOperation, error: unknown): MessagesError {
-  if (error instanceof MessagesError) return error
-  const browserOnline = typeof navigator === 'undefined' ? undefined : navigator.onLine !== false
-  return new MessagesError(operation, refine(operation, classifyAppError(error, { browserOnline }), error), error)
-}
+export const toMessagesError = createDomainErrorConverter(MessagesError, refine)
