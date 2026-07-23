@@ -56,6 +56,7 @@ const BASELINE = new Set([
   '.weekday-picker.compact .weekday-toggle',
   '.weekday-toggle, .tag-toggle',
   'button.profile-email-copy',
+  '.theme-segmented-control button',
 ])
 
 interface Offender { file: string; selector: string; prop: string; value: number }

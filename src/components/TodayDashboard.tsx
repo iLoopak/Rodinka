@@ -175,7 +175,7 @@ export function TodayDashboard() {
                 {visiblePendingCompletions.length > 0 && (
                   <h3 className="page-section-subheading">{t.today.otherAttentionTitle}</h3>
                 )}
-                <TodayAttentionList items={attentionItems} memberById={memberById} />
+                <TodayAttentionList items={attentionItems} memberById={memberById} onComplete={markDone} />
               </div>
             )}
           </div>
