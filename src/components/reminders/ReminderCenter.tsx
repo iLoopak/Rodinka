@@ -94,9 +94,15 @@ export function ReminderCenter() {
   </div>
 }
 
-function ReminderCard({ item, onOpen, onRead, onDismiss }: { item: ReminderRecord; onOpen: () => void; onRead: () => void; onDismiss: () => void }) {
+export function ReminderCard({ item, onOpen, onRead, onDismiss }: { item: ReminderRecord; onOpen: () => void; onRead: () => void; onDismiss: () => void }) {
   const state = item.resolvedAt ? t.reminders.stateResolved : item.dismissedAt ? t.reminders.stateDismissed : item.readAt ? t.reminders.stateRead : t.reminders.stateUnread
-  const SourceIcon = sourceIcons[item.source]
+  // History can hold older records whose `source` predates the current
+  // ReminderSource union (a value the type no longer accounts for but the
+  // database still has on file). sourceIcons is typed as an exhaustive
+  // Record, so an unrecognized value looks up to undefined at runtime and
+  // rendering <undefined /> crashes the whole screen (React error #130) —
+  // fall back to a generic icon instead of trusting the type here.
+  const SourceIcon = sourceIcons[item.source] ?? FileText
   return <li className={`reminder-card ${item.importance}${item.readAt ? ' read' : ' unread'}`} aria-label={`${item.title}, ${state}`}>
     <button className="reminder-open" onClick={onOpen}><span className="reminder-icon" aria-hidden="true"><SourceIcon size={20} /></span><span className="reminder-copy"><span className="reminder-card-title">{item.title}</span>{item.description && <span className="reminder-description">{item.description}</span>}<span className="reminder-meta">{item.importance === 'important' ? `${t.reminders.important} · ` : ''}{reminderSourceLabel(item.source)}</span></span>{!item.readAt && <span className="unread-dot"><span className="sr-only">{t.reminders.stateUnread}</span></span>}</button>
     <div className="reminder-actions">{!item.readAt && <button className="link" onClick={onRead}>{t.reminders.markRead}</button>}{!item.resolvedAt && !item.dismissedAt && canDismiss(item) && <button className="link" onClick={onDismiss}>{t.reminders.dismiss}</button>}</div>
