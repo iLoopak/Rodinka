@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   signOut: vi.fn(),
 }))
 
-vi.mock('../push/pushClient', () => ({ releasePushOnSignOut: mocks.releasePush }))
+vi.mock('../push/releaseOnSignOut', () => ({ releasePushOnSignOut: mocks.releasePush }))
 const store = {
   saveFamilyIdentity: mocks.saveFamilyIdentity,
   clearCalendarUser: mocks.clearCalendarUser,

@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { t } from '../../strings'
+import { useBackDismiss } from '../../platform/backDismiss'
 
 const focusableSelector = [
   'button:not([disabled])',
@@ -40,6 +41,10 @@ export function Modal({ title, onClose, children, size = 'centered', className, 
   const titleId = useId()
   if (modalOrderRef.current === 0) modalOrderRef.current = ++nextModalOrder
   onCloseRef.current = onClose
+
+  // Lets the Android hardware back button close the topmost modal, the same
+  // way Escape already does below.
+  useBackDismiss(true, onClose)
 
   useEffect(() => {
     openModalCount += 1

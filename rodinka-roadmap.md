@@ -62,10 +62,17 @@
   structured data reflected in their existing calendar — this is the most
   technically expensive phase, intentionally saved for last
 
-## Phase 5 — Native App Store Presence (planned, later)
-- Capacitor wrap of the PWA for Android/iOS app stores
-- Push notifications become more reliable as native apps, especially on iOS
-- Worth doing once daily retention/usage justifies the extra packaging work
+## Phase 5 — Native App Store Presence (scaffolded, credentials pending)
+- Capacitor wrap implemented: `android/`/`ios/` projects, native OAuth,
+  deep links, Android back button, safe-area/viewport handling, network
+  adapter, native push client. See `docs/CAPACITOR_NATIVE_SETUP.md`.
+- Remaining before an actual store release: Apple/Google/Firebase signing
+  and push credentials (owner-only, can't be done in this environment),
+  Sign in with Apple (release blocker for the App Store build, see
+  `docs/NATIVE_RELEASE_CHECKLIST.md`), and wiring real APNs/FCM delivery
+  into `send-notification-deliveries`.
+- Push notifications become more reliable as native apps, especially on iOS,
+  once that delivery wiring exists.
 
 ---
 

@@ -126,7 +126,7 @@ Rodinka je Progressive Web App. Lze ji používat přímo v prohlížeči nebo p
 
 Rodinka je aktivně vyvíjený produkt. Hlavní rodinné workflow je funkční, ale před širším produkčním nasazením je vhodné dokončit vlastní provozní konfiguraci Supabase, OAuth, serverových připomínek, Web Push a zálohování.
 
-Plánovaný další rozvoj zahrnuje zejména externí kalendářové integrace a případný nativní obal pro distribuční obchody. Aktuální technické úkoly a nápady jsou v [roadmapě](./rodinka-roadmap.md).
+Plánovaný další rozvoj zahrnuje zejména externí kalendářové integrace. Nativní obal pro iOS a Android (Capacitor) je nascaffoldovaný a projde vlastním nastavením signing účtů a push credentials před vydáním do App Store / Play Store — viz [docs/CAPACITOR_NATIVE_SETUP.md](./docs/CAPACITOR_NATIVE_SETUP.md) a [docs/NATIVE_RELEASE_CHECKLIST.md](./docs/NATIVE_RELEASE_CHECKLIST.md). Aktuální technické úkoly a nápady jsou v [roadmapě](./rodinka-roadmap.md).
 
 ---
 
@@ -139,7 +139,7 @@ Plánovaný další rozvoj zahrnuje zejména externí kalendářové integrace a
 - **Testy:** Vitest
 - **Lokalizace:** i18next a react-i18next
 - **Nasazení frontendu:** Vercel s fallbackem pro client-side routy
-- **Cílová platforma:** mobilní PWA, responzivní web a později případný nativní wrapper
+- **Cílová platforma:** mobilní PWA, responzivní web a nativní iOS/Android obal přes Capacitor
 
 ### Lokální spuštění
 

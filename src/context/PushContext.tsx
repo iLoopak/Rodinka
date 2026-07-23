@@ -1,17 +1,29 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useFamilyCore } from './family/FamilyCoreContext'
-import {
-  detectPushCapability,
-  enablePushOnCurrentDevice,
-  loadPushDevices,
-  reconcileCurrentSubscription,
-  revokePushDevice,
-  sendTestPush,
-  unsubscribeCurrentDevice,
-  type PushCapability,
-  type PushDevice,
-} from '../push/pushClient'
+import * as webPush from '../push/pushClient'
+import { isNativeApp } from '../platform/capacitor'
+import type { PushClientModule } from '../push/PushClientModule'
+import type { PushCapability, PushDevice } from '../push/pushClient'
 import { t } from '../strings'
+
+// `nativePushClient.ts` (and `@capacitor/push-notifications`) is dynamically
+// imported so it never lands in the eager web bundle — PushContext is on the
+// app's always-mounted provider tree, and this branch only ever runs inside
+// the native shell. Resolved once and cached: which platform this is never
+// changes at runtime.
+let implPromise: Promise<PushClientModule> | null = null
+function getPushImpl(): Promise<PushClientModule> {
+  if (!implPromise) implPromise = isNativeApp() ? import('../push/nativePushClient') : Promise.resolve(webPush)
+  return implPromise
+}
+
+// Safe placeholder for native's very first render, before `getPushImpl()`
+// resolves — optimistic "supported, permission not checked yet", replaced
+// within one effect tick by `refresh()`'s own call to `getPushImpl()`.
+const NATIVE_PENDING_CAPABILITY: PushCapability = { code: 'supported', supported: true, permission: 'default' }
+function detectPushCapabilitySync(): PushCapability {
+  return isNativeApp() ? NATIVE_PENDING_CAPABILITY : webPush.detectPushCapability()
+}
 
 interface PushContextValue {
   capability: PushCapability
@@ -35,7 +47,7 @@ const PushContext = createContext<PushContextValue | null>(null)
 
 export function PushProvider({ children }: { children: ReactNode }) {
   const { familyId } = useFamilyCore()
-  const [capability, setCapability] = useState(() => detectPushCapability())
+  const [capability, setCapability] = useState(() => detectPushCapabilitySync())
   const [devices, setDevices] = useState<PushDevice[]>([])
   const [currentEndpoint, setCurrentEndpoint] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -54,11 +66,12 @@ export function PushProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback((): Promise<void> => {
     if (currentRequestRef.current) return currentRequestRef.current
-    setCapability(detectPushCapability())
     const requestFamilyId = familyId
     const request = (async () => {
       try {
-        const subscription = await reconcileCurrentSubscription(familyId)
+        const impl = await getPushImpl()
+        setCapability(impl.detectPushCapability())
+        const subscription = await impl.reconcileCurrentSubscription(familyId)
         if (requestFamilyId !== familyIdRef.current) return
         const endpoint = subscription?.endpoint ?? null
         currentEndpointRef.current = endpoint
@@ -85,7 +98,8 @@ export function PushProvider({ children }: { children: ReactNode }) {
     const request = (async () => {
       await refresh()
       if (requestFamilyId !== familyIdRef.current) return
-      const nextDevices = await loadPushDevices(currentEndpointRef.current)
+      const impl = await getPushImpl()
+      const nextDevices = await impl.loadPushDevices(currentEndpointRef.current)
       if (requestFamilyId !== familyIdRef.current) return
       setDevices(nextDevices)
       setDevicesLoaded(true)
@@ -137,16 +151,18 @@ export function PushProvider({ children }: { children: ReactNode }) {
   const currentDevice = useMemo(() => currentEndpoint ? { endpoint: currentEndpoint } : null, [currentEndpoint])
   const value: PushContextValue = {
     capability, devices, currentDevice, browserSubscribed: Boolean(currentEndpoint), loading, devicesLoading, devicesLoaded, busy, error, refresh, loadDevices,
-    enableCurrentDevice: () => run(async () => { await enablePushOnCurrentDevice(familyId) }),
+    enableCurrentDevice: () => run(async () => { const impl = await getPushImpl(); await impl.enablePushOnCurrentDevice(familyId) }),
     disableCurrentDevice: () => run(async () => {
+      const impl = await getPushImpl()
       const currentId = devices.find((device) => device.current)?.id ?? null
-      await unsubscribeCurrentDevice(currentId, currentEndpointRef.current)
+      await impl.unsubscribeCurrentDevice(currentId, currentEndpointRef.current)
     }),
     revokeDevice: (id) => run(async () => {
+      const impl = await getPushImpl()
       const device = devices.find((item) => item.id === id)
-      if (device?.current) await unsubscribeCurrentDevice(id, device.endpoint); else await revokePushDevice(id)
+      if (device?.current) await impl.unsubscribeCurrentDevice(id, device.endpoint); else await impl.revokePushDevice(id)
     }),
-    sendTest: () => run(async () => { await sendTestPush(familyId) }),
+    sendTest: () => run(async () => { const impl = await getPushImpl(); await impl.sendTestPush(familyId) }),
   }
   return <PushContext.Provider value={value}>{children}</PushContext.Provider>
 }

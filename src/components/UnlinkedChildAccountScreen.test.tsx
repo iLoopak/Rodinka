@@ -6,7 +6,7 @@ import { t } from '../strings'
 const signOut = vi.hoisted(() => vi.fn())
 const releasePushOnSignOut = vi.hoisted(() => vi.fn(async () => false))
 vi.mock('../supabaseClient', () => ({ supabase: { auth: { signOut } } }))
-vi.mock('../push/pushClient', () => ({ releasePushOnSignOut }))
+vi.mock('../push/releaseOnSignOut', () => ({ releasePushOnSignOut }))
 
 import { UnlinkedChildAccountScreen } from './UnlinkedChildAccountScreen'
 

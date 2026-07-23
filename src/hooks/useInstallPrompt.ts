@@ -1,17 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
+import { isNativeApp } from '../platform/capacitor'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
-}
-
-// True once this app runs inside a Capacitor-wrapped native shell (Phase 5
-// on the roadmap, not built yet). Capacitor injects a global `Capacitor`
-// object before the page's own scripts run, so this check needs no
-// changes later — the install UI just stops rendering itself the day the
-// native wrapper exists, with no follow-up work required.
-function isNativeApp(): boolean {
-  return typeof window !== 'undefined' && Boolean((window as unknown as { Capacitor?: unknown }).Capacitor)
 }
 
 function isStandaloneDisplay(): boolean {

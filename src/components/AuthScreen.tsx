@@ -5,6 +5,7 @@ import { FamilyMark } from './FamilyMark'
 import { translateAuthError } from '../lib/authErrors'
 import { getAuthRedirectUrl } from '../lib/authRedirect'
 import { childLoginNameToInternalEmail, isValidChildLoginName, normalizeChildLoginName } from '../lib/childAccountIdentity'
+import { isNativeApp } from '../platform/capacitor'
 
 type Mode = 'signIn' | 'signUp' | 'child'
 
@@ -90,6 +91,27 @@ export function AuthScreen() {
     if (busy) return
     setGoogleSubmitting(true)
     setError(null)
+
+    // Native has no page to redirect: get the provider URL without navigating
+    // the WebView, then hand it to the system browser. The Capacitor
+    // deep-link listener (`src/platform/nativeDeepLinks.ts`) picks up the
+    // `cz.rodinka.app://auth/callback` return trip from there.
+    if (isNativeApp()) {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: getAuthRedirectUrl(), skipBrowserRedirect: true },
+      })
+      if (error || !data.url) {
+        console.error('Google sign-in error:', error?.message ?? 'no provider URL returned')
+        setError(t.login.errors.oauthFailed)
+        setGoogleSubmitting(false)
+        return
+      }
+      const { Browser } = await import('@capacitor/browser')
+      await Browser.open({ url: data.url })
+      setGoogleSubmitting(false)
+      return
+    }
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',

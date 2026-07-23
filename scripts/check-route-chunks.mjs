@@ -29,7 +29,17 @@ export const REQUIRED_ROUTE_STYLESHEETS = [
 export const ENTRY_BUDGET = {
   rawBytes: 372_000,
   gzipBytes: 110_000,
-  eagerRawBytes: 800_000,
+  // Raised to 812_000 for the Capacitor native wrap. `src/platform/capacitor.ts`
+  // wraps `@capacitor/core`'s `Capacitor.isNativePlatform()`/`getPlatform()`,
+  // and it has to be eager: both `getAuthRedirectUrl()` (used by the
+  // pre-auth login screen) and `useInstallPrompt` (used by the always-on
+  // install banner) need to know synchronously, on first render, whether
+  // they're running natively. `@capacitor/core`'s web-runtime classes aren't
+  // very tree-shakeable, so using the real (tested) platform-detection logic
+  // costs ~6 KB raw / ~3.5 KB gzip over reinventing a smaller bridge check.
+  // Measured at 805_927 B raw / 239_457 B gzip; the small headroom above
+  // that is for rounding, not a licence for new eager code.
+  eagerRawBytes: 812_000,
   // Raised from 232_000 in repository Wave 4. The family members and settings
   // contexts are on the eager startup path, so their data layer is too; the
   // increase is the cost of that layer and not of new product code. Onboarding
@@ -40,7 +50,9 @@ export const ENTRY_BUDGET = {
   // ships its default titles/bodies in the always-eager `strings.ts` catalog.
   // Measured at 234_250 B after the copy was kept deliberately terse; the small
   // headroom is for the same catalog, not a licence for new eager code.
-  eagerGzipBytes: 236_000,
+  //
+  // Raised to 241_000 for the Capacitor native wrap (see eagerRawBytes above).
+  eagerGzipBytes: 241_000,
   cssRawBytes: 178_000,
   cssGzipBytes: 43_000,
 }

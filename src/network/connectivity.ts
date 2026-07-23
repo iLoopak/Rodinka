@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { getRealtimeSummarySnapshot, subscribeToRealtimeSummary } from '../realtime/realtimeStatusStore'
+import { isNativeApp } from '../platform/capacitor'
 import type { AppErrorCode } from '../errors/errorCodes'
 
 export type ConnectivityState = 'online' | 'degraded' | 'offline'
@@ -30,7 +31,14 @@ export interface ConnectivitySnapshot {
 
 const listeners = new Set<() => void>()
 
+// `navigator.onLine` is unreliable/absent in a Capacitor WebView across
+// platforms, so native sources this from `@capacitor/network` instead (see
+// `subscribeToConnectivity`). Optimistic default until the first real
+// reading arrives, same as the web path below when `navigator` is undefined.
+let nativeOnline = true
+
 function readBrowserOnline() {
+  if (isNativeApp()) return nativeOnline
   return typeof navigator === 'undefined' ? true : navigator.onLine !== false
 }
 
@@ -86,7 +94,21 @@ export function reportBackendOutcome(outcome: { ok: true } | { ok: false; code: 
 export function subscribeToConnectivity(listener: () => void) {
   listeners.add(listener)
   if (listeners.size === 1) {
-    if (typeof window !== 'undefined') {
+    if (isNativeApp()) {
+      // Dynamically imported so `@capacitor/network` never lands in the
+      // eager web bundle — this branch only ever runs inside the native shell.
+      void import('@capacitor/network').then(({ Network }) => {
+        if (listeners.size === 0) return
+        void Network.getStatus().then((status) => {
+          nativeOnline = status.connected
+          publish()
+        })
+        void Network.addListener('networkStatusChange', (status) => {
+          nativeOnline = status.connected
+          publish()
+        }).then((handle) => { unsubscribeNetwork = () => void handle.remove() })
+      })
+    } else if (typeof window !== 'undefined') {
       window.addEventListener('online', publish)
       window.addEventListener('offline', publish)
     }
@@ -100,12 +122,15 @@ export function subscribeToConnectivity(listener: () => void) {
       window.removeEventListener('online', publish)
       window.removeEventListener('offline', publish)
     }
+    unsubscribeNetwork?.()
+    unsubscribeNetwork = null
     unsubscribeRealtime?.()
     unsubscribeRealtime = null
   }
 }
 
 let unsubscribeRealtime: (() => void) | null = null
+let unsubscribeNetwork: (() => void) | null = null
 
 export function getConnectivitySnapshot() { return snapshot }
 
@@ -120,6 +145,7 @@ export function useConnectivityState(): ConnectivityState {
 
 export function resetConnectivityForTests() {
   backendReachable = null
+  nativeOnline = true
   snapshot = compute(readBrowserOnline(), getRealtimeSummarySnapshot().overall)
   listeners.forEach((listener) => listener())
 }

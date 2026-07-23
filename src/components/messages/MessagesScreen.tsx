@@ -42,6 +42,7 @@ import { AttachmentLightbox } from './AttachmentLightbox'
 import { MobileChatPortal } from './MobileChatPortal'
 import { MessagePushPrompt } from './MessagePushPrompt'
 import { useMediaQuery, MOBILE_CHAT_QUERY } from '../../hooks/useMediaQuery'
+import { useBackDismiss } from '../../platform/backDismiss'
 
 const CONVERSATION_QUERY_KEY = 'c'
 // Set by a push deep link so the app can scroll straight to the message the
@@ -220,6 +221,13 @@ function MessagesScreenContent() {
   // overlay; on desktop it stays inline as the second column. Building
   // the element once keeps both paths identical.
   const isMobile = useMediaQuery(MOBILE_CHAT_QUERY)
+
+  // The fullscreen mobile chat isn't a `Modal`, so it isn't part of that
+  // component's own Escape/back-dismiss handling — register it separately
+  // so the Android hardware back button closes it the same way the
+  // in-chat back button (`onBack={closeConversation}` below) does.
+  useBackDismiss(Boolean(activeConversation && isMobile), closeConversation)
+
   const detail = activeConversation ? (
     <ConversationDetail
       key={activeConversation.id}
@@ -1319,6 +1327,7 @@ interface DirectConversationPickerProps {
 
 function DirectConversationPicker({ members, openingDirect, onPick, onClose }: DirectConversationPickerProps) {
   const dialogRef = useRef<HTMLDivElement | null>(null)
+  useBackDismiss(true, onClose)
   useEffect(() => {
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()

@@ -20,4 +20,14 @@ const diagnosticFetch: typeof fetch = (input, init) => {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   global: import.meta.env.DEV ? { fetch: diagnosticFetch } : undefined,
+  // PKCE rather than the implicit flow: required for the Capacitor native
+  // OAuth round trip (`exchangeCodeForSession` in
+  // `src/platform/nativeDeepLinks.ts`), and transparent on the web — the
+  // browser flow still auto-detects the `?code=` param on load, so
+  // `getAuthRedirectUrl()`'s existing web behavior is unchanged.
+  auth: {
+    flowType: 'pkce',
+    persistSession: true,
+    autoRefreshToken: true,
+  },
 })

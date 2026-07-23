@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Referenced by styles.xml but never shipped by the Capacitor Android
+         template — without this file the app fails to build (unresolved
+         @color/colorPrimary etc). Values are this app's own semantic
+         tokens from visual-identity.md, not new colors. -->
+    <color name="colorPrimary">#B94742</color>
+    <color name="colorPrimaryDark">#9A3934</color>
+    <color name="colorAccent">#E96C62</color>
+</resources>
