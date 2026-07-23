@@ -154,6 +154,19 @@ input[type='checkbox'] {
   accent-color: var(--brick);
 }
 
+/* Safari's native date/time control has its own intrinsic minimum content
+   width (the day/month/year segments plus the calendar glyph) that a flex or
+   otherwise width-constrained ancestor's `min-width: auto` default lets it
+   push past — `width: 100%` above isn't enough on its own to stop that,
+   causing the whole sheet to gain a horizontal scrollbar around this one
+   field. Explicit `min-width: 0` lets it actually shrink to the field's
+   normal width like every other input. */
+input[type='date'],
+input[type='time'],
+input[type='datetime-local'] {
+  min-width: 0;
+}
+
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
@@ -6909,7 +6922,27 @@ button.danger-action:focus-visible:not(:disabled) {
   font-weight: var(--font-weight-emphasis);
 }
 
-.allowance-plan-lifecycle { flex-wrap: wrap; }
+/* `flex-wrap` alone did nothing here before: this div had no `display`, so
+   its two buttons were plain inline-block content, each sized to its own
+   label text. That also meant the `margin-left: auto` below could never
+   have worked — auto margins are only special-cased on a flex/grid item,
+   not on inline-level boxes. Making it a real flex row is what both rules
+   below actually depend on. */
+.allowance-plan-lifecycle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+/* Pushed apart from Pozastavit/Resume rather than sitting beside it as an
+   equal-weight pair — a destructive action reads as more deliberate (and is
+   harder to hit by muscle memory meant for its neutral neighbor) when it
+   isn't just "the other button of the same size next to it." */
+.allowance-plan-lifecycle .btn-danger {
+  margin-left: auto;
+}
 
 .allowance-settings-row .allowance-summary-line { font-weight: inherit; }
 
