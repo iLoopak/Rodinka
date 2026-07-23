@@ -8,6 +8,7 @@ import { ErrorState } from './ui/ErrorState'
 import { EmptyState } from './ui/EmptyState'
 import { DueBadge } from './ui/DueBadge'
 import { MemberAvatar } from './ui/MemberAvatar'
+import { ItemTypeIcon } from './ui/ItemTypeIcon'
 import { ACTIVITY_CATEGORY_VALUES, activityCategoryLabel } from '../utils/activityLabels'
 import { nextOccurrenceDate } from '../utils/recurrence'
 import { formatFullDate } from '../utils/dueDate'
@@ -273,13 +274,14 @@ function ActivityRow({ activity, memberById, onClick }: ActivityRowProps) {
   ]
   return (
     <li className="clickable-row" role="button" tabIndex={0} onClick={onClick} onKeyDown={onActivateKey(onClick)}>
+      <ItemTypeIcon type="activity" category={activity.category} size={32} />
       <span className="row-title">{activity.title}</span>
       {activity.status !== 'active' && (
         <span className="badge badge-neutral">
           {activity.status === 'paused' ? t.activities.statusPaused : t.activities.statusFinished}
         </span>
       )}
-      <PersonRoleGroup roles={peopleRoles} compact />
+      <PersonRoleGroup roles={peopleRoles} size="compact" />
       <span className="row-spacer" />
       {next ? (
         <span className="row-meta">{formatFullDate(next)}</span>

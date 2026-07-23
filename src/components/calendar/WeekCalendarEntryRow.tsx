@@ -24,7 +24,7 @@ function WeekMetaIcon({ kind }: { kind: 'person' | 'location' | 'repeat' }) {
 }
 
 export function WeekCalendarEntryRow({ entry, memberById, onClick, onAssignmentClick }: Props) {
-  const style = getItemTypeStyle(entry.type)
+  const style = getItemTypeStyle(entry.type, entry.category)
   const participantIds = [...new Set([
     ...(entry.participantMemberIds ?? []),
     ...(entry.childOrPatientId ? [entry.childOrPatientId] : []),
@@ -46,7 +46,7 @@ export function WeekCalendarEntryRow({ entry, memberById, onClick, onAssignmentC
   >
     <div className="week-entry-layout">
       <div className="week-entry-heading">
-        <ItemTypeIcon type={entry.type} size={40} />
+        <ItemTypeIcon type={entry.type} category={entry.category} size={40} />
         <strong>{entry.title}</strong>
         {entry.completed && <span className="week-entry-status">{t.calendar.completed}</span>}
         {entry.syncStatus && <span className={`calendar-pending-label ${entry.syncStatus}`}>

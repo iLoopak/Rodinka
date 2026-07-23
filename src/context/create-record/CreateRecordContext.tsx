@@ -18,12 +18,19 @@ interface WizardHistoryEntry {
   context: InitialCreateRecordContext
 }
 
+export interface CreationSuccessMessage {
+  title: string
+  body?: string
+}
+
 interface WizardState {
   token: string | null
   context: InitialCreateRecordContext | null
   selectedType: RecordType | null
   status: CreateRecordStatus
   error: string | null
+  /** Set when `status` is 'success' — what the in-modal success screen shows. */
+  success: CreationSuccessMessage | null
 }
 
 interface CreateRecordController extends WizardState {
@@ -35,7 +42,7 @@ interface CreateRecordController extends WizardState {
   selectRecordType: (type: RecordType) => void
   backToRecordTypes: () => void
   markDirty: () => void
-  runCreate: (action: () => Promise<unknown>, successMessage?: string) => Promise<void>
+  runCreate: (action: () => Promise<unknown>, success?: CreationSuccessMessage) => Promise<void>
 }
 
 const CLOSED_STATE: WizardState = {
@@ -44,6 +51,7 @@ const CLOSED_STATE: WizardState = {
   selectedType: null,
   status: 'idle',
   error: null,
+  success: null,
 }
 
 const CreateRecordControllerContext = createContext<CreateRecordController | null>(null)
@@ -68,6 +76,7 @@ function initialState(): WizardState {
     selectedType: entry.context.type ?? null,
     status: 'idle',
     error: null,
+    success: null,
   }
 }
 
@@ -79,7 +88,6 @@ function nextToken(): string {
 export function CreateRecordProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<WizardState>(initialState)
   const [isDirty, setIsDirty] = useState(false)
-  const [feedback, setFeedback] = useState<string | null>(null)
   const stateRef = useRef(state)
   const dirtyRef = useRef(isDirty)
   const submittingRef = useRef(false)
@@ -118,6 +126,7 @@ export function CreateRecordProvider({ children }: { children: ReactNode }) {
       selectedType: context.type ?? null,
       status: 'idle',
       error: null,
+      success: null,
     }
     setIsDirty(false)
     setState(next)
@@ -161,6 +170,7 @@ export function CreateRecordProvider({ children }: { children: ReactNode }) {
           selectedType: entry.context.type ?? null,
           status: 'idle',
           error: null,
+          success: null,
         })
         return
       }
@@ -182,18 +192,12 @@ export function CreateRecordProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('popstate', onPopState)
   }, [reset])
 
-  useEffect(() => {
-    if (!feedback) return
-    const timeout = window.setTimeout(() => setFeedback(null), 3200)
-    return () => window.clearTimeout(timeout)
-  }, [feedback])
-
   const selectRecordType = useCallback((type: RecordType) => {
     const current = stateRef.current
     if (!current.context || !current.token) return
     const context = { ...current.context, type }
     setIsDirty(false)
-    setState({ ...current, context, selectedType: type, status: 'idle', error: null })
+    setState({ ...current, context, selectedType: type, status: 'idle', error: null, success: null })
     replaceWizardHistory(current.token, context)
   }, [replaceWizardHistory])
 
@@ -203,7 +207,7 @@ export function CreateRecordProvider({ children }: { children: ReactNode }) {
     if (!confirmDiscard()) return
     const { type: _type, ...context } = current.context
     setIsDirty(false)
-    setState({ ...current, context, selectedType: null, status: 'idle', error: null })
+    setState({ ...current, context, selectedType: null, status: 'idle', error: null, success: null })
     replaceWizardHistory(current.token, context)
   }, [confirmDiscard, replaceWizardHistory])
 
@@ -212,23 +216,25 @@ export function CreateRecordProvider({ children }: { children: ReactNode }) {
     setIsDirty(true)
   }, [])
 
-  const runCreate = useCallback(async (action: () => Promise<unknown>, successMessage: string = t.create.success) => {
+  const runCreate = useCallback(async (action: () => Promise<unknown>, success?: CreationSuccessMessage) => {
     if (submittingRef.current) return
     submittingRef.current = true
     setState((current) => ({ ...current, status: 'submitting', error: null }))
     try {
       await action()
-      setFeedback(successMessage)
       dirtyRef.current = false
       setIsDirty(false)
-      closeCreateRecord({ force: true })
+      // Stays open on a success screen instead of closing immediately — the
+      // caller (the wizard) renders it and closes via `closeCreateRecord`
+      // once the user confirms. No toast.
+      setState((current) => ({ ...current, status: 'success', success: success ?? { title: t.create.success } }))
     } catch (error) {
       setState((current) => ({ ...current, status: 'error', error: t.errors.generic }))
       throw error
     } finally {
       submittingRef.current = false
     }
-  }, [closeCreateRecord])
+  }, [])
 
   const value = useMemo<CreateRecordController>(() => ({
     ...state,
@@ -246,7 +252,6 @@ export function CreateRecordProvider({ children }: { children: ReactNode }) {
   return (
     <CreateRecordControllerContext.Provider value={value}>
       {children}
-      {feedback && <div className="create-record-toast" role="status" aria-live="polite">{feedback}</div>}
     </CreateRecordControllerContext.Provider>
   )
 }

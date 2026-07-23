@@ -17,7 +17,7 @@ interface Props {
 // per-day detail list. Urgency stays in the due badge rather than tinting
 // the whole interactive row, so title and metadata retain clear contrast.
 export function CalendarEntryRow({ entry, memberById, onClick, onAssignmentClick }: Props) {
-  const style = getItemTypeStyle(entry.type)
+  const style = getItemTypeStyle(entry.type, entry.category)
   const participantIds = [...new Set([
     ...(entry.participantMemberIds ?? []),
     ...(entry.childOrPatientId ? [entry.childOrPatientId] : []),
@@ -30,7 +30,7 @@ export function CalendarEntryRow({ entry, memberById, onClick, onAssignmentClick
   return (
     <li className="calendar-entry-row-shell">
       <button type="button" className="clickable-row calendar-entry-row" onClick={onClick}>
-        <ItemTypeIcon type={entry.type} size={34} />
+        <ItemTypeIcon type={entry.type} category={entry.category} size={34} />
         <span className="calendar-entry-content">
           <strong className="row-title">{entry.title}</strong>
           {entry.syncStatus && <span className={`calendar-pending-label ${entry.syncStatus}`}>

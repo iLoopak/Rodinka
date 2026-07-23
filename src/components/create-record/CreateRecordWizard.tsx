@@ -11,6 +11,7 @@ import { useShopping } from '../../context/shopping/ShoppingContext'
 import { useCalendarOffline } from '../../context/calendar/CalendarOfflineContext'
 import { t } from '../../strings'
 import { capabilitiesFor } from '../../utils/uiCapabilities'
+import { daysBetweenISO, formatDueDateLabel, formatNumericDate, todayISODate } from '../../utils/dueDate'
 import { AddActivityForm } from '../AddActivityForm'
 import { AddChoreForm } from '../AddChoreForm'
 import { AddMedicalRecordForm } from '../AddMedicalRecordForm'
@@ -20,6 +21,15 @@ import { CreateRoundForm } from '../meals/CreateRoundForm'
 import { ShoppingItemForm } from '../shopping/ShoppingItemForm'
 import { ItemTypeIcon } from '../ui/ItemTypeIcon'
 import { Modal } from '../ui/Modal'
+import { CreationSuccessState } from '../ui/CreationSuccessState'
+
+/** "dnes" / "zítřek" / a numeric date — narrower than `formatDueDateLabel` (no "this week" bucket), matching the meal-add success copy exactly. */
+export function mealDateLabel(entryDate: string): string {
+  const diff = daysBetweenISO(todayISODate(), entryDate)
+  if (diff === 0) return t.mealPlan.todayRelativeLabel
+  if (diff === 1) return t.mealPlan.tomorrowRelativeLabel
+  return formatNumericDate(entryDate)
+}
 
 interface CreateOption {
   type: RecordType
@@ -93,14 +103,22 @@ export function CreateRecordWizard() {
     : 'dinner'
   const formKey = `${create.token}:${create.selectedType}`
 
+  const success = create.status === 'success' ? create.success : null
+
   return <Modal
-    title={selectedOption?.title ?? t.create.title}
+    title={success ? success.title : (selectedOption?.title ?? t.create.title)}
     onClose={() => { create.closeCreateRecord() }}
     closeOnBackdrop={false}
     size="fullscreen"
     className="create-record-wizard"
   >
-    {create.selectedType ? <>
+    {success ? (
+      <CreationSuccessState
+        title={success.title}
+        body={success.body}
+        onDone={() => create.closeCreateRecord({ force: true })}
+      />
+    ) : create.selectedType ? <>
       <button
         type="button"
         className="modal-back-action create-record-back"
@@ -133,6 +151,9 @@ export function CreateRecordWizard() {
             if (queueCalendarCreate) return addOfflineChore(input)
             await addChore(input)
             await refreshCalendar()
+          }, {
+            title: t.create.choreSuccessTitle,
+            body: t.create.scheduledSuccessBody(input.title, input.dueDate ? formatDueDateLabel(input.dueDate) : null),
           })}
         />}
         {!selectedTypeUnavailable && create.selectedType === 'activity' && <AddActivityForm
@@ -147,6 +168,9 @@ export function CreateRecordWizard() {
             if (queueCalendarCreate) return addOfflineActivity(input)
             await addActivity(input)
             await refreshCalendar()
+          }, {
+            title: input.kind === 'event' ? t.create.eventSuccessTitle : t.create.activitySuccessTitle,
+            body: t.create.scheduledSuccessBody(input.title, formatDueDateLabel(input.startDate)),
           })}
         />}
         {!selectedTypeUnavailable && create.selectedType === 'medical' && <AddMedicalRecordForm
@@ -156,7 +180,10 @@ export function CreateRecordWizard() {
           initialRecordDate={create.context.date}
           initialMemberId={selectedMemberId}
           variant="guided"
-          onSubmit={(input) => create.runCreate(() => addMedicalRecord(input))}
+          onSubmit={(input) => create.runCreate(() => addMedicalRecord(input), {
+            title: t.create.medicalSuccessTitle,
+            body: t.create.scheduledSuccessBody(input.title, formatDueDateLabel(input.recordDate)),
+          })}
         />}
         {!selectedTypeUnavailable && create.selectedType === 'meal' && <AddPlanEntryForm
           key={formKey}
@@ -170,7 +197,10 @@ export function CreateRecordWizard() {
             ? { mealId: create.context.mealId ?? null, title: create.context.initialTitle ?? '' }
             : undefined}
           variant="guided"
-          onSubmit={(input) => create.runCreate(() => addPlanEntry(input))}
+          onSubmit={(input) => create.runCreate(() => addPlanEntry(input), {
+            title: t.mealPlan.addedSuccessTitle,
+            body: t.mealPlan.addedSuccessBody(input.title, mealDateLabel(input.entryDate)),
+          })}
         />}
         {!selectedTypeUnavailable && create.selectedType === 'shopping-item' && <ShoppingItemForm
           key={formKey}
@@ -179,20 +209,29 @@ export function CreateRecordWizard() {
           members={members}
           categorySettings={shoppingCategorySettings}
           variant="guided"
-          onSubmit={(input) => create.runCreate(() => addShoppingItem(input))}
+          onSubmit={(input) => create.runCreate(() => addShoppingItem(input), {
+            title: t.create.shoppingSuccessTitle,
+            body: t.create.shoppingSuccessBody(input.name),
+          })}
         />}
         {!selectedTypeUnavailable && create.selectedType === 'meal-library' && <AddMealForm
           key={formKey}
           initialName={create.context.initialTitle}
           variant="guided"
-          onSubmit={(input) => create.runCreate(() => addMeal(input))}
+          onSubmit={(input) => create.runCreate(() => addMeal(input), {
+            title: t.create.mealLibrarySuccessTitle,
+            body: t.create.mealLibrarySuccessBody(input.name),
+          })}
         />}
         {!selectedTypeUnavailable && create.selectedType === 'meal-vote' && <CreateRoundForm
           key={formKey}
           meals={meals}
           initialMealId={create.context.mealId}
           variant="guided"
-          onSubmit={(input, openImmediately) => create.runCreate(() => createVoteRound(input, openImmediately))}
+          onSubmit={(input, openImmediately) => create.runCreate(() => createVoteRound(input, openImmediately), {
+            title: t.create.mealVoteSuccessTitle,
+            body: t.create.mealVoteSuccessBody(input.title),
+          })}
         />}
       </div>
     </> : <div className="create-type-grid" aria-describedby="create-record-intro">

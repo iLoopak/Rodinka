@@ -17,4 +17,4 @@ export interface CreateRecordContext {
   mealId?: string
 }
 
-export type CreateRecordStatus = 'idle' | 'submitting' | 'error'
+export type CreateRecordStatus = 'idle' | 'submitting' | 'error' | 'success'

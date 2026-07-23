@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CreateRecordProvider, useCreateRecord } from './CreateRecordContext'
+import { t } from '../../strings'
 
 const createAction = vi.fn<() => Promise<void>>()
 
@@ -17,6 +18,7 @@ function Harness() {
         memberId: create.context?.memberId,
         dirty: create.isDirty,
         status: create.status,
+        success: create.success,
       })}
     </output>
     <button onClick={() => create.openCreateRecord()}>generic</button>
@@ -25,6 +27,8 @@ function Harness() {
     <button onClick={create.markDirty}>dirty</button>
     <button onClick={create.backToRecordTypes}>back</button>
     <button onClick={() => void create.runCreate(createAction)}>submit</button>
+    <button onClick={() => void create.runCreate(createAction, { title: 'Meal added', body: 'Beans are planned for tomorrow.' })}>submit-with-message</button>
+    <button onClick={() => create.closeCreateRecord({ force: true })}>finish</button>
   </>
 }
 
@@ -88,5 +92,38 @@ describe('CreateRecordProvider', () => {
 
     finish?.()
     await waitFor(() => expect(state().status).not.toBe('submitting'))
+  })
+
+  it('stays open on a success state instead of closing immediately, with a fallback message', async () => {
+    createAction.mockResolvedValue(undefined)
+    render(<CreateRecordProvider><Harness /></CreateRecordProvider>)
+
+    fireEvent.click(screen.getByText('contextual'))
+    fireEvent.click(screen.getByText('submit'))
+
+    await waitFor(() => expect(state()).toMatchObject({ open: true, status: 'success' }))
+    expect(state().success).toMatchObject({ title: t.create.success })
+  })
+
+  it('carries the caller-provided contextual success message', async () => {
+    createAction.mockResolvedValue(undefined)
+    render(<CreateRecordProvider><Harness /></CreateRecordProvider>)
+
+    fireEvent.click(screen.getByText('contextual'))
+    fireEvent.click(screen.getByText('submit-with-message'))
+
+    await waitFor(() => expect(state().success).toEqual({ title: 'Meal added', body: 'Beans are planned for tomorrow.' }))
+  })
+
+  it('only actually closes once the success screen is confirmed', async () => {
+    createAction.mockResolvedValue(undefined)
+    render(<CreateRecordProvider><Harness /></CreateRecordProvider>)
+
+    fireEvent.click(screen.getByText('contextual'))
+    fireEvent.click(screen.getByText('submit'))
+    await waitFor(() => expect(state().status).toBe('success'))
+
+    fireEvent.click(screen.getByText('finish'))
+    await waitFor(() => expect(state()).toMatchObject({ open: false, type: null, status: 'idle', success: null }))
   })
 })

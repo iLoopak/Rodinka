@@ -1,7 +1,7 @@
 import { t } from '../strings'
 import type { Chore } from '../hooks/useChores'
 import type { ChoreCompletion } from '../hooks/useChoreCompletions'
-import type { Activity } from '../features/activities/domain/activityTypes'
+import type { Activity, ActivityCategory } from '../features/activities/domain/activityTypes'
 import type { MedicalRecord } from '../hooks/useMedicalRecords'
 import type { MealPlanEntry, MealSlot } from '../features/meals/domain/mealTypes'
 import type { CalendarItemType } from './itemTypeStyle'
@@ -26,6 +26,8 @@ export interface CalendarEntry {
   subtitle: string | null
   location?: string | null
   completed?: boolean
+  /** Activity-only: picks the right icon (swimming vs. football, etc.) instead of a generic one. */
+  category?: ActivityCategory
   /** Chore-only overdue eligibility metadata. */
   requiresApproval?: boolean
   approvalStatus?: ChoreCompletion['status'] | null
@@ -157,6 +159,7 @@ export function buildCalendarEntries({
     entries.push({
       id: `activity:${occurrence.id}`,
       type: 'activity',
+      category: activity.category,
       date: occurrence.date,
       time: activity.all_day ? null : activity.start_time,
       endTime: activity.all_day ? null : activity.end_time,

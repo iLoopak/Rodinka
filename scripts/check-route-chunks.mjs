@@ -52,7 +52,13 @@ export const ENTRY_BUDGET = {
   // headroom is for the same catalog, not a licence for new eager code.
   //
   // Raised to 241_000 for the Capacitor native wrap (see eagerRawBytes above).
-  eagerGzipBytes: 241_000,
+  //
+  // Raised to 241_500 for the in-modal creation-success copy (chore/activity/
+  // event/medical/shopping/meal-library/meal-vote titles + the shared
+  // `scheduledSuccessBody` sentence) — `CreateRecordWizard` is eager, so its
+  // strings are too. Already deduplicated one shared body string across
+  // chore/activity/medical before raising this; the remaining growth is content.
+  eagerGzipBytes: 241_500,
   cssRawBytes: 178_000,
   cssGzipBytes: 43_000,
 }

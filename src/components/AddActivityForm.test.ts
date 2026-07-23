@@ -9,6 +9,12 @@ const parent = makeFamilyMember({ id: 'parent-1', display_name: 'Lukáš Novák'
 const members = [parent, child]
 const submit = async () => undefined
 
+/** The one category chip marked aria-checked="true", or null if none/more than one is. */
+function checkedCategoryChip(html: string): string | null {
+  const matches = [...html.matchAll(/aria-checked="true"[\s\S]*?<\/button>/g)]
+  return matches.length === 1 ? matches[0][0] : null
+}
+
 function renderForm(initial?: ReturnType<typeof makeActivity>) {
   return renderToStaticMarkup(createElement(AddActivityForm, {
     members,
@@ -54,6 +60,7 @@ describe('AddActivityForm progressive disclosure', () => {
     expect(html).toContain('value="1200"')
     expect(html).toContain('Vzít plavky')
     expect(html).toContain('value="2"')
+    expect(checkedCategoryChip(html)).toContain('Plavání')
   })
 
   it('shows selected participants and hides time inputs in all-day mode', () => {
@@ -80,5 +87,6 @@ describe('AddActivityForm progressive disclosure', () => {
 
     expect(html).toContain('value="organizer@example.com"')
     expect(html).toContain('value="500"')
+    expect(checkedCategoryChip(html)).toContain('Oslava')
   })
 })

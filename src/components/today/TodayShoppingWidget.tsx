@@ -4,6 +4,7 @@ import type { ShoppingAddResult, ShoppingItem } from '../../utils/shopping'
 import type { ShoppingSyncStatus } from '../../shopping/shoppingRepository'
 import { formatLocalizedShoppingQuantity } from '../../utils/shoppingLabels'
 import { TodayQuickAddField } from './TodayQuickAddField'
+import { CompletionCheckbox } from '../ui/CompletionCheckbox'
 
 const PREVIEW_LIMIT = 3
 
@@ -14,9 +15,10 @@ interface Props {
   syncStatus: ShoppingSyncStatus
   onOpen: () => void
   onAddItem: (name: string) => Promise<ShoppingAddResult>
+  onTogglePurchased: (id: string, purchased: boolean) => Promise<void>
 }
 
-export function TodayShoppingWidget({ items, loading, hasUsableData, syncStatus, onOpen, onAddItem }: Props) {
+export function TodayShoppingWidget({ items, loading, hasUsableData, syncStatus, onOpen, onAddItem, onTogglePurchased }: Props) {
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
@@ -43,6 +45,20 @@ export function TodayShoppingWidget({ items, loading, hasUsableData, syncStatus,
     } finally {
       setBusy(false)
       inputRef.current?.focus()
+    }
+  }
+
+  async function markBought(item: ShoppingItem) {
+    try {
+      await onTogglePurchased(item.id, true)
+    } catch (error) {
+      console.error('Failed to mark a shopping item as bought from Today:', error)
+      setHasError(true)
+      setFeedback(t.shopping.actionFailed)
+      // Reuses the same mutation the full shopping list already uses to
+      // un-purchase an item — the closest thing to a rollback this
+      // optimistic, queue-backed mutation has.
+      void onTogglePurchased(item.id, false).catch(() => undefined)
     }
   }
 
@@ -77,7 +93,7 @@ export function TodayShoppingWidget({ items, loading, hasUsableData, syncStatus,
           {preview.map((item) => {
             const quantity = formatLocalizedShoppingQuantity(item.quantity, item.unit)
             return <li key={item.id}>
-              <span className="today-shopping-dot" aria-hidden="true" />
+              <CompletionCheckbox checked={false} label={t.today.quickShoppingItemBought(item.name)} onClick={() => void markBought(item)} />
               <span className="today-shopping-item-name">{item.name}</span>
               {quantity && <span className="today-shopping-quantity">{quantity}</span>}
             </li>

@@ -34,7 +34,7 @@ export function useTodayDashboardData() {
   const { medicalRecords, refreshMedicalRecords } = useMedicalData()
   const { voteRounds, planEntries, refreshMealsData } = useMealsDataContext()
   const { allowancePlans, allowanceCycles, refreshLedger, refreshAllowancePlans } = useAllowanceData()
-  const { activeShoppingItems, addShoppingItem, refreshShopping, shoppingLoading, shoppingHasUsableData, shoppingSyncStatus, shoppingLastSyncedAt, pendingShoppingChanges } = useShopping()
+  const { activeShoppingItems, addShoppingItem, toggleShoppingPurchased, refreshShopping, shoppingLoading, shoppingHasUsableData, shoppingSyncStatus, shoppingLastSyncedAt, pendingShoppingChanges } = useShopping()
   const calendar = useCalendarOffline()
   const useOfflineCalendarSnapshot = calendar.calendarHasUsableData && (calendar.calendarSyncStatus === 'offline' || choresError !== null && chores.length === 0)
 
@@ -102,6 +102,7 @@ export function useTodayDashboardData() {
     updateChore,
     setChoreArchived,
     addShoppingItem,
+    toggleShoppingPurchased,
     memberById: useOfflineCalendarSnapshot ? calendar.memberById : memberById,
     latestCompletionFor: displayLatestCompletionFor,
     markDone,

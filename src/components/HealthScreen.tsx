@@ -202,7 +202,7 @@ function MedicalRow({ record, memberById, onClick }: MedicalRowProps) {
   return (
     <li className="clickable-row" role="button" tabIndex={0} onClick={onClick} onKeyDown={onActivateKey(onClick)}>
       <span className="row-title">{record.title}</span>
-      <PersonRoleGroup roles={roles} compact />
+      <PersonRoleGroup roles={roles} size="compact" />
       <span className="row-spacer" />
       <span className="row-meta">{formatFullDate(record.record_date)}</span>
       {dueDate && <DueBadge dueDate={dueDate} />}

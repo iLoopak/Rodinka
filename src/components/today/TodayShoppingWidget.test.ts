@@ -20,6 +20,7 @@ describe('TodayShoppingWidget', () => {
       loading: false, hasUsableData: true, syncStatus: 'synced',
       onOpen: vi.fn(),
       onAddItem: vi.fn(),
+      onTogglePurchased: vi.fn(),
     }))
 
     expect(html).toContain('data-preview-count="3"')
@@ -31,8 +32,25 @@ describe('TodayShoppingWidget', () => {
     expect(html).toContain('+1 další')
   })
 
+  it('renders a real checkbox with an accessible label for every active item', () => {
+    const html = renderToStaticMarkup(createElement(TodayShoppingWidget, {
+      items: [item('1', 'Mléko'), item('2', 'Jablka')],
+      loading: false, hasUsableData: true, syncStatus: 'synced',
+      onOpen: vi.fn(),
+      onAddItem: vi.fn(),
+      onTogglePurchased: vi.fn(),
+    }))
+
+    expect(html.match(/class="completion-checkbox"/g)).toHaveLength(2)
+    expect(html).toContain('aria-label="Označit Mléko jako koupené"')
+    expect(html).toContain('aria-label="Označit Jablka jako koupené"')
+    expect(html).not.toContain('today-shopping-dot')
+  })
+
   it('renders a calm empty state while keeping the open action', () => {
-    const html = renderToStaticMarkup(createElement(TodayShoppingWidget, { items: [], loading: false, hasUsableData: true, syncStatus: 'synced', onOpen: vi.fn(), onAddItem: vi.fn() }))
+    const html = renderToStaticMarkup(createElement(TodayShoppingWidget, {
+      items: [], loading: false, hasUsableData: true, syncStatus: 'synced', onOpen: vi.fn(), onAddItem: vi.fn(), onTogglePurchased: vi.fn(),
+    }))
 
     expect(html).toContain('Nákupní seznam je prázdný.')
     expect(html).toContain('Otevřít seznam')
@@ -41,7 +59,7 @@ describe('TodayShoppingWidget', () => {
 
   it('does not show a false empty state when initialization fails without usable data', () => {
     const html = renderToStaticMarkup(createElement(TodayShoppingWidget, {
-      items: [], loading: false, hasUsableData: false, syncStatus: 'error', onOpen: vi.fn(), onAddItem: vi.fn(),
+      items: [], loading: false, hasUsableData: false, syncStatus: 'error', onOpen: vi.fn(), onAddItem: vi.fn(), onTogglePurchased: vi.fn(),
     }))
     expect(html).toContain('Nákupní seznam se teď nepodařilo načíst')
     expect(html).not.toContain('Nákupní seznam je prázdný.')
@@ -49,7 +67,7 @@ describe('TodayShoppingWidget', () => {
 
   it('keeps cached items visible during a synchronization failure', () => {
     const html = renderToStaticMarkup(createElement(TodayShoppingWidget, {
-      items: [item('1', 'Mléko')], loading: false, hasUsableData: true, syncStatus: 'error', onOpen: vi.fn(), onAddItem: vi.fn(),
+      items: [item('1', 'Mléko')], loading: false, hasUsableData: true, syncStatus: 'error', onOpen: vi.fn(), onAddItem: vi.fn(), onTogglePurchased: vi.fn(),
     }))
     expect(html).toContain('Mléko')
     expect(html).toContain('Zobrazuji uložený seznam')
