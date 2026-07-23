@@ -9,6 +9,7 @@ import { registerRodinkaServiceWorker } from './push/serviceWorkerUpdates'
 import App from './App.tsx'
 import { ServiceWorkerUpdateBanner } from './components/ServiceWorkerUpdateBanner'
 import { LanguageProvider } from './i18n/LanguageProvider'
+import { ThemeProvider } from './ThemeProvider'
 import { isNativeApp } from './platform/capacitor'
 import './i18n'
 
@@ -21,9 +22,11 @@ else registerRodinkaServiceWorker()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <LanguageProvider>
-      <ServiceWorkerUpdateBanner />
-      <App />
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <ServiceWorkerUpdateBanner />
+        <App />
+      </LanguageProvider>
+    </ThemeProvider>
   </StrictMode>,
 )

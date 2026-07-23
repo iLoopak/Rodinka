@@ -7282,3 +7282,106 @@ button.member-color-option {
 .meal-library-save-toggle span {
   min-width: 0;
 }
+
+/* Theme-aware appearance control. Mirrors the quiet settings-row pattern. */
+.theme-setting-row {
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.theme-segmented-control {
+  display: inline-grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--neutral-soft);
+}
+
+.theme-segmented-control button {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: var(--font-size-meta);
+  white-space: nowrap;
+}
+
+.theme-segmented-control button.is-selected {
+  border-color: var(--border);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-card);
+}
+
+html[data-theme='dark'] {
+  background: var(--surface-canvas);
+}
+
+html[data-theme='dark'] body {
+  background: var(--app-background);
+}
+
+html[data-theme='dark'] button,
+html[data-theme='dark'] .btn-primary {
+  color: var(--color-on-primary);
+}
+
+html[data-theme='dark'] button.btn-secondary,
+html[data-theme='dark'] button.btn-ghost,
+html[data-theme='dark'] button.btn-icon,
+html[data-theme='dark'] button.link,
+html[data-theme='dark'] button.btn-link,
+html[data-theme='dark'] .card--interactive,
+html[data-theme='dark'] .theme-segmented-control button {
+  color: var(--ink);
+}
+
+html[data-theme='dark'] input,
+html[data-theme='dark'] select,
+html[data-theme='dark'] textarea {
+  color-scheme: dark;
+}
+
+html[data-theme='dark'] input::placeholder,
+html[data-theme='dark'] textarea::placeholder {
+  color: var(--text-faint);
+}
+
+html[data-theme='dark'] .app-shell,
+html[data-theme='dark'] .modal,
+html[data-theme='dark'] .drawer,
+html[data-theme='dark'] .popover,
+html[data-theme='dark'] .dropdown,
+html[data-theme='dark'] .section-list,
+html[data-theme='dark'] .panel,
+html[data-theme='dark'] .card,
+html[data-theme='dark'] .state-view,
+html[data-theme='dark'] .offline-banner,
+html[data-theme='dark'] .app-loading {
+  color: var(--ink);
+}
+
+html[data-theme='dark'] .reminder-empty,
+html[data-theme='dark'] .shopping-item-main:hover:not(:disabled),
+html[data-theme='dark'] .shopping-purchased .shopping-item,
+html[data-theme='dark'] .calendar-entry-row-shell .calendar-entry-row:hover:not(:disabled),
+html[data-theme='dark'] .month-grid-day,
+html[data-theme='dark'] .week-strip-day,
+html[data-theme='dark'] .bottom-nav,
+html[data-theme='dark'] .mobile-bottom-bar {
+  background: color-mix(in srgb, var(--paper) 82%, transparent);
+}
+
+html[data-theme='dark'] .skeleton,
+html[data-theme='dark'] [class*='skeleton'] {
+  background: linear-gradient(90deg, var(--surface-subtle), color-mix(in srgb, var(--surface-subtle) 72%, var(--surface-elevated)), var(--surface-subtle));
+}
+
+@media (max-width: 560px) {
+  .theme-setting-row { flex-direction: column; align-items: stretch; }
+  .theme-segmented-control { width: 100%; }
+}
