@@ -66,7 +66,15 @@ export const ENTRY_BUDGET = {
   // (a redundant "unassigned" label and a "default" picker badge — both
   // already covered by existing copy or controls) were cut before raising
   // this; the remaining growth is content.
-  eagerGzipBytes: 241_600,
+  //
+  // Raised to 242_000 after the above still failed on Vercel's build
+  // (241_634 B measured there vs 241_551 B measured locally) — this repo
+  // doesn't pin a Node version, and gzipSync's output size is sensitive to
+  // the zlib version bundled with Node, so the same bytes compress slightly
+  // differently across Node versions/machines. The extra headroom absorbs
+  // that cross-environment variance rather than the budget being a hair
+  // away from failing depending on which machine runs the build.
+  eagerGzipBytes: 242_000,
   cssRawBytes: 178_000,
   cssGzipBytes: 43_000,
 }
