@@ -36,12 +36,21 @@
  *
  * The last child of a scrolling sheet. Pinned to the bottom so the confirm
  * action is always reachable, with safe-area padding so it clears the iOS home
- * indicator. Because it is the final element in the flow, a full scroll leaves
- * the last field directly above it — the footer never covers content it is not
- * scrolling over.
+ * indicator. The negative horizontal margins let it span the sheet's padding
+ * so the top border reads edge to edge; the negative bottom margin reclaims
+ * that same padding so the footer sits flush with no gap beneath it.
  *
- * The negative horizontal margins let it span the sheet's padding so the top
- * border reads edge to edge. */
+ * Being sticky is exactly why a plain scroll-to-bottom does *not* naturally
+ * clear the footer of whatever is above it, unlike a non-sticky footer:
+ * thanks to that same negative margin, the footer is visually pinned at the
+ * container's bottom edge for virtually the entire scroll range, not only
+ * once its natural position is reached. The element right before it needs a
+ * real, separate gap reserved below itself — see the `:has()` rule below —
+ * or the footer's own bottom-edge alignment trick doesn't help it at all.
+ * (`scroll-padding-bottom` on the scroll container looks like the tidier fix
+ * — no effect when nothing needs to scroll, unlike a static margin — but it
+ * measurably did not change either the focus-driven or an explicit
+ * `scrollIntoView` outcome in testing, so it is not a fix, just complexity.) */
 .sticky-action-footer {
   position: sticky;
   bottom: 0;
@@ -55,6 +64,16 @@
   padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
   background: var(--paper);
   border-top: 1px solid var(--border-soft);
+}
+
+/* The clearance the footer itself cannot provide (see above): whatever
+ * element sits directly before it gets real extra space reserved below it —
+ * enough to clear the footer's own rendered height with some margin — so
+ * scrolling to the true bottom reveals that element fully instead of
+ * leaving it partly covered. Matches by adjacency rather than a specific
+ * tag/class, so it holds for any consumer, not just today's one form. */
+*:has(+ .sticky-action-footer) {
+  margin-bottom: 40px;
 }
 
 /* A destructive tertiary action (Delete, Leave) sits apart from the confirm

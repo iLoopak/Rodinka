@@ -99,4 +99,16 @@ describe('primitive CSS is real', () => {
     // The confirm action has to clear the iOS home indicator.
     expect(css).toMatch(/\.sticky-action-footer[\s\S]*env\(safe-area-inset-bottom\)/)
   })
+
+  it('reserves clearance below whatever sits directly above the sticky footer', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    const css = readFileSync(join(process.cwd(), 'src/styles/primitives/form.css'), 'utf8')
+    // `position: sticky` plus the footer's own bottom-edge-alignment trick
+    // means a plain scroll-to-bottom does not naturally clear the footer of
+    // the field above it (confirmed by direct measurement, not just reading
+    // the rule) — without this, that field ends up partly hidden behind the
+    // footer once a sheet has to scroll at all.
+    expect(css).toMatch(/\*:has\(\+ \.sticky-action-footer\)\s*\{[^}]*margin-bottom:/)
+  })
 })
