@@ -50,7 +50,7 @@ export function CalendarScreen() {
   const [filterPerson, setFilterPerson] = useState('')
   const [filterType, setFilterType] = useState<CalendarItemType | ''>('')
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const [selectedDay, setSelectedDay] = useState<string | null>(null)
+  const [selectedDay, setSelectedDay] = useState<string | null>(() => todayISODate())
   const [selectedEntry, setSelectedEntry] = useState<CalendarEntry | null>(null)
   const [openAssignmentInitially, setOpenAssignmentInitially] = useState(false)
   const [deepLinkError, setDeepLinkError] = useState(false)
@@ -109,7 +109,9 @@ export function CalendarScreen() {
         setSelectedDay(null)
       }
     } else {
-      setSelectedDay(null)
+      // No explicit ?date= — default month view to today's day already
+      // selected/opened rather than landing on an empty grid.
+      setSelectedDay(todayISODate())
     }
 
     if (eventParam !== null) {
