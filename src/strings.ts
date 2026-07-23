@@ -1179,6 +1179,13 @@ export const strings = {
       detailNoPayment: 'Bez nastavené platby',
       detailNoResponsible: 'Bez doprovázejícího dospělého',
       markPaymentPaid: 'Označit platbu jako zaplacenou',
+
+      occurrenceLabel: 'Konkrétní termín',
+      defaultResponsibleAdultLabel: 'Výchozí odpovědný dospělý',
+      occurrenceCompanionLabel: 'Doprovod pro tento termín',
+      occurrenceChangeNotice: 'Změna doprovodu platí pouze pro tento termín. Výchozí doprovod celé aktivity zůstane beze změny.',
+      saveOccurrenceChange: 'Uložit změnu pro tento termín',
+      fullActivityDetail: 'Detail celé aktivity',
     },
     medical: {
       title: 'Zdraví',
@@ -2806,6 +2813,13 @@ export const strings = {
       detailNoPayment: 'No payment set up',
       detailNoResponsible: 'No accompanying adult',
       markPaymentPaid: 'Mark payment as paid',
+
+      occurrenceLabel: 'Specific occurrence',
+      defaultResponsibleAdultLabel: 'Default responsible adult',
+      occurrenceCompanionLabel: 'Companion for this occurrence',
+      occurrenceChangeNotice: 'This change only applies to this occurrence. The activity’s default companion stays the same.',
+      saveOccurrenceChange: 'Save change for this occurrence',
+      fullActivityDetail: 'Full activity detail',
     },
     medical: {
       title: 'Health',

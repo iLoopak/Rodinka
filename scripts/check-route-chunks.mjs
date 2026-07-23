@@ -58,7 +58,15 @@ export const ENTRY_BUDGET = {
   // `scheduledSuccessBody` sentence) — `CreateRecordWizard` is eager, so its
   // strings are too. Already deduplicated one shared body string across
   // chore/activity/medical before raising this; the remaining growth is content.
-  eagerGzipBytes: 241_500,
+  //
+  // Raised to 241_600 for the activity-occurrence detail modal's copy
+  // (occurrence label, default/occurrence companion labels, the per-occurrence
+  // change notice, save/full-detail actions). CalendarEntryDetailModal is
+  // eager (Today renders it), so its strings are too. Two decorative strings
+  // (a redundant "unassigned" label and a "default" picker badge — both
+  // already covered by existing copy or controls) were cut before raising
+  // this; the remaining growth is content.
+  eagerGzipBytes: 241_600,
   cssRawBytes: 178_000,
   cssGzipBytes: 43_000,
 }
