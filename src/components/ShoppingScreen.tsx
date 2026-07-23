@@ -25,14 +25,11 @@ import { defaultShoppingCategorySettings, type ShoppingCategorySettings } from '
 import { ScreenHeader } from './ui/ScreenHeader'
 import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from './ui/FilterDisclosure'
 import { GripVertical } from 'lucide-react'
-import { useCreateRecord } from '../context/create-record/CreateRecordContext'
-import { AppToolbarAddButton } from '../components/ui/AddAction'
 
 export function ShoppingScreen() {
   const { currentMember, isParentOrAdmin } = useFamilyCore()
   const { members, memberById } = useFamilyMembersData()
   const { shoppingCategorySettings, updateShoppingCategorySettings } = useFamilySettings()
-  const { openCreateRecord } = useCreateRecord()
   const {
     activeShoppingItems, purchasedShoppingItems, commonShoppingItems, shoppingSessions,
     shoppingLoading, shoppingError, refreshShopping, addShoppingItem, updateShoppingItem, deleteShoppingItem,
@@ -168,7 +165,6 @@ export function ShoppingScreen() {
       <ScreenHeader className="shopping-header" title={t.shopping.title} subtitle={t.shopping.activeCount(visibleActiveItems.length)}
         actions={<>
           {isParentOrAdmin && <FilterDisclosureToggle />}
-          <AppToolbarAddButton onClick={() => openCreateRecord({ type: 'shopping-item', source: 'shopping-list' })}>{t.create.addAction}</AppToolbarAddButton>
         </>} />
 
       <form className="shopping-quick-add" onSubmit={quickAdd}>
