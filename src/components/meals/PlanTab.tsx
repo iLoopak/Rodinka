@@ -6,6 +6,7 @@ import { useMealsDataContext } from '../../context/meals/MealsContext'
 import { formatShortDate, todayISODate } from '../../utils/dueDate'
 import { getCurrentWeekStart, getWeekStart, getWeekDates, isCurrentWeek, shiftWeek, formatWeekRangeLabel } from '../../utils/mealWeek'
 import { displayTitle, groupEntriesByDate } from '../../utils/mealPlanGrouping'
+import { mealPlanningHint } from '../../utils/mealPlanningStatus'
 import { mealPlanStatusLabel, mealSlotLabel } from '../../utils/mealLabels'
 import { onActivateKey } from '../../utils/a11y'
 import { Modal } from '../ui/Modal'
@@ -15,7 +16,7 @@ import type { MealPlanEntry } from '../../features/meals/domain/mealTypes'
 import type { PlanEntryInput } from '../../context/meals/MealsContext'
 import { MealIngredientsSection } from './MealIngredientsSection'
 import { useCreateRecord } from '../../context/create-record/CreateRecordContext'
-import { Button } from '../ui/Button'
+import { AppToolbarAddButton } from '../ui/AddAction'
 
 function weekdayLabels() { return [
   t.calendar.weekdayShortMon,
@@ -43,6 +44,13 @@ function statusBadgeClass(status: MealPlanEntry['status']): string {
   return 'badge-pending'
 }
 
+function planningHintLabel(hint: ReturnType<typeof mealPlanningHint>): string | null {
+  if (!hint) return null
+  if (hint.kind === 'tomorrow-empty') return t.mealPlan.hintTomorrowEmpty
+  if (hint.kind === 'tomorrow-partial') return t.mealPlan.hintMealsMissing(hint.missingCount)
+  return t.mealPlan.hintWeekendEmpty
+}
+
 export function PlanTab({ prefill, onPrefillConsumed }: Props) {
   const { isParentOrAdmin } = useFamilyCore()
   const { members, memberById } = useFamilyMembersData()
@@ -59,6 +67,7 @@ export function PlanTab({ prefill, onPrefillConsumed }: Props) {
   const dates = getWeekDates(weekStart)
   const grouped = groupEntriesByDate(planEntries, dates)
   const today = todayISODate()
+  const hintLabel = planningHintLabel(mealPlanningHint(planEntries, today))
 
   useEffect(() => {
     if (!prefill) return
@@ -114,7 +123,7 @@ export function PlanTab({ prefill, onPrefillConsumed }: Props) {
 
       <div className="tab-toolbar">
         {isParentOrAdmin && (
-          <Button variant="primary" leadingIcon="+" onClick={() => openCreateRecord({ type: 'meal', date: today, section: 'dinner', source: 'meal-plan' })}>{t.mealPlan.addEntryAction}</Button>
+          <AppToolbarAddButton onClick={() => openCreateRecord({ type: 'meal', date: today, section: 'dinner', source: 'meal-plan' })}>{t.mealPlan.addEntryAction}</AppToolbarAddButton>
         )}
         {!isCurrentWeek(weekStart) && (
           <button type="button" className="btn-secondary" onClick={() => setWeekStart(getCurrentWeekStart())}>
@@ -127,6 +136,8 @@ export function PlanTab({ prefill, onPrefillConsumed }: Props) {
           </button>
         )}
       </div>
+
+      {hintLabel && <p className="meal-plan-hint" role="status">{hintLabel}</p>}
 
       {error && <p className="error" role="alert">{error}</p>}
 

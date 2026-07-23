@@ -2,7 +2,9 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const formSource = readFileSync(new URL('./components/AddActivityForm.tsx', import.meta.url), 'utf8')
+const detailModalSource = readFileSync(new URL('./components/ActivityDetailModal.tsx', import.meta.url), 'utf8')
 const styles = readFileSync(new URL('./index.css', import.meta.url), 'utf8')
+const modalPrimitiveStyles = readFileSync(new URL('./styles/primitives/modal.css', import.meta.url), 'utf8')
 
 describe('activity form implementation contract', () => {
   it('keeps every legacy persistence field in the submission payload', () => {
@@ -25,7 +27,11 @@ describe('activity form implementation contract', () => {
   })
 
   it('uses one vertical scrolling region, a viewport-height sheet and safe sticky action area', () => {
-    expect(styles).toMatch(/\.modal-sheet\.activity-form-modal\s*\{[^}]*height:\s*100dvh/s)
+    // The height/scroll contract lives on the shared `.modal-sheet-fullscreen`
+    // primitive; the edit modal opts in via `size="fullscreen"` rather than
+    // reimplementing it.
+    expect(detailModalSource).toMatch(/<Modal[^>]*size="fullscreen"[^>]*className="activity-form-modal"/s)
+    expect(modalPrimitiveStyles).toMatch(/\.modal-sheet\.modal-sheet-fullscreen\s*\{[^}]*height:\s*calc\(100dvh - var\(--keyboard-inset, 0px\)\)/s)
     expect(styles).toMatch(/\.activity-form-scroll\s*\{[^}]*min-width:\s*0[^}]*overflow-x:\s*hidden[^}]*overflow-y:\s*auto/s)
     expect(styles).toMatch(/\.activity-form-footer\s*\{[^}]*safe-area-inset-bottom/s)
     expect(styles).toMatch(/\.activity-form-modal \.modal-header\s*\{[^}]*safe-area-inset-top/s)

@@ -2,6 +2,8 @@ import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { t } from '../../strings'
 import { useBackDismiss } from '../../platform/backDismiss'
+import { useScreenLock } from '../../hooks/useScreenLock'
+import { useVisualViewportInset } from '../../hooks/useVisualViewportInset'
 
 const focusableSelector = [
   'button:not([disabled])',
@@ -30,7 +32,6 @@ interface Props {
   descriptionId?: string
 }
 
-let openModalCount = 0
 let nextModalOrder = 0
 
 export function Modal({ title, onClose, children, size = 'centered', className, backdropClassName, closeOnBackdrop = true, descriptionId }: Props) {
@@ -46,14 +47,8 @@ export function Modal({ title, onClose, children, size = 'centered', className, 
   // way Escape already does below.
   useBackDismiss(true, onClose)
 
-  useEffect(() => {
-    openModalCount += 1
-    document.body.classList.add('has-modal-open')
-    return () => {
-      openModalCount = Math.max(0, openModalCount - 1)
-      if (openModalCount === 0) document.body.classList.remove('has-modal-open')
-    }
-  }, [])
+  useScreenLock()
+  useVisualViewportInset()
 
   useEffect(() => {
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null

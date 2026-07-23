@@ -1,0 +1,124 @@
+/* Shared entry-flow styling for every Family Games screen (Family Jump,
+   Family Fleet, and any future minigame). Each game keeps its own CSS for
+   what's actually game-specific — canvas HUD, cosmetics, leaderboard rows,
+   preview illustration content — this file only owns the parts every game's
+   entry screen shares: header, hero chrome, player picker, and primary CTA. */
+
+.game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: calc(58px + env(safe-area-inset-top));
+  padding: calc(8px + env(safe-area-inset-top)) calc(18px + env(safe-area-inset-right)) 8px calc(18px + env(safe-area-inset-left));
+  border-bottom: 1px solid color-mix(in srgb, var(--border-default) 70%, transparent);
+  background: color-mix(in srgb, var(--surface-paper) 95%, transparent);
+}
+
+button.game-header-back {
+  min-height: 42px;
+  padding: 7px 12px;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-primary);
+}
+
+.game-offline-badge { margin-left: auto; white-space: nowrap; }
+
+.game-hero {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 26px 24px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--member-mint) 45%, var(--border-default));
+  border-radius: var(--radius-large);
+  background:
+    radial-gradient(circle at 82% 20%, rgba(255, 255, 255, .75), transparent 35%),
+    linear-gradient(145deg, #e8f1eb, #fff8ee 72%);
+  box-shadow: var(--shadow-low);
+}
+
+.game-hero h1 { margin: 0 0 8px; font-size: clamp(2rem, 9vw, 3rem); letter-spacing: -.05em; }
+.game-hero-description { max-width: 500px; margin: 0; color: var(--text-muted); }
+.game-hero-helper { margin: 10px 0 0; color: var(--text-muted); font-size: .85rem; }
+
+.game-player-figure {
+  position: relative;
+  display: inline-block;
+  width: 58px;
+  height: 68px;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--member-primary) 74%, var(--text-primary));
+  border-radius: 26px 26px 22px 22px;
+  background: var(--member-primary);
+  box-shadow: 0 8px 0 -4px rgba(36, 49, 40, .14);
+}
+
+.game-player-figure::before,
+.game-player-figure::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  width: 4px;
+  height: 11px;
+  border-radius: 4px;
+  background: var(--text-primary);
+}
+.game-player-figure::before { left: 16px; }
+.game-player-figure::after { right: 16px; }
+
+.game-player-eye { position: absolute; top: 20px; width: 4px; height: 4px; border-radius: 50%; background: var(--text-primary); }
+.game-player-eye.is-left { left: 17px; }
+.game-player-eye.is-right { right: 17px; }
+.game-player-smile { position: absolute; top: 30px; left: 23px; width: 12px; height: 6px; border-bottom: 2px solid var(--text-primary); border-radius: 50%; }
+
+.game-player-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+
+button.game-player-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  min-height: 86px;
+  padding: 9px 11px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-medium);
+  background: var(--surface-elevated);
+  box-shadow: none;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+button.game-player-card.is-selected {
+  border-color: var(--member-border);
+  background: color-mix(in srgb, var(--member-soft) 48%, var(--surface-paper));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--member-primary) 18%, transparent);
+}
+
+.game-player-card-info { display: flex; min-width: 0; flex: 1 1 auto; flex-direction: column; }
+.game-player-card-info strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.game-player-card-check { flex: 0 0 auto; margin-left: auto; font-weight: 800; }
+
+.game-record-badge { display: flex; flex-direction: column; gap: 1px; margin-top: 2px; }
+.game-record-badge-label { color: var(--text-muted); font-size: .7rem; }
+.game-record-badge-value { font-size: .82rem; }
+.game-record-badge-empty { color: var(--text-muted); font-size: .7rem; }
+
+button.game-primary-button {
+  width: 100%;
+  min-height: 50px;
+  border-color: var(--interactive-primary);
+  background: var(--interactive-primary);
+  color: #fff;
+}
+button.game-primary-button:hover:not(:disabled) { background: var(--interactive-primary-hover); }
+
+@media (max-width: 420px) {
+  .game-player-grid { grid-template-columns: 1fr; }
+  .game-hero { padding-inline: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-player-figure { transition: none; }
+}

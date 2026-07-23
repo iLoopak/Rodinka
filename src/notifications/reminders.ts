@@ -3,7 +3,6 @@ import type {
   ReminderChoreCompletion as ChoreCompletion,
   ReminderFamilyMember as FamilyMember,
   ReminderLocale,
-  ReminderMealPlanEntry as MealPlanEntry,
   ReminderMealVoteRound as MealVoteRound,
   ReminderMedicalRecord as MedicalRecord,
 } from './reminderSourceTypes.ts'
@@ -14,7 +13,7 @@ import { addDays, compareISODates, daysBetweenISO } from '../utils/isoDate.ts'
 import { expandActivityOccurrences } from '../utils/recurrence.ts'
 import { getEffectiveOccurrenceMember, type OccurrenceOverride, type SeriesAssignmentHistory } from '../utils/occurrenceAssignments.ts'
 
-export const REMINDER_CATEGORIES = ['chores', 'activities', 'medical', 'voting', 'meals', 'allowance', 'documents', 'shopping'] as const
+export const REMINDER_CATEGORIES = ['chores', 'activities', 'medical', 'voting', 'allowance', 'documents', 'shopping'] as const
 export type ReminderCategory = (typeof REMINDER_CATEGORIES)[number]
 export type ReminderImportance = 'quiet' | 'normal' | 'important'
 export type ReminderStatus = 'unread' | 'read' | 'resolved' | 'dismissed'
@@ -25,7 +24,6 @@ export type ReminderSource =
   | 'medical-appointment'
   | 'vaccination'
   | 'voting'
-  | 'meal-plan'
   | 'allowance'
   | 'document'
   | 'shopping'
@@ -117,7 +115,6 @@ export const DEFAULT_CATEGORY_PREFERENCES: ReminderCategoryPreferences = {
   activities: true,
   medical: true,
   voting: true,
-  meals: true,
   allowance: true,
   documents: true,
   shopping: true,
@@ -187,8 +184,6 @@ export interface ReminderCopy {
   medicalTomorrow: string
   vaccinationDue: string
   votingCloses: (title: string) => string
-  mealEmpty: string
-  mealIncomplete: (count: number) => string
   allowancePending: (count: number) => string
   documentExpiry: (count: number) => string
   shoppingAssigned: (count: number) => string
@@ -208,7 +203,6 @@ export interface GenerateReminderInput {
   assignmentHistory?: SeriesAssignmentHistory[]
   medicalRecords: MedicalRecord[]
   voteRounds: MealVoteRound[]
-  planEntries: MealPlanEntry[]
   pendingCompletions: ChoreCompletion[]
   shoppingItems: ShoppingItem[]
   documents?: ReminderDocument[]
@@ -219,14 +213,12 @@ export interface GenerateReminderInput {
 
 const ACTIVITY_PAYMENT_LEAD_DAYS = 7
 const VOTE_CLOSE_LEAD_HOURS = 48
-const CORE_MEAL_SLOTS = ['breakfast', 'lunch', 'dinner'] as const
 
 function reminderCategory(source: ReminderSource): ReminderCategory {
   if (source === 'chore') return 'chores'
   if (source === 'activity' || source === 'activity-payment') return 'activities'
   if (source === 'medical-appointment' || source === 'vaccination') return 'medical'
   if (source === 'voting') return 'voting'
-  if (source === 'meal-plan') return 'meals'
   if (source === 'allowance') return 'allowance'
   if (source === 'document') return 'documents'
   return 'shopping'
@@ -423,29 +415,6 @@ function pushVoting(reminders: ReminderDraft[], input: GenerateReminderInput, no
   }
 }
 
-function pushMealPlan(reminders: ReminderDraft[], input: GenerateReminderInput, today: string, generatedAt: string) {
-  if (!input.isParentOrAdmin) return
-  const tomorrow = addDays(today, 1)
-  const entries = input.planEntries.filter((entry) => entry.entry_date === tomorrow)
-  const handledSlots = new Set(entries.map((entry) => entry.meal_slot))
-  const missing = CORE_MEAL_SLOTS.filter((slot) => !handledSlots.has(slot))
-  if (missing.length === 0) return
-  reminders.push({
-    dedupeKey: `meal-plan:${tomorrow}:${input.currentMember.id}`,
-    source: 'meal-plan',
-    type: entries.length === 0 ? 'meal-plan-empty' : 'meal-plan-incomplete',
-    title: entries.length === 0 ? input.copy.mealEmpty : input.copy.mealIncomplete(missing.length),
-    description: null,
-    importance: 'quiet',
-    eventAt: dateEventAt(tomorrow),
-    generatedAt,
-    expiresAt: dateEventAt(addDays(tomorrow, 1)),
-    deepLink: `/meals?date=${tomorrow}`,
-    groupingKey: `meal-plan:${tomorrow}`,
-    metadata: { sourceIds: entries.map((entry) => entry.id), eventDate: tomorrow, count: missing.length, missingSlots: missing },
-  })
-}
-
 function pushAllowance(reminders: ReminderDraft[], input: GenerateReminderInput, generatedAt: string) {
   if (!input.isParentOrAdmin || input.pendingCompletions.length === 0) return
   reminders.push({
@@ -528,7 +497,6 @@ export function generateReminderDrafts(input: GenerateReminderInput): ReminderDr
   pushActivities(reminders, input, today, generatedAt)
   pushMedical(reminders, input, today, generatedAt)
   pushVoting(reminders, input, now, generatedAt)
-  pushMealPlan(reminders, input, today, generatedAt)
   pushAllowance(reminders, input, generatedAt)
   pushDocuments(reminders, input, today, generatedAt)
   pushShopping(reminders, input, generatedAt)

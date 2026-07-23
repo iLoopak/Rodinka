@@ -954,7 +954,7 @@ export const strings = {
       tabActive: (count: number) => count ? `Aktivní (${count})` : 'Aktivní', tabHistory: 'Historie', tabSettings: 'Nastavení',
       sectionOverdue: 'Po termínu', sectionToday: 'Dnes', sectionUpcoming: 'Nadcházející', sectionEarlier: 'Bez termínu',
       categoryChores: 'Úkoly', categoryActivities: 'Aktivity', categoryMedical: 'Zdraví', categoryVoting: 'Hlasování',
-      categoryMeals: 'Jídlo', categoryAllowance: 'Kapesné', categoryDocuments: 'Dokumenty', categoryShopping: 'Nákupy',
+      categoryAllowance: 'Kapesné', categoryDocuments: 'Dokumenty', categoryShopping: 'Nákupy',
       dailyDigest: 'Denní přehled', weeklyDigest: 'Týdenní přehled',
       digestCounts: (active: number, important: number) => `${active} aktivních · ${important} důležitých`,
       allDoneTitle: 'Máte všechno hotovo', allDoneBody: 'Nové připomínky se tu objeví, až bude potřeba něco zařídit.',
@@ -1563,6 +1563,10 @@ export const strings = {
       addEntryAction: 'Naplánovat jídlo',
       addEntryTitle: 'Naplánovat jídlo',
       editEntryTitle: 'Upravit záznam',
+
+      hintTomorrowEmpty: 'Zítřek zatím není naplánovaný',
+      hintMealsMissing: (count: number) => count === 1 ? 'Chybí ještě jedno jídlo na zítra' : `Chybí ještě ${count} jídla na zítra`,
+      hintWeekendEmpty: 'Víkend zatím není naplánovaný',
 
       slotBreakfast: 'Snídaně',
       slotLunch: 'Oběd',
@@ -2560,7 +2564,7 @@ export const strings = {
       tabActive: (count: number) => count ? `Active (${count})` : 'Active', tabHistory: 'History', tabSettings: 'Settings',
       sectionOverdue: 'Overdue', sectionToday: 'Today', sectionUpcoming: 'Upcoming', sectionEarlier: 'No date',
       categoryChores: 'Tasks', categoryActivities: 'Activities', categoryMedical: 'Health', categoryVoting: 'Voting',
-      categoryMeals: 'Meals', categoryAllowance: 'Allowance', categoryDocuments: 'Documents', categoryShopping: 'Shopping',
+      categoryAllowance: 'Allowance', categoryDocuments: 'Documents', categoryShopping: 'Shopping',
       dailyDigest: 'Daily digest', weeklyDigest: 'Weekly digest',
       digestCounts: (active: number, important: number) => `${active} active · ${important} important`,
       allDoneTitle: 'You are all caught up', allDoneBody: 'New reminders will appear here when something needs your attention.',
@@ -3163,6 +3167,10 @@ export const strings = {
       addEntryAction: 'Plan a meal',
       addEntryTitle: 'Plan a meal',
       editEntryTitle: 'Edit entry',
+
+      hintTomorrowEmpty: 'Tomorrow is not planned yet',
+      hintMealsMissing: (count: number) => count === 1 ? '1 meal is still missing for tomorrow' : `${count} meals are still missing for tomorrow`,
+      hintWeekendEmpty: 'Weekend is not planned yet',
 
       slotBreakfast: 'Breakfast',
       slotLunch: 'Lunch',

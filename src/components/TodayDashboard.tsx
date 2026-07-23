@@ -22,6 +22,7 @@ import { ChoreDetailModal } from './ChoreDetailModal'
 import { closeTodayChoreEditor, openTodayChoreEditor } from './today/todayChoreEditor'
 import { capabilitiesFor } from '../utils/uiCapabilities'
 import { useCreateRecord } from '../context/create-record/CreateRecordContext'
+import { AppPrimaryAddButton } from './ui/AddAction'
 
 export function TodayDashboard() {
   const { openCreateRecord } = useCreateRecord()
@@ -295,9 +296,7 @@ function TodayHeader({ name, date, itemCount, familyHeroImageUrl, onAdd }: Heade
         <p className="today-date">{formatFullDate(date)}</p>
         <p className="today-summary">{t.today.itemsSummary(itemCount)}</p>
       </div>
-      {onAdd && <button type="button" className="hero-action-button" onClick={onAdd}>
-        <span aria-hidden="true">+</span> {t.create.addAction}
-      </button>}
+      {onAdd && <AppPrimaryAddButton className="hero-action-button" onClick={onAdd}>{t.create.addAction}</AppPrimaryAddButton>}
     </div>
   )
 }

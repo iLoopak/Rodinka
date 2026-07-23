@@ -10,6 +10,7 @@ const tokens = read('src/styles/tokens.css')
 const base = read('src/styles/base.css')
 const chat = read('src/components/messages/messages.css')
 const familyJump = read('src/features/family-jump/familyJump.css')
+const familyGames = read('src/features/family-games/familyGames.css')
 const messagesScreen = read('src/components/messages/MessagesScreen.tsx')
 
 const stripComments = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, '')
@@ -101,6 +102,15 @@ describe('route-scoped feature CSS', () => {
       expect(selector, `Family Jump rule leaked into the main sheet: ${selector}`).not.toMatch(/\.family-jump|\.fj-/)
     }
   })
+
+  it('keeps the shared Family Games entry-flow styling out of the main sheet', () => {
+    // Shared across every game's route chunk (Family Jump, Family Fleet, and
+    // future minigames) — it must never fold into the always-loaded main sheet.
+    expect(familyGames.length).toBeGreaterThan(0)
+    for (const selector of selectorsOf(index)) {
+      expect(selector, `Family Games rule leaked into the main sheet: ${selector}`).not.toMatch(/\.game-(header|hero|player|primary-button|offline-badge)/)
+    }
+  })
 })
 
 describe('global selector safety', () => {
@@ -122,7 +132,7 @@ describe('global selector safety', () => {
   it('keeps route sheets entirely class-scoped', () => {
     // A route sheet loads late and is never unloaded — one bare element rule
     // in it would leak onto every screen the user visits afterwards.
-    for (const [name, sheet] of [['messages.css', chat], ['familyJump.css', familyJump]] as const) {
+    for (const [name, sheet] of [['messages.css', chat], ['familyJump.css', familyJump], ['familyGames.css', familyGames]] as const) {
       const leaked = selectorsOf(sheet).filter((s) => unscopedElement(s))
       expect(leaked, `${name} must not style bare elements`).toEqual([])
     }
@@ -142,6 +152,7 @@ describe('global selector safety', () => {
       'src/components/messages/messages.css',
       'src/features/arcade/arcade.css',
       'src/features/family-fleet/familyFleet.css',
+      'src/features/family-games/familyGames.css',
       'src/features/family-jump/familyJump.css',
       'src/index.css',
       'src/styles/base.css',

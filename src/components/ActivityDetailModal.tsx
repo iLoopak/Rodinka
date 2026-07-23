@@ -42,7 +42,7 @@ export function ActivityDetailModal({
 
   if (editing && capabilities.manageActivities) {
     return (
-      <Modal title={t.activities.editTitle} onClose={onClose} className="activity-form-modal">
+      <Modal title={t.activities.editTitle} onClose={onClose} size="fullscreen" className="activity-form-modal">
         <AddActivityForm
           members={members}
           kids={kids}

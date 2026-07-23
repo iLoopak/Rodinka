@@ -7,6 +7,7 @@ const brand = read('./components/FamilyBrand.tsx')
 const screen = read('./features/family-jump/components/FamilyJumpScreen.tsx')
 const engine = read('./features/family-jump/game/FamilyJumpEngine.ts')
 const css = read('./features/family-jump/familyJump.css')
+const sharedCss = read('./features/family-games/familyGames.css')
 
 describe('Family Jump V1 polish contract', () => {
   it('opens the game only from a dedicated accessible mark button', () => {
@@ -18,8 +19,10 @@ describe('Family Jump V1 polish contract', () => {
   it('keeps member figures single-color and enlarges the visible player with its hitbox', () => {
     expect(engine).toContain('context.fillStyle = this.options.color')
     expect(engine).not.toContain('softColor')
-    expect(css).toMatch(/\.family-jump-member-figure\s*\{[^}]*background:\s*var\(--member-primary\);/s)
-    expect(css).not.toMatch(/\.family-jump-member-figure\s*\{[^}]*inset/s)
+    // The figure is the shared Family Games avatar (game-player-figure) now,
+    // not a Family Jump-only shape.
+    expect(sharedCss).toMatch(/\.game-player-figure\s*\{[^}]*background:\s*var\(--member-primary\);/s)
+    expect(sharedCss).not.toMatch(/\.game-player-figure\s*\{[^}]*inset/s)
     expect(GAME_CONFIG.player.width).toBeGreaterThanOrEqual(45)
     expect(GAME_CONFIG.player.height).toBeGreaterThanOrEqual(52)
   })

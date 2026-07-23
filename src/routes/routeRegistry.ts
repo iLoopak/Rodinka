@@ -27,9 +27,10 @@ export const ROUTE_REGISTRY = [
   route('/messages', () => import('../components/messages/MessagesScreen').then(({ MessagesScreen }) => ({ default: MessagesScreen }))),
   route('/more', () => import('../components/MoreScreen').then(({ MoreScreen }) => ({ default: MoreScreen }))),
   route('/reminders', () => import('../components/reminders/ReminderCenter').then(({ ReminderCenter }) => ({ default: ReminderCenter }))),
-  route('/arcade', () => import('../features/arcade/components/ArcadeScreen').then(({ ArcadeScreen }) => ({ default: ArcadeScreen })), 'available', 'fullscreen'),
+  route('/arcade', () => import('../features/arcade/components/ArcadeScreen').then(({ ArcadeScreen }) => ({ default: ArcadeScreen })), 'available'),
   route('/arcade/family-jump', () => import('../features/family-jump/components/FamilyJumpScreen').then(({ FamilyJumpScreen }) => ({ default: FamilyJumpScreen })), 'available', 'fullscreen'),
   route('/arcade/family-fleet', () => import('../features/family-fleet/components/FamilyFleetScreen').then(({ FamilyFleetScreen }) => ({ default: FamilyFleetScreen })), 'available', 'fullscreen'),
+  route('/arcade/family-fleet/hangar', () => import('../features/family-fleet/components/FamilyFleetHangar').then(({ FamilyFleetHangar }) => ({ default: FamilyFleetHangar })), 'available', 'fullscreen'),
   route('/family-jump', () => import('./LegacyFamilyJumpRedirect').then(({ LegacyFamilyJumpRedirect }) => ({ default: LegacyFamilyJumpRedirect })), 'available', 'fullscreen'),
 ] as const satisfies readonly RouteDefinition[]
 

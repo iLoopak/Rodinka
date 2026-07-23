@@ -49,9 +49,3 @@ export interface ReminderMealVoteRound {
   deadline_at: string | null
   candidates: Array<{ votes: Array<{ member_id: string }> }>
 }
-
-export interface ReminderMealPlanEntry {
-  id: string
-  entry_date: string
-  meal_slot: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other'
-}

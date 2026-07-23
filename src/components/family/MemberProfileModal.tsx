@@ -17,6 +17,7 @@ import { canManageAllowance } from '../../utils/allowancePlans'
 import { ChildAccountSection } from './ChildAccountSection'
 import { AllowanceSection } from './AllowanceSection'
 import { useOptionalCreateRecord, type RecordType } from '../../context/create-record/CreateRecordContext'
+import { AppToolbarAddButton } from '../ui/AddAction'
 
 interface Props {
   member: FamilyMember
@@ -259,6 +260,7 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
       title={t.family.editor.title}
       onClose={requestClose}
       closeOnBackdrop={false}
+      size="fullscreen"
       className="member-editor-sheet"
       backdropClassName="member-editor-backdrop"
     >
@@ -485,9 +487,9 @@ export function MemberProfileModal({ member, currentMember, refreshMembers, onCl
                 <section className="member-editor-block member-planning-shortcuts" aria-labelledby="member-planning-title">
                   <h4 id="member-planning-title">{t.family.editor.planForMember(member.display_name)}</h4>
                   <div className="member-planning-actions">
-                    <button type="button" className="btn-secondary" onClick={() => openForMember('household-task')}>+ {t.family.editor.planTask}</button>
-                    <button type="button" className="btn-secondary" onClick={() => openForMember('activity')}>+ {t.family.editor.planActivity}</button>
-                    <button type="button" className="btn-secondary" onClick={() => openForMember('medical')}>+ {t.family.editor.planMedical}</button>
+                    <AppToolbarAddButton onClick={() => openForMember('household-task')}>{t.family.editor.planTask}</AppToolbarAddButton>
+                    <AppToolbarAddButton onClick={() => openForMember('activity')}>{t.family.editor.planActivity}</AppToolbarAddButton>
+                    <AppToolbarAddButton onClick={() => openForMember('medical')}>{t.family.editor.planMedical}</AppToolbarAddButton>
                   </div>
                 </section>
               )}

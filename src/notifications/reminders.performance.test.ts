@@ -5,7 +5,7 @@ import { defaultNotificationPreferences, generateReminderDrafts, type ReminderCo
 const copy: ReminderCopy = {
   choreDueToday: (count) => `${count} due`, choreOverdue: (count) => `${count} overdue`, activitySoon: (title) => title,
   activityPayment: (count) => `${count} payments`, medicalTomorrow: 'Medical', vaccinationDue: 'Vaccination',
-  votingCloses: (title) => title, mealEmpty: 'Empty', mealIncomplete: (count) => `${count} missing`,
+  votingCloses: (title) => title,
   allowancePending: (count) => `${count} approvals`, documentExpiry: (count) => `${count} documents`,
   shoppingAssigned: (count) => `${count} shopping`, openDetail: 'Open', forMember: (name) => name,
 }
@@ -18,7 +18,7 @@ describe('reminder generator performance', () => {
     const started = performance.now()
     const reminders = generateReminderDrafts({
       familyId: 'family-1', currentMember: parent, isParentOrAdmin: true, members: [parent, child], chores,
-      latestCompletionFor: () => null, activities: [], medicalRecords: [], voteRounds: [], planEntries: [],
+      latestCompletionFor: () => null, activities: [], medicalRecords: [], voteRounds: [],
       pendingCompletions: [], shoppingItems: [], preferences: defaultNotificationPreferences(parent.id, 'family-1', 'UTC'),
       copy, now: new Date('2026-07-14T10:00:00Z'),
     })

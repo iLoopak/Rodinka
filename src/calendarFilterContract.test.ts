@@ -20,8 +20,16 @@ describe('calendar filter disclosure', () => {
 
   it('puts the toggle in the screen header and leaves the panel with the content', () => {
     // The toggle must sit beside the title alongside Dnes and +, not on a row of its own.
-    expect(screen).toMatch(/<ScreenHeader title=\{t\.calendar\.title\} actions=\{<>\s*<FilterDisclosureToggle \/>/)
+    expect(screen).toMatch(/<ScreenHeader title=\{t\.calendar\.title\} actions=\{<>[\s\S]*<FilterDisclosureToggle \/>/)
     expect(screen).toContain('<FilterDisclosurePanel>')
+    // Action hierarchy: + (primary) first, Today (secondary) next, Filters (utility) last.
+    const actionsBlock = screen.slice(screen.indexOf('<ScreenHeader title={t.calendar.title}'), screen.indexOf('<ScrollableTabs'))
+    const addIndex = actionsBlock.indexOf('<AddActionIcon')
+    const todayIndex = actionsBlock.indexOf('<Button variant="secondary" onClick={goToday}>')
+    const filtersIndex = actionsBlock.indexOf('<FilterDisclosureToggle />')
+    expect(addIndex).toBeGreaterThan(-1)
+    expect(todayIndex).toBeGreaterThan(addIndex)
+    expect(filtersIndex).toBeGreaterThan(todayIndex)
     expect(screen).not.toContain('filter-disclosure-bar')
     expect(styles).not.toContain('.filter-disclosure-bar')
     // The panel wrapper must not reserve space while the filters are closed.

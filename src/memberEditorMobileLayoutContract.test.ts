@@ -4,12 +4,19 @@ import { describe, expect, it } from 'vitest'
 
 const root = process.cwd()
 const css = readFileSync(join(root, 'src/index.css'), 'utf8')
+const modalPrimitiveCss = readFileSync(join(root, 'src/styles/primitives/modal.css'), 'utf8')
 const editor = readFileSync(join(root, 'src/components/family/MemberProfileModal.tsx'), 'utf8')
 const modal = readFileSync(join(root, 'src/components/ui/Modal.tsx'), 'utf8')
+const screenLockHook = readFileSync(join(root, 'src/hooks/useScreenLock.ts'), 'utf8')
 
 describe('member editor mobile layout contract', () => {
   it('uses a stable dynamic-viewport flex sheet', () => {
-    expect(css).toMatch(/\.modal-sheet\.member-editor-sheet\s*\{[^}]*height:\s*100dvh[^}]*min-height:\s*0[^}]*max-height:\s*100dvh[^}]*overflow:\s*hidden[^}]*flex-direction:\s*column/s)
+    // The height/scroll contract lives on the shared `.modal-sheet-fullscreen`
+    // primitive; the editor opts in via `size="fullscreen"` rather than
+    // reimplementing it.
+    expect(editor).toMatch(/<Modal[\s\S]*?size="fullscreen"[\s\S]*?className="member-editor-sheet"/)
+    expect(modalPrimitiveCss).toMatch(/\.modal-sheet\.modal-sheet-fullscreen\s*\{[^}]*height:\s*calc\(100dvh - var\(--keyboard-inset, 0px\)\)[^}]*max-height:\s*calc\(100dvh - var\(--keyboard-inset, 0px\)\)[^}]*overflow:\s*hidden[^}]*(?:padding|border-radius)/s)
+    expect(css).toMatch(/\.modal-sheet\.member-editor-sheet\s*\{[^}]*min-height:\s*0/s)
     expect(css).toMatch(/\.member-editor-main\s*\{[^}]*min-height:\s*0[^}]*overflow:\s*hidden/s)
   })
 
@@ -27,7 +34,11 @@ describe('member editor mobile layout contract', () => {
   it('portals the editor above the app shell and locks background scrolling', () => {
     expect(editor).toContain('backdropClassName="member-editor-backdrop"')
     expect(modal).toContain('createPortal(')
-    expect(modal).toContain("document.body.classList.add('has-modal-open')")
+    // The lock itself lives in the shared `useScreenLock` hook (also used by
+    // the fullscreen chat portal and the fullscreen game routes) rather than
+    // being reimplemented inline in Modal.
+    expect(modal).toContain('useScreenLock()')
+    expect(screenLockHook).toContain("document.body.classList.add('has-modal-open')")
     expect(css).toMatch(/body\.has-modal-open \.app-main\s*\{[^}]*overflow:\s*hidden/s)
   })
 })

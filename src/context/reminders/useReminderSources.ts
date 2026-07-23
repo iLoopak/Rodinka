@@ -20,7 +20,7 @@ export function useReminderSources() {
   const { activities, activitiesLoading, refreshActivities } = useActivitiesData()
   const { occurrenceOverrides, assignmentHistory, occurrenceAssignmentsLoading, refreshOccurrenceAssignments } = useOccurrenceAssignmentsData()
   const { medicalRecords, medicalLoading, refreshMedicalRecords } = useMedicalData()
-  const { voteRounds, planEntries, loading: mealsLoading, refreshMealsData } = useMealsDataContext()
+  const { voteRounds, loading: mealsLoading, refreshMealsData } = useMealsDataContext()
   const { shoppingItems, shoppingLoading, refreshShopping } = useShopping()
 
   const loading =
@@ -36,8 +36,8 @@ export function useReminderSources() {
     members, chores, latestCompletionFor,
     activities, medicalRecords, voteRounds,
     occurrenceOverrides, assignmentHistory,
-    planEntries, pendingCompletions, shoppingItems,
-  }), [familyId, currentMember, isParentOrAdmin, members, chores, latestCompletionFor, activities, medicalRecords, voteRounds, occurrenceOverrides, assignmentHistory, planEntries, pendingCompletions, shoppingItems])
+    pendingCompletions, shoppingItems,
+  }), [familyId, currentMember, isParentOrAdmin, members, chores, latestCompletionFor, activities, medicalRecords, voteRounds, occurrenceOverrides, assignmentHistory, pendingCompletions, shoppingItems])
 
   const refresh = useCallback(async () => {
     await Promise.all([
