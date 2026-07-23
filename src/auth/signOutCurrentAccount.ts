@@ -1,4 +1,4 @@
-import { releasePushOnSignOut } from '../push/pushClient'
+import { releasePushOnSignOut } from '../push/releaseOnSignOut'
 import { supabase } from '../supabaseClient'
 import { buildAccountCleanupSteps, runAccountCleanup } from './accountCleanup'
 import { logAccountCleanup } from '../diagnostics/offlineDiagnostics'

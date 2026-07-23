@@ -1,5 +1,5 @@
 import { supabase } from '../supabaseClient'
-import { releasePushOnSignOut } from '../push/pushClient'
+import { releasePushOnSignOut } from '../push/releaseOnSignOut'
 import { t } from '../strings'
 import { FamilyMark } from './FamilyMark'
 

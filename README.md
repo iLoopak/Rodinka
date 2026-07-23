@@ -78,6 +78,7 @@ Supabase Row Level Security isolates each household's data. Photos live in priva
 - i18next with Czech and English translations
 - IndexedDB-backed offline repositories and durable mutation queues
 - Vercel deployment as an installable PWA
+- Capacitor 8 native wrap for iOS and Android (scaffolded; store release needs the owner's own signing/push credentials — see below)
 
 ### Run locally
 
@@ -153,6 +154,8 @@ Repositories own persistence, mapping, offline queues, and synchronization. Cont
 - [Web Push setup](./supabase-web-push.md)
 - [Messaging Push setup](./supabase-messaging-push.md)
 - [Child account setup](./supabase-child-accounts.md)
+- [Capacitor native app setup](./docs/CAPACITOR_NATIVE_SETUP.md)
+- [Native release checklist](./docs/NATIVE_RELEASE_CHECKLIST.md)
 - [Product roadmap](./rodinka-roadmap.md)
 
 ### Deployment

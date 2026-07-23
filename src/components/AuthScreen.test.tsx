@@ -8,13 +8,20 @@ const auth = vi.hoisted(() => ({
   signUp: vi.fn(),
   signInWithOAuth: vi.fn(),
 }))
+const platform = vi.hoisted(() => ({ isNativeApp: vi.fn(() => false) }))
+const browser = vi.hoisted(() => ({ open: vi.fn().mockResolvedValue(undefined) }))
 
 vi.mock('../supabaseClient', () => ({ supabase: { auth } }))
+vi.mock('../platform/capacitor', () => platform)
+vi.mock('@capacitor/browser', () => ({ Browser: browser }))
 
 import { AuthScreen } from './AuthScreen'
 
 describe('AuthScreen accessibility', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    platform.isNativeApp.mockReturnValue(false)
+  })
   afterEach(cleanup)
 
   it('supports expected tab keyboard navigation', () => {
@@ -63,5 +70,37 @@ describe('AuthScreen accessibility', () => {
     fireEvent.change(screen.getByLabelText(t.login.passwordLabel), { target: { value: 'friendly-passphrase' } })
     fireEvent.click(screen.getByRole('button', { name: t.login.submitChildSignIn }))
     expect((await screen.findByRole('alert')).textContent).toBe(t.login.errors.childCredentialsInvalid)
+  })
+
+  it('redirects the browser tab directly for web Google sign-in (unchanged)', async () => {
+    auth.signInWithOAuth.mockResolvedValue({ error: null })
+    render(<AuthScreen />)
+    fireEvent.click(screen.getByRole('button', { name: t.login.googleButton }))
+    await vi.waitFor(() => expect(auth.signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: expect.not.objectContaining({ skipBrowserRedirect: true }),
+    }))
+    expect(browser.open).not.toHaveBeenCalled()
+  })
+
+  it('opens the system browser for native Google sign-in instead of redirecting the WebView', async () => {
+    platform.isNativeApp.mockReturnValue(true)
+    auth.signInWithOAuth.mockResolvedValue({ data: { url: 'https://accounts.google.com/o/oauth2/v2/auth?mock=1' }, error: null })
+    render(<AuthScreen />)
+    fireEvent.click(screen.getByRole('button', { name: t.login.googleButton }))
+    await vi.waitFor(() => expect(browser.open).toHaveBeenCalledWith({ url: 'https://accounts.google.com/o/oauth2/v2/auth?mock=1' }))
+    expect(auth.signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: expect.objectContaining({ skipBrowserRedirect: true }),
+    })
+  })
+
+  it('surfaces an error and never opens the browser if native OAuth setup fails', async () => {
+    platform.isNativeApp.mockReturnValue(true)
+    auth.signInWithOAuth.mockResolvedValue({ data: { url: null }, error: { message: 'boom' } })
+    render(<AuthScreen />)
+    fireEvent.click(screen.getByRole('button', { name: t.login.googleButton }))
+    expect((await screen.findByRole('alert')).textContent).toBe(t.login.errors.oauthFailed)
+    expect(browser.open).not.toHaveBeenCalled()
   })
 })
