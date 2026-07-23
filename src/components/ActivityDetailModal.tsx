@@ -13,6 +13,7 @@ import { ItemTypeIcon } from './ui/ItemTypeIcon'
 import { ShareLinkButton } from './ui/ShareLinkButton'
 import { ShareToChatButton } from './messages/ShareToChatButton'
 import { PersonRoleGroup, type PersonRole } from './ui/PersonRoleGroup'
+import { DetailMetaRow } from './ui/DetailMetaRow'
 import { useFamilyCore } from '../context/family/FamilyCoreContext'
 import { capabilitiesFor } from '../utils/uiCapabilities'
 
@@ -25,13 +26,6 @@ interface Props {
   onUpdate: (id: string, input: ActivityInput) => Promise<void>
   onMarkPaymentPaid: (id: string) => Promise<void>
   onClose: () => void
-}
-
-function DetailMetaRow({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
-  return <p className="detail-meta-row">
-    <span className="detail-meta-icon" aria-hidden="true">{icon}</span>
-    <span>{children}</span>
-  </p>
 }
 
 export function ActivityDetailModal({

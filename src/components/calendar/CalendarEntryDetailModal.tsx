@@ -20,6 +20,7 @@ import { capabilitiesFor } from '../../utils/uiCapabilities'
 import { useCalendarOffline } from '../../context/calendar/CalendarOfflineContext'
 import { AddChoreForm } from '../AddChoreForm'
 import { AddActivityForm } from '../AddActivityForm'
+import { ActivityOccurrenceDetailModal } from '../activities/ActivityOccurrenceDetailModal'
 
 interface Props {
   entry: CalendarEntry
@@ -158,6 +159,13 @@ export function CalendarEntryDetailModal({ entry, onClose, openAssignmentInitial
         }}
       />
     </Modal>
+  }
+
+  // Activities get the richer, series-detail-matching occurrence view;
+  // every other source type (chore/medical/meal/allowance) keeps the
+  // generic layout below.
+  if (entry.sourceType === 'activity') {
+    return <ActivityOccurrenceDetailModal key={entry.id} entry={entry} onClose={onClose} />
   }
 
   return (
