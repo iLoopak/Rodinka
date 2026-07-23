@@ -7366,8 +7366,6 @@ html[data-theme='dark'] .app-loading {
 }
 
 html[data-theme='dark'] .reminder-empty,
-html[data-theme='dark'] .month-grid-day,
-html[data-theme='dark'] .week-strip-day,
 html[data-theme='dark'] .bottom-nav,
 html[data-theme='dark'] .mobile-bottom-bar {
   background: color-mix(in srgb, var(--paper) 82%, transparent);
