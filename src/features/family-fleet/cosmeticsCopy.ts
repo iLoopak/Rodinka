@@ -34,13 +34,13 @@ export function cosmeticItemName(language: Language, id: string): string {
 export const familyFleetHangarCopy = {
   cs: {
     title: 'Hangár', subtitle: 'Vyberte kosmetické vylepšení pro svou loď. Ovládání a hitbox se nikdy nemění.',
-    backToFleet: 'Zpět na flotilu', shipPreview: 'Náhled lodi', use: 'Použít', equipped: 'Použito',
+    back: 'Zpět', backToFleet: 'Zpět na flotilu', shipPreview: 'Náhled lodi', use: 'Použít', equipped: 'Použito',
     locked: 'Zamčeno', unlockHint: (title: string) => `Odemkni splněním: ${title}`, achievementsProgress: (unlocked: number, total: number) => `Achievementy: ${unlocked} / ${total}`,
     choosePilot: 'Vyber pilota',
   },
   en: {
     title: 'Hangar', subtitle: "Pick cosmetic upgrades for your ship. Controls and hitbox never change.",
-    backToFleet: 'Back to fleet', shipPreview: 'Ship preview', use: 'Use', equipped: 'Equipped',
+    back: 'Back', backToFleet: 'Back to fleet', shipPreview: 'Ship preview', use: 'Use', equipped: 'Equipped',
     locked: 'Locked', unlockHint: (title: string) => `Unlock by earning: ${title}`, achievementsProgress: (unlocked: number, total: number) => `Achievements: ${unlocked} / ${total}`,
     choosePilot: 'Choose pilot',
   },

@@ -77,7 +77,7 @@ export function FamilyFleetHangar() {
   }
 
   return <main className="fleet-screen hangar-screen">
-    <GameHeader backLabel={copy.backToFleet} onBack={() => navigate('/arcade/family-fleet')} members={members} membersLoading={membersLoading} />
+    <GameHeader backLabel={copy.back} backAccessibleLabel={copy.backToFleet} onBack={() => navigate('/arcade/family-fleet')} members={members} membersLoading={membersLoading} />
 
     <div className="fleet-scroll">
       <div className="hangar-layout">

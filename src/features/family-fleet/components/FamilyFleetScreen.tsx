@@ -77,7 +77,8 @@ export function FamilyFleetScreen() {
 
   return <main className="fleet-screen">
     <GameHeader
-      backLabel={copy.backArcade}
+      backLabel={copy.back}
+      backAccessibleLabel={copy.backArcade}
       onBack={() => navigate('/arcade')}
       members={members}
       membersLoading={membersLoading}
