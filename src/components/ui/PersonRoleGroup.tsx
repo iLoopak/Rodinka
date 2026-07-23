@@ -7,7 +7,15 @@ export interface PersonRole {
   label: string
 }
 
-export function PersonRoleGroup({ roles, compact = false }: { roles: PersonRole[]; compact?: boolean }) {
+const AVATAR_SIZE = { compact: 24, default: 36, large: 56 } as const
+
+interface Props {
+  roles: PersonRole[]
+  /** 'large' is for a detail modal's own prominent people block; 'compact' for dense list rows. */
+  size?: keyof typeof AVATAR_SIZE
+}
+
+export function PersonRoleGroup({ roles, size = 'default' }: Props) {
   const grouped = new Map<string, { member?: FamilyMember; name: string; labels: string[] }>()
   for (const role of roles) {
     const name = role.member?.display_name ?? role.fallbackName ?? '?'
@@ -17,9 +25,9 @@ export function PersonRoleGroup({ roles, compact = false }: { roles: PersonRole[
     else grouped.set(key, { member: role.member, name, labels: [role.label] })
   }
 
-  return <div className={`person-role-group${compact ? ' compact' : ''}`}>
+  return <div className={`person-role-group${size !== 'default' ? ` ${size}` : ''}`}>
     {[...grouped.entries()].map(([key, person]) => <div className="person-role" key={key}>
-      <MemberAvatar member={person.member} size={compact ? 24 : 36} />
+      <MemberAvatar member={person.member} size={AVATAR_SIZE[size]} />
       <span><strong>{person.name}</strong><small>{person.labels.join(' · ')}</small></span>
     </div>)}
   </div>

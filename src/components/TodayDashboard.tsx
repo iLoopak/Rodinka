@@ -61,6 +61,7 @@ export function TodayDashboard() {
     updateChore,
     setChoreArchived,
     addShoppingItem,
+    toggleShoppingPurchased,
     memberById,
     latestCompletionFor,
     markDone,
@@ -209,6 +210,7 @@ export function TodayDashboard() {
         syncStatus={shoppingSyncStatus}
         onOpen={() => navigate('/shopping')}
         onAddItem={(name) => addShoppingItem(createQuickShoppingItemInput(name))}
+        onTogglePurchased={toggleShoppingPurchased}
       />
 
       {!capabilities.isChild && kids.length === 0 && (

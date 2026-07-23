@@ -61,7 +61,7 @@ export function TodayAgendaList({ entries, memberById, onSelectEntry }: Props) {
   return (
     <ul className="today-agenda-list">
       {entries.map((entry) => {
-        const style = getItemTypeStyle(entry.type)
+        const style = getItemTypeStyle(entry.type, entry.category)
         const personId = entry.childOrPatientId ?? entry.responsibleMemberId
         const person = personId ? memberById(personId) : undefined
         const activate = () => onSelectEntry(entry)
@@ -76,7 +76,7 @@ export function TodayAgendaList({ entries, memberById, onSelectEntry }: Props) {
             onKeyDown={onActivateKey(activate)}
           >
             <span className="today-agenda-when font-tabular">{whenLabel(entry)}</span>
-            <ItemTypeIcon type={entry.type} size={32} />
+            <ItemTypeIcon type={entry.type} category={entry.category} size={32} />
             {personId && (
               <MemberAvatar member={person} size={26} />
             )}

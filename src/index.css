@@ -1802,8 +1802,22 @@ body.has-modal-open .app-main {
   margin-bottom: 14px;
 }
 
+.modal-header-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.modal-header-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
 .modal-header h2 {
   margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: var(--font-size-section-title);
 }
 
@@ -1945,21 +1959,37 @@ body.has-modal-open .app-main {
   padding: 0;
 }
 
-.create-record-toast {
-  position: fixed;
-  z-index: 40;
-  left: 16px;
-  right: 16px;
-  bottom: calc(88px + env(safe-area-inset-bottom));
-  max-width: 440px;
-  margin: 0 auto;
-  padding: 12px 16px;
-  border: 1px solid color-mix(in srgb, var(--state-success) 30%, var(--border));
-  border-radius: var(--radius-large);
-  background: var(--paper-raised);
-  color: var(--ink);
-  box-shadow: var(--shadow-float);
-  font-weight: var(--font-weight-emphasis);
+.creation-success-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  gap: 10px;
+  padding: 24px 20px;
+  text-align: center;
+}
+
+.creation-success-icon {
+  color: var(--state-success);
+  margin-bottom: 6px;
+}
+
+.creation-success-state h3 {
+  margin: 0;
+  font-size: var(--font-size-section-title);
+}
+
+.creation-success-state p {
+  margin: 0;
+  max-width: 42ch;
+  color: var(--ink-muted);
+  font-size: var(--font-size-body);
+}
+
+.creation-success-state button {
+  margin-top: 10px;
+  min-width: 160px;
 }
 
 @media (min-width: 560px) {
@@ -3437,6 +3467,61 @@ label.member-gender-option {
   opacity: 1;
 }
 
+.activity-category-chip-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.activity-category-chip {
+  position: relative;
+  min-width: 0;
+  min-height: 52px;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-row);
+}
+
+.activity-category-chip > span:first-of-type {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+}
+
+.activity-category-chip:hover:not(:disabled),
+.activity-category-chip.selected {
+  background: var(--category-activities-soft);
+  border-color: var(--category-activities);
+  color: var(--category-activities);
+}
+
+.activity-category-chip-check {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  color: var(--category-activities);
+  opacity: 0;
+  font-size: 0.72rem;
+}
+
+.activity-category-chip.selected .activity-category-chip-check {
+  opacity: 1;
+}
+
+@media (max-width: 480px) {
+  .activity-category-chip-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .activity-date-grid,
 .activity-time-grid,
 .activity-advanced-grid {
@@ -3450,6 +3535,10 @@ label.member-gender-option {
 .activity-time-grid > *,
 .activity-advanced-grid > * {
   min-width: 0;
+}
+
+.activity-advanced-grid > .activity-field-full {
+  grid-column: 1 / -1;
 }
 
 .compact-switch {
@@ -3761,6 +3850,31 @@ label.family-photo-picker {
   margin: 0;
   text-align: right;
   font-weight: 600;
+}
+
+.detail-meta-list {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.detail-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--font-size-meta);
+  line-height: 1.35;
+}
+
+.detail-meta-icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  color: var(--ink-muted);
 }
 
 .info-note,
@@ -5550,6 +5664,7 @@ button.today-shopping-open {
 }
 
 .today-shopping-preview {
+  --shopping-accent: var(--category-family);
   display: grid;
   gap: 0;
   margin: 12px 0 0;
@@ -5562,22 +5677,13 @@ button.today-shopping-open {
   display: flex;
   align-items: center;
   gap: 9px;
-  min-height: 38px;
-  padding: 6px 3px;
+  min-height: 44px;
+  padding: 2px 3px;
   border-bottom: 1px solid color-mix(in srgb, var(--category-family-border) 55%, transparent);
 }
 
 .today-shopping-preview li:last-child {
   border-bottom: 0;
-}
-
-.today-shopping-dot {
-  flex: 0 0 auto;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--category-family);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--category-family) 12%, transparent);
 }
 
 .today-shopping-item-name {
@@ -6494,6 +6600,21 @@ button.danger-action:focus-visible:not(:disabled) {
 .person-role-group.compact .person-role { gap: 5px; }
 
 .person-role-group.compact .person-role strong { font-weight: var(--font-weight-emphasis); }
+
+/* Prominent variant for a detail modal's own people block — bigger avatars,
+   each person on its own row rather than wrapped inline. */
+.person-role-group.large { flex-direction: column; align-items: stretch; gap: 10px; }
+
+.person-role-group.large .person-role {
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md, 12px);
+  background: var(--paper-raised);
+}
+
+.person-role-group.large .person-role strong { font-size: var(--font-size-item-title); }
+
+.person-role-group.large .person-role small { font-size: var(--font-size-meta); }
 
 .section-list li > .person-role-group { flex: 1 1 190px; }
 

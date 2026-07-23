@@ -52,7 +52,7 @@ export function CalendarEntryDetailModal({ entry, onClose, openAssignmentInitial
   const pendingRecord = Boolean(pendingMutation)
   const existingRecordReadOnly = !pendingRecord && (calendar.calendarSyncStatus === 'offline' || calendar.calendarSyncStatus === 'error')
 
-  const style = getItemTypeStyle(entry.type)
+  const style = getItemTypeStyle(entry.type, entry.category)
   const chore = entry.sourceType === 'chore' ? chores.find((item) => item.id === entry.sourceId) : undefined
   const medicalRecord =
     entry.sourceType === 'medical' || entry.sourceType === 'medical_due'

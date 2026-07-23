@@ -16,4 +16,14 @@ describe('PersonRoleGroup', () => {
     expect(html.match(/<strong>Alex<\/strong>/g)).toHaveLength(1)
     expect(html).toContain('Participant · Responsible adult')
   })
+
+  it('renders larger avatars for the "large" variant, used by prominent detail-modal people blocks', () => {
+    const member = makeFamilyMember({ id: 'adult', display_name: 'Alex' })
+    const defaultHtml = renderToStaticMarkup(createElement(PersonRoleGroup, { roles: [{ member, label: 'Participant' }] }))
+    const largeHtml = renderToStaticMarkup(createElement(PersonRoleGroup, { roles: [{ member, label: 'Participant' }], size: 'large' }))
+
+    expect(largeHtml).toContain('person-role-group large')
+    expect(largeHtml).toMatch(/width:\s*56px/)
+    expect(defaultHtml).not.toMatch(/width:\s*56px/)
+  })
 })

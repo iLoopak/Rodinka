@@ -1,6 +1,8 @@
 import type { ComponentType, ReactNode } from 'react'
 import { CheckCircle, Coins, Dumbbell, Stethoscope, Syringe, Utensils, type LucideProps } from 'lucide-react'
 import { t } from '../strings'
+import { activityCategoryIcon } from './activityCategoryIcon'
+import type { ActivityCategory } from '../features/activities/domain/activityTypes'
 
 export type CalendarItemType = 'chore' | 'activity' | 'payment' | 'medical' | 'vaccination' | 'meal' | 'allowance'
 
@@ -16,12 +18,14 @@ interface ItemTypeStyle {
   icon: ReactNode
 }
 
-export function getItemTypeStyle(type: CalendarItemType): ItemTypeStyle {
+export function getItemTypeStyle(type: CalendarItemType, activityCategory?: ActivityCategory): ItemTypeStyle {
   switch (type) {
     case 'chore':
       return { colorVar: '--category-tasks', surfaceVar: '--category-tasks-soft', borderVar: '--category-tasks-border', category: 'tasks', label: t.calendar.typeChore, Icon: CheckCircle, icon: <CheckCircle size={16} /> }
-    case 'activity':
-      return { colorVar: '--category-activities', surfaceVar: '--category-activities-soft', borderVar: '--category-activities-border', category: 'activities', label: t.calendar.typeActivity, Icon: Dumbbell, icon: <Dumbbell size={16} /> }
+    case 'activity': {
+      const Icon = activityCategory ? activityCategoryIcon(activityCategory) : Dumbbell
+      return { colorVar: '--category-activities', surfaceVar: '--category-activities-soft', borderVar: '--category-activities-border', category: 'activities', label: t.calendar.typeActivity, Icon, icon: <Icon size={16} /> }
+    }
     case 'payment':
       return { colorVar: '--category-family', surfaceVar: '--category-family-soft', borderVar: '--category-family-border', category: 'family', label: t.calendar.typePayment, Icon: Coins, icon: <Coins size={16} /> }
     case 'medical':

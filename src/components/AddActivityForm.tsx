@@ -2,10 +2,8 @@ import { useState } from 'react'
 import { t } from '../strings'
 import { todayISODate } from '../utils/dueDate'
 import {
-  ACTIVITY_CATEGORY_VALUES,
   ACTIVITY_PAYMENT_FREQUENCY_VALUES,
   ACTIVITY_STATUS_VALUES,
-  activityCategoryLabel,
   activityPaymentFrequencyLabel,
   activityStatusLabel,
 } from '../utils/activityLabels'
@@ -20,11 +18,11 @@ import {
 import type { ActivityInput } from '../domain/activities/types'
 import type { Activity, ActivityCategory, ActivityKind, ActivityPaymentFrequency, ActivityRecurrenceType } from '../features/activities/domain/activityTypes'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
+import { ActivityCategoryPicker } from './activities/ActivityCategoryPicker'
 import { ActivityParticipantPicker } from './activities/ActivityParticipantPicker'
 import { ActivityRecurrencePicker } from './activities/ActivityRecurrencePicker'
 import { DateShortcutField, GuidedDisclosure, GuidedLead, MemberChoicePicker } from './create-record/GuidedCreateFields'
 
-const CATEGORY_OPTIONS = ACTIVITY_CATEGORY_VALUES.map((value) => ({ value, label: activityCategoryLabel(value) }))
 const PAYMENT_FREQUENCY_OPTIONS = ACTIVITY_PAYMENT_FREQUENCY_VALUES.map((value) => ({
   value,
   label: activityPaymentFrequencyLabel(value),
@@ -256,12 +254,10 @@ export function AddActivityForm({ members, kids, initial, initialTitle, initialS
             <span>{t.activities.locationLabel}</span>
             <input value={location} onChange={(event) => setLocation(event.target.value)} placeholder={t.activities.locationPlaceholder} />
           </label>
-          <label>
-            <span>{t.activities.categoryLabel}</span>
-            <select value={category} onChange={(event) => { setCategory(event.target.value as ActivityCategory); setCategoryTouched(true) }}>
-              {CATEGORY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-          </label>
+          <div>
+            <span className="activity-field-heading">{t.activities.categoryLabel}</span>
+            <ActivityCategoryPicker value={category} onChange={(next) => { setCategory(next); setCategoryTouched(true) }} />
+          </div>
           <div className="guided-two-column">
             <MemberChoicePicker label={t.activities.responsibleCompactLabel} members={members} value={responsibleMemberId} emptyLabel={t.activities.responsibleNone} onChange={setResponsibleMemberId} />
             <MemberChoicePicker label={t.activities.secondaryResponsibleCompactLabel} members={members} value={secondaryResponsibleMemberId} emptyLabel={t.activities.responsibleNone} onChange={setSecondaryResponsibleMemberId} />
@@ -421,12 +417,10 @@ export function AddActivityForm({ members, kids, initial, initialTitle, initialS
 
         {advancedOpen && <div id="activity-advanced-content" className="activity-advanced-content">
           <div className="activity-advanced-grid">
-            <label>
-              <span>{t.activities.categoryLabel}</span>
-              <select value={category} onChange={(event) => { setCategory(event.target.value as ActivityCategory); setCategoryTouched(true) }}>
-                {CATEGORY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </label>
+            <div className="activity-field-full">
+              <span className="activity-field-heading">{t.activities.categoryLabel}</span>
+              <ActivityCategoryPicker value={category} onChange={(next) => { setCategory(next); setCategoryTouched(true) }} />
+            </div>
             {(kind === 'club' || skillLevel) && <label>
               <span>{t.activities.skillLevelCompactLabel}</span>
               <input value={skillLevel} onChange={(event) => setSkillLevel(event.target.value)} placeholder={t.activities.skillLevelPlaceholder} />

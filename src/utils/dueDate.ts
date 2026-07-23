@@ -42,6 +42,16 @@ export function formatFullDate(iso: string): string {
   })
 }
 
+/** "24. 7. 2026" — all-numeric, for compact contextual copy rather than long-form dates. */
+export function formatNumericDate(iso: string): string {
+  return toUTCDate(iso).toLocaleDateString(getCurrentLanguage() === 'cs' ? 'cs-CZ' : 'en-US', {
+    day: 'numeric',
+    month: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+}
+
 export function formatMonthYear(iso: string): string {
   return toUTCDate(iso).toLocaleDateString(getCurrentLanguage() === 'cs' ? 'cs-CZ' : 'en-US', {
     month: 'long',

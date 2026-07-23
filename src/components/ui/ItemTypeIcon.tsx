@@ -1,7 +1,10 @@
 import { getItemTypeStyle, type CalendarItemType } from '../../utils/itemTypeStyle'
+import type { ActivityCategory } from '../../features/activities/domain/activityTypes'
 
 interface Props {
   type: CalendarItemType
+  /** Picks the right icon for an activity (e.g. swimming vs. football) instead of the generic fallback. */
+  category?: ActivityCategory
   size?: number
 }
 
@@ -9,8 +12,8 @@ interface Props {
 // planner, and the create modal: a tinted icon container instead of a
 // colored border/stripe. Background is a 10%-opacity tint of the type
 // color, icon glyph is the full type color, no border, no shadow.
-export function ItemTypeIcon({ type, size = 40 }: Props) {
-  const { colorVar, Icon } = getItemTypeStyle(type)
+export function ItemTypeIcon({ type, category, size = 40 }: Props) {
+  const { colorVar, Icon } = getItemTypeStyle(type, category)
   const radius = Math.round(size * 0.325)
   const iconSize = Math.round(size * 0.55)
 
