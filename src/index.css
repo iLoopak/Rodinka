@@ -6617,6 +6617,29 @@ button.danger-action:focus-visible:not(:disabled) {
   border-radius: 999px;
 }
 
+/* Unread badge on the Messages nav tab. Positioned absolute inside the icon
+   container so it never shifts the item's width or label position. */
+.bottom-nav-unread-badge {
+  position: absolute;
+  top: -3px;
+  right: -4px;
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border: 2px solid var(--surface-canvas);
+  border-radius: 999px;
+  background: var(--state-info);
+  color: var(--color-text-inverse);
+  font-size: 0.58rem;
+  font-weight: var(--font-weight-emphasis);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .bottom-nav-item.active {
   background: var(--coral-soft);
   color: var(--interactive-primary-hover);
