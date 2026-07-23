@@ -104,6 +104,8 @@ export interface TodayAttentionItem {
   date: string | null
   route: Route
   hash?: string
+  /** For overdue_chore items: the chore's source id, used to complete inline. */
+  choreId?: string
 }
 
 export function isChildTodayAttentionVisible(item: TodayAttentionItem, childId: string): boolean {
@@ -192,6 +194,7 @@ export function buildTodayAttentionItems({
       responsibleMemberId: effectiveAssignee,
       date: chore.due_date,
       route: '/chores',
+      choreId: chore.id,
     })
   }
 

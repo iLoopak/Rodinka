@@ -772,10 +772,29 @@ button.calendar-filter-button.active { border-color: var(--coral-light); backgro
   background: var(--canvas);
   color: inherit;
   text-decoration: none;
+  flex: 1;
 }
 
 .today-attention-link:hover {
   border-color: var(--coral-light);
+}
+
+/* Row wrapper: checkbox left, link fills the rest */
+.today-attention-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Inline checkbox on the attention card — same size as completion-checkbox
+   but positioned outside the link so it doesn't trigger navigation */
+.today-attention-checkbox {
+  flex: 0 0 auto;
+  align-self: center;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .today-attention-copy {
