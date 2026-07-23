@@ -23,6 +23,7 @@ import { useFamilyMemberEmails } from '../hooks/useFamilyMemberEmails'
 import { childAccountState, childAccountStatusLabel } from '../utils/childAccountStatus'
 import { revokeChildAccount } from '../lib/childAccountAdmin'
 import { AppToolbarAddButton } from '../components/ui/AddAction'
+import { Link } from '../router'
 
 function roleLabel(role: FamilyMember['role']) {
   if (role === 'admin') return t.family.roleAdmin
@@ -285,6 +286,15 @@ export function FamilyScreen() {
           </div>
         </section>
       )}
+
+      <section className="page-section">
+        <div className="panel is-primary">
+          <Link to="/more" className="row-link more-navigation-row">
+            <span className="row-title">{t.nav.more}</span>
+            <span className="more-navigation-chevron" aria-hidden="true">›</span>
+          </Link>
+        </div>
+      </section>
 
       {showAddChild && (
         <Modal title={t.chores.addChildTitle} onClose={() => setShowAddChild(false)}>
