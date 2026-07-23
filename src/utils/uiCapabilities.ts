@@ -5,7 +5,7 @@ import { getRouteDefinition, routeIsAllowedForRole } from '../routes/routeRegist
 type Actor = Pick<FamilyMember, 'id' | 'family_id' | 'role'>
 type TargetMember = Pick<FamilyMember, 'id' | 'family_id'>
 
-export const ADULT_PRIMARY_ROUTES = ['/', '/calendar', '/plan', '/family', '/more'] as const satisfies readonly Route[]
+export const ADULT_PRIMARY_ROUTES = ['/', '/calendar', '/messages', '/plan', '/family'] as const satisfies readonly Route[]
 export const CHILD_PRIMARY_ROUTES = ['/', '/calendar', '/chores', '/shopping', '/more'] as const satisfies readonly Route[]
 
 export function primaryNavigationRoutes(actor: Actor): readonly Route[] {

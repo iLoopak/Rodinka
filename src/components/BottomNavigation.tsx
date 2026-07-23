@@ -4,6 +4,7 @@ import { t } from '../strings'
 import { isNavigationItemActive } from '../utils/navigation'
 import { useFamilyCore } from '../context/family/FamilyCoreContext'
 import { childPrimaryRouteForPath, capabilitiesFor, primaryNavigationRoutes } from '../utils/uiCapabilities'
+import { useTotalUnreadCount } from '../context/messages/MessagesSummaryContext'
 
 interface NavigationItem {
   to: Route
@@ -30,6 +31,16 @@ const items: NavigationItem[] = [
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="4" y="5" width="16" height="15" rx="3" strokeLinejoin="round" />
         <path d="M4 10h16M8 3v4M16 3v4" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    to: '/messages',
+    label: () => t.nav.messages,
+    activeRoutes: ['/messages'],
+    icon: () => (
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-6l-4 3v-3H6a2 2 0 0 1-2-2Z" strokeLinejoin="round" />
       </svg>
     ),
   },
@@ -89,11 +100,16 @@ const items: NavigationItem[] = [
   },
 ]
 
+function compactUnreadCount(count: number): string {
+  return count > 99 ? '99+' : String(count)
+}
+
 export function BottomNavigation() {
   const path = useRoutePath()
   const { currentMember } = useFamilyCore()
   const capabilities = capabilitiesFor(currentMember)
   const visibleRoutes = new Set(primaryNavigationRoutes(currentMember))
+  const totalUnreadCount = useTotalUnreadCount()
 
   return (
     <nav className="bottom-nav" aria-label={t.common.primaryNavigation}>
@@ -101,14 +117,27 @@ export function BottomNavigation() {
         const active = capabilities.isChild
           ? item.to === childPrimaryRouteForPath(path)
           : isNavigationItemActive(item, path)
+        const isMessages = item.to === '/messages'
+        const unreadCount = isMessages ? totalUnreadCount : 0
+        const unreadLabel = unreadCount > 0
+          ? t.messages.bellUnread(unreadCount)
+          : undefined
         return (
           <Link
             key={item.to}
             to={item.to}
             className={`bottom-nav-item${active ? ' active' : ''}`}
             aria-current={active ? 'page' : undefined}
+            aria-label={unreadLabel ?? undefined}
           >
-            <span className="bottom-nav-icon" aria-hidden="true">{item.icon(active)}</span>
+            <span className="bottom-nav-icon" aria-hidden="true">
+              {item.icon(active)}
+              {isMessages && unreadCount > 0 && (
+                <span className="bottom-nav-unread-badge" aria-hidden="true">
+                  {compactUnreadCount(unreadCount)}
+                </span>
+              )}
+            </span>
             <span>{item.label()}</span>
           </Link>
         )

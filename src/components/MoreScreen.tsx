@@ -374,12 +374,6 @@ export function MoreScreen() {
               <li><Link to="/chores" hash="#allowance" className="row-link more-navigation-row"><span className="row-title">{t.more.allowanceAction}</span><span className="more-navigation-chevron" aria-hidden="true">›</span></Link></li>
             </>}
             <li>
-              <Link to="/messages" className="row-link more-navigation-row">
-                <span className="row-title">{t.more.messagesAction}</span>
-                <span className="more-navigation-chevron" aria-hidden="true">›</span>
-              </Link>
-            </li>
-            <li>
               <Link to="/reminders" hash="#settings" className="row-link more-navigation-row">
                 <span className="row-title">{t.more.remindersAction}</span>
                 <span className="more-navigation-chevron" aria-hidden="true">›</span>

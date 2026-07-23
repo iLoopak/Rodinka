@@ -2,7 +2,6 @@ import { useRoutePath, useRouterActions } from '../router'
 import { BottomNavigation } from './BottomNavigation'
 import { InstallAppBanner } from './InstallAppBanner'
 import { ReminderBell } from './reminders/ReminderBell'
-import { MessagesBell } from './messages/MessagesBell'
 import { useFamilySettings } from '../context/family/FamilySettingsContext'
 import { FamilyBrand } from './FamilyBrand'
 import { useActiveFamilyMark } from '../hooks/useActiveFamilyMark'
@@ -79,7 +78,6 @@ function StandardAppShell({ definition }: { definition: RouteDefinition }) {
         <div className="app-header-actions">
           <FamilyValidatingBadge />
           <RealtimeStatusBadge status={realtimeStatus} />
-          <MessagesBell />
           <ReminderBell />
         </div>
       </header>

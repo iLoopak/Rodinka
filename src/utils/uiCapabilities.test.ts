@@ -29,6 +29,14 @@ describe('UI capability matrix', () => {
     expect(primaryNavigationRoutes(child)).toEqual(['/', '/calendar', '/chores', '/shopping', '/more'])
   })
 
+  it('gives adults exactly 5 primary routes in the correct order', () => {
+    const adult = member('adult', 'parent')
+    expect(primaryNavigationRoutes(adult)).toEqual(['/', '/calendar', '/messages', '/plan', '/family'])
+  })
+
+  it('maps /messages to /more for children (no messages tab in child nav)', () => {
+    expect(childPrimaryRouteForPath('/messages')).toBe('/more')
+  })
   it('rejects sibling targets from another family and missing actors', () => {
     const capabilities = capabilitiesFor(member('child-a', 'child'))
     expect(capabilities.editProfile(member('child-a', 'child', 'family-2'))).toBe(false)
