@@ -288,15 +288,11 @@ export function FamilyScreen() {
       )}
 
       <section className="page-section">
-        <div className="panel is-primary more-links-section">
-          <ul className="section-list plain-list more-settings-list">
-            <li>
-              <Link to="/more" className="row-link more-navigation-row">
-                <span className="row-title">{t.nav.more}</span>
-                <span className="more-navigation-chevron" aria-hidden="true">›</span>
-              </Link>
-            </li>
-          </ul>
+        <div className="panel is-primary">
+          <Link to="/more" className="row-link more-navigation-row">
+            <span className="row-title">{t.nav.more}</span>
+            <span className="more-navigation-chevron" aria-hidden="true">›</span>
+          </Link>
         </div>
       </section>
 
