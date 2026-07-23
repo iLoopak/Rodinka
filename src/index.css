@@ -1729,7 +1729,7 @@ button.list-drag-handle:hover:not(:disabled) {
 }
 
 .tab-button:hover:not(:disabled):not(.active) {
-  background: var(--neutral-soft);
+  background: var(--paper-raised);
 }
 
 .tab-button.active {
@@ -3260,6 +3260,16 @@ label.member-gender-option {
   border-color: var(--brick);
 }
 
+/* Same fix as .tab-button.active below: the base `button:hover` rule
+   outranks `.weekday-toggle.active`/`.tag-toggle.active` on specificity, so
+   without this it would repaint the active chip's background on hover. */
+.weekday-toggle.active:hover:not(:disabled),
+.tag-toggle.active:hover:not(:disabled) {
+  background: var(--brick);
+  color: #fff;
+  border-color: var(--brick);
+}
+
 .field-label {
   display: block;
   margin-bottom: 10px;
@@ -4118,6 +4128,16 @@ button.btn-danger:hover:not(:disabled) {
   -webkit-text-fill-color: currentColor;
 }
 
+/* Same fix as .tab-button.active below: the base `button:hover` rule
+   outranks `.member-editor-nav-item.is-active` on specificity, so without
+   this it would repaint the active tab's background on hover. */
+.member-editor-nav-item.is-active:hover:not(:disabled) {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+  -webkit-text-fill-color: currentColor;
+}
+
 .member-editor-nav-item:focus-visible {
   outline: 2px solid var(--brick);
   outline-offset: 2px;
@@ -4358,6 +4378,16 @@ button.btn-danger:hover:not(:disabled) {
 }
 
 .occurrence-companion-option.active {
+  border-color: var(--color-accent, currentColor);
+}
+
+/* Same fix as .tab-button.active below: the base `button:hover` rule
+   outranks `.occurrence-companion-option.active` on specificity, so without
+   this it would repaint the selected option's background on hover, leaving
+   its dark `--ink` text on the resulting dark red background. */
+.occurrence-companion-option.active:hover:not(:disabled) {
+  background: var(--paper-raised);
+  color: var(--ink);
   border-color: var(--color-accent, currentColor);
 }
 
@@ -5896,6 +5926,20 @@ button.today-shopping-open {
 .tab-button.active {
   background: var(--paper-raised);
   color: var(--brick-dark);
+  box-shadow: 0 3px 12px rgba(76, 56, 42, 0.09);
+}
+
+/* The base `button:hover` rule (background: var(--brick-dark)) has higher
+   specificity than `.tab-button.active` alone (an extra type selector beats
+   the tie in class count), so without this it wins on hover and repaints the
+   active tab's own background — here worse than just a wrong color: this
+   rule's own `color` is that exact brick-dark shade, so hovering the active
+   tab made its label invisible (background == color). Restating the resting
+   values at higher specificity keeps hover a no-op on the active tab. */
+.tab-button.active:hover:not(:disabled) {
+  background: var(--paper-raised);
+  color: var(--brick-dark);
+  border-color: var(--brick);
   box-shadow: 0 3px 12px rgba(76, 56, 42, 0.09);
 }
 
