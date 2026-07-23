@@ -444,7 +444,7 @@ button.calendar-filter-button {
 
 button.calendar-filter-button svg { display: block; }
 
-button.calendar-filter-button:hover:not(:disabled) { color: var(--ink); }
+button.calendar-filter-button:hover:not(:disabled):not(.active) { background: var(--neutral-soft); color: var(--ink); }
 
 button.calendar-filter-button.active { border-color: var(--coral-light); background: var(--coral-soft); color: var(--brick-dark); }
 
@@ -1485,7 +1485,7 @@ details.manage .add-child-form + .add-chore-form {
   color: transparent;
 }
 
-.completion-checkbox:hover:not(:disabled) > span { background: var(--paper-raised); }
+.completion-checkbox:hover:not(:disabled):not([aria-pressed='true']) > span { background: var(--neutral-soft); }
 
 .completion-checkbox[aria-pressed='true'] > span { background: var(--category-tasks); color: white; border-color: var(--category-tasks); }
 
@@ -1726,8 +1726,8 @@ button.list-drag-handle:hover:not(:disabled) {
   gap: 6px;
 }
 
-.tab-button:hover:not(:disabled) {
-  background: var(--canvas);
+.tab-button:hover:not(:disabled):not(.active) {
+  background: var(--neutral-soft);
 }
 
 .tab-button.active {
@@ -3246,9 +3246,9 @@ label.member-gender-option {
   border: 1.5px solid var(--border);
 }
 
-.weekday-toggle:hover:not(:disabled),
-.tag-toggle:hover:not(:disabled) {
-  background: var(--canvas);
+.weekday-toggle:hover:not(:disabled):not(.active),
+.tag-toggle:hover:not(:disabled):not(.active) {
+  background: var(--neutral-soft);
 }
 
 .weekday-toggle.active,
@@ -4105,8 +4105,8 @@ button.btn-danger:hover:not(:disabled) {
   cursor: pointer;
 }
 
-.member-editor-nav-item:hover:not(:disabled) {
-  background: var(--paper-raised);
+.member-editor-nav-item:hover:not(:disabled):not(.is-active) {
+  background: var(--neutral-soft);
 }
 
 .member-editor-nav-item.is-active {
@@ -4345,18 +4345,18 @@ button.btn-danger:hover:not(:disabled) {
   padding: 10px 8px;
   border-radius: var(--radius-md, 12px);
   background: var(--paper-raised);
+  color: var(--ink);
   border: 2px solid transparent;
   text-align: center;
   font-size: var(--font-size-meta);
 }
 
-.occurrence-companion-option.active {
-  border-color: var(--color-accent, currentColor);
+.occurrence-companion-option:hover:not(:disabled):not(.active) {
+  background: var(--neutral-soft);
 }
 
-.occurrence-companion-option small {
-  color: var(--text-muted);
-  font-size: var(--font-size-caption);
+.occurrence-companion-option.active {
+  border-color: var(--color-accent, currentColor);
 }
 
 /* ------------------------------------------------------------------ */
@@ -4429,7 +4429,7 @@ button.btn-danger:hover:not(:disabled) {
   border-radius: var(--radius-row);
 }
 
-.month-grid-day:hover:not(:disabled) {
+.month-grid-day:hover:not(:disabled):not(.selected) {
   background: var(--canvas);
 }
 
@@ -5955,7 +5955,7 @@ button.today-shopping-open {
 
 .month-grid-day { min-height: 58px; transition: transform 150ms ease, background 150ms ease; }
 
-.month-grid-day:hover:not(:disabled) { background: var(--neutral-soft); transform: translateY(-1px); }
+.month-grid-day:hover:not(:disabled):not(.selected) { background: var(--neutral-soft); transform: translateY(-1px); }
 
 .month-grid-day.selected { background: var(--coral-soft); box-shadow: inset 0 0 0 1px rgba(185, 71, 66, 0.12); }
 
