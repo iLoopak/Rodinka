@@ -25,6 +25,8 @@ import { AllowancePlanDialog } from './allowance/AllowancePlanDialog'
 import type { FamilyMember } from '../hooks/useFamilyMembers'
 import { useCalendarOffline } from '../context/calendar/CalendarOfflineContext'
 import { signOutCurrentAccount } from '../auth/signOutCurrentAccount'
+import { useTheme } from '../themeContext'
+import type { ThemePreference } from '../theme'
 
 export function MoreScreen() {
   const { currentMember, userEmail, userId } = useFamilyCore()
@@ -33,6 +35,7 @@ export function MoreScreen() {
   const { familyName, familyHeroImageUrl, updateFamilyName, updateFamilyHeroImage } = useFamilySettings()
   const familyMark = useActiveFamilyMark()
   const { language, changeLanguage } = useLanguage()
+  const { preference: themePreference, setThemePreference } = useTheme()
   const { account, refresh: refreshAccount } = useAuthAccount()
   const [showSetPassword, setShowSetPassword] = useState(false)
   const [showChangeEmail, setShowChangeEmail] = useState(false)
@@ -236,6 +239,31 @@ export function MoreScreen() {
               the is_family_parent check behind every allowance write. */}
           <li className="more-settings-group-heading"><h2>{t.allowance.familySectionTitle}</h2></li>
           <FamilyAllowanceSettings childMembers={childMembers} onEdit={setAllowanceChild} /></>}
+          <li className="more-settings-group-heading"><h2>{t.more.appearanceSection}</h2></li>
+          <li className="theme-setting-row more-settings-row">
+            <span className="more-setting-copy">
+              <span className="more-setting-value">{t.more.themeLabel}</span>
+              <small>{t.more.themeSystemHelp}</small>
+            </span>
+            <div className="theme-segmented-control" role="radiogroup" aria-label={t.more.themeLabel}>
+              {([
+                ['light', t.more.themeLight],
+                ['dark', t.more.themeDark],
+                ['system', t.more.themeSystem],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={themePreference === value ? 'is-selected' : ''}
+                  role="radio"
+                  aria-checked={themePreference === value}
+                  onClick={() => setThemePreference(value as ThemePreference)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </li>
           <li className="more-settings-group-heading"><h2>{t.more.appSection}</h2></li>
           <li className="language-setting-row more-settings-row">
             <label htmlFor="app-language">
