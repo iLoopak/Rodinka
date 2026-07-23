@@ -38,6 +38,10 @@ vi.mock('../context/chores/ChoresContext', () => ({ useChoresData: () => ({ chor
 vi.mock('../context/activities/ActivitiesContext', () => ({ useActivitiesData: () => ({ activities: [], refreshActivities: vi.fn() }) }))
 vi.mock('../context/activities/OccurrenceAssignmentsContext', () => ({ useOccurrenceAssignmentsData: () => ({ refreshOccurrenceAssignments: vi.fn() }) }))
 vi.mock('./ui/MemberAvatar', () => ({ MemberAvatar: ({ member }: { member: FamilyMember }) => createElement('span', null, member.display_name.slice(0, 1)) }))
+vi.mock('../router', () => ({
+  Link: ({ children, to, ...props }: { children?: React.ReactNode; to: string; className?: string }) =>
+    createElement('a', { href: to, ...props }, children),
+}))
 
 import { FamilyScreen } from './FamilyScreen'
 
