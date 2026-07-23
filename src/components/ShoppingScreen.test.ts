@@ -14,6 +14,10 @@ vi.mock('../context/family/FamilyMembersContext', () => ({ useFamilyMembersData:
 vi.mock('../context/family/FamilySettingsContext', () => ({ useFamilySettings: useFamilySettingsMock }))
 vi.mock('../context/shopping/ShoppingContext', () => ({ useShopping: useShoppingMock }))
 vi.mock('../context/create-record/CreateRecordContext', () => ({ useCreateRecord: () => ({ openCreateRecord: openCreateRecordMock }) }))
+vi.mock('../router', () => ({
+  Link: ({ children, to, ...props }: { children?: React.ReactNode; to: string; className?: string }) =>
+    createElement('a', { href: to, ...props }, children),
+}))
 
 import { ShoppingScreen } from './ShoppingScreen'
 
@@ -114,6 +118,19 @@ describe('ShoppingScreen', () => {
     expect(html).not.toContain('aria-controls="shopping-tools-panel"')
     expect(html).not.toContain('aria-roledescription="sortable"')
     expect(html).not.toMatch(/<button[^>]*class="shopping-item-main"/)
+  })
+
+  it('shows a More link for child accounts', () => {
+    mockContexts([baseItem], [], true)
+    const html = renderToStaticMarkup(createElement(ShoppingScreen))
+    expect(html).toContain('href="/more"')
+    expect(html).toContain('Více')
+  })
+
+  it('does not show a More link for adult accounts', () => {
+    mockContexts([baseItem])
+    const html = renderToStaticMarkup(createElement(ShoppingScreen))
+    expect(html).not.toContain('href="/more"')
   })
 })
 

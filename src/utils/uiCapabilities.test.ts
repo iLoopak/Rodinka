@@ -26,7 +26,7 @@ describe('UI capability matrix', () => {
     expect(capabilities.accessRoute('/plan')).toBe(false)
     expect(capabilities.accessRoute('/family')).toBe(false)
     expect(capabilities.accessRoute('/health')).toBe(false)
-    expect(primaryNavigationRoutes(child)).toEqual(['/', '/calendar', '/chores', '/shopping', '/more'])
+    expect(primaryNavigationRoutes(child)).toEqual(['/', '/calendar', '/messages', '/chores', '/shopping'])
   })
 
   it('gives adults exactly 5 primary routes in the correct order', () => {
@@ -34,8 +34,8 @@ describe('UI capability matrix', () => {
     expect(primaryNavigationRoutes(adult)).toEqual(['/', '/calendar', '/messages', '/plan', '/family'])
   })
 
-  it('maps /messages to /more for children (no messages tab in child nav)', () => {
-    expect(childPrimaryRouteForPath('/messages')).toBe('/more')
+  it('maps /messages to the child messages tab', () => {
+    expect(childPrimaryRouteForPath('/messages')).toBe('/messages')
   })
   it('rejects sibling targets from another family and missing actors', () => {
     const capabilities = capabilitiesFor(member('child-a', 'child'))

@@ -6,7 +6,7 @@ type Actor = Pick<FamilyMember, 'id' | 'family_id' | 'role'>
 type TargetMember = Pick<FamilyMember, 'id' | 'family_id'>
 
 export const ADULT_PRIMARY_ROUTES = ['/', '/calendar', '/messages', '/plan', '/family'] as const satisfies readonly Route[]
-export const CHILD_PRIMARY_ROUTES = ['/', '/calendar', '/chores', '/shopping', '/more'] as const satisfies readonly Route[]
+export const CHILD_PRIMARY_ROUTES = ['/', '/calendar', '/messages', '/chores', '/shopping'] as const satisfies readonly Route[]
 
 export function primaryNavigationRoutes(actor: Actor): readonly Route[] {
   return actor.role === 'child' ? CHILD_PRIMARY_ROUTES : ADULT_PRIMARY_ROUTES
@@ -16,7 +16,7 @@ export function childPrimaryRouteForPath(route: Route): (typeof CHILD_PRIMARY_RO
   if (route === '/activities' || route === '/meals' || route === '/reminders') return '/more'
   if (route === '/plan') return '/chores'
   if (route === '/health' || route === '/family') return '/more'
-  if (route === '/messages') return '/more'
+  if (route === '/messages') return '/messages'
   if (route === '/calendar' || route === '/chores' || route === '/shopping' || route === '/more') return route
   return '/'
 }

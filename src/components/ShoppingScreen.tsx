@@ -27,6 +27,7 @@ import { FilterDisclosure, FilterDisclosurePanel, FilterDisclosureToggle } from 
 import { GripVertical } from 'lucide-react'
 import { useCreateRecord } from '../context/create-record/CreateRecordContext'
 import { AppToolbarAddButton } from '../components/ui/AddAction'
+import { Link } from '../router'
 
 export function ShoppingScreen() {
   const { currentMember, isParentOrAdmin } = useFamilyCore()
@@ -283,6 +284,17 @@ export function ShoppingScreen() {
         <ul className="shopping-list purchased">{purchasedShoppingItems.map((item) => <ShoppingRow key={item.id} item={item} memberById={memberById} pending={pendingShoppingItemIds.has(item.id)} onToggle={() => toggleShoppingPurchased(item.id, false)} onEdit={isParentOrAdmin ? () => setSelectedItem(item) : undefined} />)}</ul>
         {isParentOrAdmin && <button type="button" className="link danger-action" onClick={() => setConfirmClearPurchased(true)}>{t.shopping.clearPurchased}</button>}
       </details>}
+
+      {!isParentOrAdmin && (
+        <section className="page-section">
+          <div className="panel is-primary">
+            <Link to="/more" className="row-link more-navigation-row">
+              <span className="row-title">{t.nav.more}</span>
+              <span className="more-navigation-chevron" aria-hidden="true">›</span>
+            </Link>
+          </div>
+        </section>
+      )}
 
       {isParentOrAdmin && selectedItem && <Modal title={t.shopping.editTitle} onClose={() => setSelectedItem(null)}>
         <ShoppingItemForm

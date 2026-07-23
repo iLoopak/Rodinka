@@ -62,14 +62,24 @@ describe('adult primary navigation', () => {
 })
 
 describe('child primary navigation', () => {
-  it('shows exactly 5 items: Today, Calendar, My tasks, Shopping, More', () => {
+  it('shows exactly 5 items in the order: Today, Calendar, Messages, My tasks, Shopping', () => {
     const routes = primaryNavigationRoutes(member('child', 'child'))
     expect(routes).toHaveLength(5)
-    expect(routes).toEqual(['/', '/calendar', '/chores', '/shopping', '/more'])
+    expect(routes).toEqual(['/', '/calendar', '/messages', '/chores', '/shopping'])
   })
 
-  it('maps /messages to /more for children', () => {
-    expect(childPrimaryRouteForPath('/messages')).toBe('/more')
+  it('includes /messages as the third item (center)', () => {
+    const routes = primaryNavigationRoutes(member('child', 'child'))
+    expect(routes[2]).toBe('/messages')
+  })
+
+  it('does not include /more in child primary routes', () => {
+    const routes = primaryNavigationRoutes(member('child', 'child'))
+    expect(routes).not.toContain('/more')
+  })
+
+  it('maps /messages to the messages tab for children', () => {
+    expect(childPrimaryRouteForPath('/messages')).toBe('/messages')
   })
 })
 
