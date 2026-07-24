@@ -140,8 +140,13 @@ export async function releasePushOnSignOut(): Promise<boolean> {
   try {
     if (!currentToken) return false
     const { error } = await supabase.rpc('revoke_native_push_token_by_device', { p_device_token: currentToken })
-    return !error
-  } catch {
+    if (error) {
+      console.error('Failed to revoke native push token during sign-out:', error.message)
+      return false
+    }
+    return true
+  } catch (error) {
+    console.error('Failed to revoke native push token during sign-out:', error instanceof Error ? error.message : 'unknown error')
     return false
   }
 }
