@@ -227,6 +227,13 @@ npx capacitor-assets generate               # regenerates every platform size
 npx cap sync android && npx cap sync ios
 ```
 
+`@capacitor/assets` is intentionally **not** a project dependency: it pulls a
+large tree of unmaintained transitive packages (old `tar`, `sharp`,
+`minimatch`, …) that only show up as security advisories. It is a one-off,
+local, offline asset generator whose output is committed, so run it with
+`npx` (which fetches it on demand) rather than re-adding it to
+`devDependencies`.
+
 **Warning**: `npx capacitor-assets generate` *also* generates a `pwa` icon
 set and, unprompted, **overwrites `public/manifest.webmanifest`'s `icons`
 array to point at it and deletes `public/icon.svg`** — breaking the web/PWA
