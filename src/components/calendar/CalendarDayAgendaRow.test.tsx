@@ -51,12 +51,12 @@ describe('CalendarDayAgendaRow', () => {
       onClick: vi.fn(),
     }))
 
-    expect(html).toContain('class="day-agenda-row')
+    expect(html).toContain('class="week-entry')
     expect(html).not.toContain('Bez času')
     expect(html).toContain('Fazole alá chilli con carne')
     expect(html).toContain('Terra')
     expect(html).toContain('item-type-icon')
-    expect(html).not.toContain('week-entry-time')
+    expect(html).not.toContain('week-entry-time">')
   })
 
   it('renders timed activity with time, location, and recurrence', () => {
@@ -71,8 +71,8 @@ describe('CalendarDayAgendaRow', () => {
     expect(html).toContain('Plavání')
     expect(html).toContain('Bazen Nekky')
     expect(html).toContain('Každý pátek')
-    expect(html).toContain('day-agenda-row-assignment')
-    expect(html).toContain('day-agenda-row-swap')
+    expect(html).toContain('week-entry-assignment')
+    expect(html).toContain('week-entry-swap')
   })
 
   it('shows occurrence override dot when assignmentOverridden is true', () => {
@@ -84,22 +84,22 @@ describe('CalendarDayAgendaRow', () => {
       onAssignmentClick: vi.fn(),
     }))
 
-    expect(html).toContain('day-agenda-row-override-dot')
+    expect(html).toContain('week-entry-override-dot')
     expect(html).toContain('Změněno pouze pro tento termín')
   })
 
   it('shows responsible member when no assignment control', () => {
     const entryNoAssignment = { ...activityEntry, assignmentSeriesType: undefined, responsibleMemberId: 'other-member' }
-    const memberById = (id: string) => id === 'other-member' ? makeFamilyMember({ id: 'other-member', display_name: 'Ostatní' }) : member
+    const memberById2 = (id: string) => id === 'other-member' ? makeFamilyMember({ id: 'other-member', display_name: 'Ostatní' }) : member
     const html = renderToStaticMarkup(createElement(CalendarDayAgendaRow, {
       entry: entryNoAssignment,
-      memberById,
+      memberById: memberById2,
       onClick: vi.fn(),
     }))
 
-    expect(html).toContain('day-agenda-row-responsible')
+    expect(html).toContain('week-entry-meta-row')
     expect(html).toContain('Ostatní')
-    expect(html).not.toContain('day-agenda-row-assignment')
+    expect(html).not.toContain('week-entry-assignment')
   })
 
   it('shows completed status', () => {
