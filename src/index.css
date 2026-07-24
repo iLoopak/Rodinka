@@ -6168,7 +6168,7 @@ button.today-shopping-open {
 .week-day-card {
   width: 100%;
   min-width: 0;
-  padding: 16px;
+  padding: 13px 14px;
   scroll-margin-top: 104px;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-card);
@@ -6180,7 +6180,7 @@ button.today-shopping-open {
 
 .week-day-card.selected .week-day-header h2 { color: var(--brick-dark); }
 
-.week-day-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.week-day-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 
 .week-day-header h2 { font-size: var(--font-size-section-title); font-weight: var(--font-weight-strong); line-height: var(--line-height-tight); text-transform: capitalize; }
 
@@ -6190,13 +6190,13 @@ button.today-shopping-open {
 
 .week-day-empty { min-height: 32px; padding: 3px 2px 8px; color: var(--ink-muted); font-size: var(--font-size-body); line-height: var(--line-height-body); }
 
-.week-day-groups { display: grid; gap: 12px; }
+.week-day-groups { display: grid; gap: 9px; }
 
-.week-day-group h3 { margin: 0 0 7px 2px; color: var(--ink-muted); font-size: 0.66rem; letter-spacing: 0.07em; text-transform: uppercase; }
+.week-day-group h3 { margin: 0 0 4px 2px; color: var(--ink-muted); font-size: 0.66rem; letter-spacing: 0.07em; text-transform: uppercase; }
 
-.week-day-group ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.week-day-group ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
 
-.week-day-add { display: inline-flex; align-items: center; width: fit-content; min-height: 44px; margin-top: 8px; padding: 7px 2px; color: var(--brick); font-size: var(--font-size-action); font-weight: var(--font-weight-strong); }
+.week-day-add { display: inline-flex; align-items: center; width: fit-content; min-height: 44px; margin-top: 4px; padding: 7px 2px; color: var(--brick); font-size: var(--font-size-action); font-weight: var(--font-weight-strong); }
 
 .week-entry {
   position: relative;
@@ -6213,9 +6213,9 @@ button.today-shopping-open {
 .week-entry-layout {
   grid-row: 1;
   display: grid;
-  gap: 7px;
+  gap: 5px;
   min-width: 0;
-  padding: 13px 14px 14px;
+  padding: 9px 12px 10px;
 }
 
 .week-entry-open {
@@ -6233,20 +6233,20 @@ button.today-shopping-open {
 
 .week-entry-open:focus-visible { outline: 3px solid color-mix(in srgb, var(--week-entry-accent) 38%, transparent); outline-offset: -3px; }
 
-.week-entry-heading { display: flex; align-items: center; gap: 9px; min-width: 0; padding-right: 2px; }
+.week-entry-heading { display: flex; align-items: center; gap: 8px; min-width: 0; padding-right: 2px; }
 
 .week-entry-heading strong { min-width: 0; overflow-wrap: break-word; font-size: 1.02rem; font-weight: var(--font-weight-strong); line-height: 1.24; }
 
 .week-entry.completed .week-entry-heading strong { text-decoration: line-through; }
 
-.week-entry-time { padding-left: 49px; color: var(--ink-muted); font-size: var(--font-size-body); font-weight: var(--font-weight-strong); line-height: var(--line-height-body); white-space: nowrap; }
+.week-entry-time { padding-left: 42px; color: var(--ink-muted); font-size: var(--font-size-body); font-weight: var(--font-weight-strong); line-height: var(--line-height-tight); white-space: nowrap; }
 
 .week-entry-status { padding: 1px 5px; border-radius: 999px; background: var(--neutral-soft); color: var(--ink-muted); font-size: 0.58rem; font-weight: 800; text-transform: uppercase; }
 
-.week-entry-metadata { display: grid; gap: 6px; min-width: 0; padding-left: 49px; color: var(--ink-muted); font-size: var(--font-size-meta); line-height: 1.35; }
+.week-entry-metadata { display: grid; gap: 4px; min-width: 0; padding-left: 42px; color: var(--ink-muted); font-size: var(--font-size-meta); line-height: 1.35; }
 
 .week-entry-meta-row,
-.week-entry-assignment { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 30px; }
+.week-entry-assignment { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 26px; }
 
 .week-entry-meta-row > span:last-child,
 .week-entry-assignment > span { min-width: 0; overflow-wrap: break-word; }
@@ -6280,8 +6280,8 @@ button.today-shopping-open {
 .week-entry-override-dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: var(--week-entry-accent); }
 
 @media (min-width: 680px) {
-  .week-day-card { padding: 18px 20px; }
-  .week-entry-layout { padding-inline: 16px 18px; }
+  .week-day-card { padding: 15px 18px; }
+  .week-entry-layout { padding-inline: 14px 16px; }
 }
 
 @media (min-width: 600px) {
@@ -6303,10 +6303,10 @@ button.today-shopping-open {
   .week-strip-day { min-height: 72px; }
   .week-strip-weekday { font-size: 0.61rem; }
   .week-strip-number { width: 25px; height: 25px; }
-  .week-day-card { padding: 13px; }
-  .week-entry-layout { padding: 12px 12px 13px; }
+  .week-day-card { padding: 12px; }
+  .week-entry-layout { padding: 9px 11px 10px; }
   .week-entry-time,
-  .week-entry-metadata { padding-left: 49px; }
+  .week-entry-metadata { padding-left: 42px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
