@@ -15,7 +15,7 @@ button {
   font-family: inherit;
   font-weight: var(--font-weight-strong);
   font-size: var(--font-size-body);
-  color: #fff;
+  color: var(--color-on-primary);
   background: var(--brick);
   border: none;
   border-radius: var(--radius-button);
@@ -7367,18 +7367,9 @@ html[data-theme='dark'] body {
   background: var(--app-background);
 }
 
-html[data-theme='dark'] .btn-primary {
+html[data-theme='dark'] .btn-primary,
+html[data-theme='dark'] button.btn-danger {
   color: var(--color-on-primary);
-}
-
-html[data-theme='dark'] button.btn-secondary,
-html[data-theme='dark'] button.btn-ghost,
-html[data-theme='dark'] button.btn-icon,
-html[data-theme='dark'] button.link,
-html[data-theme='dark'] button.btn-link,
-html[data-theme='dark'] .card--interactive,
-html[data-theme='dark'] .theme-segmented-control button {
-  color: var(--ink);
 }
 
 html[data-theme='dark'] input,
