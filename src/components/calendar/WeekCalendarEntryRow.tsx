@@ -46,7 +46,7 @@ export function WeekCalendarEntryRow({ entry, memberById, onClick, onAssignmentC
   >
     <div className="week-entry-layout">
       <div className="week-entry-heading">
-        <ItemTypeIcon type={entry.type} category={entry.category} size={40} />
+        <ItemTypeIcon type={entry.type} category={entry.category} size={34} />
         <strong>{entry.title}</strong>
         {entry.completed && <span className="week-entry-status">{t.calendar.completed}</span>}
         {entry.syncStatus && <span className={`calendar-pending-label ${entry.syncStatus}`}>
