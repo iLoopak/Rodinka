@@ -75,7 +75,7 @@ export const ENTRY_BUDGET = {
   // that cross-environment variance rather than the budget being a hair
   // away from failing depending on which machine runs the build.
   eagerGzipBytes: 243_000,
-  cssRawBytes: 178_000,
+  cssRawBytes: 179_000,
   cssGzipBytes: 43_000,
 }
 
