@@ -1,4 +1,5 @@
-import { classifyAppError, isRetryableErrorCode, type AppErrorCode } from '../../../errors/errorCodes'
+import { type AppErrorCode } from '../../../errors/errorCodes'
+import { createDomainErrorConverter, DomainError, extractErrorMessage } from '../../../errors/domainError'
 
 export type MealsOperation =
   | 'meals.list'
@@ -23,18 +24,9 @@ export type MealsOperation =
  * so a developer console can show it. Nothing above the repository parses
  * Postgres message text.
  */
-export class MealsError extends Error {
-  readonly code: AppErrorCode
-  readonly operation: MealsOperation
-  readonly retryable: boolean
-
+export class MealsError extends DomainError<MealsOperation> {
   constructor(operation: MealsOperation, code: AppErrorCode, cause?: unknown) {
-    super(`meals:${operation}:${code}`)
-    this.name = 'MealsError'
-    this.operation = operation
-    this.code = code
-    this.retryable = isRetryableErrorCode(code)
-    this.cause = cause
+    super('MealsError', 'meals', operation, code, cause)
   }
 }
 
@@ -45,15 +37,9 @@ export class MealsError extends Error {
  */
 function refineVotingCode(operation: MealsOperation, code: AppErrorCode, error: unknown): AppErrorCode {
   if (code !== 'mutation-failed') return code
-  const message = error && typeof error === 'object' && 'message' in error ? String((error as { message: unknown }).message) : ''
   const votingOperation = operation.startsWith('voting.')
-  if (votingOperation && /round is not open|already closed|not open/i.test(message)) return 'conflict'
+  if (votingOperation && /round is not open|already closed|not open/i.test(extractErrorMessage(error))) return 'conflict'
   return code
 }
 
-export function toMealsError(operation: MealsOperation, error: unknown): MealsError {
-  if (error instanceof MealsError) return error
-  const browserOnline = typeof navigator === 'undefined' ? undefined : navigator.onLine !== false
-  const code = refineVotingCode(operation, classifyAppError(error, { browserOnline }), error)
-  return new MealsError(operation, code, error)
-}
+export const toMealsError = createDomainErrorConverter(MealsError, refineVotingCode)

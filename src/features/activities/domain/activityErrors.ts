@@ -1,4 +1,5 @@
-import { classifyAppError, isRetryableErrorCode, type AppErrorCode } from '../../../errors/errorCodes'
+import { type AppErrorCode } from '../../../errors/errorCodes'
+import { createDomainErrorConverter, DomainError, extractErrorMessage } from '../../../errors/domainError'
 
 export type ActivitiesOperation =
   | 'activities.list'
@@ -14,23 +15,10 @@ export type ActivitiesOperation =
  * was written — so the caller can roll its optimistic state back whole rather
  * than guessing which half landed.
  */
-export class ActivitiesError extends Error {
-  readonly code: AppErrorCode
-  readonly operation: ActivitiesOperation
-  readonly retryable: boolean
-
+export class ActivitiesError extends DomainError<ActivitiesOperation> {
   constructor(operation: ActivitiesOperation, code: AppErrorCode, cause?: unknown) {
-    super(`activities:${operation}:${code}`)
-    this.name = 'ActivitiesError'
-    this.operation = operation
-    this.code = code
-    this.retryable = isRetryableErrorCode(code)
-    this.cause = cause
+    super('ActivitiesError', 'activities', operation, code, cause)
   }
-}
-
-function message(error: unknown): string {
-  return error && typeof error === 'object' && 'message' in error ? String((error as { message: unknown }).message) : ''
 }
 
 /**
@@ -41,12 +29,8 @@ function message(error: unknown): string {
 function refine(operation: ActivitiesOperation, code: AppErrorCode, error: unknown): AppErrorCode {
   if (operation !== 'occurrences.setMemberOverride') return code
   if (code === 'not-found') return 'conflict'
-  if (code === 'mutation-failed' && /no longer|not part of|removed|inactive/i.test(message(error))) return 'conflict'
+  if (code === 'mutation-failed' && /no longer|not part of|removed|inactive/i.test(extractErrorMessage(error))) return 'conflict'
   return code
 }
 
-export function toActivitiesError(operation: ActivitiesOperation, error: unknown): ActivitiesError {
-  if (error instanceof ActivitiesError) return error
-  const browserOnline = typeof navigator === 'undefined' ? undefined : navigator.onLine !== false
-  return new ActivitiesError(operation, refine(operation, classifyAppError(error, { browserOnline }), error), error)
-}
+export const toActivitiesError = createDomainErrorConverter(ActivitiesError, refine)
