@@ -7367,6 +7367,7 @@ html[data-theme='dark'] body {
   background: var(--app-background);
 }
 
+html[data-theme='dark'] .btn-primary,
 html[data-theme='dark'] button.btn-danger {
   color: var(--color-on-primary);
 }
