@@ -4,7 +4,7 @@ import { t } from '../../strings'
 import type { CalendarEntry } from '../../utils/calendarEntries'
 import { formatShortDate } from '../../utils/dueDate'
 import { formatWeekDayHeading } from '../../utils/weekCalendar'
-import { WeekCalendarEntryRow } from './WeekCalendarEntryRow'
+import { CalendarDayAgendaRow } from './CalendarDayAgendaRow'
 
 interface Props {
   date: string
@@ -28,11 +28,11 @@ export function CalendarDayAgendaCard({ date, entries, today, selected = false, 
 
   return <section
     ref={sectionRef}
-    className={`week-day-card${isToday ? ' today' : ''}${selected ? ' selected' : ''}`}
+    className={`day-agenda-card${isToday ? ' today' : ''}${selected ? ' selected' : ''}`}
     data-week-date={exposeWeekDate ? date : undefined}
     aria-labelledby={headingId}
   >
-    <header className="week-day-header">
+    <header className="day-agenda-header">
       <div>
         <h2 id={headingId} tabIndex={-1}>{formatWeekDayHeading(date, getCurrentLanguage())}</h2>
         <p>{isToday && <span className="today-badge">{t.calendar.todayBadge}</span>}{t.calendar.itemCount(entries.length)}</p>
@@ -40,11 +40,11 @@ export function CalendarDayAgendaCard({ date, entries, today, selected = false, 
       {onClose && <button type="button" className="calendar-day-close" onClick={onClose} aria-label={t.calendar.close}>×</button>}
     </header>
 
-    {entries.length === 0 ? <div className="week-day-empty">{t.calendar.nothingPlanned}</div>
-      : <div className="week-day-groups">
-        {untimed.length > 0 && <div className="week-day-group"><h3>{t.calendar.untimedGroup}</h3><ul>{untimed.map((entry) => <WeekCalendarEntryRow key={entry.id} entry={entry} memberById={memberById} onClick={() => onSelectEntry(entry)} onAssignmentClick={onChangeAssignment ? () => onChangeAssignment(entry) : undefined} />)}</ul></div>}
-        {timed.length > 0 && <div className="week-day-group"><h3>{t.calendar.timedGroup}</h3><ul>{timed.map((entry) => <WeekCalendarEntryRow key={entry.id} entry={entry} memberById={memberById} onClick={() => onSelectEntry(entry)} onAssignmentClick={onChangeAssignment ? () => onChangeAssignment(entry) : undefined} />)}</ul></div>}
-      </div>}
-    {onAddDay && <button type="button" className="link week-day-add" onClick={() => onAddDay(date)} aria-label={`${t.create.addThisDayAction}: ${formatShortDate(date)}`}>+ {t.create.addThisDayAction}</button>}
+{entries.length === 0 ? <div className="day-agenda-empty">{t.calendar.nothingPlanned}</div>
+      : <div className="day-agenda-groups">
+          {untimed.length > 0 && <div className="day-agenda-group"><h3>{t.calendar.untimedGroup}</h3><ul>{untimed.map((entry) => <CalendarDayAgendaRow key={entry.id} entry={entry} memberById={memberById} onClick={() => onSelectEntry(entry)} onAssignmentClick={onChangeAssignment ? () => onChangeAssignment(entry) : undefined} />)}</ul></div>}
+          {timed.length > 0 && <div className="day-agenda-group"><h3>{t.calendar.timedGroup}</h3><ul>{timed.map((entry) => <CalendarDayAgendaRow key={entry.id} entry={entry} memberById={memberById} onClick={() => onSelectEntry(entry)} onAssignmentClick={onChangeAssignment ? () => onChangeAssignment(entry) : undefined} />)}</ul></div>}
+        </div>}
+    {onAddDay && <button type="button" className="link day-agenda-add" onClick={() => onAddDay(date)} aria-label={`${t.create.addThisDayAction}: ${formatShortDate(date)}`}>+ {t.create.addThisDayAction}</button>}
   </section>
 }

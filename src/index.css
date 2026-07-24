@@ -6279,6 +6279,86 @@ button.today-shopping-open {
 
 .week-entry-override-dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: var(--week-entry-accent); }
 
+/* Day agenda row - compact version for month view day detail */
+.day-agenda-row {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-row);
+  background: var(--paper-raised);
+}
+
+.day-agenda-row.completed { opacity: 0.7; }
+
+.day-agenda-row-button {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.day-agenda-row-button:hover:not(:disabled) { background: color-mix(in srgb, var(--day-agenda-surface) 45%, transparent); }
+
+.day-agenda-row-button:focus-visible { outline: 3px solid color-mix(in srgb, var(--day-agenda-accent) 38%, transparent); outline-offset: -3px; }
+
+.day-agenda-row-layout {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 7px 10px 8px;
+}
+
+.day-agenda-row-content { min-width: 0; }
+
+.day-agenda-row-heading { display: flex; align-items: center; gap: 6px; min-width: 0; padding-right: 2px; }
+
+.day-agenda-row-heading strong { min-width: 0; overflow-wrap: break-word; font-size: 0.95rem; font-weight: var(--font-weight-strong); line-height: 1.22; }
+
+.day-agenda-row.completed .day-agenda-row-heading strong { text-decoration: line-through; }
+
+.day-agenda-row-status { padding: 1px 5px; border-radius: 999px; background: var(--neutral-soft); color: var(--ink-muted); font-size: 0.55rem; font-weight: 800; text-transform: uppercase; }
+
+.day-agenda-row-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; min-width: 0; color: var(--ink-muted); font-size: var(--font-size-meta); line-height: 1.3; }
+
+.day-agenda-row-time { font-variant-numeric: tabular-nums; font-weight: var(--font-weight-strong); line-height: var(--line-height-tight); white-space: nowrap; }
+
+.day-agenda-row-meta-item { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+
+.day-agenda-row-meta-item > svg { width: 14px; height: 14px; flex: 0 0 14px; color: var(--ink-muted); }
+
+.day-agenda-row-meta-item > span { min-width: 0; overflow-wrap: break-word; }
+
+.day-agenda-row-assignment {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 4px 8px 4px 4px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-strong);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.day-agenda-row-assignment:hover:not(:disabled) { background: var(--day-agenda-surface); color: var(--ink); }
+
+.day-agenda-row-swap { flex: 0 0 14px; width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; color: var(--day-agenda-accent); }
+
+.day-agenda-row-override-dot { width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; background: var(--day-agenda-accent); }
+
 @media (min-width: 680px) {
   .week-day-card { padding: 15px 18px; }
   .week-entry-layout { padding-inline: 14px 16px; }
